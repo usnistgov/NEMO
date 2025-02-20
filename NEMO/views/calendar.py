@@ -15,6 +15,7 @@ from django.utils.safestring import mark_safe
 from django.utils.timezone import make_aware
 from django.views.decorators.http import require_GET, require_POST
 
+from NEMO.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.decorators import disable_session_expiry_refresh, postpone, staff_member_required, synchronized
 from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
 from NEMO.forms import ScheduledOutageForm, save_scheduled_outage
@@ -50,11 +51,11 @@ from NEMO.utilities import (
     render_email_template,
     send_mail,
 )
-from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import (
     ApplicationCustomization,
     CalendarCustomization,
     EmailsCustomization,
+    ToolCustomization,
     get_media_file_contents,
 )
 from NEMO.widgets.dynamic_form import DynamicForm, render_group_questions
@@ -69,7 +70,7 @@ def calendar(request, item_type=None, item_id=None):
     user: User = request.user
     if request.device == "mobile":
         if item_type and item_type == "tool" and item_id:
-            return redirect("view_calendar", item_id)
+            return redirect("view_calendar", "tool", item_id)
         else:
             return redirect("choose_item", "view_calendar")
 
@@ -175,7 +176,20 @@ def event_feed(request):
     facility_name = ApplicationCustomization.get("facility_name")
     if event_type == "reservations":
         return reservation_event_feed(request, start, end)
-    elif event_type == f"{facility_name.lower()} usage":
+    if event_type == "reservations and use":
+        # We need to remove the json array brackets from the original responses (last [ of reservations and first ] of usage)
+        reservation_feed = reservation_event_feed(request, start, end)
+        reservation_feed_content = reservation_feed.content
+        position = reservation_feed_content.rfind("]".encode())
+        if position != -1:
+            reservation_feed_content = (
+                reservation_feed_content[:position] + "".encode() + reservation_feed_content[position + 1 :]
+            )
+        reservation_feed.content = reservation_feed_content + usage_event_feed(request, start, end).content.replace(
+            "[".encode(), "".encode(), 1
+        )
+        return reservation_feed
+    elif event_type == f"{facility_name.lower()} use":
         return usage_event_feed(request, start, end)
     # Only staff may request a specific user's history...
     elif event_type == "specific user" and request.user.is_staff:
@@ -955,7 +969,7 @@ def reservation_group_question(request, reservation_question_id, group_name):
 def get_and_combine_reservation_questions(
     item_type: ReservationItemType, item_id: int, project: Project = None
 ) -> List[ReservationQuestions]:
-    reservation_questions = ReservationQuestions.objects.all()
+    reservation_questions = ReservationQuestions.objects.filter(enabled=True)
     if item_type == ReservationItemType.TOOL:
         reservation_questions = reservation_questions.filter(tool_reservations=True)
         reservation_questions = reservation_questions.filter(Q(only_for_tools=None) | Q(only_for_tools__in=[item_id]))
@@ -1053,7 +1067,7 @@ def cancel_the_reservation(
                 if reservation.area:
                     recipients.extend(reservation.area.reservation_email_list())
                 if reservation.user.get_preferences().attach_cancelled_reservation:
-                    event_name = f"{reservation.reservation_item.name} Reservation"
+                    event_name = reservation.title or f"{reservation.reservation_item.name} Reservation"
                     attachment = create_ics(
                         reservation.id, event_name, reservation.start, reservation.end, reservation.user, cancelled=True
                     )
@@ -1095,7 +1109,7 @@ def send_user_created_reservation_notification(reservation: Reservation):
         user_office_email = EmailsCustomization.get("user_office_email_address")
         # We don't need to check for existence of reservation_created_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
         if user_office_email:
-            event_name = f"{reservation.reservation_item.name} Reservation"
+            event_name = reservation.title or f"{reservation.reservation_item.name} Reservation"
             attachment = create_ics(reservation.id, event_name, reservation.start, reservation.end, reservation.user)
             send_mail(
                 subject=subject, content=message, from_email=user_office_email, to=recipients, attachments=[attachment]
@@ -1122,7 +1136,7 @@ def send_user_cancelled_reservation_notification(reservation: Reservation):
         user_office_email = EmailsCustomization.get("user_office_email_address")
         # We don't need to check for existence of reservation_cancelled_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
         if user_office_email:
-            event_name = f"{reservation.reservation_item.name} Reservation"
+            event_name = reservation.title or f"{reservation.reservation_item.name} Reservation"
             attachment = create_ics(
                 reservation.id, event_name, reservation.start, reservation.end, reservation.user, cancelled=True
             )
@@ -1177,11 +1191,29 @@ def send_tool_free_time_notification(
             formatted_time = f"{freed_time:0.0f}"
             link = get_full_url(reverse("calendar"), request)
             user_ids = distinct_qs_value_list(tool_notifications, "user")
+            # Special case when shortened, where we notify the user who has the next reservation
+            notify_next_res = ToolCustomization.get_bool("tool_freed_time_notify_next_reservation_enabled")
+            min_freed_time = ToolCustomization.get_int("tool_freed_time_notify_next_reservation_min_freed_time")
+            if notify_next_res and missed_or_shortened and cancelled_reservation.end and freed_time >= min_freed_time:
+                # get next reservation user who had a reservation starting within
+                hours_within = ToolCustomization.get_int("tool_freed_time_notify_next_reservation_starts_within")
+                next_reservations = Reservation.objects.filter(
+                    cancelled=False,
+                    tool=tool,
+                    start__gt=cancelled_reservation.end,
+                    start__lte=cancelled_reservation.end + timedelta(hours=hours_within),
+                )
+                if next_reservations:
+                    next_reservation = next_reservations.earliest("start")
+                    if next_reservation and next_reservation.user_id not in user_ids:
+                        user_ids.add(next_reservation.user_id)
+            include_username = ToolCustomization.get_bool("tool_freed_time_notification_include_username")
             for user in User.objects.in_bulk(user_ids).values():
                 if user != cancelled_reservation.user:
+                    include_username_message = f" by {user.username}" if include_username else ""
                     subject = f"[{tool.name}] {formatted_time} minutes freed starting {formatted_start}"
                     message = f"Dear {user.first_name},<br>\n"
-                    message += f"The following time slot has been freed for the {tool.name}:<br><br>\n\n"
+                    message += f"The following time slot has been freed for the {tool.name}{include_username_message}:<br><br>\n\n"
                     message += f"Start: {formatted_start}<br>\n"
                     message += f"End: {format_datetime(start_time + timedelta(minutes=freed_time))}<br>\n"
                     message += f"Duration: {formatted_time} minutes<br><br>\n\n"

@@ -35,7 +35,7 @@ def alerts(request):
         "now": datetime.datetime.now(),
         "alert_categories": AlertCategory.objects.all(),
     }
-    delete_expired_alerts()
+    mark_alerts_as_expired()
     return render(request, "alerts.html", dictionary)
 
 
@@ -52,5 +52,5 @@ def delete_alert(request, alert_id):
     return redirect(request.META.get("HTTP_REFERER", "landing"))
 
 
-def delete_expired_alerts():
-    Alert.objects.filter(expiration_time__lt=timezone.now()).update(expired=True)
+def mark_alerts_as_expired():
+    Alert.objects.filter(expired=False, expiration_time__lt=timezone.now()).update(expired=True)

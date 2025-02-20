@@ -1,0 +1,176 @@
+{% load custom_tags_and_filters %}
+<style>
+	#training_session_form .tt-input
+	{
+		vertical-align: middle !important;
+	}
+</style>
+<p>Use this form to record training sessions.</p>
+<p>
+    You can add participants to a training session by clicking the 'Add another participant' link.
+    Remove a participant or blank row by clicking the circled X on that row.
+</p>
+<p>
+    When a user has successfully completed a training session you have the option to check the "Qualify" box, which qualifies the user for that tool.
+</p>
+<br>
+<form class="form-horizontal" onsubmit="return on_submit()" id="training_session_form">
+    {% csrf_token %}
+    <input type="hidden" name="usage_event_id" value="{{ usage_event.id }}" />
+    {# Rows are inserted here upon load & when "Add another participant" is clicked. #}
+    {% include 'training/training_entry.html' with entry_number=0 %}
+    <div class="row text-center">
+        <a href="javascript:void(0)" onclick="add_participant()">Add another participant</a>
+    </div>
+    {# Note: onclick need to stay blank so it will trigger the onsumbit of this form #}
+    {% button id="record_training_sessions" type="save" value="Record training sessions" onclick="" %}
+</form>
+<script type="text/javascript">
+
+    let timepicker_properties = {format: '{{ datetime_input_js_format }}'};
+	let current_entry_number = 1;
+	function add_participant(data)
+	{
+        if (data === undefined) data = {}
+        data["entry_number"] = current_entry_number;
+		let failure_dialog = ajax_failure_callback("Cannot add new entry", "The web browser was not able to communicate with the server.");
+		ajax_get("{% url 'training_entry' %}", data, add_entry_success_callback, failure_dialog);
+		function add_entry_success_callback(response, status, xml_http_request)
+		{
+			$("#training_session_form div.row:last").before(response);
+			enable_autocompletion(current_entry_number);
+			current_entry_number++;
+		}
+	}
+
+	function enable_autocompletion(entry_number)
+	{
+		let id = "#user_textbox__" + entry_number;
+		$(id).autocomplete('user', on_autocomplete_selection, {{ users|json_search_base }}).prop('required', true).focus();
+		id = "#tool_textbox__" + entry_number;
+		$(id).autocomplete('tool', on_autocomplete_selection, {% json_search_base_with_extra_fields tools|add:tool_groups %}, {% if tool_groups %}false{% else %}true{% endif %}).prop('required', true);
+        $("#date__" + entry_number).datetimepicker(timepicker_properties);
+	}
+
+	function remove_row(number)
+	{
+		$("#row_" + number).remove();
+	}
+
+	function on_autocomplete_selection(jquery_event, search_selection, dataset_name)
+	{
+		$(this).typeahead('val', search_selection.id).hide();
+		let row = $(this).data('row');
+		let button_id = "#" + dataset_name + "_button__" + row;
+		let textbox_id = "#" + dataset_name + "_textbox__" + row;
+		let textbox_type_id = "#" + dataset_name + "_textbox_type__" + row;
+		$(textbox_id).prop('required', false);
+		$(textbox_type_id).val(search_selection.type);
+		$(button_id).val(search_selection.name).show();
+
+		if(dataset_name === "user")
+			fetch_projects(row, search_selection.id);
+
+		advance_focus(dataset_name, row);
+	}
+
+	function advance_focus(type, row)
+	{
+		let project_select_id = "#chosen_project__" + row;
+		let tool_textbox_id = "#tool_textbox__" + row;
+		let duration_id = "#duration__" + row;
+		if(type === "user")
+		{
+			if($(tool_textbox_id).is(":visible"))
+				$(tool_textbox_id).focus();
+			else
+				$(duration_id).focus();
+		}
+		else if(type === "tool")
+		{
+			if($(project_select_id).length > 0)
+				$(project_select_id).focus();
+			else
+				$(duration_id).focus();
+		}
+	}
+
+	function fetch_projects(row, user_id)
+	{
+		let target_element = "#project__" + row;
+        function project_success(response, status, xml_http_request)
+		{
+			$(target_element).html(response);
+			$(target_element + " select").addClass("input-sm");
+			if ($(target_element + " select").length === 0) $(target_element).css("padding-top", "7px");
+			else $(target_element).css("padding-top", "0");
+		}
+		let parameters =
+		{
+			"source_template": "training",
+			"user_id": user_id,
+			"entry_number": row
+		};
+		let url = "{% url 'get_projects_for_training' %}?" + jQuery.param(parameters);
+        let report_error = ajax_failure_callback("Could not fetch projects for user", "There was a problem obtaining the list of projects for the user.");
+		ajax_get(url, undefined, project_success, report_error);
+	}
+
+	function purge_trainee(row)
+	{
+		$("#user_button__" + row).hide();
+		$("#project__" + row).html("");
+		$("#user_textbox__" + row).typeahead('val', '').prop('required', true).show().focus();
+	}
+
+	function purge_tool(row)
+	{
+		$("#tool_button__" + row).hide();
+		$("#tool_textbox__" + row).typeahead('val', '').prop('required', true).show().focus();
+		$("#tool_textbox_type__" + row).typeahead('val', '');
+        $("select[name=technique__" + row + "] option:selected").removeAttr("selected");
+        $("select[name=technique__" + row + "] option.technique-option").hide();
+	}
+
+	function on_submit()
+	{
+		let failure_dialog = ajax_failure_callback("Could not record training sessions");
+		ajax_post("{% url 'charge_training' %}", serialize("#training_session_form"), ajax_success_callback, failure_dialog);
+		return false;
+	}
+
+    function set_autocomplete_value(row, id, name, type)
+    {
+        let element_data =
+		{
+			'id': id,
+			'name': name,
+			'type': type,
+		}
+        let row_item_jq = $("#" + type + "_textbox__" + row);
+        on_autocomplete_selection.apply(row_item_jq.hide()[0], ['', element_data, type]);
+	}
+
+    {% if usage_event.project %}
+        async function set_project()
+        {
+            await wait_for_element("#project__0 select");
+            $("#project__0 select").val("{{ usage_event.project.id }}");
+        }
+    {% endif %}
+
+	function on_load()
+	{
+		enable_autocompletion(0);
+        {% if usage_event.tool %}
+            set_autocomplete_value(0, '{{ usage_event.tool.id }}', '{{ usage_event.tool.name }}', 'tool');
+        {% endif %}
+        {% if usage_event and not usage_event.self_usage %}
+            set_autocomplete_value(0, '{{ usage_event.user.id }}', '{{ usage_event.user }}', 'user');
+            set_project();
+        {% endif %}
+	}
+
+	$(on_load);
+
+</script>

@@ -54,17 +54,22 @@
                             <br>
                             <u>Charge</u>: {{ adjustment_request.item.get_display }}
                             <br>
-                            <u>Start time</u>: {{ adjustment_request.item.start|date:"SHORT_DATETIME_FORMAT" }}
-                            {% if adjustment_request.get_new_start %}
-                                -> <b>{{ adjustment_request.get_new_start|date:"SHORT_DATETIME_FORMAT" }}</b>
+                            {% if not adjustment_request.waive %}
+                                <u>Start time</u>: {{ adjustment_request.item.start|date:"SHORT_DATETIME_FORMAT" }}
+                                {% if adjustment_request.get_new_start %}
+                                    -> <b>{{ adjustment_request.get_new_start|date:"SHORT_DATETIME_FORMAT" }}</b>
+                                {% endif %}
+                                <br>
+                                <u>End time</u>: {{ adjustment_request.item.end|date:"SHORT_DATETIME_FORMAT" }}
+                                {% if adjustment_request.get_new_end %}
+                                    -> <b>{{ adjustment_request.get_new_end|date:"SHORT_DATETIME_FORMAT" }}</b>
+                                {% endif %}
+                                <br>
+                                <u>Difference</u>: <b>{{ adjustment_request.get_time_difference|default_if_none:"" }}</b>
+                            {% else %}
+                                <u>Waive</u>: <b>I request that this charge be waived</b>
                             {% endif %}
                             <br>
-                            <u>End time</u>: {{ adjustment_request.item.end|date:"SHORT_DATETIME_FORMAT" }}
-                            {% if adjustment_request.get_new_end %}
-                                -> <b>{{ adjustment_request.get_new_end|date:"SHORT_DATETIME_FORMAT" }}</b>
-                            {% endif %}
-                            <br>
-                            <u>Difference</u>: <b>{{ adjustment_request.get_time_difference|default_if_none:"" }}</b>
                         {% endif %}
                         {% if adjustment_request.description %}
                             <br>

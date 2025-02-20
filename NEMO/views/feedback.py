@@ -2,8 +2,8 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
 
+from NEMO.constants import FEEDBACK_MAXIMUM_LENGTH
 from NEMO.utilities import EmailCategory, parse_parameter_string, render_email_template, send_mail
-from NEMO.views.constants import FEEDBACK_MAXIMUM_LENGTH
 from NEMO.views.customization import EmailsCustomization, get_media_file_contents
 
 

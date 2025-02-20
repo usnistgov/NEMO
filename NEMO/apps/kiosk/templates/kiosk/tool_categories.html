@@ -1,0 +1,36 @@
+{% load custom_tags_and_filters %}
+<div class="row">
+    {% for category in categories %}
+        {% if category not in unqualified_categories or customer.is_staff or "tool"|customization:"kiosk_only_show_qualified_tools" != "enabled" %}
+            <div class="col-xs-6">
+                <div class="panel panel-default {% if category in unqualified_categories %}disabled{% endif %}"
+                     onclick="view_category('{% url 'kiosk_category_choices' category customer.id %}')">
+                    <div class="panel-body">
+                        <span style="font-size:x-large; margin-right:10px">
+                            {% with selected_category_path=selected_category|concat:'/' %}
+                                {% if selected_category %}
+                                    {{ category|cut:selected_category_path }}
+                                {% else %}
+                                    {{ category }}
+                                {% endif %}
+                            {% endwith %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+    {% for tool in tools %}
+        {% if tool not in unqualified_tools or customer.is_staff or "tool"|customization:"kiosk_only_show_qualified_tools" != "enabled" %}
+            <div class="col-xs-6">
+                <div class="panel panel-info {% if tool in unqualified_tools %}disabled{% endif %}"
+                     onclick="tool_information('{% url 'kiosk_tool_information' tool.id customer.id 'back_to_category' %}')">
+                    <div class="panel-body">
+                        <span style="font-size:x-large; margin-right:10px">{{ tool }}</span>
+                        {% include 'snippets/item_status_icons.html' with item=tool %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+</div>

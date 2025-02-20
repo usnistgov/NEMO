@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import json
 import os
 import sys
 from datetime import timedelta
@@ -9,7 +10,7 @@ from html import escape
 from json import loads
 from logging import getLogger
 from re import match
-from typing import List, Optional, Set, Union
+from typing import Dict, List, Optional, Set, Union
 
 from django.conf import settings
 from django.contrib.auth.models import BaseUserManager, Group, Permission, PermissionsMixin
@@ -32,6 +33,14 @@ from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
 
 from NEMO import fields
+from NEMO.constants import (
+    ADDITIONAL_INFORMATION_MAXIMUM_LENGTH,
+    CHAR_FIELD_LARGE_LENGTH,
+    CHAR_FIELD_MEDIUM_LENGTH,
+    CHAR_FIELD_SMALL_LENGTH,
+    MEDIA_PROTECTED,
+)
+from NEMO.fields import DynamicChoicesIntegerField
 from NEMO.mixins import BillableItemMixin, CalendarDisplayMixin, ConfigurationMixin, RecurrenceMixin
 from NEMO.typing import QuerySetType
 from NEMO.utilities import (
@@ -44,6 +53,7 @@ from NEMO.utilities import (
     format_daterange,
     format_datetime,
     get_chemical_document_filename,
+    get_duration_with_off_schedule,
     get_full_url,
     get_hazard_logo_filename,
     get_model_instance,
@@ -53,9 +63,9 @@ from NEMO.utilities import (
     render_email_template,
     send_mail,
     supported_embedded_extensions,
+    update_media_file_on_model_update,
 )
 from NEMO.validators import color_hex_list_validator, color_hex_validator
-from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH, CHAR_FIELD_MAXIMUM_LENGTH, MEDIA_PROTECTED
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
 models_logger = getLogger(__name__)
@@ -131,7 +141,7 @@ class SerializationByNameModel(BaseModel):
 
 
 class BaseCategory(SerializationByNameModel):
-    name = models.CharField(max_length=200, unique=True, help_text="The unique name for this item")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, unique=True, help_text="The unique name for this item")
     display_order = models.IntegerField(
         help_text="The display order is used to sort these items. The lowest value category is displayed first."
     )
@@ -146,15 +156,18 @@ class BaseCategory(SerializationByNameModel):
 
 class BaseDocumentModel(BaseModel):
     document = models.FileField(
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         null=True,
         blank=True,
         upload_to=document_filename_upload,
         verbose_name="Document",
     )
-    url = models.CharField(null=True, blank=True, max_length=200, verbose_name="URL")
+    url = models.URLField(null=True, blank=True, verbose_name="URL")
     name = models.CharField(
-        null=True, blank=True, max_length=200, help_text="The optional name to display for this document"
+        null=True,
+        blank=True,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
+        help_text="The optional name to display for this document",
     )
     display_order = models.IntegerField(
         default=1,
@@ -206,29 +219,15 @@ def auto_delete_file_on_document_delete(sender, instance: BaseDocumentModel, **k
         return
     """	Deletes file from filesystem when corresponding object is deleted.	"""
     if instance.document:
-        if os.path.isfile(instance.document.path):
-            os.remove(instance.document.path)
+        instance.document.delete(False)
 
 
 @receiver(models.signals.pre_save)
-def auto_delete_file_on_document_change(sender, instance: BaseDocumentModel, **kwargs):
+def auto_update_file_on_document_change(sender, instance: BaseDocumentModel, **kwargs):
+    """Updates old file from filesystem when corresponding object is updated with new file."""
     if not issubclass(sender, BaseDocumentModel):
         return
-    """	Deletes old file from filesystem when corresponding object is updated with new file. """
-    if not instance.pk:
-        return False
-
-    model_class = type(instance)
-
-    try:
-        old_file = model_class.objects.get(pk=instance.pk).document
-    except model_class.DoesNotExist:
-        return False
-
-    new_file = instance.document
-    if old_file and not old_file == new_file:
-        if os.path.isfile(old_file.path):
-            os.remove(old_file.path)
+    return update_media_file_on_model_update(instance, "document")
 
 
 class ReservationItemType(Enum):
@@ -322,7 +321,7 @@ class UserPreferences(BaseModel):
     )
     staff_status_view = models.CharField(
         "staff_status_view",
-        max_length=100,
+        max_length=CHAR_FIELD_SMALL_LENGTH,
         default="day",
         choices=[("day", "Day"), ("week", "Week"), ("month", "Month")],
         help_text="Preferred view for staff status page",
@@ -338,6 +337,11 @@ class UserPreferences(BaseModel):
         default=EmailNotificationType.BOTH_EMAILS,
         choices=EmailNotificationType.on_choices(),
         help_text="Buddy request replies",
+    )
+    email_send_staff_assistance_request_replies = models.PositiveIntegerField(
+        default=EmailNotificationType.BOTH_EMAILS,
+        choices=EmailNotificationType.on_choices(),
+        help_text="Staff assistance request replies",
     )
     email_send_access_request_updates = models.PositiveIntegerField(
         default=EmailNotificationType.BOTH_EMAILS,
@@ -389,7 +393,7 @@ class UserPreferences(BaseModel):
         null=True,
         blank=True,
         default="60,7",
-        max_length=200,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         help_text="The number of days to send a reminder before a recurring charge is due. A comma-separated list can be used for multiple reminders.",
     )
     create_reservation_confirmation_override = models.BooleanField(
@@ -440,8 +444,12 @@ class UserType(BaseCategory):
     pass
 
 
+class ProjectType(BaseCategory):
+    pass
+
+
 class ProjectDiscipline(BaseCategory):
-    name = models.CharField(max_length=200, unique=True, help_text="The name of the discipline")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, unique=True, help_text="The name of the discipline")
 
 
 class PhysicalAccessLevel(BaseModel):
@@ -455,7 +463,7 @@ class PhysicalAccessLevel(BaseModel):
             (WEEKENDS, "Weekends"),
         )
 
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
     area = TreeForeignKey("Area", on_delete=models.CASCADE)
     schedule = models.IntegerField(choices=Schedule.Choices)
     weekdays_start_time = models.TimeField(
@@ -625,7 +633,7 @@ class TemporaryPhysicalAccessRequest(BaseModel):
 
 class Closure(BaseModel):
     name = models.CharField(
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         help_text="The name of this closure, that will be displayed as the policy problem and alert (if applicable).",
     )
     alert_days_before = models.PositiveIntegerField(
@@ -726,13 +734,15 @@ class OnboardingPhase(BaseCategory):
 
 class User(BaseModel, PermissionsMixin):
     # Personal information:
-    username = models.CharField(max_length=100, unique=True)
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
+    username = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, unique=True)
+    first_name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
+    last_name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
     email = models.EmailField(verbose_name="email address")
     type = models.ForeignKey(UserType, null=True, blank=True, on_delete=models.SET_NULL)
     domain = models.CharField(
-        max_length=100, blank=True, help_text="The Active Directory domain that the account resides on"
+        max_length=CHAR_FIELD_SMALL_LENGTH,
+        blank=True,
+        help_text="The Active Directory domain that the account resides on",
     )
     onboarding_phases = models.ManyToManyField(OnboardingPhase, blank=True)
     safety_trainings = models.ManyToManyField(SafetyTraining, blank=True)
@@ -1120,7 +1130,7 @@ class Tool(SerializationByNameModel):
         HYBRID = 2
         Choices = ((REGULAR, "Regular"), (WAIT_LIST, "Wait List"), (HYBRID, "Hybrid"))
 
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, unique=True)
     parent_tool = models.ForeignKey(
         "Tool",
         related_name="tool_children_set",
@@ -1133,7 +1143,9 @@ class Tool(SerializationByNameModel):
     _description = models.TextField(
         db_column="description", null=True, blank=True, help_text="HTML syntax could be used"
     )
-    _serial = models.CharField(db_column="serial", null=True, blank=True, max_length=100, help_text="Serial Number")
+    _serial = models.CharField(
+        db_column="serial", null=True, blank=True, max_length=CHAR_FIELD_SMALL_LENGTH, help_text="Serial Number"
+    )
     _image = models.ImageField(
         db_column="image",
         upload_to=get_tool_image_filename,
@@ -1151,7 +1163,7 @@ class Tool(SerializationByNameModel):
         db_column="category",
         null=True,
         blank=True,
-        max_length=1000,
+        max_length=CHAR_FIELD_LARGE_LENGTH,
         help_text='Create sub-categories using slashes. For example "Category 1/Sub-category 1".',
     )
     _operational = models.BooleanField(
@@ -1191,8 +1203,10 @@ class Tool(SerializationByNameModel):
         help_text="Users who can approve/deny adjustment requests for this tool. Defaults to facility managers if left blank.",
     )
     # Extra info
-    _location = models.CharField(db_column="location", null=True, blank=True, max_length=100)
-    _phone_number = models.CharField(db_column="phone_number", null=True, blank=True, max_length=100)
+    _location = models.CharField(db_column="location", null=True, blank=True, max_length=CHAR_FIELD_SMALL_LENGTH)
+    _phone_number = models.CharField(
+        db_column="phone_number", null=True, blank=True, max_length=CHAR_FIELD_SMALL_LENGTH
+    )
     _notification_email_address = models.EmailField(
         db_column="notification_email_address",
         blank=True,
@@ -1231,7 +1245,7 @@ class Tool(SerializationByNameModel):
     )
     _grant_badge_reader_access_upon_qualification = models.CharField(
         db_column="grant_badge_reader_access_upon_qualification",
-        max_length=100,
+        max_length=CHAR_FIELD_SMALL_LENGTH,
         null=True,
         blank=True,
         help_text="Badge reader access is granted to the user upon qualification for this tool.",
@@ -1260,6 +1274,12 @@ class Tool(SerializationByNameModel):
         null=True,
         blank=True,
         help_text="The maximum number of reservations a user may make per day for this tool.",
+    )
+    _maximum_future_reservations = models.PositiveIntegerField(
+        db_column="maximum_future_reservations",
+        null=True,
+        blank=True,
+        help_text="The maximum number of reservations a user may make in the future for this tool.",
     )
     _minimum_time_between_reservations = models.PositiveIntegerField(
         db_column="minimum_time_between_reservations",
@@ -1547,6 +1567,17 @@ class Tool(SerializationByNameModel):
     def maximum_reservations_per_day(self, value):
         self.raise_setter_error_if_child_tool("maximum_reservations_per_day")
         self._maximum_reservations_per_day = value
+
+    @property
+    def maximum_future_reservations(self):
+        return (
+            self.parent_tool.maximum_future_reservations if self.is_child_tool() else self._maximum_future_reservations
+        )
+
+    @maximum_future_reservations.setter
+    def maximum_future_reservations(self, value):
+        self.raise_setter_error_if_child_tool("maximum_future_reservations")
+        self._maximum_future_reservations = value
 
     @property
     def minimum_time_between_reservations(self):
@@ -2009,7 +2040,7 @@ class ToolDocuments(BaseDocumentModel):
 
 
 class ToolQualificationGroup(SerializationByNameModel):
-    name = models.CharField(max_length=200, unique=True, help_text="The name of this tool group")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, unique=True, help_text="The name of this tool group")
     tools = models.ManyToManyField(Tool, blank=False)
 
     def __str__(self):
@@ -2028,7 +2059,7 @@ class Qualification(BaseModel):
 
 class Configuration(BaseModel, ConfigurationMixin):
     name = models.CharField(
-        max_length=200,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         help_text="The name of this overall configuration. This text is displayed as a label on the tool control page.",
     )
     tool = models.ForeignKey(
@@ -2037,7 +2068,7 @@ class Configuration(BaseModel, ConfigurationMixin):
     configurable_item_name = models.CharField(
         blank=True,
         null=True,
-        max_length=200,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         help_text="The name of the tool part being configured. This text is displayed as a label on the tool control page. Leave this field blank if there is only one configuration slot.",
     )
     advance_notice_limit = models.PositiveIntegerField(
@@ -2066,7 +2097,10 @@ class Configuration(BaseModel, ConfigurationMixin):
         validators=[color_hex_list_validator],
     )
     absence_string = models.CharField(
-        max_length=100, blank=True, null=True, help_text="The text that appears to indicate absence of a choice."
+        max_length=CHAR_FIELD_SMALL_LENGTH,
+        blank=True,
+        null=True,
+        help_text="The text that appears to indicate absence of a choice.",
     )
     maintainers = models.ManyToManyField(
         User, blank=True, help_text="Select the users that are allowed to change this configuration."
@@ -2128,7 +2162,7 @@ class Configuration(BaseModel, ConfigurationMixin):
 
 
 class ConfigurationOption(BaseModel, ConfigurationMixin):
-    name = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
     configuration = models.ForeignKey(
         Configuration,
         null=True,
@@ -2145,7 +2179,7 @@ class ConfigurationOption(BaseModel, ConfigurationMixin):
     current_setting = models.CharField(
         null=True,
         blank=True,
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         help_text="The current value for this configuration option",
     )
     available_settings = models.TextField(
@@ -2160,7 +2194,10 @@ class ConfigurationOption(BaseModel, ConfigurationMixin):
         validators=[color_hex_list_validator],
     )
     absence_string = models.CharField(
-        max_length=100, blank=True, null=True, help_text="The text that appears to indicate absence of a choice."
+        max_length=CHAR_FIELD_SMALL_LENGTH,
+        blank=True,
+        null=True,
+        help_text="The text that appears to indicate absence of a choice.",
     )
 
     def get_color(self):
@@ -2181,6 +2218,9 @@ class ConfigurationOption(BaseModel, ConfigurationMixin):
         selected = f", current value: {self.current_setting}" if self.current_setting else ""
         return f"{self.name}, options: {self.available_settings_as_list()}{selected}"
 
+    class Meta:
+        ordering = ["configuration__display_order"]
+
 
 class TrainingSession(BaseModel, BillableItemMixin):
     class Type(object):
@@ -2198,10 +2238,26 @@ class TrainingSession(BaseModel, BillableItemMixin):
     qualified = models.BooleanField(
         default=False, help_text="Indicates that after this training session the user was qualified to use the tool."
     )
+    usage_event = models.ForeignKey(
+        "UsageEvent",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+    )
     validated = models.BooleanField(default=False)
     validated_by = models.ForeignKey(
         User, null=True, blank=True, related_name="training_validated_set", on_delete=models.CASCADE
     )
+    waived = models.BooleanField(default=False)
+    waived_on = models.DateTimeField(null=True, blank=True)
+    waived_by = models.ForeignKey(
+        User, null=True, blank=True, related_name="training_waived_set", on_delete=models.CASCADE
+    )
+
+    def clean(self):
+        errors = validate_waive_information(self)
+        if errors:
+            raise ValidationError(errors)
 
     class Meta:
         ordering = ["-date"]
@@ -2221,6 +2277,16 @@ class StaffCharge(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     validated_by = models.ForeignKey(
         User, null=True, blank=True, related_name="staff_charge_validated_set", on_delete=models.CASCADE
     )
+    waived = models.BooleanField(default=False)
+    waived_on = models.DateTimeField(null=True, blank=True)
+    waived_by = models.ForeignKey(
+        User, null=True, blank=True, related_name="staff_charge_waived_set", on_delete=models.CASCADE
+    )
+
+    def clean(self):
+        errors = validate_waive_information(self)
+        if errors:
+            raise ValidationError(errors)
 
     class Meta:
         ordering = ["-start"]
@@ -2231,7 +2297,7 @@ class StaffCharge(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
 class Area(MPTTModel):
     name = models.CharField(
-        max_length=200,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         help_text="What is the name of this area? The name will be displayed on the tablet login and logout pages.",
     )
     parent_area = TreeForeignKey(
@@ -2246,7 +2312,7 @@ class Area(MPTTModel):
         db_column="category",
         null=True,
         blank=True,
-        max_length=1000,
+        max_length=CHAR_FIELD_LARGE_LENGTH,
         help_text='Create sub-categories using slashes. For example "Category 1/Sub-category 1".',
     )
     abuse_email: List[str] = fields.MultiEmailField(
@@ -2348,6 +2414,12 @@ class Area(MPTTModel):
         null=True,
         blank=True,
         help_text="The maximum number of reservations a user may make per day for this area.",
+    )
+    maximum_future_reservations = models.PositiveIntegerField(
+        db_column="maximum_future_reservations",
+        null=True,
+        blank=True,
+        help_text="The maximum number of reservations a user may make in the future for this area.",
     )
     minimum_time_between_reservations = models.PositiveIntegerField(
         db_column="minimum_time_between_reservations",
@@ -2504,6 +2576,16 @@ class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     validated_by = models.ForeignKey(
         User, null=True, blank=True, related_name="area_access_validated_set", on_delete=models.CASCADE
     )
+    waived = models.BooleanField(default=False)
+    waived_on = models.DateTimeField(null=True, blank=True)
+    waived_by = models.ForeignKey(
+        User, null=True, blank=True, related_name="area_access_waived_set", on_delete=models.CASCADE
+    )
+
+    def clean(self):
+        errors = validate_waive_information(self)
+        if errors:
+            raise ValidationError(errors)
 
     class Meta:
         indexes = [
@@ -2513,12 +2595,22 @@ class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     def __str__(self):
         return str(self.id)
 
+    def validate_unique(self, exclude=None):
+        super().validate_unique(exclude)
+        already_logged_in = (
+            AreaAccessRecord.objects.filter(customer_id=self.customer_id, area_id=self.area_id, end=None)
+            .exclude(id=self.id)
+            .exists()
+        )
+        if self.area and self.customer and not self.end and already_logged_in:
+            raise ValidationError(_("You are already logged in to this area"))
+
 
 class ConfigurationHistory(BaseModel):
     configuration = models.ForeignKey(Configuration, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     modification_time = models.DateTimeField(default=timezone.now)
-    item_name = models.CharField(null=True, blank=False, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
+    item_name = models.CharField(null=True, blank=False, max_length=CHAR_FIELD_MEDIUM_LENGTH)
     slot = models.PositiveIntegerField()
     setting = models.TextField()
 
@@ -2535,7 +2627,7 @@ class AccountType(BaseCategory):
 
 
 class Account(SerializationByNameModel):
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, unique=True)
     type = models.ForeignKey(AccountType, null=True, blank=True, on_delete=models.SET_NULL)
     start_date = models.DateField(null=True, blank=True)
     active = models.BooleanField(
@@ -2560,14 +2652,15 @@ class Account(SerializationByNameModel):
 
 
 class Project(SerializationByNameModel):
-    name = models.CharField(max_length=100, unique=True)
-    application_identifier = models.CharField(max_length=100)
-    start_date = models.DateField(null=True, blank=True)
+    name = models.CharField(max_length=CHAR_FIELD_LARGE_LENGTH, unique=True)
+    application_identifier = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
+    project_types = models.ManyToManyField(ProjectType, blank=True)
     account = models.ForeignKey(
         Account,
         help_text="All charges for this project will be billed to the selected account.",
         on_delete=models.CASCADE,
     )
+    start_date = models.DateField(null=True, blank=True)
     discipline = models.ForeignKey(ProjectDiscipline, null=True, blank=True, on_delete=models.SET_NULL)
     active = models.BooleanField(
         default=True,
@@ -2587,9 +2680,11 @@ class Project(SerializationByNameModel):
         ordering = ["name"]
 
     def display_with_pis(self):
+        from NEMO.templatetags.custom_tags_and_filters import project_selection_display
+
         pis = ", ".join([pi.get_name() for pi in self.manager_set.all()])
         pis = f" (PI{'s' if self.manager_set.count() > 1 else ''}: {pis})" if pis else ""
-        return f"{self.name}{pis}"
+        return f"{project_selection_display(self)}{pis}"
 
     def display_with_status(self):
         return f"{'[INACTIVE] ' if not self.active else ''}{self.name}"
@@ -2674,13 +2769,18 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     title = models.TextField(
         default="",
         blank=True,
-        max_length=200,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         help_text="Shows a custom title for this reservation on the calendar. Leave this field blank to display the reservation's user name as the title (which is the default behaviour).",
     )
     question_data = models.TextField(null=True, blank=True)
     validated = models.BooleanField(default=False)
     validated_by = models.ForeignKey(
         User, null=True, blank=True, related_name="reservation_validated_set", on_delete=models.CASCADE
+    )
+    waived = models.BooleanField(default=False)
+    waived_on = models.DateTimeField(null=True, blank=True)
+    waived_by = models.ForeignKey(
+        User, null=True, blank=True, related_name="reservation_waived_set", on_delete=models.CASCADE
     )
 
     @property
@@ -2712,6 +2812,21 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
     def duration(self):
         return self.end - self.start
+
+    def duration_for_policy(self):
+        # This method returns the duration that counts for policy checks.
+        # i.e. reservation duration minus any time when the policy is off
+        item = self.reservation_item
+        if item and isinstance(item, (Tool, Area)):
+            return get_duration_with_off_schedule(
+                self.start,
+                self.end,
+                item.policy_off_weekend,
+                item.policy_off_between_times,
+                item.policy_off_start_time,
+                item.policy_off_end_time,
+            )
+        return self.duration()
 
     def has_not_ended(self):
         return False if self.end < timezone.now() else True
@@ -2772,6 +2887,11 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
             new_reservation._deferred_related_models = deferred_related_models
         return new_reservation
 
+    def clean(self):
+        errors = validate_waive_information(self)
+        if errors:
+            raise ValidationError(errors)
+
     class Meta:
         ordering = ["-start"]
 
@@ -2780,7 +2900,8 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
 
 class ReservationQuestions(BaseModel):
-    name = models.CharField(max_length=100, help_text="The name of this ")
+    enabled = models.BooleanField(default=True)
+    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, help_text="The name of this ")
     questions = models.TextField(
         help_text="Upon making a reservation, the user will be asked these questions. This field will only accept JSON format"
     )
@@ -2822,11 +2943,34 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
         User, null=True, blank=True, related_name="usage_event_validated_set", on_delete=models.CASCADE
     )
     remote_work = models.BooleanField(default=False)
+    training = models.BooleanField(default=False)
     pre_run_data = models.TextField(null=True, blank=True)
     run_data = models.TextField(null=True, blank=True)
+    waived = models.BooleanField(default=False)
+    waived_on = models.DateTimeField(null=True, blank=True)
+    waived_by = models.ForeignKey(
+        User, null=True, blank=True, related_name="usage_event_waived_set", on_delete=models.CASCADE
+    )
+
+    def clean(self):
+        errors = validate_waive_information(self)
+        if errors:
+            raise ValidationError(errors)
+
+    def self_usage(self):
+        return self.user == self.operator
 
     def duration(self):
         return calculate_duration(self.start, self.end, "In progress")
+
+    def duration_minutes(self) -> int:
+        return int(self.duration().total_seconds() // 60)
+
+    def pre_run_data_json(self):
+        return loads(self.pre_run_data) if self.pre_run_data else None
+
+    def post_run_data_json(self):
+        return loads(self.run_data) if self.run_data else None
 
     class Meta:
         ordering = ["-start"]
@@ -2834,9 +2978,19 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     def __str__(self):
         return str(self.id)
 
+    def validate_unique(self, exclude=None):
+        super().validate_unique(exclude)
+        tool_already_in_use = (
+            UsageEvent.objects.filter(tool_id__in=self.tool.get_family_tool_ids(), end=None)
+            .exclude(id=self.id)
+            .exists()
+        )
+        if self.tool and not self.end and tool_already_in_use:
+            raise ValidationError(_("This tool is already in use"))
+
 
 class Consumable(BaseModel):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
     category = models.ForeignKey("ConsumableCategory", blank=True, null=True, on_delete=models.CASCADE)
     quantity = models.IntegerField(help_text="The number of items currently in stock.")
     reusable = models.BooleanField(
@@ -2903,7 +3057,7 @@ def check_consumable_quantity_threshold(sender, instance: Consumable, **kwargs):
 
 
 class ConsumableCategory(BaseModel):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
 
     class Meta:
         ordering = ["name"]
@@ -2944,6 +3098,11 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
     validated = models.BooleanField(default=False)
     validated_by = models.ForeignKey(
         User, null=True, blank=True, related_name="consumable_withdrawal_validated_set", on_delete=models.CASCADE
+    )
+    waived = models.BooleanField(default=False)
+    waived_on = models.DateTimeField(null=True, blank=True)
+    waived_by = models.ForeignKey(
+        User, null=True, blank=True, related_name="consumable_withdrawal_waived_set", on_delete=models.CASCADE
     )
 
     class Meta:
@@ -2986,6 +3145,7 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
                 policy.check_billing_to_project(self.project, self.customer, self.consumable, self)
             except ProjectChargeException as e:
                 errors["project"] = e.msg
+        errors.update(validate_waive_information(self))
         if errors:
             raise ValidationError(errors)
 
@@ -2994,7 +3154,9 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
 
 
 class RecurringConsumableCharge(BaseModel, RecurrenceMixin):
-    name = models.CharField(max_length=200, help_text="The name/identifier for this recurring charge.")
+    name = models.CharField(
+        max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The name/identifier for this recurring charge."
+    )
     customer = models.ForeignKey(
         User,
         null=True,
@@ -3151,16 +3313,28 @@ class RecurringConsumableCharge(BaseModel, RecurrenceMixin):
 
 
 class InterlockCard(BaseModel):
-    name = models.CharField(max_length=100, blank=True, null=True)
-    server = models.CharField(max_length=100)
+    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, blank=True, null=True)
+    server = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
     port = models.PositiveIntegerField()
     number = models.PositiveIntegerField(blank=True, null=True)
     even_port = models.PositiveIntegerField(blank=True, null=True)
     odd_port = models.PositiveIntegerField(blank=True, null=True)
     category = models.ForeignKey("InterlockCardCategory", blank=False, null=False, on_delete=models.CASCADE, default=1)
-    username = models.CharField(max_length=100, blank=True, null=True)
-    password = models.CharField(max_length=100, blank=True, null=True)
+    username = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, blank=True, null=True)
+    password = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, blank=True, null=True)
+    extra_args = models.TextField(
+        null=True,
+        blank=True,
+        help_text=_("Json formatted extra arguments to pass to the interlock card implementation."),
+    )
     enabled = models.BooleanField(blank=False, null=False, default=True)
+
+    @property
+    def extra_args_dict(self):
+        try:
+            return json.loads(self.extra_args)
+        except:
+            return {}
 
     class Meta:
         ordering = ["server", "number"]
@@ -3185,7 +3359,7 @@ class Interlock(BaseModel):
             (LOCKED, "Locked"),
         )
 
-    name = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
+    name = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MEDIUM_LENGTH)
     card = models.ForeignKey(InterlockCard, on_delete=models.CASCADE)
     channel = models.PositiveIntegerField(blank=True, null=True, verbose_name="Channel/Relay/Coil")
     unit_id = models.PositiveIntegerField(null=True, blank=True, verbose_name="Multiplier/Unit id/Bank")
@@ -3203,6 +3377,11 @@ class Interlock(BaseModel):
 
         return interlocks.get(self.card.category).lock(self)
 
+    def ping(self) -> str:
+        from NEMO import interlocks
+
+        return interlocks.get(self.card.category).ping(self)
+
     class Meta:
         ordering = ["card__server", "card__number", "channel"]
 
@@ -3211,6 +3390,7 @@ class Interlock(BaseModel):
 
         category = self.card.category if self.card else None
         channel_name = interlocks.get(category, raise_exception=False).channel_name
+        unit_id_name = interlocks.get(category, raise_exception=False).unit_id_name
         display_name = ""
         if self.name:
             display_name += f"{self.name}"
@@ -3218,12 +3398,18 @@ class Interlock(BaseModel):
             if self.name:
                 display_name += ", "
             display_name += f"{channel_name} " + str(self.channel)
+        if self.unit_id:
+            if self.name or self.channel:
+                display_name += ", "
+            display_name += f"{unit_id_name} " + str(self.unit_id)
         return str(self.card) + (f", {display_name}" if display_name else "")
 
 
 class InterlockCardCategory(BaseModel):
-    name = models.CharField(max_length=200, help_text="The name for this interlock category")
-    key = models.CharField(max_length=100, help_text="The key to identify this interlock category by in interlocks.py")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The name for this interlock category")
+    key = models.CharField(
+        max_length=CHAR_FIELD_SMALL_LENGTH, help_text="The key to identify this interlock category by in interlocks.py"
+    )
 
     class Meta:
         verbose_name_plural = "Interlock card categories"
@@ -3328,52 +3514,27 @@ class TaskImages(BaseModel):
 def auto_delete_file_on_tool_delete(sender, instance: Tool, **kwargs):
     """Deletes file from filesystem when corresponding `Tool` object is deleted."""
     if instance.image:
-        if os.path.isfile(instance.image.path):
-            os.remove(instance.image.path)
+        instance.image.delete(False)
 
 
 @receiver(models.signals.pre_save, sender=Tool)
-def auto_delete_file_on_tool_change(sender, instance: Tool, **kwargs):
-    """Deletes old file from filesystem when corresponding `Tool` object is updated with new file."""
-    if not instance.pk:
-        return False
-
-    try:
-        old_file = Tool.objects.get(pk=instance.pk).image
-    except Tool.DoesNotExist:
-        return False
-
-    if old_file:
-        new_file = instance.image
-        if not old_file == new_file:
-            if os.path.isfile(old_file.path):
-                os.remove(old_file.path)
+def auto_update_file_on_tool_change(sender, instance: Tool, **kwargs):
+    """Updates old file from filesystem when corresponding `Tool` object is updated with new file."""
+    return update_media_file_on_model_update(instance, "_image")
 
 
 # These two auto-delete task images from filesystem when they are unneeded:
 @receiver(models.signals.post_delete, sender=TaskImages)
-def auto_delete_file_on_delete(sender, instance: TaskImages, **kwargs):
+def auto_delete_file_on_task_image_delete(sender, instance: TaskImages, **kwargs):
     """Deletes file from filesystem when corresponding `TaskImages` object is deleted."""
     if instance.image:
-        if os.path.isfile(instance.image.path):
-            os.remove(instance.image.path)
+        instance.image.delete(False)
 
 
 @receiver(models.signals.pre_save, sender=TaskImages)
-def auto_delete_file_on_change(sender, instance: TaskImages, **kwargs):
-    """Deletes old file from filesystem when corresponding `TaskImages` object is updated with new file."""
-    if not instance.pk:
-        return False
-
-    try:
-        old_file = TaskImages.objects.get(pk=instance.pk).image
-    except TaskImages.DoesNotExist:
-        return False
-
-    new_file = instance.image
-    if not old_file == new_file:
-        if os.path.isfile(old_file.path):
-            os.remove(old_file.path)
+def auto_update_file_on_task_image_change(sender, instance: TaskImages, **kwargs):
+    """Updates old file from filesystem when corresponding `TaskImages` object is updated with new file."""
+    return update_media_file_on_model_update(instance, "image")
 
 
 class TaskCategory(BaseModel):
@@ -3385,7 +3546,7 @@ class TaskCategory(BaseModel):
             (COMPLETION, "Completion"),
         )
 
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
     stage = models.IntegerField(choices=Stage.Choices)
 
     class Meta:
@@ -3397,7 +3558,7 @@ class TaskCategory(BaseModel):
 
 
 class TaskStatus(SerializationByNameModel):
-    name = models.CharField(max_length=200, unique=True)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, unique=True)
     notify_primary_tool_owner = models.BooleanField(
         default=False, help_text="Notify the primary tool owner when a task transitions to this status"
     )
@@ -3429,7 +3590,7 @@ class TaskHistory(BaseModel):
         related_name="history",
         on_delete=models.CASCADE,
     )
-    status = models.CharField(max_length=200, help_text="A text description of the task's status")
+    status = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="A text description of the task's status")
     time = models.DateTimeField(auto_now_add=True, help_text="The date and time when the task status was changed")
     user = models.ForeignKey(User, help_text="The user that changed the task to this status", on_delete=models.CASCADE)
 
@@ -3466,7 +3627,7 @@ class Comment(BaseModel):
 
 
 class ResourceCategory(BaseModel):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
 
     def __str__(self):
         return str(self.name)
@@ -3477,7 +3638,7 @@ class ResourceCategory(BaseModel):
 
 
 class Resource(BaseModel):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
     category = models.ForeignKey(ResourceCategory, blank=True, null=True, on_delete=models.SET_NULL)
     available = models.BooleanField(default=True, help_text="Indicates whether the resource is available to be used.")
     fully_dependent_tools = models.ManyToManyField(
@@ -3621,11 +3782,16 @@ def calculate_duration(start, end, unfinished_reason):
 
 
 class Door(BaseModel):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
     welcome_message = models.TextField(
         null=True,
         blank=True,
         help_text="The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.",
+    )
+    farewell_message = models.TextField(
+        null=True,
+        blank=True,
+        help_text="The farewell message will be displayed on the tablet logout page. You can use HTML and JavaScript.",
     )
     areas = TreeManyToManyField(Area, related_name="doors", blank=False)
     interlock = models.OneToOneField(Interlock, null=True, blank=True, on_delete=models.PROTECT)
@@ -3645,7 +3811,7 @@ class SafetyIssue(BaseModel):
     reporter = models.ForeignKey(
         User, blank=True, null=True, related_name="reported_safety_issues", on_delete=models.SET_NULL
     )
-    location = models.CharField(null=True, blank=True, max_length=200)
+    location = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MEDIUM_LENGTH)
     creation_time = models.DateTimeField(auto_now_add=True)
     visible = models.BooleanField(
         default=True,
@@ -3678,7 +3844,7 @@ class SafetyCategory(BaseCategory):
 
 
 class SafetyItem(BaseModel):
-    name = models.CharField(max_length=200, help_text="The safety item name.")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The safety item name.")
     description = models.TextField(
         null=True, blank=True, help_text="The description for this safety item. HTML can be used."
     )
@@ -3710,7 +3876,7 @@ class SafetyItemDocuments(BaseDocumentModel):
 
 
 class AlertCategory(BaseModel):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
 
     class Meta:
         ordering = ["name"]
@@ -3721,8 +3887,10 @@ class AlertCategory(BaseModel):
 
 
 class Alert(BaseModel):
-    title = models.CharField(blank=True, max_length=150)
-    category = models.CharField(blank=True, max_length=200, help_text="A category/type for this alert.")
+    title = models.CharField(blank=True, max_length=CHAR_FIELD_MEDIUM_LENGTH)
+    category = models.CharField(
+        blank=True, max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="A category/type for this alert."
+    )
     contents = models.TextField()
     creation_time = models.DateTimeField(default=timezone.now)
     creator = models.ForeignKey(User, null=True, blank=True, related_name="+", on_delete=models.SET_NULL)
@@ -3765,8 +3933,8 @@ class ContactInformationCategory(BaseCategory):
 
 
 class ContactInformation(BaseModel):
-    name = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH)
-    title = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, blank=True, null=True)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
+    title = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, blank=True, null=True)
     image = models.ImageField(
         blank=True,
         help_text="Portraits are resized to 266 pixels high and 200 pixels wide. Crop portraits to these dimensions before uploading for optimal bandwidth usage",
@@ -3774,7 +3942,7 @@ class ContactInformation(BaseModel):
     category = models.ForeignKey(ContactInformationCategory, on_delete=models.CASCADE)
     email = models.EmailField(blank=True)
     office_phone = models.CharField(max_length=40, blank=True)
-    office_location = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, blank=True)
+    office_location = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, blank=True)
     mobile_phone = models.CharField(max_length=40, blank=True)
     mobile_phone_is_sms_capable = models.BooleanField(
         default=True,
@@ -3803,6 +3971,8 @@ class Notification(BaseModel):
         SAFETY = "safetyissue"
         BUDDY_REQUEST = "buddyrequest"
         BUDDY_REQUEST_REPLY = "buddyrequestmessage"
+        STAFF_ASSISTANCE_REQUEST = "staffassistancerequest"
+        STAFF_ASSISTANCE_REQUEST_REPLY = "staffassistancerequestmessage"
         ADJUSTMENT_REQUEST = "adjustmentrequest"
         ADJUSTMENT_REQUEST_REPLY = "adjustmentrequestmessage"
         TEMPORARY_ACCESS_REQUEST = "temporaryphysicalaccessrequest"
@@ -3811,6 +3981,8 @@ class Notification(BaseModel):
             (SAFETY, "New safety issues - notifies staff only"),
             (BUDDY_REQUEST, "New buddy request - notifies all users"),
             (BUDDY_REQUEST_REPLY, "New buddy request reply - notifies request creator and users who have replied"),
+            (STAFF_ASSISTANCE_REQUEST, "New staff assistance request - notifies staff only"),
+            (STAFF_ASSISTANCE_REQUEST_REPLY, "New staff assistance request reply - notifies request creator and staff"),
             (ADJUSTMENT_REQUEST, "New adjustment request - notifies reviewers only"),
             (
                 ADJUSTMENT_REQUEST_REPLY,
@@ -3821,7 +3993,7 @@ class Notification(BaseModel):
 
     user = models.ForeignKey(User, related_name="notifications", on_delete=models.CASCADE)
     expiration = models.DateTimeField()
-    notification_type = models.CharField(max_length=100, choices=Types.Choices)
+    notification_type = fields.DynamicChoicesCharField(max_length=CHAR_FIELD_SMALL_LENGTH, choices=Types.Choices)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey("content_type", "object_id")
@@ -3831,9 +4003,11 @@ class LandingPageChoice(BaseModel):
     image = models.ImageField(
         help_text="An image that symbolizes the choice. It is automatically resized to 128x128 pixels when displayed, so set the image to this size before uploading to optimize bandwidth usage and landing page load time"
     )
-    name = models.CharField(max_length=40, help_text="The textual name that will be displayed underneath the image")
+    name = models.CharField(
+        max_length=CHAR_FIELD_SMALL_LENGTH, help_text="The textual name that will be displayed underneath the image"
+    )
     url = models.CharField(
-        max_length=200,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         verbose_name="URL",
         help_text="The URL that the choice leads to when clicked. Relative paths such as /calendar/ are used when linking within the site. Use fully qualified URL paths such as https://www.google.com/ to link to external sites.",
     )
@@ -3861,8 +4035,8 @@ class LandingPageChoice(BaseModel):
         default=False,
         help_text="Hides this choice from staff and technicians. When checked, only normal users, facility managers and super-users can see the choice",
     )
-    notifications = models.CharField(
-        max_length=100,
+    notifications = fields.DynamicChoicesCharField(
+        max_length=CHAR_FIELD_SMALL_LENGTH,
         blank=True,
         null=True,
         choices=Notification.Types.Choices,
@@ -3877,7 +4051,7 @@ class LandingPageChoice(BaseModel):
 
 
 class Customization(BaseModel):
-    name = models.CharField(primary_key=True, max_length=100)
+    name = models.CharField(primary_key=True, max_length=CHAR_FIELD_SMALL_LENGTH)
     value = models.TextField()
 
     class Meta:
@@ -3888,7 +4062,7 @@ class Customization(BaseModel):
 
 
 class ScheduledOutageCategory(BaseModel):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
 
     class Meta:
         ordering = ["name"]
@@ -3902,14 +4076,16 @@ class ScheduledOutage(BaseModel):
     start = models.DateTimeField()
     end = models.DateTimeField()
     creator = models.ForeignKey(User, on_delete=models.CASCADE)
-    title = models.CharField(max_length=100, help_text="A brief description to quickly inform users about the outage")
+    title = models.CharField(
+        max_length=CHAR_FIELD_SMALL_LENGTH, help_text="A brief description to quickly inform users about the outage"
+    )
     details = models.TextField(
         blank=True,
         help_text="A detailed description of why there is a scheduled outage, and what users can expect during the outage",
     )
     category = models.CharField(
         blank=True,
-        max_length=200,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         help_text="A categorical reason for why this outage is scheduled. Useful for trend analytics.",
     )
     tool = models.ForeignKey(Tool, blank=True, null=True, on_delete=models.CASCADE)
@@ -3918,7 +4094,7 @@ class ScheduledOutage(BaseModel):
     reminder_days = models.CharField(
         null=True,
         blank=True,
-        max_length=200,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         validators=[validate_comma_separated_integer_list],
         help_text="The number of days to send a reminder before a scheduled outage. A comma-separated list can be used for multiple reminders.",
     )
@@ -3985,7 +4161,7 @@ class ScheduledOutage(BaseModel):
 
 
 class News(BaseModel):
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
     pinned = models.BooleanField(
         default=False, help_text="Check this box to keep this story at the top of the news feed"
     )
@@ -4011,7 +4187,7 @@ class News(BaseModel):
 
 
 class BadgeReader(BaseModel):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
     send_key = models.CharField(
         max_length=20,
         help_text="The name of the key which submits the badge number ('F2', 'Shift', 'Meta', 'Enter', 'a' etc.)",
@@ -4036,42 +4212,102 @@ class BadgeReader(BaseModel):
 
 
 class ToolUsageCounter(BaseModel):
-    name = models.CharField(max_length=200, help_text="The name of this counter")
+    class CounterDirection(object):
+        INCREMENT = +1
+        DECREMENT = -1
+        Choices = (
+            (INCREMENT, _("Increment")),
+            (DECREMENT, _("Decrement")),
+        )
+
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text=_("The name of this counter"))
     description = models.TextField(
-        null=True, blank=True, help_text="The counter description to be displayed next to it on the tool control page"
+        null=True,
+        blank=True,
+        help_text=_("The counter description to be displayed next to it on the tool control page"),
     )
-    value = models.FloatField(default=0, help_text="The current value of this counter")
-    tool = models.ForeignKey(Tool, help_text="The tool this counter is for.", on_delete=models.CASCADE)
+    value = models.FloatField(help_text=_("The current value of this counter"))
+    default_value = models.FloatField(help_text=_("The default value to reset this counter to"))
+    counter_direction = models.IntegerField(default=CounterDirection.INCREMENT, choices=CounterDirection.Choices)
+    tool = models.ForeignKey(Tool, help_text=_("The tool this counter is for."), on_delete=models.CASCADE)
     tool_usage_question = models.CharField(
-        max_length=200,
-        help_text="The name of the tool's post usage question which should be used to increment this counter",
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
+        help_text=_("The name of the tool's post usage question which should be used to increment this counter"),
     )
-    last_reset_value = models.FloatField(null=True, blank=True, help_text="The last value before the counter was reset")
-    last_reset = models.DateTimeField(null=True, blank=True, help_text="The date and time this counter was last reset")
+    staff_members_can_reset = models.BooleanField(
+        default=True, help_text=_("Check this box to allow staff to reset this counter")
+    )
+    superusers_can_reset = models.BooleanField(
+        default=False, help_text=_("Check this box to allow tool superusers to reset this counter")
+    )
+    qualified_users_can_reset = models.BooleanField(
+        default=False, help_text=_("Check this box to allow qualified users to reset this counter")
+    )
+    last_reset_value = models.FloatField(
+        null=True, blank=True, help_text=_("The last value before the counter was reset")
+    )
+    last_reset = models.DateTimeField(
+        null=True, blank=True, help_text=_("The date and time this counter was last reset")
+    )
     last_reset_by = models.ForeignKey(
-        User, null=True, blank=True, help_text="The user who last reset this counter", on_delete=models.SET_NULL
+        User, null=True, blank=True, help_text=_("The user who last reset this counter"), on_delete=models.SET_NULL
+    )
+    email_facility_managers_when_reset = models.BooleanField(
+        default=True, help_text=_("Check this box to email facility managers when this counter is reset")
     )
     warning_threshold = models.FloatField(
         null=True,
         blank=True,
-        help_text="When set in combination with the email address, a warning email will be sent when the counter reaches this value.",
+        help_text=_(
+            "When set in combination with the email address, a warning email will be sent when the counter reaches this value."
+        ),
     )
     warning_email = fields.MultiEmailField(
-        null=True, blank=True, help_text="The address to send the warning email to. A comma-separated list can be used."
+        null=True,
+        blank=True,
+        help_text=_("The address to send the warning email to. A comma-separated list can be used."),
     )
     warning_threshold_reached = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True, help_text="The state of the counter")
+    is_active = models.BooleanField(default=True, help_text=_("The state of the counter"))
 
     def value_color(self):
         color = None
         if self.warning_threshold:
-            if self.value < self.warning_threshold:
+            effective_value = self.counter_direction * self.value
+            effective_warning_threshold = self.counter_direction * self.warning_threshold
+            if effective_value < effective_warning_threshold:
                 color = "success"
-            elif self.value == self.warning_threshold:
+            elif effective_value == effective_warning_threshold:
                 color = "warning"
-            elif self.value > self.warning_threshold:
+            elif effective_value > effective_warning_threshold:
                 color = "danger"
         return bootstrap_primary_color(color)
+
+    def reset_permitted_users(self) -> QuerySetType[User]:
+        user_filter = Q(is_facility_manager=True) | Q(is_superuser=True)
+        if self.staff_members_can_reset:
+            user_filter |= Q(is_staff=True)
+        if self.superusers_can_reset:
+            user_filter |= Q(superuser_for_tools__in=[self.tool])
+        if self.qualified_users_can_reset:
+            user_filter |= Q(id__in=Qualification.objects.filter(tool=self.tool).values_list("user_id", flat=True))
+        return User.objects.filter(Q(is_active=True) & user_filter).distinct()
+
+    def clean(self):
+        errors = {}
+        if self.warning_threshold:
+            effective_warning_threshold = self.counter_direction * self.warning_threshold
+            effective_default_value = self.counter_direction * self.default_value
+            if effective_default_value > effective_warning_threshold:
+                errors.update(
+                    {
+                        "warning_threshold": _(
+                            f"The warning threshold ({self.warning_threshold}) needs to be {'higher' if self.counter_direction > 0 else 'lower'} than the default value ({self.default_value})"
+                        )
+                    }
+                )
+        if errors:
+            raise ValidationError(errors)
 
     def __str__(self):
         return str(self.name)
@@ -4085,17 +4321,19 @@ class ToolUsageCounter(BaseModel):
 def check_tool_usage_counter_threshold(sender, instance: ToolUsageCounter, **kwargs):
     try:
         if instance.warning_threshold:
+            effective_warning_threshold = instance.counter_direction * instance.warning_threshold
+            effective_value = instance.counter_direction * instance.value
             if (
                 instance.is_active
                 and not instance.warning_threshold_reached
-                and instance.value >= instance.warning_threshold
+                and effective_value >= effective_warning_threshold
             ):
-                # value is over threshold. set flag and send email
+                # value is under/over threshold. set flag and send email
                 instance.warning_threshold_reached = True
                 from NEMO.views.tool_control import send_tool_usage_counter_email
 
                 send_tool_usage_counter_email(instance)
-            if instance.warning_threshold_reached and instance.value < instance.warning_threshold:
+            if instance.warning_threshold_reached and effective_value < effective_warning_threshold:
                 # it has been reset. reset flag
                 instance.warning_threshold_reached = False
     except Exception as e:
@@ -4137,6 +4375,40 @@ class BuddyRequest(BaseModel):
         return f"BuddyRequest [{self.id}]"
 
 
+class StaffAssistanceRequest(BaseModel):
+    creation_time = models.DateTimeField(
+        default=timezone.now, help_text="The date and time when the request was created."
+    )
+    description = models.TextField(help_text="The description of the request.")
+    user = models.ForeignKey(User, help_text="The user who is submitting the request.", on_delete=models.CASCADE)
+    resolved = models.BooleanField(
+        default=False, help_text="Indicates the request has been resolved and won't be shown anymore."
+    )
+    deleted = models.BooleanField(
+        default=False, help_text="Indicates the request has been deleted and won't be shown anymore."
+    )
+
+    class Meta:
+        ordering = ["-creation_time"]
+
+    @property
+    def creator(self) -> User:
+        return self.user
+
+    @property
+    def replies(self) -> QuerySetType[RequestMessage]:
+        return RequestMessage.objects.filter(object_id=self.id, content_type=ContentType.objects.get_for_model(self))
+
+    def creator_and_reply_users(self) -> List[User]:
+        result = {self.user}
+        for reply in self.replies:
+            result.add(reply.author)
+        return list(result)
+
+    def __str__(self):
+        return f"StaffAssistanceRequest [{self.id}]"
+
+
 class AdjustmentRequest(BaseModel):
     creation_time = models.DateTimeField(auto_now_add=True, help_text="The date and time when the request was created.")
     creator = models.ForeignKey("User", related_name="adjustment_requests_created", on_delete=models.CASCADE)
@@ -4161,6 +4433,7 @@ class AdjustmentRequest(BaseModel):
     new_start = models.DateTimeField(null=True, blank=True)
     new_end = models.DateTimeField(null=True, blank=True)
     new_quantity = models.PositiveIntegerField(null=True, blank=True)
+    waive = models.BooleanField(default=False)
     status = models.IntegerField(choices=RequestStatus.choices_without_expired(), default=RequestStatus.PENDING)
     reviewer = models.ForeignKey(
         "User", null=True, blank=True, related_name="adjustment_requests_reviewed", on_delete=models.CASCADE
@@ -4202,7 +4475,6 @@ class AdjustmentRequest(BaseModel):
     def get_quantity_difference(self) -> int:
         if self.item and self.new_quantity is not None:
             return self.new_quantity - self.item.quantity
-        return 0
 
     def get_time_difference(self) -> str:
         if self.item and self.new_start and self.new_end:
@@ -4217,10 +4489,18 @@ class AdjustmentRequest(BaseModel):
             )
 
     def get_difference(self):
-        return self.get_time_difference() or self.get_quantity_difference()
+        if self.waive:
+            return "Waived" if self.item and self.item.waived else "Waive requested"
+        else:
+            return (self.get_time_difference() or self.get_quantity_difference()) if self.item else ""
 
     def adjustable_charge(self):
-        return self.has_changed_time() or isinstance(self.item, Reservation) or self.get_quantity_difference()
+        return (
+            self.waive
+            or self.has_changed_time()
+            or isinstance(self.item, Reservation)
+            or self.get_quantity_difference()
+        )
 
     def has_changed_time(self) -> bool:
         """Returns whether the original charge is editable, i.e. if it has a changed start or end"""
@@ -4236,8 +4516,9 @@ class AdjustmentRequest(BaseModel):
     def reviewers(self) -> QuerySetType[User]:
         # Create the list of users to notify/show request to. If the adjustment request has a tool/area and their
         # list of reviewers is empty, send/show to all facility managers
-        tool: Tool = getattr(self.item, "tool", None) if self.item else None
-        area: Area = getattr(self.item, "area", None) if self.item else None
+        item = get_model_instance(self.item_type, self.item_id)
+        tool: Tool = getattr(item, "tool", None) if item else None
+        area: Area = getattr(item, "area", None) if item else None
         facility_managers = User.objects.filter(is_active=True, is_facility_manager=True)
         if tool:
             tool_reviewers = tool._adjustment_request_reviewers.filter(is_active=True)
@@ -4249,7 +4530,12 @@ class AdjustmentRequest(BaseModel):
 
     def apply_adjustment(self, user):
         if self.status == RequestStatus.APPROVED:
-            if self.has_changed_time():
+            if self.waive:
+                self.item.waive(user)
+                self.applied = True
+                self.applied_by = user
+                self.save()
+            elif self.has_changed_time():
                 new_start = self.get_new_start()
                 new_end = self.get_new_end()
                 if new_start:
@@ -4266,11 +4552,9 @@ class AdjustmentRequest(BaseModel):
                 self.applied = True
                 self.applied_by = user
             elif isinstance(self.item, Reservation):
-                self.item.missed = False
-                self.item.save()
-                self.applied = True
-                self.applied_by = user
-                self.save()
+                # in this case the times have not been changed so we are essentially waiving the charge
+                self.waive = True
+                self.apply_adjustment(user)
 
     def delete(self, using=None, keep_parents=False):
         adjustment_id = self.id
@@ -4283,6 +4567,14 @@ class AdjustmentRequest(BaseModel):
                 Notification.Types.ADJUSTMENT_REQUEST_REPLY,
             ],
         ).delete()
+
+    def save(self, *args, **kwargs):
+        # We are removing new start, new end and new quantity just in case
+        if self.waive:
+            self.new_end = None
+            self.new_start = None
+            self.new_quantity = None
+        super().save(*args, **kwargs)
 
     def clean(self):
         if not self.description:
@@ -4298,15 +4590,6 @@ class AdjustmentRequest(BaseModel):
                 raise ValidationError({NON_FIELD_ERRORS: _("There is already an adjustment request for this charge")})
             if self.new_start and self.new_end and self.new_start > self.new_end:
                 raise ValidationError({"new_end": _("The end must be later than the start")})
-            if (
-                self.new_start
-                and format_datetime(self.new_start) == format_datetime(item.start)
-                and self.new_end
-                and format_datetime(self.new_end) == format_datetime(item.end)
-            ) or (self.new_quantity is not None and self.new_quantity == item.quantity):
-                raise ValidationError(
-                    {NON_FIELD_ERRORS: _("You must change at least one attribute (dates or quantity)")}
-                )
 
     class Meta:
         ordering = ["-creation_time"]
@@ -4325,9 +4608,9 @@ class RequestMessage(BaseModel):
 
 
 class StaffAbsenceType(BaseModel):
-    name = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, help_text="The name of this absence type.")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The name of this absence type.")
     description = models.CharField(
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH, help_text="The description for this absence type."
+        max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The description for this absence type."
     )
 
     def __str__(self):
@@ -4435,10 +4718,10 @@ class ChemicalHazard(BaseCategory):
 
 
 class Chemical(BaseModel):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
     hazards = models.ManyToManyField(ChemicalHazard, blank=True, help_text="Select the hazards for this chemical.")
     document = models.FileField(null=True, blank=True, upload_to=get_chemical_document_filename, max_length=500)
-    url = models.CharField(null=True, blank=True, max_length=200, verbose_name="URL")
+    url = models.URLField(null=True, blank=True, verbose_name="URL")
     keywords = models.TextField(null=True, blank=True)
 
     class Meta:
@@ -4456,26 +4739,13 @@ class Chemical(BaseModel):
 def auto_delete_file_on_hazard_delete(sender, instance: ChemicalHazard, **kwargs):
     """Deletes file from filesystem when corresponding `ChemicalHazard` object is deleted."""
     if instance.logo:
-        if os.path.isfile(instance.logo.path):
-            os.remove(instance.logo.path)
+        instance.logo.delete(False)
 
 
 @receiver(models.signals.pre_save, sender=ChemicalHazard)
-def auto_delete_file_on_hazard_change(sender, instance: ChemicalHazard, **kwargs):
-    """Deletes old file from filesystem when corresponding `ChemicalHazard` object is updated with new file."""
-    if not instance.pk:
-        return False
-
-    try:
-        old_file = ChemicalHazard.objects.get(pk=instance.pk).logo
-    except ChemicalHazard.DoesNotExist:
-        return False
-
-    if old_file:
-        new_file = instance.logo
-        if not old_file == new_file:
-            if os.path.isfile(old_file.path):
-                os.remove(old_file.path)
+def auto_update_file_on_hazard_change(sender, instance: ChemicalHazard, **kwargs):
+    """Updates old file from filesystem when corresponding `ChemicalHazard` object is updated with new file."""
+    return update_media_file_on_model_update(instance, "logo")
 
 
 # These two auto-delete chemical document from filesystem when they are unneeded:
@@ -4483,26 +4753,13 @@ def auto_delete_file_on_hazard_change(sender, instance: ChemicalHazard, **kwargs
 def auto_delete_file_on_chemical_delete(sender, instance: Chemical, **kwargs):
     """Deletes file from filesystem when corresponding `Chemical` object is deleted."""
     if instance.document:
-        if os.path.isfile(instance.document.path):
-            os.remove(instance.document.path)
+        instance.document.delete(False)
 
 
 @receiver(models.signals.pre_save, sender=Chemical)
-def auto_delete_file_on_chemical_change(sender, instance: Chemical, **kwargs):
-    """Deletes old file from filesystem when corresponding `Chemical` object is updated with new file."""
-    if not instance.pk:
-        return False
-
-    try:
-        old_file = Chemical.objects.get(pk=instance.pk).document
-    except Chemical.DoesNotExist:
-        return False
-
-    if old_file:
-        new_file = instance.document
-        if not old_file == new_file:
-            if os.path.isfile(old_file.path):
-                os.remove(old_file.path)
+def auto_update_file_on_chemical_change(sender, instance: Chemical, **kwargs):
+    """Updates old file from filesystem when corresponding `Chemical` object is updated with new file."""
+    return update_media_file_on_model_update(instance, "document")
 
 
 class StaffKnowledgeBaseCategory(BaseCategory):
@@ -4511,7 +4768,7 @@ class StaffKnowledgeBaseCategory(BaseCategory):
 
 
 class StaffKnowledgeBaseItem(BaseModel):
-    name = models.CharField(max_length=200, help_text="The item name.")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The item name.")
     description = models.TextField(null=True, blank=True, help_text="The description for this item. HTML can be used.")
     category = models.ForeignKey(
         StaffKnowledgeBaseCategory,
@@ -4550,7 +4807,7 @@ class UserKnowledgeBaseCategory(BaseCategory):
 
 
 class UserKnowledgeBaseItem(BaseModel):
-    name = models.CharField(max_length=200, help_text="The item name.")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The item name.")
     description = models.TextField(null=True, blank=True, help_text="The description for this item. HTML can be used.")
     category = models.ForeignKey(
         UserKnowledgeBaseCategory,
@@ -4585,9 +4842,9 @@ class UserKnowledgeBaseItemDocuments(BaseDocumentModel):
 
 class ToolCredentials(BaseModel):
     tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
-    username = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
-    password = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
-    comments = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
+    username = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MEDIUM_LENGTH)
+    password = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MEDIUM_LENGTH)
+    comments = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MEDIUM_LENGTH)
     authorized_staff = models.ManyToManyField(
         User,
         blank=True,
@@ -4601,17 +4858,27 @@ class ToolCredentials(BaseModel):
 
 
 class EmailLog(BaseModel):
-    category = models.IntegerField(choices=EmailCategory.Choices, default=EmailCategory.GENERAL)
+    category = DynamicChoicesIntegerField(choices=EmailCategory.choices, default=EmailCategory.GENERAL)
     when = models.DateTimeField(null=False, auto_now_add=True)
     sender = models.EmailField(null=False, blank=False)
     to = models.TextField(null=False, blank=False)
-    subject = models.CharField(null=False, max_length=254)
+    subject = models.CharField(null=False, max_length=CHAR_FIELD_MEDIUM_LENGTH)
     content = models.TextField(null=False)
     ok = models.BooleanField(null=False, default=True)
     attachments = models.TextField(null=True)
 
     class Meta:
         ordering = ["-when"]
+
+
+def validate_waive_information(item: [BillableItemMixin]) -> Dict:
+    errors = {}
+    if item.waived:
+        if not item.waived_by:
+            errors["waived_by"] = _("This field is required")
+        if not item.waived_on:
+            errors["waived_on"] = _("This field is required")
+    return errors
 
 
 def record_remote_many_to_many_changes_and_save(request, obj, form, change, many_to_many_field, save_function_pointer):

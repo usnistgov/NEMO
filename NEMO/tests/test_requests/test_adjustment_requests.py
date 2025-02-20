@@ -1,6 +1,5 @@
 from datetime import timedelta
 
-from django.core.exceptions import NON_FIELD_ERRORS
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -21,15 +20,15 @@ from NEMO.tests.test_utilities import (
     login_as_user,
     validate_model_error,
 )
-from NEMO.views.customization import UserRequestsCustomization
+from NEMO.views.customization import AdjustmentRequestsCustomization
 
 
 class AdjustmentRequestTestCase(TestCase):
     def setUp(self) -> None:
-        UserRequestsCustomization.set("adjustment_requests_enabled", "enabled")
+        AdjustmentRequestsCustomization.set("adjustment_requests_enabled", "enabled")
 
     def test_enable_adjustment_requests(self):
-        UserRequestsCustomization.set("adjustment_requests_enabled", "")
+        AdjustmentRequestsCustomization.set("adjustment_requests_enabled", "")
         login_as_user(self.client)
         response = self.client.get(reverse("adjustment_requests"))
         self.assertContains(response, "not enabled", status_code=400)
@@ -58,7 +57,6 @@ class AdjustmentRequestTestCase(TestCase):
         adjustment_request.item = usage_event
         adjustment_request.new_start = usage_event.start
         adjustment_request.new_end = usage_event.end
-        validate_model_error(self, adjustment_request, [NON_FIELD_ERRORS])
         adjustment_request.new_start = usage_event.start - timedelta(minutes=5)
         adjustment_request.full_clean()
         adjustment_request.save()

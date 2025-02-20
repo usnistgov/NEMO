@@ -546,6 +546,90 @@
     }
   },
   {
+    "model": "NEMO.consumable",
+    "pk": 6,
+    "fields": {
+      "name": "220A (mL)",
+      "category": 3,
+      "quantity": 1,
+      "reusable": true,
+      "visible": false,
+      "reminder_threshold": null,
+      "reminder_email": null,
+      "reminder_threshold_reached": false
+    }
+  },
+  {
+    "model": "NEMO.consumable",
+    "pk": 7,
+    "fields": {
+      "name": "NX88 (ml)",
+      "category": 3,
+      "quantity": 1,
+      "reusable": true,
+      "visible": false,
+      "reminder_threshold": null,
+      "reminder_email": null,
+      "reminder_threshold_reached": false
+    }
+  },
+  {
+    "model": "NEMO.consumable",
+    "pk": 8,
+    "fields": {
+      "name": "556 (mL)",
+      "category": 3,
+      "quantity": 1,
+      "reusable": true,
+      "visible": false,
+      "reminder_threshold": null,
+      "reminder_email": null,
+      "reminder_threshold_reached": false
+    }
+  },
+  {
+    "model": "NEMO.consumable",
+    "pk": 9,
+    "fields": {
+      "name": "6103 (mL)",
+      "category": 3,
+      "quantity": 1,
+      "reusable": true,
+      "visible": false,
+      "reminder_threshold": null,
+      "reminder_email": null,
+      "reminder_threshold_reached": false
+    }
+  },
+  {
+    "model": "NEMO.consumable",
+    "pk": 10,
+    "fields": {
+      "name": "A7100 (mL)",
+      "category": 3,
+      "quantity": 1,
+      "reusable": true,
+      "visible": false,
+      "reminder_threshold": null,
+      "reminder_email": null,
+      "reminder_threshold_reached": false
+    }
+  },
+  {
+    "model": "NEMO.consumable",
+    "pk": 11,
+    "fields": {
+      "name": "SS25E (mL)",
+      "category": 3,
+      "quantity": 1,
+      "reusable": true,
+      "visible": false,
+      "reminder_threshold": null,
+      "reminder_email": null,
+      "reminder_threshold_reached": false
+    }
+  },
+  {
     "model": "NEMO.consumablecategory",
     "pk": 1,
     "fields": {
@@ -557,6 +641,13 @@
     "pk": 2,
     "fields": {
       "name": "Material"
+    }
+  },
+  {
+    "model": "NEMO.consumablecategory",
+    "pk": 3,
+    "fields": {
+      "name": "Slurry"
     }
   },
   {
@@ -671,7 +762,9 @@
     "fields": {
       "name": "Cleanroom door",
       "welcome_message": "<h2><center>Welcome to the cleanroom!</center></h2>",
-      "areas": [1],
+      "areas": [
+        1
+      ],
       "interlock": 1
     }
   },
@@ -958,23 +1051,6 @@
     }
   },
   {
-    "model": "NEMO.landingpagechoice",
-    "pk": 11,
-    "fields": {
-      "image": "sensors.png",
-      "name": "Sensor data",
-      "url": "/sensors/",
-      "display_order": 10,
-      "open_in_new_tab": false,
-      "secure_referral": false,
-      "hide_from_mobile_devices": false,
-      "hide_from_desktop_computers": false,
-      "hide_from_users": false,
-      "hide_from_staff": false,
-      "notifications": "null"
-    }
-  },
-  {
     "model": "NEMO.customization",
     "pk": "adjustment_requests_enabled",
     "fields": {
@@ -991,6 +1067,34 @@
   {
     "model": "NEMO.customization",
     "pk": "adjustment_requests_apply_button",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "adjustment_requests_waive_tool_usage_enabled",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "adjustment_requests_waive_area_access_enabled",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "adjustment_requests_waive_consumable_withdrawal_enabled",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "adjustment_requests_waive_missed_reservation_enabled",
     "fields": {
       "value": "enabled"
     }
@@ -1067,13 +1171,6 @@
   },
   {
     "model": "NEMO.customization",
-    "pk": "sensor_default_daterange",
-    "fields": {
-      "value": "last_year"
-    }
-  },
-  {
-    "model": "NEMO.customization",
     "pk": "user_allow_document_upload",
     "fields": {
       "value": "enabled"
@@ -1089,6 +1186,27 @@
   {
     "model": "NEMO.customization",
     "pk": "consumable_user_self_checkout",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "tool_control_show_next_reservation_user",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "training_show_self_option_in_tool_control",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "staff_assistance_requests_enabled",
     "fields": {
       "value": "enabled"
     }
@@ -1653,304 +1771,6 @@
     }
   },
   {
-    "model": "sensors.sensorcardcategory",
-    "pk": 1,
-    "fields": {
-      "name": "ModbusTcp",
-      "key": "modbus_tcp"
-    }
-  },
-  {
-    "model": "sensors.sensorcard",
-    "pk": 1,
-    "fields": {
-      "name": "Gas cabinet card",
-      "server": "gascabinet.example.org",
-      "port": 502,
-      "category": 1,
-      "username": null,
-      "password": null,
-      "enabled": true
-    }
-  },
-  {
-    "model": "sensors.sensorcard",
-    "pk": 2,
-    "fields": {
-      "name": "Temp/Humidity card",
-      "server": "cleanroomsensors.example.org",
-      "port": 502,
-      "category": 1,
-      "username": null,
-      "password": null,
-      "enabled": true
-    }
-  },
-  {
-    "model": "sensors.sensorcategory",
-    "pk": 1,
-    "fields": {
-      "name": "Cleanroom",
-      "parent": null
-    }
-  },
-  {
-    "model": "sensors.sensorcategory",
-    "pk": 2,
-    "fields": {
-      "name": "External lab",
-      "parent": null
-    }
-  },
-  {
-    "model": "sensors.sensorcategory",
-    "pk": 3,
-    "fields": {
-      "name": "Bay 1",
-      "parent": 1
-    }
-  },
-  {
-    "model": "sensors.sensor",
-    "pk": 1,
-    "fields": {
-      "name": "Bay 1 Temperature",
-      "visible": true,
-      "sensor_card": 2,
-      "interlock_card": null,
-      "sensor_category": 3,
-      "data_label": "Temperature",
-      "data_prefix": null,
-      "data_suffix": "°F",
-      "unit_id": null,
-      "read_address": 24,
-      "number_of_values": 1,
-      "formula": "",
-      "read_frequency": 5
-    }
-  },
-  {
-    "model": "sensors.sensor",
-    "pk": 2,
-    "fields": {
-      "name": "Bay 1 Humidity",
-      "visible": true,
-      "sensor_card": 2,
-      "interlock_card": null,
-      "sensor_category": 3,
-      "data_label": "Humidity",
-      "data_prefix": null,
-      "data_suffix": null,
-      "unit_id": null,
-      "read_address": 26,
-      "number_of_values": 1,
-      "formula": "",
-      "read_frequency": 5
-    }
-  },
-  {
-    "model": "sensors.sensor",
-    "pk": 3,
-    "fields": {
-      "name": "Nitrogen GN2",
-      "visible": true,
-      "sensor_card": 1,
-      "interlock_card": null,
-      "sensor_category": 1,
-      "data_label": null,
-      "data_prefix": null,
-      "data_suffix": null,
-      "unit_id": null,
-      "read_address": 2,
-      "number_of_values": 1,
-      "formula": "",
-      "read_frequency": 5
-    }
-  },
-  {
-    "model": "sensors.sensordata",
-    "pk": 1,
-    "fields": {
-      "sensor": 1,
-      "created_date": "2022-06-13T17:39:17.892Z",
-      "value": 69.2
-    }
-  },
-  {
-    "model": "sensors.sensordata",
-    "pk": 2,
-    "fields": {
-      "sensor": 1,
-      "created_date": "2022-06-13T17:40:17.892Z",
-      "value": 69.4
-    }
-  },
-  {
-    "model": "sensors.sensordata",
-    "pk": 3,
-    "fields": {
-      "sensor": 1,
-      "created_date": "2022-06-13T17:41:17.892Z",
-      "value": 70.2
-    }
-  },
-  {
-    "model": "sensors.sensordata",
-    "pk": 4,
-    "fields": {
-      "sensor": 1,
-      "created_date": "2022-06-13T17:44:17.892Z",
-      "value": 69.7
-    }
-  },
-  {
-    "model": "sensors.sensordata",
-    "pk": 5,
-    "fields": {
-      "sensor": 1,
-      "created_date": "2022-06-13T17:47:17.892Z",
-      "value": 69.9
-    }
-  },
-  {
-    "model": "sensors.sensordata",
-    "pk": 6,
-    "fields": {
-      "sensor": 1,
-      "created_date": "2022-06-13T17:49:17.892Z",
-      "value": 70.1
-    }
-  },
-  {
-    "model": "sensors.sensordata",
-    "pk": 7,
-    "fields": {
-      "sensor": 2,
-      "created_date": "2022-06-13T17:51:36.032Z",
-      "value": 45.5
-    }
-  },
-  {
-    "model": "sensors.sensordata",
-    "pk": 8,
-    "fields": {
-      "sensor": 2,
-      "created_date": "2022-06-13T17:52:36.032Z",
-      "value": 45.6
-    }
-  },
-  {
-    "model": "sensors.sensordata",
-    "pk": 9,
-    "fields": {
-      "sensor": 2,
-      "created_date": "2022-06-13T17:53:36.032Z",
-      "value": 45.9
-    }
-  },
-  {
-    "model": "sensors.sensordata",
-    "pk": 10,
-    "fields": {
-      "sensor": 2,
-      "created_date": "2022-06-13T17:54:36.032Z",
-      "value": 45.8
-    }
-  },
-  {
-    "model": "sensors.sensordata",
-    "pk": 11,
-    "fields": {
-      "sensor": 2,
-      "created_date": "2022-06-13T17:56:36.032Z",
-      "value": 45.5
-    }
-  },
-  {
-    "model": "sensors.sensordata",
-    "pk": 12,
-    "fields": {
-      "sensor": 2,
-      "created_date": "2022-06-13T17:58:36.032Z",
-      "value": 45.3
-    }
-  },
-  {
-    "model": "sensors.sensordata",
-    "pk": 13,
-    "fields": {
-      "sensor": 3,
-      "created_date": "2022-06-13T17:52:05.965Z",
-      "value": 1920.3
-    }
-  },
-  {
-    "model": "sensors.sensordata",
-    "pk": 14,
-    "fields": {
-      "sensor": 3,
-      "created_date": "2022-06-13T17:53:05.965Z",
-      "value": 1923.3
-    }
-  },
-  {
-    "model": "sensors.sensordata",
-    "pk": 15,
-    "fields": {
-      "sensor": 3,
-      "created_date": "2022-06-13T17:54:05.965Z",
-      "value": 1927.3
-    }
-  },
-  {
-    "model": "sensors.sensoralertlog",
-    "pk": 1,
-    "fields": {
-      "sensor": 1,
-      "time": "2022-06-13T17:41:17.892Z",
-      "value": 70.2,
-      "reset": false,
-      "condition": "value > 70",
-      "no_data": false
-    }
-  },
-  {
-    "model": "sensors.sensoralertlog",
-    "pk": 2,
-    "fields": {
-      "sensor": 1,
-      "time": "2022-06-13T17:44:17.892Z",
-      "value": 69.7,
-      "reset": true,
-      "condition": "value > 70",
-      "no_data": false
-    }
-  },
-  {
-    "model": "sensors.sensoralertlog",
-    "pk": 3,
-    "fields": {
-      "sensor": 1,
-      "time": "2022-06-13T17:52:05.965Z",
-      "value": 70.1,
-      "reset": false,
-      "condition": "value > 70",
-      "no_data": false
-    }
-  },
-  {
-    "model": "sensors.sensoralertemail",
-    "pk": 1,
-    "fields": {
-      "enabled": true,
-      "sensor": 1,
-      "trigger_no_data": false,
-      "trigger_condition": "value > 70",
-      "triggered_on": "2022-06-13T17:52:05.965Z",
-      "additional_emails": ""
-    }
-  },
-  {
     "model": "NEMO.user",
     "fields": {
       "username": "captain",
@@ -2434,6 +2254,32 @@
         "captain"
       ],
       "deleted": false
+    }
+  },
+  {
+    "model": "NEMO.adjustmentrequest",
+    "pk": 4,
+    "fields": {
+      "creation_time": "2023-02-13T17:36:20.938Z",
+      "creator": [
+        "ned"
+      ],
+      "last_updated": "2023-02-13T17:39:03.473Z",
+      "last_updated_by": [
+        "captain"
+      ],
+      "item_type": [
+        "NEMO",
+        "reservation"
+      ],
+      "item_id": 1,
+      "description": "Please waive this missed reservation",
+      "status": 0,
+      "reviewer": [
+        "captain"
+      ],
+      "deleted": false,
+      "waive": true
     }
   },
   {
@@ -4169,7 +4015,7 @@
       "_maximum_future_reservation_time": null,
       "_missed_reservation_threshold": 30,
       "_max_delayed_logoff": null,
-      "_post_usage_questions": "",
+      "_post_usage_questions": "[\n    {\n        \"form_row\": 1,\n        \"type\": \"number\",\n        \"title\": \"How much NX88 slurry was used?\",\n        \"max-width\": 275,\n        \"suffix\": \"mL\",\n        \"required\": true,\n        \"default_choice\": null,\n        \"placeholder\": \"0\",\n        \"name\": \"NX88\",\n        \"consumable\": \"NX88 (ml)\"\n    },\n    {\n        \"form_row\": 1,\n        \"type\": \"number\",\n        \"title\": \"How much SS25E slurry was used?\",\n        \"max-width\": 275,\n        \"suffix\": \"mL\",\n        \"required\": true,\n        \"default_choice\": null,\n        \"placeholder\": \"0\",\n        \"name\": \"SS25E\",\n        \"consumable\": \"SS25E (mL)\"\n    },\n    {\n        \"form_row\": 2,\n        \"type\": \"number\",\n        \"title\": \"How much 6103 slurry was used?\",\n        \"max-width\": 275,\n        \"suffix\": \"mL\",\n        \"required\": true,\n        \"default_choice\": null,\n        \"placeholder\": \"0\",\n        \"name\": \"6103\",\n        \"consumable\": \"6103 (mL)\"\n    },\n    {\n        \"form_row\": 2,\n        \"type\": \"number\",\n        \"title\": \"How much 556 slurry was used?\",\n        \"max-width\": 275,\n        \"suffix\": \"mL\",\n        \"required\": true,\n        \"default_choice\": null,\n        \"placeholder\": \"0\",\n        \"name\": \"556\",\n        \"consumable\": \"556 (mL)\"\n    },\n    {\n        \"form_row\": 3,\n        \"type\": \"number\",\n        \"title\": \"How much 220A slurry was used?\",\n        \"max-width\": 275,\n        \"suffix\": \"mL\",\n        \"required\": true,\n        \"default_choice\": null,\n        \"placeholder\": \"0\",\n        \"name\": \"220A\",\n        \"consumable\": \"220A (mL)\"\n    },\n    {\n        \"form_row\": 3,\n        \"type\": \"number\",\n        \"title\": \"How much A7100 slurry was used?\",\n        \"max-width\": 275,\n        \"suffix\": \"mL\",\n        \"required\": true,\n        \"default_choice\": null,\n        \"placeholder\": \"0\",\n        \"name\": \"A7100\",\n        \"consumable\": \"A7100 (mL)\"\n    }\n]",
       "_policy_off_between_times": false,
       "_policy_off_start_time": null,
       "_policy_off_end_time": null,
@@ -8401,7 +8247,7 @@
       "_maximum_future_reservation_time": null,
       "_missed_reservation_threshold": 30,
       "_max_delayed_logoff": 120,
-      "_post_usage_questions": "",
+      "_post_usage_questions": "[\n   {\n            \"type\": \"dropdown\",\n           \"title\": \"What material did you you etch?\",\n           \"placeholder\": \"Pick one\",\n           \"choices\": [\"Silicon oxide\",\"Silicon nitride\"],\n            \"labels\": {\n            \"Oxide\": [\n                \"Silicon oxide\"\n            ],\n            \"Silicon\": [\n                \"Silicon nitride\"\n            ]\n        },\n        \"max-width\": 250,\n        \"required\": true,\n        \"name\": \"etch_material\"\n    },\n    {\n        \"type\": \"number\",\n        \"precision\": 3,\n        \"title\": \"How long did you etch?\",\n        \"max-width\": 250,\n        \"suffix\": \"min\",\n        \"required\": true,\n        \"name\": \"etch_time\"\n    }\n]\n",
       "_policy_off_between_times": false,
       "_policy_off_start_time": null,
       "_policy_off_end_time": null,
@@ -8746,8 +8592,34 @@
       "name": "Total gold used",
       "description": "",
       "value": 203,
-      "tool": ["Unaxis ICP Etcher"],
+      "default_value": 0,
+      "counter_direction": 1,
+      "tool": [
+        "Unaxis ICP Etcher"
+      ],
       "tool_usage_question": "gold_used",
+      "last_reset_value": null,
+      "last_reset": null,
+      "last_reset_by": null,
+      "warning_threshold": null,
+      "warning_email": "",
+      "warning_threshold_reached": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "NEMO.toolusagecounter",
+    "pk": 2,
+    "fields": {
+      "name": "Etch time until PM",
+      "description": "Etch time (minutes) until preventative maintenance",
+      "value": 50,
+      "default_value": 100,
+      "counter_direction": -1,
+      "tool": [
+        "790 RIE Right"
+      ],
+      "tool_usage_question": "etch_time",
       "last_reset_value": null,
       "last_reset": null,
       "last_reset_by": null,
@@ -9243,6 +9115,13 @@
     }
   },
   {
+    "model": "NEMO.projecttype",
+    "fields": {
+      "name": "CHIPS",
+      "display_order": 1
+    }
+  },
+  {
     "model": "NEMO.project",
     "fields": {
       "name": "Cleanroom Eng",
@@ -9250,6 +9129,11 @@
       "start_date": null,
       "account": [
         "Cleanroom Staff"
+      ],
+      "project_types": [
+        [
+          "CHIPS"
+        ]
       ],
       "discipline": null,
       "active": true,
@@ -9869,6 +9753,70 @@
     }
   },
   {
+    "model": "NEMO.notification",
+    "pk": 8,
+    "fields": {
+      "user": [
+        "captain"
+      ],
+      "expiration": "2099-02-24T04:59:59.999Z",
+      "notification_type": "adjustmentrequest",
+      "content_type": [
+        "NEMO",
+        "adjustmentrequest"
+      ],
+      "object_id": 4
+    }
+  },
+  {
+    "model": "NEMO.notification",
+    "pk": 9,
+    "fields": {
+      "user": [
+        "ned"
+      ],
+      "expiration": "2099-02-24T04:59:59.999Z",
+      "notification_type": "adjustmentrequest",
+      "content_type": [
+        "NEMO",
+        "adjustmentrequest"
+      ],
+      "object_id": 4
+    }
+  },
+  {
+    "model": "NEMO.notification",
+    "pk": 10,
+    "fields": {
+      "user": [
+        "captain"
+      ],
+      "expiration": "2099-02-24T04:59:59.999Z",
+      "notification_type": "staffassistancerequest",
+      "content_type": [
+        "NEMO",
+        "staffassistancerequest"
+      ],
+      "object_id": 1
+    }
+  },
+  {
+    "model": "NEMO.notification",
+    "pk": 11,
+    "fields": {
+      "user": [
+        "professor"
+      ],
+      "expiration": "2099-02-24T04:59:59.999Z",
+      "notification_type": "staffassistancerequest",
+      "content_type": [
+        "NEMO",
+        "staffassistancerequest"
+      ],
+      "object_id": 1
+    }
+  },
+  {
     "model": "NEMO.scheduledoutage",
     "pk": 1,
     "fields": {
@@ -10004,115 +9952,6 @@
     }
   },
   {
-    "model": "contracts.procurement",
-    "pk": 1,
-    "fields": {
-      "name": "JEOL",
-      "submitted_date": "2021-11-01",
-      "award_date": "2021-12-01",
-      "contract_number": "123456",
-      "requisition_number": "789012",
-      "cost": "123456.00",
-      "notes": "Period of performance 01/01/2022 to 12/31/2023\r\n\r\nInfo from the award document:\r\n1. Item Number 0022: EBL #1 $74,073.60\r\n2. Item Number 0024: EBL #2 $49,382.40\r\nTotal $123,456\r\n\r\nInstructions for contacting JEOL service:\r\n\r\nAll service visits are initiated with a call to the district service manager, Joel E'Beam. Joel's contact information is:\r\nJoel E'Beam\r\nService Manager\r\nTel: +1.234.567.8901\r\njoel.ebeam@example.com"
-    }
-  },
-  {
-    "model": "contracts.procurement",
-    "pk": 2,
-    "fields": {
-      "name": "NEMO",
-      "submitted_date": "2023-05-01",
-      "award_date": "2023-06-01",
-      "contract_number": "234567",
-      "requisition_number": "890123",
-      "cost": "123456.00",
-      "notes": ""
-    }
-  },
-  {
-    "model": "contracts.procurement",
-    "pk": 3,
-    "fields": {
-      "name": "Cleanroom Garments",
-      "submitted_date": "2023-01-01",
-      "award_date": "2023-02-01",
-      "contract_number": "345678",
-      "requisition_number": "901234",
-      "cost": "12345.00",
-      "notes": ""
-    }
-  },
-  {
-    "model": "contracts.procurement",
-    "pk": 4,
-    "fields": {
-      "name": "JEOL EBL #2",
-      "submitted_date": "2020-05-01",
-      "award_date": "2020-05-30",
-      "contract_number": "123456",
-      "requisition_number": "789012",
-      "cost": "1234567.00",
-      "notes": ""
-    }
-  },
-  {
-    "model": "contracts.servicecontract",
-    "pk": 1,
-    "fields": {
-      "current_year": 1,
-      "total_years": 5,
-      "start": "2022-01-01",
-      "end": "2022-12-31",
-      "reminder_date": "2022-10-01"
-    }
-  },
-  {
-    "model": "contracts.servicecontract",
-    "pk": 2,
-    "fields": {
-      "current_year": 1,
-      "total_years": 10,
-      "start": "2023-07-01",
-      "end": "2024-07-01",
-      "reminder_date": "2024-04-01"
-    }
-  },
-  {
-    "model": "contracts.servicecontract",
-    "pk": 3,
-    "fields": {
-      "current_year": 3,
-      "total_years": 5,
-      "start": "2023-03-01",
-      "end": "2024-02-29",
-      "reminder_date": "2024-02-01"
-    }
-  },
-  {
-    "model": "contracts.contractoragreement",
-    "pk": 1,
-    "fields": {
-      "name": "John",
-      "contract": 1,
-      "start": "2022-06-01",
-      "end": "2022-12-31",
-      "reminder_date": "2022-11-01",
-      "notes": "Needs to be renewed every 6 months per security policy"
-    }
-  },
-  {
-    "model": "contracts.contractoragreement",
-    "pk": 2,
-    "fields": {
-      "name": "Matt",
-      "contract": 2,
-      "start": "2023-07-01",
-      "end": "2024-07-01",
-      "reminder_date": "2024-05-01",
-      "notes": ""
-    }
-  },
-  {
     "model": "NEMO.staffknowledgebasecategory",
     "fields": {
       "name": "Staff procedures",
@@ -10148,6 +9987,17 @@
       "category": [
         "User training"
       ]
+    }
+  },
+  {
+    "model": "NEMO.staffassistancerequest",
+    "pk": 1,
+    "fields": {
+      "creation_time": "2025-02-20T03:29:14.451Z",
+      "description": "I need help in the lab with a tool",
+      "user": 3,
+      "resolved": false,
+      "deleted": false
     }
   }
 ]

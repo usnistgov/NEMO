@@ -1,4 +1,6 @@
 {% extends 'area_access/base.html' %}
 {% block title %}Welcome{% endblock %}
-{% block default_content %}{{ door.welcome_message|safe }}{% endblock %}
+{% block default_content %}
+    {{ door.welcome_message|default_if_none:"<h1>Scan your badge to log in.</h1>"|safe }}
+{% endblock %}
 {% block action %}enter_area(badge_number, undefined);{% endblock %}

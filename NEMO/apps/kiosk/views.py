@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta
 from http import HTTPStatus
+from typing import Dict
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.shortcuts import redirect, render
 from django.utils import timezone
@@ -92,6 +94,13 @@ def do_enable_tool(request, tool_id):
     except RequiredUnansweredQuestionsException as e:
         dictionary = {"message": str(e), "delay": 10}
         return render(request, "kiosk/acknowledgement.html", dictionary)
+
+    # Validate usage event
+    try:
+        new_usage_event.full_clean()
+    except ValidationError as e:
+        return render(request, "kiosk/acknowledgement.html", {"message": str(e)})
+
     new_usage_event.save()
 
     # Remove wait list entry if it exists
@@ -100,11 +109,10 @@ def do_enable_tool(request, tool_id):
         wait_list_entry.update(deleted=True, date_exited=timezone.now())
 
     try:
-        dynamic_form.charge_for_consumables(new_usage_event, new_usage_event.pre_run_data, request)
+        dynamic_form.process_run_data(new_usage_event, new_usage_event.pre_run_data, request)
     except Exception as e:
         dictionary = {"message": str(e), "delay": 10}
         return render(request, "kiosk/acknowledgement.html", dictionary)
-    dynamic_form.update_tool_counters(new_usage_event.pre_run_data, tool.id)
 
     dictionary = {"message": "You can now use the {}".format(tool), "badge_number": customer.badge_number}
     return render(request, "kiosk/acknowledgement.html", dictionary)
@@ -151,8 +159,8 @@ def do_disable_tool(request, tool_id):
     try:
         current_usage_event.run_data = dynamic_form.extract(request)
     except RequiredUnansweredQuestionsException as e:
-        if customer.is_staff and customer != current_usage_event.operator and current_usage_event.user != customer:
-            # if a staff is forcing somebody off the tool and there are required questions, send an email and proceed
+        if customer != current_usage_event.operator and current_usage_event.user != customer:
+            # if someone else is forcing somebody off the tool and there are required questions, send an email and proceed
             current_usage_event.run_data = e.run_data
             email_managers_required_questions_disable_tool(current_usage_event.operator, customer, tool, e.questions)
         else:
@@ -160,11 +168,10 @@ def do_disable_tool(request, tool_id):
             return render(request, "kiosk/acknowledgement.html", dictionary)
 
     try:
-        dynamic_form.charge_for_consumables(current_usage_event, current_usage_event.run_data, request)
+        dynamic_form.process_run_data(current_usage_event, current_usage_event.run_data, request)
     except Exception as e:
         dictionary = {"message": str(e), "delay": 10}
         return render(request, "kiosk/acknowledgement.html", dictionary)
-    dynamic_form.update_tool_counters(current_usage_event.run_data, tool.id)
 
     current_usage_event.save()
     dictionary = {
@@ -255,11 +262,14 @@ def reserve_tool(request):
 
     """ Create a reservation for a user. """
     try:
-        date = parse_date(request.POST["date"])
-        start = localize(datetime.combine(date, parse_time(request.POST["start"])))
-        end = localize(datetime.combine(date, parse_time(request.POST["end"])))
+        start_date = parse_date(request.POST["start_date"])
+        end_date = parse_date(request.POST["end_date"])
+        start = localize(datetime.combine(start_date, parse_time(request.POST["start"])))
+        end = localize(datetime.combine(end_date, parse_time(request.POST["end"])))
     except:
-        dictionary["message"] = "Please enter a valid date, start time, and end time for the reservation."
+        dictionary["message"] = (
+            "Please enter a valid start date, start time, end date and end time for the reservation."
+        )
         return render(request, "kiosk/error.html", dictionary)
     # Create the new reservation:
     reservation = Reservation()
@@ -366,6 +376,7 @@ def tool_reservation(request, tool_id, user_id, back):
 @require_GET
 def choices(request):
     try:
+        category = request.GET.get("category")
         customer = User.objects.get(badge_number=request.GET["badge_number"])
         usage_events = (
             UsageEvent.objects.filter(operator=customer.id, end=None)
@@ -393,24 +404,12 @@ def choices(request):
         }
         return render(request, "kiosk/acknowledgement.html", dictionary)
 
-    categories = [
-        t[0] for t in Tool.objects.filter(visible=True).order_by("_category").values_list("_category").distinct()
-    ]
-    unqualified_categories = [
-        category
-        for category in categories
-        if not customer.is_staff
-        and not Tool.objects.filter(
-            visible=True, _category=category, id__in=customer.qualifications.all().values_list("id")
-        ).exists()
-    ]
     dictionary = {
         "now": timezone.now(),
         "customer": customer,
         "usage_events": list(usage_events),
         "upcoming_reservations": tool_reservations,
-        "categories": categories,
-        "unqualified_categories": unqualified_categories,
+        **get_categories_and_tools_dictionary(customer, category),
     }
     return render(request, "kiosk/choices.html", dictionary)
 
@@ -426,14 +425,9 @@ def category_choices(request, category, user_id):
             "message": "Your badge wasn't recognized. If you got a new one recently then we'll need to update your account. Please contact staff to resolve the problem."
         }
         return render(request, "kiosk/acknowledgement.html", dictionary)
-    tools = Tool.objects.filter(visible=True, _category=category)
     dictionary = {
         "customer": customer,
-        "category": category,
-        "tools": tools,
-        "unqualified_tools": [
-            tool for tool in tools if not customer.is_staff and tool not in customer.qualifications.all()
-        ],
+        **get_categories_and_tools_dictionary(customer, category),
     }
     return render(request, "kiosk/category_choices.html", dictionary)
 
@@ -664,3 +658,30 @@ def post_comment(request):
     save_comment(customer, form)
 
     return redirect("kiosk_tool_information", tool_id=tool.id, user_id=customer.id, back=back)
+
+
+def get_categories_and_tools_dictionary(customer: User, category=None) -> Dict:
+    tools = Tool.objects.filter(visible=True)
+    if category:
+        tools = tools.filter(_category__istartswith=category + "/")
+    categories = [t[0] for t in tools.order_by("_category").values_list("_category").distinct()]
+    unqualified_categories = [
+        category
+        for category in categories
+        if not customer.is_staff
+        and not Tool.objects.filter(
+            visible=True, _category=category, id__in=customer.qualifications.all().values_list("id")
+        ).exists()
+    ]
+    tools_in_this_category = list(Tool.objects.filter(visible=True, _category__iexact=category))
+    return {
+        "selected_category": category,
+        "categories": categories,
+        "unqualified_categories": unqualified_categories,
+        "tools": tools_in_this_category,
+        "unqualified_tools": [
+            tool
+            for tool in tools_in_this_category
+            if not customer.is_staff and tool not in customer.qualifications.all()
+        ],
+    }

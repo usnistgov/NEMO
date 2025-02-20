@@ -472,6 +472,32 @@ function serialize(form_selector, ajax_message)
 	return ajax_message;
 }
 
+
+/**
+ * Merges two query strings into one, optionally overriding existing parameters.
+ */
+function merge_query_strings(query_string, new_query_string, override_existing_parameters)
+{
+	override_existing_parameters = override_existing_parameters || false;
+    query_string = query_string.startsWith('?') ? query_string.substring(1) : query_string;
+
+	let original_params = new URLSearchParams(query_string);
+	let new_params = new URLSearchParams(new_query_string);
+
+	let result_params = new URLSearchParams();
+	// If overriding, only add the parameters from the original params who are not present in the new params
+	original_params.forEach((value, key) =>
+	{
+		if (!override_existing_parameters || !new_params.has(key))
+		{
+			result_params.append(key, value);
+		}
+	});
+	// Now add all the ones from new params
+	new_params.forEach((value, key) => {result_params.append(key, value)});
+	return result_params.toString();
+}
+
 function ajax_get(url, contents, success_callback, failure_callback, always_callback, traditional_serialization)
 {
 	ajax_message(url, "GET", contents, success_callback, failure_callback, always_callback, traditional_serialization)
@@ -553,14 +579,19 @@ function add_to_list(list_selector, on_click, id, text, removal_title, input_nam
 	let addition = '<div id="' + div_id + '">';
 	if (!readonly)
 	{
-		addition += '<a href="javascript:' + on_click + '(' + id + ')" class="grey hover-black" title="' + removal_title + '">' +
+		// use parwehtml to make sure there are no html tags in the title
+		addition += '<a href="javascript:' + on_click + '(' + id + ')" class="grey hover-black" title="' + $($.parseHTML(removal_title)).text() + '">' +
 		'<span class="glyphicon glyphicon-remove-circle"></span>' +
 		'</a> ';
 	}
 	addition += text +
 	'<input type="hidden" name="' + input_name + '" value="' + id + '"><br>' +
 	'</div>';
-	if($(list_selector).find('input').length === 0) // If the list is empty then replace the empty message with the list item.
+	const non_empty_inputs = $(list_selector).find('input').filter(function()
+	{
+    	return $(this).val().trim() !== '';
+	});
+	if(non_empty_inputs.length === 0) // If the list is empty then replace the empty message with the list item.
 	{
 		$(list_selector).html(addition);
 	}
@@ -648,9 +679,10 @@ function matcher(items, search_fields)
 	// $('#search').autocomplete('fruits', on_select, [{name:'apple', id:1}, {name:'banana', id:2}, {name:'cherry', id:3}]);
 	// It can also be used with a URL
 	// $('#search').autocomplete('fruits', on_select, 'search_url');
-	$.fn.autocomplete = function(dataset_name, on_select, items_or_url, hide_type)
+	$.fn.autocomplete = function(dataset_name, on_select, items_or_url, hide_type, show_on_focus)
 	{
 		hide_type = hide_type || false;
+		show_on_focus = show_on_focus || false;
 		let search_fields = ['name', 'application_identifier'];
 		let dataset =
 		{
@@ -697,13 +729,24 @@ function matcher(items, search_fields)
 		}
 		this.typeahead(
 			{
-				minLength: 1,
+				minLength: show_on_focus ? 0: 1,
 				hint: false,
 				highlight: false
 			},
 			dataset
 		);
 		this.bind('typeahead:selected', on_select);
+		let el = this;
+		if (show_on_focus)
+		{
+			el.on('typeahead:opened', function()
+			{
+        		let ev = $.Event("keydown");
+    			ev.keyCode = ev.which = 40;
+    			el.trigger(ev);
+    			return true
+			});
+		}
 		return this;
 	};
 }(jQuery));

@@ -1,6 +1,7 @@
 import datetime
 
 from django.contrib.auth.models import Permission
+from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
@@ -20,6 +21,7 @@ from NEMO.models import (
     User,
 )
 from NEMO.tests.test_utilities import (
+    create_user_and_project,
     login_as_staff,
     login_as_user,
     login_as_user_with_permissions,
@@ -550,6 +552,13 @@ class NewAreaAccessTestCase(TestCase):
                 area=area, customer=User.objects.get(badge_number=staff.badge_number)
             ).exists()
         )
+
+    def test_area_already_logged_in(self):
+        user, project = create_user_and_project()
+        record = AreaAccessRecord(customer=user, project=project, area=area, start=timezone.now())
+        record.save()
+        record_2 = AreaAccessRecord(customer=user, project=project, area=area, start=timezone.now())
+        self.assertRaises(ValidationError, record_2.full_clean)
 
 
 class DoorInterlockTestCase(TestCase):

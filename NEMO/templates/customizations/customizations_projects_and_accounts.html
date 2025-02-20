@@ -109,6 +109,24 @@
                 Check this box to allow project PIs to add/remove users to/from projects.
             </div>
         </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="project_type_allow_multiple">Project types</label>
+            <div class="col-md-8">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               id="project_type_allow_multiple"
+                               name="project_type_allow_multiple"
+                               {% if project_type_allow_multiple %}checked{% endif %}
+                               value="enabled">
+                        Allow multiple project types per project
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-offset-3 col-md-8 help-block light-grey">
+                Check this box to allow multiple project types per project.
+            </div>
+        </div>
         <div class="form-group {% if errors.project_application_identifier_name %}has-error{% endif %}">
             <label class="control-label col-md-3" for="project_application_identifier_name">Project identifier name</label>
             <div class="col-md-8">

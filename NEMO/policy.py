@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from typing import List, Optional, Union
 
 from django.db.models import Q
@@ -38,10 +38,12 @@ from NEMO.models import (
 )
 from NEMO.utilities import (
     EmailCategory,
+    beginning_of_the_day,
     distinct_qs_value_list,
     format_daterange,
     format_datetime,
     get_class_from_settings,
+    get_local_date_times_for_item_policy_times,
     render_email_template,
     send_mail,
 )
@@ -603,23 +605,41 @@ class NEMOPolicy:
         should_enforce = True
 
         item = reservation.reservation_item
-        start_time = timezone.localtime(reservation.start)
-        end_time = timezone.localtime(reservation.end)
-        if item.policy_off_weekend and start_time.weekday() >= 5 and end_time.weekday() >= 5:
+        start_time = reservation.start.astimezone()
+        end_time = reservation.end.astimezone()
+        if (
+            item.policy_off_weekend
+            and start_time.weekday() >= 5
+            and end_time.weekday() >= 5
+            and reservation.duration() <= timedelta(days=2)
+        ):
             should_enforce = False
         if item.policy_off_between_times and item.policy_off_start_time and item.policy_off_end_time:
             if item.policy_off_start_time <= item.policy_off_end_time:
                 """Range is similar to 6am-6pm"""
+                policy_duration = datetime.combine(datetime.today(), item.policy_off_start_time) - datetime.combine(
+                    datetime.today(), item.policy_off_end_time
+                )
+                duration_ok = reservation.duration() <= policy_duration
                 if (
-                    item.policy_off_start_time <= start_time.time() <= item.policy_off_end_time
+                    duration_ok
+                    and item.policy_off_start_time <= start_time.time() <= item.policy_off_end_time
                     and item.policy_off_start_time <= end_time.time() <= item.policy_off_end_time
                 ):
                     should_enforce = False
             else:
                 """Range is similar to 6pm-6am"""
+                policy_duration = datetime.combine(
+                    datetime.today() + timedelta(days=1), item.policy_off_end_time
+                ) - datetime.combine(datetime.today(), item.policy_off_start_time)
+                duration_ok = reservation.duration() <= policy_duration
                 if (
-                    item.policy_off_start_time <= start_time.time() or start_time.time() <= item.policy_off_end_time
-                ) and (item.policy_off_start_time <= end_time.time() or end_time.time() <= item.policy_off_end_time):
+                    duration_ok
+                    and (
+                        item.policy_off_start_time <= start_time.time() or start_time.time() <= item.policy_off_end_time
+                    )
+                    and (item.policy_off_start_time <= end_time.time() or end_time.time() <= item.policy_off_end_time)
+                ):
                     should_enforce = False
         return should_enforce
 
@@ -630,29 +650,35 @@ class NEMOPolicy:
         cancelled_reservation: Optional[Reservation],
     ) -> List[str]:
         item_policy_problems = []
-        # Calculate the duration of the reservation:
-        duration = new_reservation.end - new_reservation.start
+        # This method checks reservation policy for reservations that are either outside of policy off time
+        # Or that overlap with some off time
 
         # The reservation must be at least as long as the minimum block time for this item.
         # Staff may break this rule.
         # An explicit policy override allows this rule to be broken.
+        # Policy off: whether part of the reservation is during off time or not, we are using the real reservation time
         item = new_reservation.reservation_item
         item_type = new_reservation.reservation_item_type
         if item.minimum_usage_block_time:
+            # use real duration regardless of policy
+            duration = new_reservation.duration()
             minimum_block_time = timedelta(minutes=item.minimum_usage_block_time)
             if duration < minimum_block_time:
                 item_policy_problems.append(
-                    f"Your reservation has a duration of {str(int(duration.total_seconds() / 60))} minutes. This {item_type.value} requires a minimum reservation duration of {str(int(minimum_block_time.total_seconds() / 60))} minutes."
+                    f"Your reservation has a duration of {str(int(duration.total_seconds() / 60))} minutes. This {item_type.value} requires a minimum reservation duration of {str(item.minimum_usage_block_time)} minutes."
                 )
 
         # The reservation may not exceed the maximum block time for this tool.
         # Staff may break this rule.
         # An explicit policy override allows this rule to be broken.
+        # Policy off: we are always using the duration without counting policy off time
         if item.maximum_usage_block_time:
+            # use duration without counting policy off time
+            policy_duration = new_reservation.duration_for_policy()
             maximum_block_time = timedelta(minutes=item.maximum_usage_block_time)
-            if duration > maximum_block_time:
+            if policy_duration > maximum_block_time:
                 item_policy_problems.append(
-                    f"Your reservation has a duration of {str(int(duration.total_seconds() / 60))} minutes. Reservations for this {item_type.value} may not exceed {str(int(maximum_block_time.total_seconds() / 60))} minutes."
+                    f"Your reservation has a duration of {str(int(policy_duration.total_seconds() / 60))} minutes. Reservations for this {item_type.value} may not exceed {str(item.maximum_usage_block_time)} minutes."
                 )
 
         user = new_reservation.user
@@ -660,13 +686,26 @@ class NEMOPolicy:
         # If there is a limit on number of reservations per user per day then verify that the user has not exceeded it.
         # Staff may break this rule.
         # An explicit policy override allows this rule to be broken.
+        # Policy off: only exclude reservations that start and end inside the policy off time
+        # Reservations that overlap at any point should count
+        # Weekends are fine since it's all day and the should_enforce_policy method should return False
         if item.maximum_reservations_per_day:
-            start_of_day = new_reservation.start
-            start_of_day = start_of_day.replace(hour=0, minute=0, second=0, microsecond=0)
+            start_of_day = beginning_of_the_day(new_reservation.start.astimezone())
             end_of_day = start_of_day + timedelta(days=1)
             reservations_for_that_day = Reservation.objects.filter(
                 cancelled=False, shortened=False, start__gte=start_of_day, end__lte=end_of_day, user=user
             )
+            if item.policy_off_between_times:
+                if item.policy_off_start_time < item.policy_off_end_time:
+                    reservations_for_that_day = reservations_for_that_day.exclude(
+                        start__gte=datetime.combine(start_of_day.date(), item.policy_off_start_time),
+                        end__lte=datetime.combine(start_of_day.date(), item.policy_off_end_time),
+                    )
+                else:
+                    reservations_for_that_day = reservations_for_that_day.exclude(
+                        start__gte=datetime.combine(start_of_day.date(), item.policy_off_start_time),
+                        end__lte=datetime.combine(end_of_day.date(), item.policy_off_end_time),
+                    )
             reservations_for_that_day = reservations_for_that_day.filter(**new_reservation.reservation_item_filter)
             # Exclude any reservation that is being cancelled.
             if cancelled_reservation and cancelled_reservation.id:
@@ -681,55 +720,144 @@ class NEMOPolicy:
                         f"{str(user)} may only have {str(item.maximum_reservations_per_day)} reservations for this {item_type.value} per day. Missed reservations are included when counting the number of reservations per day."
                     )
 
+        # If there is a limit on number of future reservations per user then verify that the user has not exceeded it.
+        # Staff may break this rule.
+        # An explicit policy override allows this rule to be broken.
+        # Policy off: only exclude reservations that start and end inside the policy off time
+        # Reservations that overlap at any point should count
+        # Weekends are fine since it's all day and the should_enforce_policy method should return False
+        if item.maximum_future_reservations:
+            future_reservations = Reservation.objects.filter(
+                cancelled=False, shortened=False, start__gte=timezone.now(), user=user
+            )
+            if item.policy_off_between_times:
+                if item.policy_off_start_time < item.policy_off_end_time:
+                    future_reservations = future_reservations.exclude(
+                        start__time__gte=item.policy_off_start_time,
+                        end__time__lte=item.policy_off_end_time,
+                    )
+                else:
+                    # Start on or after start and end before midnight
+                    start_end_before_midnight = Q(
+                        start__time__gte=item.policy_off_start_time,
+                        end__time__gte=item.policy_off_start_time,
+                        end__time__lte=time(hour=23, minute=59),
+                    )
+                    # Start after midnight and end within the same overnight range
+                    start_end_after_midnight = Q(
+                        start__time__lt=item.policy_off_end_time, end__time__lte=item.policy_off_end_time
+                    )
+                    # Start before midnight but end before policy end (overlap across midnight)
+                    start_end_overlap = Q(
+                        start__time__gte=item.policy_off_start_time, end__time__lt=item.policy_off_end_time
+                    )
+                    future_reservations = future_reservations.exclude(
+                        start_end_before_midnight | start_end_after_midnight | start_end_overlap
+                    )
+            future_reservations = future_reservations.filter(**new_reservation.reservation_item_filter)
+            # Exclude any reservation that is being cancelled.
+            if cancelled_reservation and cancelled_reservation.id:
+                future_reservations = future_reservations.exclude(id=cancelled_reservation.id)
+            if future_reservations.count() >= item.maximum_future_reservations:
+                if user == user_creating_reservation:
+                    item_policy_problems.append(
+                        f"You may only have {str(item.maximum_future_reservations)} future reservations for this {item_type.value}."
+                    )
+                else:
+                    item_policy_problems.append(
+                        f"{str(user)} may only have {str(item.maximum_future_reservations)} future reservations for this {item_type.value}."
+                    )
+
         # A minimum amount of time between reservations for the same user & same tool can be enforced.
         # Staff may break this rule.
         # An explicit policy override allows this rule to be broken.
+        # Policy off: exclude reservations during policy off time and weekends
         if item.minimum_time_between_reservations:
             buffer_time = timedelta(minutes=item.minimum_time_between_reservations)
-            must_end_before = new_reservation.start - buffer_time
-            too_close = Reservation.objects.filter(
-                cancelled=False, shortened=False, user=user, end__gt=must_end_before, start__lt=new_reservation.start
-            )
-            too_close = too_close.filter(**new_reservation.reservation_item_filter)
-            if cancelled_reservation and cancelled_reservation.id:
-                too_close = too_close.exclude(id=cancelled_reservation.id)
-            if too_close.exists():
-                if user == user_creating_reservation:
-                    item_policy_problems.append(
-                        f"Separate reservations for this {item_type.value} that belong to you must be at least {str(item.minimum_time_between_reservations)} minutes apart from each other. The proposed reservation ends too close to another reservation."
+            must_end_before = (new_reservation.start - buffer_time).astimezone()
+            # For weekends, we can just check that must_end_before is not within the policy off time
+            skip_minimum_check = False
+            if item.policy_off_weekend:
+                if must_end_before.weekday() in [5, 6]:
+                    skip_minimum_check = True
+            if not skip_minimum_check:
+                too_close = Reservation.objects.filter(
+                    cancelled=False,
+                    shortened=False,
+                    user=user,
+                    end__gt=must_end_before,
+                    start__lt=new_reservation.start,
+                )
+                too_close = too_close.filter(**new_reservation.reservation_item_filter)
+                if item.policy_off_between_times:
+                    policy_start_today, policy_end_today = get_local_date_times_for_item_policy_times(
+                        must_end_before, item.policy_off_start_time, item.policy_off_end_time
                     )
-                else:
-                    item_policy_problems.append(
-                        f"Separate reservations for this {item_type.value} that belong to {str(user)} must be at least {str(item.minimum_time_between_reservations)} minutes apart from each other. The proposed reservation ends too close to another reservation."
+                    policy_start_yesterday, policy_end_yesterday = get_local_date_times_for_item_policy_times(
+                        must_end_before - timedelta(days=1), item.policy_off_start_time, item.policy_off_end_time
                     )
-            must_start_after = new_reservation.end + buffer_time
-            too_close = Reservation.objects.filter(
-                cancelled=False, shortened=False, user=user, start__lt=must_start_after, end__gt=new_reservation.start
-            )
-            too_close = too_close.filter(**new_reservation.reservation_item_filter)
-            if cancelled_reservation and cancelled_reservation.id:
-                too_close = too_close.exclude(id=cancelled_reservation.id)
-            if too_close.exists():
-                if user == user_creating_reservation:
-                    item_policy_problems.append(
-                        f"Separate reservations for this {item_type.value} that belong to you must be at least {str(item.minimum_time_between_reservations)} minutes apart from each other. The proposed reservation begins too close to another reservation."
+                    too_close = too_close.exclude(start__gte=policy_start_today, end__lte=policy_end_today).exclude(
+                        start__gte=policy_start_yesterday, end__lte=policy_end_yesterday
                     )
-                else:
-                    item_policy_problems.append(
-                        f"Separate reservations for this {item_type.value} that belong to {str(user)} must be at least {str(item.minimum_time_between_reservations)} minutes apart from each other. The proposed reservation begins too close to another reservation."
+                if cancelled_reservation and cancelled_reservation.id:
+                    too_close = too_close.exclude(id=cancelled_reservation.id)
+                if too_close.exists():
+                    if user == user_creating_reservation:
+                        item_policy_problems.append(
+                            f"Separate reservations for this {item_type.value} that belong to you must be at least {str(item.minimum_time_between_reservations)} minutes apart from each other. The proposed reservation begins too close to another reservation."
+                        )
+                    else:
+                        item_policy_problems.append(
+                            f"Separate reservations for this {item_type.value} that belong to {str(user)} must be at least {str(item.minimum_time_between_reservations)} minutes apart from each other. The proposed reservation begins too close to another reservation."
+                        )
+            must_start_after = (new_reservation.end + buffer_time).astimezone()
+            # For weekends, we can just check that must_start_after is not within the policy off time
+            skip_minimum_check = False
+            if item.policy_off_weekend and must_start_after.weekday() in [5, 6]:
+                skip_minimum_check = True
+            if not skip_minimum_check:
+                too_close = Reservation.objects.filter(
+                    cancelled=False,
+                    shortened=False,
+                    user=user,
+                    start__lt=must_start_after,
+                    end__gt=new_reservation.start,
+                )
+                too_close = too_close.filter(**new_reservation.reservation_item_filter)
+                if item.policy_off_between_times:
+                    policy_start_today, policy_end_today = get_local_date_times_for_item_policy_times(
+                        must_start_after, item.policy_off_start_time, item.policy_off_end_time
                     )
+                    policy_start_tomorrow, policy_end_tomorrow = get_local_date_times_for_item_policy_times(
+                        must_start_after + timedelta(days=1), item.policy_off_start_time, item.policy_off_end_time
+                    )
+                    too_close = too_close.exclude(start__gte=policy_start_today, end__lte=policy_end_today).exclude(
+                        start__gte=policy_start_tomorrow, end__lte=policy_end_tomorrow
+                    )
+                if cancelled_reservation and cancelled_reservation.id:
+                    too_close = too_close.exclude(id=cancelled_reservation.id)
+                if too_close.exists():
+                    if user == user_creating_reservation:
+                        item_policy_problems.append(
+                            f"Separate reservations for this {item_type.value} that belong to you must be at least {str(item.minimum_time_between_reservations)} minutes apart from each other. The proposed reservation ends too close to another reservation."
+                        )
+                    else:
+                        item_policy_problems.append(
+                            f"Separate reservations for this {item_type.value} that belong to {str(user)} must be at least {str(item.minimum_time_between_reservations)} minutes apart from each other. The proposed reservation ends too close to another reservation."
+                        )
 
         # Check that the user is not exceeding the maximum amount of time they may reserve in the future.
         # Staff may break this rule.
         # An explicit policy override allows this rule to be broken.
+        # Policy off: use policy duration
         if item.maximum_future_reservation_time:
             reservations_after_now = Reservation.objects.filter(cancelled=False, user=user, start__gte=timezone.now())
             reservations_after_now = reservations_after_now.filter(**new_reservation.reservation_item_filter)
             if cancelled_reservation and cancelled_reservation.id:
                 reservations_after_now = reservations_after_now.exclude(id=cancelled_reservation.id)
-            amount_reserved_in_the_future = new_reservation.duration()
+            amount_reserved_in_the_future = new_reservation.duration_for_policy()
             for r in reservations_after_now:
-                amount_reserved_in_the_future += r.duration()
+                amount_reserved_in_the_future += r.duration_for_policy()
             if amount_reserved_in_the_future.total_seconds() / 60 > item.maximum_future_reservation_time:
                 if user == user_creating_reservation:
                     item_policy_problems.append(

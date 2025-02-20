@@ -77,7 +77,9 @@
                 <div class="container" id="main-content">
                     {% if messages %}
                         {% for message in messages %}
-                            <div class="alert alert-{% if message.level_tag == 'error' %}danger{% else %}{{ message.level_tag }}{% endif %} alert-dismissible show-on-load" {% if message.extra_tags %}{{ message.extra_tags }}{% endif %} style="display: none">
+                            <div class="alert alert-{% if message.level_tag == 'error' %}danger{% else %}{{ message.level_tag }}{% endif %} alert-dismissible show-on-load"
+                                 {% if message.extra_tags %}{{ message.extra_tags }}{% endif %}
+                                 style="display: none">
                                 <button type="button" class="close" data-dismiss="alert" aria-label="Modal close button">&times;</button>
                                 {{ message }}
                             </div>

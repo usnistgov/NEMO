@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import List, Set
+from typing import List, Set, Tuple
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -87,7 +87,11 @@ def create(request):
 def save_task(request, task: Task, user: User, task_images: List[TaskImages] = None):
     task.save()
 
-    if task.force_shutdown:
+    if (
+        task.force_shutdown
+        or task.safety_hazard
+        and ToolCustomization.get_bool("tool_problem_safety_hazard_automatic_shutdown")
+    ):
         # Shut down the tool.
         task.tool.operational = False
         task.tool.save()
@@ -136,12 +140,11 @@ def send_new_task_emails(request, task: Task, user, task_images: List[TaskImages
             + (" shutdown" if task.force_shutdown else " problem")
         )
         message = render_email_template(message, dictionary, request)
-        recipients = get_task_email_recipients(task, new=True)
+        tos, bcc = get_task_email_recipients(task, new=True)
         if ToolCustomization.get_bool("tool_problem_send_to_all_qualified_users"):
-            recipients = set(recipients)
             for qualified_user in task.tool.user_set.all():
                 if qualified_user.is_active:
-                    recipients.update(
+                    bcc.extend(
                         [
                             email
                             for email in qualified_user.get_emails(
@@ -153,7 +156,8 @@ def send_new_task_emails(request, task: Task, user, task_images: List[TaskImages
             subject=subject,
             content=message,
             from_email=user.email,
-            to=recipients,
+            to=tos,
+            bcc=bcc,
             attachments=attachments,
             email_category=EmailCategory.TASKS,
         )
@@ -227,7 +231,7 @@ def cancel(request, task_id):
 
 def send_task_updated_email(task, url, task_images: List[TaskImages] = None):
     try:
-        recipients = get_task_email_recipients(task)
+        tos, bcc = get_task_email_recipients(task)
         attachments = None
         if task_images:
             attachments = [
@@ -264,7 +268,8 @@ Visit {url} to view the tool control page for the task.<br/>
             subject=f"{task.tool} task {task_status}",
             content=message,
             from_email=task_user.email,
-            to=recipients,
+            to=tos,
+            bcc=bcc,
             attachments=attachments,
             email_category=EmailCategory.TASKS,
         )
@@ -401,9 +406,10 @@ def save_task_images(request, task: Task) -> List[TaskImages]:
     return task_images
 
 
-def get_task_email_recipients(task: Task, new=False) -> List[str]:
+def get_task_email_recipients(task: Task, new=False) -> Tuple[List[str], List[str]]:
     # Add all recipients, starting with primary owner
     recipient_users: Set[User] = {task.tool.primary_owner}
+    bcc_users: Set[User] = set()
     # Add backup owners
     recipient_users.update(task.tool.backup_owners.all())
     if ToolCustomization.get_bool("tool_task_updates_superusers"):
@@ -430,12 +436,13 @@ def get_task_email_recipients(task: Task, new=False) -> List[str]:
         and ToolCustomization.get_bool("tool_task_updates_allow_regular_user_preferences")
     )
     if send_email_to_regular_user:
-        recipient_users.update(
+        bcc_users.update(
             User.objects.filter(is_active=True).filter(Q(preferences__tool_task_notifications__in=[task.tool]))
         )
-    recipients = [
+    tos = [
         email for user in recipient_users for email in user.get_emails(user.get_preferences().email_send_task_updates)
     ]
+    bcc = [email for user in bcc_users for email in user.get_emails(user.get_preferences().email_send_task_updates)]
     if task.tool.notification_email_address:
-        recipients.append(task.tool.notification_email_address)
-    return recipients
+        tos.append(task.tool.notification_email_address)
+    return tos, bcc

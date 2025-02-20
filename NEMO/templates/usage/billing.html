@@ -2,16 +2,6 @@
 {% load custom_tags_and_filters %}
 {% load humanize %}
 {% block usage_content %}
-    <div style="margin-top:10px">
-        <ul class="nav nav-pills" id="tabs">
-            <li>
-                <a href="{{ tab_url }}">Usage</a>
-            </li>
-            <li class="active">
-                <a>Billing information</a>
-            </li>
-        </ul>
-    </div>
     <div id="content" class="tab-content">
         <div class="tab-pane active" id="billing_information">
             <br>
@@ -87,4 +77,17 @@
             </div>
         </div>
     </div>
+    <script>
+        $(document).ready(function() {
+            $(".usage_tab_link").on("click", function(event) {
+                event.preventDefault(); // Prevent default anchor behavior
+
+                let form = $("#usage_form"); // Select the form using jQuery
+
+                form.attr("action", $(this).attr("href")); // Change the form action dynamically
+
+                form.submit();
+            });
+        });
+    </script>
 {% endblock %}

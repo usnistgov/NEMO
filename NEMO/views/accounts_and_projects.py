@@ -22,6 +22,7 @@ from NEMO.models import (
     MembershipHistory,
     Project,
     ProjectDocuments,
+    ProjectType,
     Reservation,
     StaffCharge,
     TrainingSession,
@@ -68,7 +69,8 @@ def accounts_and_projects(request):
 
     dictionary = {
         "page": page,
-        "account_types": AccountType.objects.all(),
+        "account_types": AccountType.objects.exists(),
+        "project_types": ProjectType.objects.exists(),
         "accounts_and_projects": get_accounts_and_projects(),
         "project_list_active_only": ProjectsAccountsCustomization.get_bool("project_list_active_only"),
         "account_list_collapse": ProjectsAccountsCustomization.get_bool("account_list_collapse"),

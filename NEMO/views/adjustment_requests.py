@@ -38,7 +38,7 @@ from NEMO.utilities import (
     render_email_template,
     send_mail,
 )
-from NEMO.views.customization import EmailsCustomization, UserRequestsCustomization, get_media_file_contents
+from NEMO.views.customization import AdjustmentRequestsCustomization, EmailsCustomization, get_media_file_contents
 from NEMO.views.notifications import (
     create_adjustment_request_notification,
     create_request_message_notification,
@@ -50,11 +50,11 @@ from NEMO.views.notifications import (
 @login_required
 @require_GET
 def adjustment_requests(request):
-    if not UserRequestsCustomization.get_bool("adjustment_requests_enabled"):
+    if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_enabled"):
         return HttpResponseBadRequest("Adjustment requests are not enabled")
 
     user: User = request.user
-    max_requests = quiet_int(UserRequestsCustomization.get("adjustment_requests_display_max"), None)
+    max_requests = quiet_int(AdjustmentRequestsCustomization.get("adjustment_requests_display_max"), None)
     adj_requests = AdjustmentRequest.objects.filter(deleted=False)
     my_requests = adj_requests.filter(creator=user)
 
@@ -75,7 +75,7 @@ def adjustment_requests(request):
         "pending_adjustment_requests": adj_requests.filter(status=RequestStatus.PENDING),
         "approved_adjustment_requests": adj_requests.filter(status=RequestStatus.APPROVED)[:max_requests],
         "denied_adjustment_requests": adj_requests.filter(status=RequestStatus.DENIED)[:max_requests],
-        "adjustment_requests_description": UserRequestsCustomization.get("adjustment_requests_description"),
+        "adjustment_requests_description": AdjustmentRequestsCustomization.get("adjustment_requests_description"),
         "request_notifications": get_notifications(request.user, Notification.Types.ADJUSTMENT_REQUEST, delete=False),
         "reply_notifications": get_notifications(request.user, Notification.Types.ADJUSTMENT_REQUEST_REPLY),
         "user_is_reviewer": user_is_reviewer,
@@ -91,7 +91,7 @@ def adjustment_requests(request):
 @login_required
 @require_http_methods(["GET", "POST"])
 def create_adjustment_request(request, request_id=None, item_type_id=None, item_id=None):
-    if not UserRequestsCustomization.get_bool("adjustment_requests_enabled"):
+    if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_enabled"):
         return HttpResponseBadRequest("Adjustment requests are not enabled")
 
     user: User = request.user
@@ -107,27 +107,36 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
     except ContentType.DoesNotExist:
         pass
 
-    # Show times if not missed reservation or if missed reservation but customization is set to show times anyway
-    change_times_allowed = can_change_times(adjustment_request.item)
-    # Show quantity field if we have a consumable
-    change_quantity_allowed = isinstance(adjustment_request.item, ConsumableWithdraw)
+    edit = bool(adjustment_request.id)
+    initial_data = {"creator": adjustment_request.creator if edit else user}
+    # set those initial properties on the form if we just changed the item
+    item_changed = bool(item_type_id)
+    if item_changed and adjustment_request.item and adjustment_request.item.can_times_be_changed():
+        initial_data["new_start"] = adjustment_request.item.start
+        initial_data["new_end"] = adjustment_request.item.end
+    if item_changed and adjustment_request.item and adjustment_request.item.can_quantity_be_changed():
+        initial_data["new_quantity"] = adjustment_request.item.quantity
 
-    # only change the times if we are provided with a charge and it's allowed
-    if item_type_id and adjustment_request.item and change_times_allowed:
-        adjustment_request.new_start = adjustment_request.item.start
-        adjustment_request.new_end = adjustment_request.item.end
-    if item_type_id and adjustment_request.item and change_quantity_allowed:
-        adjustment_request.new_quantity = adjustment_request.item.quantity
+    form = AdjustmentRequestForm(
+        request.POST or None,
+        instance=adjustment_request,
+        initial=initial_data,
+    )
 
-    dictionary = {
-        "change_times_allowed": change_times_allowed,
-        "change_quantity_allowed": change_quantity_allowed,
-        "eligible_items": adjustment_eligible_items(user, adjustment_request.item),
-    }
+    item_type = form.data.get("item_type") if form.is_bound else None
+    item_id = form.data.get("item_id") if form.is_bound else None
+
+    # item from the form always has priority
+    item = (
+        ContentType.objects.get_for_id(item_type).get_object_for_this_type(pk=item_id)
+        if item_type and item_id
+        else adjustment_request.item
+    )
+
+    dictionary = {"item": item, "eligible_items": adjustment_eligible_items(user, current_item=item), "form": form}
 
     if request.method == "POST":
         # some extra validation needs to be done here because it depends on the user
-        edit = bool(adjustment_request.id)
         errors = []
         if edit:
             if adjustment_request.deleted:
@@ -136,12 +145,6 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
                 errors.append("Only pending requests can be modified.")
             if adjustment_request.creator != user and user not in adjustment_request.reviewers():
                 errors.append("You are not allowed to edit this request.")
-
-        form = AdjustmentRequestForm(
-            request.POST,
-            instance=adjustment_request,
-            initial={"creator": adjustment_request.creator if edit else user},
-        )
 
         # add errors to the form for better display
         for error in errors:
@@ -161,7 +164,7 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
                     actual_decision = next(iter(decision))
                     if actual_decision.startswith("approve_"):
                         adjustment_request.status = RequestStatus.APPROVED
-                        if actual_decision == "approve_apply_request" and UserRequestsCustomization.get_bool(
+                        if actual_decision == "approve_apply_request" and AdjustmentRequestsCustomization.get_bool(
                             "adjustment_requests_apply_button"
                         ):
                             adjust_charge = True
@@ -172,7 +175,7 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
             form.instance.last_updated_by = user
             new_adjustment_request = form.save()
 
-            # We only apply it here in case something goes wrong before when saving it
+            # We only apply it here in case something goes wrong when saving it
             if adjust_charge:
                 new_adjustment_request.apply_adjustment(user)
 
@@ -186,26 +189,13 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
                     delete_notification(Notification.Types.ADJUSTMENT_REQUEST, adjustment_request.id, reviewers)
             send_request_received_email(request, new_adjustment_request, edit, reviewers)
             return redirect("user_requests", "adjustment")
-        else:
-            item_type = form.cleaned_data.get("item_type")
-            item_id = form.cleaned_data.get("item_id")
-            if item_type and item_id:
-                dictionary["change_times_allowed"] = can_change_times(item_type.get_object_for_this_type(pk=item_id))
-                dictionary["change_quantity_allowed"] = isinstance(
-                    item_type.get_object_for_this_type(pk=item_id), ConsumableWithdraw
-                )
-            dictionary["form"] = form
-            return render(request, "requests/adjustment_requests/adjustment_request.html", dictionary)
-    else:
-        form = AdjustmentRequestForm(instance=adjustment_request)
-        dictionary["form"] = form
-        return render(request, "requests/adjustment_requests/adjustment_request.html", dictionary)
+    return render(request, "requests/adjustment_requests/adjustment_request.html", dictionary)
 
 
 @login_required
 @require_POST
 def adjustment_request_reply(request, request_id):
-    if not UserRequestsCustomization.get_bool("adjustment_requests_enabled"):
+    if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_enabled"):
         return HttpResponseBadRequest("Adjustment requests are not enabled")
 
     adjustment_request = get_object_or_404(AdjustmentRequest, id=request_id)
@@ -233,7 +223,7 @@ def adjustment_request_reply(request, request_id):
 @login_required
 @require_GET
 def delete_adjustment_request(request, request_id):
-    if not UserRequestsCustomization.get_bool("adjustment_requests_enabled"):
+    if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_enabled"):
         return HttpResponseBadRequest("Adjustment requests are not enabled")
 
     adjustment_request = get_object_or_404(AdjustmentRequest, id=request_id)
@@ -253,7 +243,7 @@ def delete_adjustment_request(request, request_id):
 @require_GET
 def mark_adjustment_as_applied(request, request_id):
     user: User = request.user
-    if not UserRequestsCustomization.get_bool("adjustment_requests_enabled"):
+    if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_enabled"):
         return HttpResponseBadRequest("Adjustment requests are not enabled")
 
     adjustment_request = get_object_or_404(AdjustmentRequest, id=request_id)
@@ -274,9 +264,9 @@ def mark_adjustment_as_applied(request, request_id):
 @login_required
 @require_GET
 def apply_adjustment(request, request_id):
-    if not UserRequestsCustomization.get_bool("adjustment_requests_enabled"):
+    if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_enabled"):
         return HttpResponseBadRequest("Adjustment requests are not enabled")
-    if not UserRequestsCustomization.get_bool("adjustment_requests_apply_button"):
+    if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_apply_button"):
         return HttpResponseBadRequest("Applying adjustments is not allowed")
 
     adjustment_request = get_object_or_404(AdjustmentRequest, id=request_id)
@@ -311,7 +301,7 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
             "template_color": bootstrap_primary_color(color_type),
             "adjustment_request": adjustment_request,
             "status": status,
-            "adjustment_requests_url": absolute_url,
+            "adjustment_request_url": absolute_url,
             "manager_note": adjustment_request.manager_note if status == "denied" else None,
             "user_office": False,
         }
@@ -374,44 +364,41 @@ Please visit {reply_url} to reply"""
             )
 
 
-def can_change_times(item):
-    can_change_reservation_times = UserRequestsCustomization.get_bool("adjustment_requests_missed_reservation_times")
-    return (
-        item
-        and not isinstance(item, ConsumableWithdraw)
-        and (not isinstance(item, Reservation) or can_change_reservation_times)
-    )
-
-
 def adjustment_eligible_items(user: User, current_item=None) -> List[BillableItemMixin]:
-    item_number = UserRequestsCustomization.get_int("adjustment_requests_charges_display_number")
-    date_limit = UserRequestsCustomization.get_date_limit()
+    item_number = AdjustmentRequestsCustomization.get_int("adjustment_requests_charges_display_number")
+    date_limit = AdjustmentRequestsCustomization.get_date_limit()
     end_filter = {"end__gte": date_limit} if date_limit else {}
     items: List[BillableItemMixin] = []
-    if UserRequestsCustomization.get_bool("adjustment_requests_missed_reservation_enabled"):
+    if AdjustmentRequestsCustomization.get_bool("adjustment_requests_missed_reservation_enabled"):
         items.extend(
             Reservation.objects.filter(user=user, missed=True).filter(**end_filter).order_by("-end")[:item_number]
         )
-    if UserRequestsCustomization.get_bool("adjustment_requests_tool_usage_enabled"):
+    if AdjustmentRequestsCustomization.get_bool("adjustment_requests_tool_usage_enabled"):
+        # also add non-remote work on behalf of user
         items.extend(
-            UsageEvent.objects.filter(user=user, operator=user, end__isnull=False)
+            UsageEvent.objects.filter(end__isnull=False)
+            .filter(Q(user=user, operator=user) | Q(user=user, remote_work=False))
             .filter(**end_filter)
             .order_by("-end")[:item_number]
         )
-    if UserRequestsCustomization.get_bool("adjustment_requests_area_access_enabled"):
+    if AdjustmentRequestsCustomization.get_bool("adjustment_requests_area_access_enabled"):
         items.extend(
             AreaAccessRecord.objects.filter(customer=user, end__isnull=False, staff_charge__isnull=True)
             .filter(**end_filter)
             .order_by("-end")[:item_number]
         )
-    if UserRequestsCustomization.get_bool("adjustment_requests_consumable_withdrawal_enabled"):
+    if AdjustmentRequestsCustomization.get_bool("adjustment_requests_consumable_withdrawal_enabled"):
         date_filter = {"date__gte": date_limit} if date_limit else {}
         consumable_withdrawals = (
             ConsumableWithdraw.objects.filter(customer=user).filter(**date_filter).order_by("-date")
         )
-        self_checkout = UserRequestsCustomization.get_bool("adjustment_requests_consumable_withdrawal_self_checkout")
-        staff_checkout = UserRequestsCustomization.get_bool("adjustment_requests_consumable_withdrawal_staff_checkout")
-        usage_event = UserRequestsCustomization.get_bool("adjustment_requests_consumable_withdrawal_usage_event")
+        self_checkout = AdjustmentRequestsCustomization.get_bool(
+            "adjustment_requests_consumable_withdrawal_self_checkout"
+        )
+        staff_checkout = AdjustmentRequestsCustomization.get_bool(
+            "adjustment_requests_consumable_withdrawal_staff_checkout"
+        )
+        usage_event = AdjustmentRequestsCustomization.get_bool("adjustment_requests_consumable_withdrawal_usage_event")
         type_filter = Q()
         if not self_checkout:
             type_filter = type_filter & ~Q(
@@ -425,10 +412,11 @@ def adjustment_eligible_items(user: User, current_item=None) -> List[BillableIte
             type_filter = type_filter & ~Q(usage_event__isnull=False)
         consumable_withdrawals = consumable_withdrawals.filter(type_filter)
         items.extend(consumable_withdrawals[:item_number])
-    if user.is_staff and UserRequestsCustomization.get_bool("adjustment_requests_staff_staff_charges_enabled"):
-        # Add all remote charges for staff to request for adjustment
+    if user.is_staff and AdjustmentRequestsCustomization.get_bool("adjustment_requests_staff_staff_charges_enabled"):
+        # Add all charges where staff is the operator and remove the ones where user is the operator
         items.extend(
-            UsageEvent.objects.filter(remote_work=True, operator=user, end__isnull=False)
+            UsageEvent.objects.filter(operator=user, end__isnull=False)
+            .exclude(user=F("operator"))
             .filter(**end_filter)
             .order_by("-end")[:item_number]
         )
@@ -469,6 +457,7 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
     table_result.add_header(("new_start", "New start"))
     table_result.add_header(("new_end", "New end"))
     table_result.add_header(("difference", "Difference"))
+    table_result.add_header(("waived", "Waive requested"))
     table_result.add_header(("reviewer", "Reviewer"))
     table_result.add_header(("applied", "Applied"))
     table_result.add_header(("applied_by", "Applied by"))
@@ -485,6 +474,7 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
                 "new_end": req.new_end,
                 "new_quantity": req.new_quantity,
                 "difference": req.get_time_difference() or req.get_quantity_difference(),
+                "waived": req.waive,
                 "reviewer": req.reviewer,
                 "applied": req.applied,
                 "applied_by": req.applied_by,

@@ -2,260 +2,6 @@
 <div class="panel-body">
     <form method="POST" action="{% url 'customize' 'requests' %}" class="form-horizontal">
         {% csrf_token %}
-        <h3 class="customization-section-title">Adjustment requests settings</h3>
-        <div class="form-group">
-            <label class="control-label col-md-4">Enable adjustment requests</label>
-            <div class="col-md-8">
-                <div class="checkbox">
-                    <label>
-                        <input type="checkbox"
-                               name="adjustment_requests_enabled"
-                               {% if adjustment_requests_enabled %}checked{% endif %}
-                               value="enabled">
-                        Check this box to allow users to request adjustment for charges.
-                    </label>
-                    <br />
-                </div>
-            </div>
-            <div class="col-md-offset-4 col-md-8 help-block light-grey">
-                At least one user with the facility manager role needs to exist for approval.
-            </div>
-        </div>
-        <div class="form-group">
-            <label class="control-label col-md-4" for="adjustment_requests_title">Adjustment request tab title</label>
-            <div class="col-md-7">
-                <input type="text"
-                       id="adjustment_requests_title"
-                       name="adjustment_requests_title"
-                       class="form-control"
-                       value="{{ adjustment_requests_title }}" />
-            </div>
-            <div class="col-md-offset-4 col-md-8 help-block light-grey">
-                The title for the adjustment request tab of the user requests page.
-            </div>
-        </div>
-        <div class="form-group">
-            <label class="control-label col-md-4" for="adjustment_requests_description">Adjustment requests description</label>
-            <div class="col-md-7">
-                <textarea oninput="auto_size_textarea(this);"
-                          id="adjustment_requests_description"
-                          name="adjustment_requests_description"
-                          class="form-control">{{ adjustment_requests_description }}</textarea>
-            </div>
-            <div class="col-md-offset-4 col-md-8 help-block light-grey">
-                The description/instructions to display on the adjustment requests page.
-            </div>
-        </div>
-        <div class="form-group">
-            <label class="control-label col-md-4" for="adjustment_requests_display_max">Adjustment requests display maximum</label>
-            <div class="col-md-3">
-                <div class="input-group">
-                    <input type="number"
-                           step="1"
-                           min="0"
-                           id="adjustment_requests_display_max"
-                           name="adjustment_requests_display_max"
-                           class="form-control text-right"
-                           value="{{ adjustment_requests_display_max }}" />
-                    <span class="input-group-addon">requests</span>
-                </div>
-            </div>
-            <div class="col-md-offset-4 col-md-8 help-block light-grey">
-                The maximum number of requests to display in each section (approved, denied). Leave blank for all.
-            </div>
-        </div>
-        <div class="form-group">
-            <label class="control-label col-md-4">Allowed charges for staff</label>
-            <div class="col-md-8">
-                <div class="checkbox">
-                    <input type="hidden" name="adjustment_requests_staff_staff_charges_enabled" value="off" />
-                    <label>
-                        <input type="checkbox"
-                               name="adjustment_requests_staff_staff_charges_enabled"
-                               {% if adjustment_requests_staff_staff_charges_enabled == "enabled" %}checked{% endif %}
-                               value="enabled">
-                        Remote work (Staff charges, Tool usage & Area access)
-                    </label>
-                    <br />
-                </div>
-            </div>
-        </div>
-        <div class="form-group">
-            <label class="control-label col-md-4">Allowed charges for users</label>
-            <div class="col-md-8">
-                <div class="checkbox">
-                    <div class="row col-md-12">
-                        <input type="hidden" name="adjustment_requests_tool_usage_enabled" value="off" />
-                        <label>
-                            <input type="checkbox"
-                                   name="adjustment_requests_tool_usage_enabled"
-                                   {% if adjustment_requests_tool_usage_enabled == "enabled" %}checked{% endif %}
-                                   value="enabled">
-                            Tool usage
-                        </label>
-                        <br />
-                    </div>
-                    <div class="row col-md-12">
-                        <input type="hidden" name="adjustment_requests_area_access_enabled" value="off" />
-                        <label>
-                            <input type="checkbox"
-                                   name="adjustment_requests_area_access_enabled"
-                                   {% if adjustment_requests_area_access_enabled == "enabled" %}checked{% endif %}
-                                   value="enabled">
-                            Area access
-                        </label>
-                        <br />
-                    </div>
-                    <div class="row col-xs-12">
-                        <input type="hidden" name="adjustment_requests_consumable_withdrawal_enabled" value="off" />
-                        <label>
-                            <input type="checkbox"
-                                   name="adjustment_requests_consumable_withdrawal_enabled"
-                                   {% if adjustment_requests_consumable_withdrawal_enabled == "enabled" %}checked{% endif %}
-                                   value="enabled">
-                            Consumable withdrawals
-                        </label>
-                    </div>
-                    <div class="row col-xs-offset-1 col-xs-8">
-                        <input type="hidden" name="adjustment_requests_consumable_withdrawal_self_checkout" value="off" />
-                        <label>
-                            <input type="checkbox"
-                                   name="adjustment_requests_consumable_withdrawal_self_checkout"
-                                   {% if adjustment_requests_consumable_withdrawal_self_checkout == "enabled" %}checked{% endif %}
-                                   value="enabled">
-                            self checked out items
-                        </label>
-                    </div>
-                    <div class="row col-xs-offset-1 col-xs-8">
-                        <input type="hidden" name="adjustment_requests_consumable_withdrawal_staff_checkout" value="off" />
-                        <label>
-                            <input type="checkbox"
-                                   name="adjustment_requests_consumable_withdrawal_staff_checkout"
-                                   {% if adjustment_requests_consumable_withdrawal_staff_checkout == "enabled" %}checked{% endif %}
-                                   value="enabled">
-                            staff checked out items
-                        </label>
-                    </div>
-                    <div class="row col-xs-offset-1 col-xs-8">
-                        <input type="hidden" name="adjustment_requests_consumable_withdrawal_usage_event" value="off" />
-                        <label>
-                            <input type="checkbox"
-                                   name="adjustment_requests_consumable_withdrawal_usage_event"
-                                   {% if adjustment_requests_consumable_withdrawal_usage_event == "enabled" %}checked{% endif %}
-                                   value="enabled">
-                            pre-post usage question items
-                        </label>
-                    </div>
-                    <div class="row col-xs-12">
-                        <input type="hidden" name="adjustment_requests_missed_reservation_enabled" value="off" />
-                        <label>
-                            <input type="checkbox"
-                                   name="adjustment_requests_missed_reservation_enabled"
-                                   {% if adjustment_requests_missed_reservation_enabled == "enabled" %}checked{% endif %}
-                                   value="enabled">
-                            Missed reservation
-                        </label>
-                    </div>
-                    <div class="row col-xs-offset-1 col-xs-8">
-                        <label>
-                            <input type="checkbox"
-                                   name="adjustment_requests_missed_reservation_times"
-                                   {% if adjustment_requests_missed_reservation_times %}checked{% endif %}
-                                   value="enabled">
-                            users can adjust reservation times
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <br>
-        <div class="form-group">
-            <label class="control-label col-md-4" for="adjustment_requests_charges_display_number">
-                Restrict number of charges
-            </label>
-            <div class="col-md-5">
-                <div class="input-group">
-                    <input type="number"
-                           step="1"
-                           min="0"
-                           id="adjustment_requests_charges_display_number"
-                           name="adjustment_requests_charges_display_number"
-                           class="form-control text-right"
-                           value="{{ adjustment_requests_charges_display_number }}" />
-                    <span class="input-group-addon">most recent charges</span>
-                </div>
-            </div>
-            <div class="col-md-offset-4 col-md-8 help-block light-grey">
-                The number of most recent charges to show in the dropdown menu when creating an adjustment.
-            </div>
-        </div>
-        <div class="form-group {% if errors.adjustment_requests_time_limit_interval or errors.adjustment_requests_time_limit_frequency %}has-error{% endif %}">
-            <label class="control-label col-md-4" for="adjustment_requests_time_limit_interval">Time limit for adjustments</label>
-            <div class="col-md-5">
-                <div class="input-group">
-                    <span class="input-group-addon">last</span>
-                    <input type="number"
-                           step="1"
-                           min="0"
-                           id="adjustment_requests_time_limit_interval"
-                           name="adjustment_requests_time_limit_interval"
-                           class="form-control text-right"
-                           value="{{ adjustment_requests_time_limit_interval }}" />
-                    <span class="input-group-addon" style="background-color: initial; padding: 0">
-                        <select aria-label="time limit frequency"
-                                style="width: auto;
-                                       border: none;
-                                       text-align: center;
-                                       padding: 6px 12px"
-                                id="adjustment_requests_time_limit_frequency"
-                                name="adjustment_requests_time_limit_frequency">
-                            <option value=""></option>
-                            {% for freq in frequency_choices %}
-                                {{ adjustment_requests_time_limit_frequency }}
-                                <option value="{{ freq.0 }}"
-                                        {% if adjustment_requests_time_limit_frequency|to_int == freq.0 %}selected{% endif %}>
-                                    {{ freq.1 }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </span>
-                </div>
-            </div>
-            <div class="col-md-offset-4 col-md-8 help-block light-grey">
-                {% if errors.adjustment_requests_time_limit_interval %}
-                    {{ errors.adjustment_requests_time_limit_interval.error }}
-                {% elif errors.adjustment_requests_time_limit_frequency %}
-                    {{ errors.adjustment_requests_time_limit_frequency.error }}
-                {% else %}
-                    The timeframe for users to be able to request adjustment on charges.
-                {% endif %}
-            </div>
-        </div>
-        <div class="form-group">
-            <label class="control-label col-md-4">Approved charges</label>
-            <div class="col-md-8">
-                <div class="checkbox">
-                    <label>
-                        <input type="checkbox"
-                               name="adjustment_requests_edit_charge_button"
-                               {% if adjustment_requests_edit_charge_button %}checked{% endif %}
-                               value="enabled">
-                        Check this box to show a link to edit the original charge after approval
-                    </label>
-                    <br>
-                    <label>
-                        <input type="checkbox"
-                               name="adjustment_requests_apply_button"
-                               {% if adjustment_requests_apply_button %}checked{% endif %}
-                               value="enabled">
-                        Check this box to allow reviewers to adjust the charge when approving an adjustment
-                    </label>
-                    <br />
-                </div>
-            </div>
-            <div class="col-md-offset-4 col-md-8 help-block light-grey">This does not apply to general charges.</div>
-        </div>
-        <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Access requests settings</h3>
         <div class="form-group">
             <label class="control-label col-md-4" for="access_requests_title">Access request tab title</label>
@@ -357,7 +103,7 @@
             <div class="col-md-1 text-center">
                 <label class="control-label" for="weekend_access_notification_cutoff_hour">at</label>
             </div>
-            <div class="col-md-2">
+            <div class="col-md-3">
                 <div class="input-group">
                     <input type="number"
                            step="1"
@@ -402,6 +148,50 @@
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
+        <h3 class="customization-section-title">Staff assistance requests settings</h3>
+        <div class="form-group">
+            <label class="control-label col-md-4">Enable staff assistance requests</label>
+            <div class="col-md-8">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="staff_assistance_requests_enabled"
+                               {% if staff_assistance_requests_enabled %}checked{% endif %}
+                               value="enabled">
+                        Check this box to allow users to request staff assistance.
+                    </label>
+                    <br />
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-4" for="staff_assistance_requests_title">Staff assistance request tab title</label>
+            <div class="col-md-7">
+                <input type="text"
+                       id="staff_assistance_requests_title"
+                       name="staff_assistance_requests_title"
+                       class="form-control"
+                       value="{{ staff_assistance_requests_title }}" />
+            </div>
+            <div class="col-md-offset-4 col-md-8 help-block light-grey">
+                The title for the staff assistance request tab of the user requests page.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-4" for="staff_assistance_requests_description">
+                Staff assistance requests description
+            </label>
+            <div class="col-md-7">
+                <textarea oninput="auto_size_textarea(this);"
+                          id="staff_assistance_requests_description"
+                          name="staff_assistance_requests_description"
+                          class="form-control">{{ staff_assistance_requests_description }}</textarea>
+            </div>
+            <div class="col-md-offset-4 col-md-8 help-block light-grey">
+                The description/instructions to display on the staff assistance requests page.
+            </div>
+        </div>
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
         <div class="text-center">{% button type="save" value="Save settings" %}</div>
     </form>
     <script type="text/javascript">
@@ -411,6 +201,7 @@
             auto_size_textarea(document.getElementById('buddy_board_description'));
             auto_size_textarea(document.getElementById('access_requests_description'));
             auto_size_textarea(document.getElementById('adjustment_requests_description'));
+            auto_size_textarea(document.getElementById('staff_assistance_requests_description'));
         }
         on_requests_tab_show();
     </script>

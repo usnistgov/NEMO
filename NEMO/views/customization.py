@@ -5,7 +5,7 @@ from typing import Dict, Iterable, List
 from dateutil.relativedelta import relativedelta
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.core.files.storage import get_storage_class
+from django.core.files.storage import default_storage
 from django.core.validators import (
     validate_comma_separated_integer_list,
     validate_email,
@@ -217,6 +217,7 @@ class ProjectsAccountsCustomization(CustomizationBase):
         "account_list_collapse": "",
         "project_allow_pi_manage_users": "",
         "project_allow_transferring_charges": "",
+        "project_type_allow_multiple": "",
     }
 
     def validate(self, name, value):
@@ -360,14 +361,32 @@ class InterlockCustomization(CustomizationBase):
 
 @customization(key="requests", title="User requests")
 class UserRequestsCustomization(CustomizationBase):
-    frequencies = [RecurrenceFrequency.DAILY, RecurrenceFrequency.WEEKLY, RecurrenceFrequency.MONTHLY]
     variables = {
         "buddy_requests_title": "Buddy requests board",
         "buddy_board_description": "",
+        "staff_assistance_requests_enabled": "",
+        "staff_assistance_requests_title": "Staff assistance requests",
+        "staff_assistance_requests_description": "",
         "access_requests_title": "Access requests",
         "access_requests_description": "",
         "access_requests_minimum_users": "2",
         "access_requests_display_max": "",
+        "weekend_access_notification_emails": "",
+        "weekend_access_notification_cutoff_hour": "",
+        "weekend_access_notification_cutoff_day": "",
+    }
+
+    def validate(self, name, value):
+        if name == "weekend_access_notification_emails":
+            recipients = tuple([e for e in value.split(",") if e])
+            for email in recipients:
+                validate_email(email)
+
+
+@customization(key="adjustment_requests", title="Adjustment requests")
+class AdjustmentRequestsCustomization(CustomizationBase):
+    frequencies = [RecurrenceFrequency.DAILY, RecurrenceFrequency.WEEKLY, RecurrenceFrequency.MONTHLY]
+    variables = {
         "adjustment_requests_enabled": "",
         "adjustment_requests_tool_usage_enabled": "enabled",
         "adjustment_requests_area_access_enabled": "enabled",
@@ -378,6 +397,10 @@ class UserRequestsCustomization(CustomizationBase):
         "adjustment_requests_consumable_withdrawal_self_checkout": "enabled",
         "adjustment_requests_consumable_withdrawal_staff_checkout": "enabled",
         "adjustment_requests_consumable_withdrawal_usage_event": "enabled",
+        "adjustment_requests_waive_tool_usage_enabled": "",
+        "adjustment_requests_waive_area_access_enabled": "",
+        "adjustment_requests_waive_consumable_withdrawal_enabled": "",
+        "adjustment_requests_waive_missed_reservation_enabled": "",
         "adjustment_requests_title": "Adjustment requests",
         "adjustment_requests_description": "",
         "adjustment_requests_charges_display_number": "10",
@@ -386,9 +409,6 @@ class UserRequestsCustomization(CustomizationBase):
         "adjustment_requests_time_limit_frequency": RecurrenceFrequency.WEEKLY.index,
         "adjustment_requests_edit_charge_button": "",
         "adjustment_requests_apply_button": "",
-        "weekend_access_notification_emails": "",
-        "weekend_access_notification_cutoff_hour": "",
-        "weekend_access_notification_cutoff_day": "",
     }
 
     @classmethod
@@ -430,10 +450,6 @@ class UserRequestsCustomization(CustomizationBase):
         return context_dict
 
     def validate(self, name, value):
-        if name == "weekend_access_notification_emails":
-            recipients = tuple([e for e in value.split(",") if e])
-            for email in recipients:
-                validate_email(email)
         if value and name == "adjustment_requests_time_limit_frequency":
             try:
                 if RecurrenceFrequency(int(value)) not in self.frequencies:
@@ -486,12 +502,14 @@ class ToolCustomization(CustomizationBase):
         "tool_task_updates_superusers": "",
         "tool_task_updates_allow_regular_user_preferences": "",
         "tool_control_hide_data_history_users": "",
+        "tool_control_documents_in_separate_tab": "",
         "tool_control_configuration_setting_template": "{{ current_setting }}",
         "tool_control_broadcast_upcoming_reservation": "",
         "tool_control_show_task_details": "",
         "tool_control_show_qualified_users_to_all": "",
         "tool_control_show_documents_only_qualified_users": "",
         "tool_control_show_tool_credentials": "enabled",
+        "tool_control_show_next_reservation_user": "",
         "tool_qualification_reminder_days": "",
         "tool_qualification_expiration_days": "",
         "tool_qualification_expiration_never_used_days": "",
@@ -499,10 +517,16 @@ class ToolCustomization(CustomizationBase):
         "tool_problem_max_image_size_pixels": "750",
         "tool_problem_send_to_all_qualified_users": "",
         "tool_problem_allow_regular_user_preferences": "",
+        "tool_problem_safety_hazard_automatic_shutdown": "",
         "tool_configuration_near_future_days": "1",
         "tool_reservation_policy_superusers_bypass": "",
         "tool_wait_list_spot_expiration": "15",
         "tool_wait_list_reservation_buffer": "15",
+        "tool_freed_time_notification_include_username": "",
+        "tool_freed_time_notify_next_reservation_enabled": "",
+        "tool_freed_time_notify_next_reservation_min_freed_time": "15",
+        "tool_freed_time_notify_next_reservation_starts_within": "1",
+        "kiosk_only_show_qualified_tools": "",
     }
 
     def validate(self, name, value):
@@ -561,7 +585,13 @@ class RemoteWorkCustomization(CustomizationBase):
 
 @customization(key="training", title="Training")
 class TrainingCustomization(CustomizationBase):
-    variables = {"training_only_type": "", "training_allow_date": "", "training_included_hidden_tools": ""}
+    variables = {
+        "training_only_type": "",
+        "training_allow_date": "",
+        "training_included_hidden_tools": "",
+        "training_show_self_option_in_tool_control": "",
+        "training_show_behalf_option_in_tool_control": "",
+    }
 
     def context(self) -> Dict:
         dictionary = super().context()
@@ -625,6 +655,7 @@ class TemplatesCustomization(CustomizationBase):
         ("weekend_access_email", ".html"),
         ("recurring_charges_reminder_email", ".html"),
         ("wait_list_notification_email", ".html"),
+        ("tool_required_unanswered_questions_email", ".html"),
     ]
 
 
@@ -644,10 +675,9 @@ class RatesCustomization(CustomizationBase):
 
 def get_media_file_contents(file_name):
     """Get the contents of a media file if it exists. Return a blank string if it does not exist."""
-    storage = get_storage_class()()
-    if not storage.exists(file_name):
+    if not default_storage.exists(file_name):
         return ""
-    with storage.open(file_name) as opened_file:
+    with default_storage.open(file_name) as opened_file:
         read_file = opened_file.read()
         try:
             return read_file.decode().strip()
@@ -660,10 +690,9 @@ def store_media_file(content, file_name):
     Delete any existing media file with the same name and save the new content into file_name in the media directory.
     If the content is blank then no new file is created.
     """
-    storage = get_storage_class()()
-    storage.delete(file_name)
+    default_storage.delete(file_name)
     if content:
-        storage.save(file_name, content)
+        default_storage.save(file_name, content)
 
 
 # This method should not be used anymore. Instead, use XCustomization.get(name)

@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 <div class="row" style="margin-top:30px">
     <div class="col-xs-offset-3 col-xs-6" onclick="revert()">
         <div class="alert alert-warning" style="text-align:center; margin-bottom:0">
@@ -7,14 +8,17 @@
 </div>
 {% if messages %}
     {% for message in messages %}
-        <div class="alert alert-{{ message.level_tag }} alert-dismissible show-on-load" {% if message.extra_tags %}{{ message.extra_tags }}{% endif %} style="display: none; margin-top: 15px">
+        <div class="alert alert-{{ message.level_tag }} alert-dismissible show-on-load"
+             {% if message.extra_tags %}{{ message.extra_tags }}{% endif %}
+             style="display: none;
+                    margin-top: 15px">
             <button type="button" class="close" data-dismiss="alert" aria-label="Modal close button">&times;</button>
             {{ message }}
         </div>
     {% endfor %}
 {% endif %}
 {% if usage_events %}
-    <h1>Current {{ facility_name }} usage</h1>
+    <h1>Current {{ facility_name }} use</h1>
     <div class="row">
         {% for u in usage_events %}
             <div class="col-xs-6">
@@ -28,19 +32,8 @@
         {% endfor %}
     </div>
 {% endif %}
-<h1>Find a tool by category</h1>
-<div class="row">
-    {% for category in categories %}
-        <div class="col-xs-6">
-            <div class="panel panel-default {% if category in unqualified_categories %}disabled{% endif %}"
-                 onclick="view_category('{% url 'kiosk_category_choices' category customer.id %}')">
-                <div class="panel-body">
-                    <span style="font-size:x-large; margin-right:10px">{{ category }}</span>
-                </div>
-            </div>
-        </div>
-    {% endfor %}
-</div>
+<h1>Find a tool</h1>
+{% include 'kiosk/tool_categories.html' %}
 {% if upcoming_reservations %}
     <h1>Upcoming Reservations</h1>
     <div>

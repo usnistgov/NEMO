@@ -1,3 +1,7 @@
 venv
 NEMO/settings.py
 documentation
+.git
+conf
+build
+__pycache__

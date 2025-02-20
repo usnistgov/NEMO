@@ -32,6 +32,16 @@
                     </a>
                 </li>
             {% endif %}
+            {% if staff_assistance_request_allowed %}
+                <li class="{% if tab == 'staff_assistance' %}active{% endif %}">
+                    <a href="#staff-assistance-requests"
+                       onclick="location.href = '{% url "user_requests" "staff_assistance" %}'">{{ staff_assistance_requests_title }}
+                        {% if staff_assistance_notification_count %}
+                            <span class="badge badge-tab-top">{{ staff_assistance_notification_count }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+            {% endif %}
         </ul>
         <h1 class="pull-left" style="margin-top: 0;margin-right: 20px">
             {% if tab == 'access' %}
@@ -40,6 +50,8 @@
                 {{ buddy_requests_title }}
             {% elif tab == 'adjustment' %}
                 {{ adjustment_requests_title }}
+            {% elif tab == 'staff_assistance' %}
+                {{ staff_assistance_requests_title }}
             {% else %}
                 Requests
             {% endif %}
@@ -58,6 +70,11 @@
         {% endif %}
         {% if adjustment_request_allowed and facility_managers_exist %}
             <div class="tab-pane{% if tab == 'adjustment' %} active{% endif %}" id="adjustment-requests">
+                {# This will be loaded asynchronously #}
+            </div>
+        {% endif %}
+        {% if staff_assistance_request_allowed %}
+            <div class="tab-pane{% if tab == 'staff_assistance' %} active{% endif %}" id="staff-assistance-requests">
                 {# This will be loaded asynchronously #}
             </div>
         {% endif %}
@@ -80,8 +97,14 @@
             let failure_dialog = ajax_complete_callback("Unable to load adjustment requests", "There was a problem loading adjustment requests.");
             $("#adjustment-requests").load("{% url 'adjustment_requests' %}", undefined, failure_dialog);
         }
+        function load_staff_assistance_requests()
+        {
+            let failure_dialog = ajax_complete_callback("Unable to load staff assistance requests", "There was a problem looking up staff assistance requests.");
+            $("#staff-assistance-requests").load("{% url 'staff_assistance_requests' %}", undefined, failure_dialog);
+        }
         {% if tab == 'buddy' %}load_buddy_board();{% endif %}
         {% if tab == 'access' %}load_access_requests();{% endif %}
         {% if tab == 'adjustment' %}load_adjustment_requests();{% endif %}
+        {% if tab == 'staff_assistance' %}load_staff_assistance_requests();{% endif %}
     </script>
 {% endblock %}

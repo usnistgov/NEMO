@@ -1,6 +1,0 @@
-graft NEMO/static
-graft NEMO/templates
-graft NEMO/apps/**/templates
-graft NEMO/apps/**/static
-include LICENSE.md
-include README.md

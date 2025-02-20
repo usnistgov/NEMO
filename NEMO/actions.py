@@ -3,9 +3,10 @@ from django.db.models import Max
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
+from NEMO.mixins import BillableItemMixin
 from NEMO.models import Area, Configuration, Interlock, InterlockCard, Tool, User
 from NEMO.typing import QuerySetType
-from NEMO.utilities import new_model_copy
+from NEMO.utilities import export_format_datetime, new_model_copy
 from NEMO.views.access_requests import access_csv_export
 from NEMO.views.adjustment_requests import adjustments_csv_export
 
@@ -71,6 +72,15 @@ def create_next_interlock(model_admin, request, queryset):
         max_channel = Interlock.objects.filter(card=interlock.card).aggregate(Max("channel"))["channel__max"]
         new_interlock.channel = max_channel + 1 if max_channel is not None else None
         new_interlock.save()
+
+
+@admin.action(description="Generate CSV status report for selected interlocks")
+def csv_interlock_status_report(model_admin, request, queryset: QuerySetType[Interlock]):
+    from NEMO.interlocks import get_interlock_report
+
+    interlock_report = get_interlock_report(queryset)
+    filename = "interlocks_report_" + export_format_datetime() + ".csv"
+    return interlock_report.to_csv_http_response(filename)
 
 
 @admin.action(description="Duplicate selected tool configuration")
@@ -176,3 +186,10 @@ def duplicate_configuration(model_admin, request, queryset: QuerySetType[Configu
             messages.error(
                 request, f"{original_name} could not be duplicated because of the following error: {str(error)}"
             )
+
+
+@admin.action(description="Waive selected charges")
+def waive_selected_charges(model_admin, request, queryset: QuerySetType[BillableItemMixin]):
+    for charge in queryset:
+        charge.waive(request.user)
+        messages.success(request, f"{model_admin.model.__name__} #{charge.id} has been successfully waived")

@@ -7,6 +7,7 @@ from typing import Dict, List
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -46,12 +47,12 @@ from NEMO.utilities import (
     get_email_from_settings,
     quiet_int,
     render_email_template,
+    response_js_redirect,
     send_mail,
 )
 from NEMO.views.area_access import able_to_self_log_out_of_area
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import (
-    ApplicationCustomization,
     CalendarCustomization,
     EmailsCustomization,
     InterlockCustomization,
@@ -166,6 +167,18 @@ def tool_status(request, tool_id):
     except Reservation.DoesNotExist:
         pass
 
+    dictionary["next_reservation"] = (
+        Reservation.objects.filter(
+            start__gt=timezone.now(),
+            cancelled=False,
+            missed=False,
+            shortened=False,
+            tool=tool,
+        )
+        .order_by("start")
+        .first()
+    )
+
     # Staff need the user list to be able to qualify users for the tool.
     if user.is_staff:
         dictionary["users"] = User.objects.filter(is_active=True)
@@ -241,15 +254,17 @@ def usage_data_history(request, tool_id):
 
     table_pre_run_data = BasicDisplayTable()
     table_pre_run_data.add_header(("user", "User"))
+    table_pre_run_data.add_header(("operator", "Operator"))
     if show_project_info:
         table_pre_run_data.add_header(("project", "Project"))
-    table_pre_run_data.add_header(("date", "Date"))
+    table_pre_run_data.add_header(("date", "Start date"))
 
     table_run_data = BasicDisplayTable()
     table_run_data.add_header(("user", "User"))
+    table_run_data.add_header(("operator", "Operator"))
     if show_project_info:
         table_run_data.add_header(("project", "Project"))
-    table_run_data.add_header(("date", "Date"))
+    table_run_data.add_header(("date", "End date"))
 
     for usage_event in pre_usage_events:
         if usage_event.pre_run_data:
@@ -378,6 +393,7 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
     user = get_object_or_404(User, id=user_id)
     project = get_object_or_404(Project, id=project_id)
     staff_charge = staff_charge == "true"
+    is_training = request.POST.get("training", "false") == "true"
     bypass_interlock = request.POST.get("bypass", "False") == "True"
     # Figure out if the tool usage is part of remote work
     # 1: Staff charge means it's always remote work
@@ -403,6 +419,12 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
     try:
         new_usage_event.pre_run_data = dynamic_form.extract(request)
     except RequiredUnansweredQuestionsException as e:
+        return HttpResponseBadRequest(str(e))
+
+    # Validate usage event
+    try:
+        new_usage_event.full_clean()
+    except ValidationError as e:
         return HttpResponseBadRequest(str(e))
 
     # All policy checks passed so enable the tool for the user.
@@ -435,10 +457,16 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
             area_access.staff_charge = new_staff_charge
             area_access.customer = new_staff_charge.customer
             area_access.project = new_staff_charge.project
+            try:
+                area_access.full_clean()
+            except ValidationError as e:
+                return HttpResponseBadRequest(str(e))
             area_access.save()
 
     # Now we can safely save the usage event
     new_usage_event.remote_work = remote_work
+    if (user.is_staff or user in tool.superusers.all()) and not remote_work and is_training:
+        new_usage_event.training = True
     new_usage_event.save()
 
     # Remove wait list entry if it exists
@@ -447,10 +475,9 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
         wait_list_entry.update(deleted=True, date_exited=timezone.now())
 
     try:
-        dynamic_form.charge_for_consumables(new_usage_event, new_usage_event.pre_run_data, request)
+        dynamic_form.process_run_data(new_usage_event, new_usage_event.pre_run_data, request)
     except Exception as e:
         return HttpResponseBadRequest(str(e))
-    dynamic_form.update_tool_counters(new_usage_event.pre_run_data, tool.id)
 
     return response
 
@@ -495,22 +522,17 @@ def disable_tool(request, tool_id):
     try:
         current_usage_event.run_data = dynamic_form.extract(request)
     except RequiredUnansweredQuestionsException as e:
-        if (
-            (user.is_staff or user.is_user_office)
-            and user != current_usage_event.operator
-            and current_usage_event.user != user
-        ):
-            # if a staff is forcing somebody off the tool and there are required questions, send an email and proceed
+        if user != current_usage_event.operator and current_usage_event.user != user:
+            # if someone else is forcing somebody off the tool and there are required questions, send an email and proceed
             current_usage_event.run_data = e.run_data
             email_managers_required_questions_disable_tool(current_usage_event.operator, user, tool, e.questions)
         else:
             return HttpResponseBadRequest(str(e))
 
     try:
-        dynamic_form.charge_for_consumables(current_usage_event, current_usage_event.run_data, request)
+        dynamic_form.process_run_data(current_usage_event, current_usage_event.run_data, request)
     except Exception as e:
         return HttpResponseBadRequest(str(e))
-    dynamic_form.update_tool_counters(current_usage_event.run_data, tool.id)
 
     current_usage_event.save()
     if user.charging_staff_time():
@@ -524,6 +546,9 @@ def disable_tool(request, tool_id):
     area_record = user.area_access_record()
     if area_record and tool.ask_to_leave_area_when_done_using and able_to_self_log_out_of_area(user):
         return render(request, "tool_control/logout_user.html", {"area": area_record.area, "tool": tool})
+
+    if current_usage_event.training:
+        return response_js_redirect("training", query_string=f"usage_event_id={current_usage_event.id}")
 
     return HttpResponse()
 
@@ -581,13 +606,13 @@ def do_exit_wait_list(entry, time):
 @login_required
 @require_GET
 def past_comments_and_tasks(request):
-    user: User = request.user
-    start, end = extract_optional_beginning_and_end_times(request.GET)
-    search = request.GET.get("search")
-    if not start and not end and not search:
-        return HttpResponseBadRequest("Please enter a search keyword, start date or end date.")
-    tool_id = request.GET.get("tool_id")
     try:
+        user: User = request.user
+        start, end = extract_optional_beginning_and_end_times(request.GET)
+        search = request.GET.get("search")
+        if not start and not end and not search:
+            return HttpResponseBadRequest("Please enter a search keyword, start date or end date.")
+        tool_id = request.GET.get("tool_id")
         tasks = Task.objects.filter(tool_id=tool_id)
         comments = Comment.objects.filter(tool_id=tool_id)
         if not user.is_staff:
@@ -674,12 +699,14 @@ def tool_usage_group_question(request, tool_id, group_name):
     )
 
 
-@staff_member_required
+@login_required
 @require_GET
 def reset_tool_counter(request, counter_id):
     counter = get_object_or_404(ToolUsageCounter, id=counter_id)
+    if request.user not in counter.reset_permitted_users():
+        return redirect("landing")
     counter.last_reset_value = counter.value
-    counter.value = 0
+    counter.value = counter.default_value
     counter.last_reset = datetime.now()
     counter.last_reset_by = request.user
     counter.save()
@@ -687,28 +714,29 @@ def reset_tool_counter(request, counter_id):
     # Save a comment about the counter being reset.
     comment = Comment()
     comment.tool = counter.tool
-    comment.content = f"The {counter.name} counter was reset to 0. Its last value was {counter.last_reset_value}."
+    comment.content = f"The {counter.name} counter was reset to {counter.default_value}. Its last value was {counter.last_reset_value}."
     comment.author = request.user
     comment.expiration_date = timezone.now()
     comment.save()
 
-    # Email Lab Managers about the counter being reset.
-    facility_managers = [
-        email
-        for manager in User.objects.filter(is_active=True, is_facility_manager=True)
-        for email in manager.get_emails(manager.get_preferences().email_send_task_updates)
-    ]
-    if facility_managers:
-        message = f"""The {counter.name} counter for the {counter.tool.name} was reset to 0 on {formats.localize(counter.last_reset)} by {counter.last_reset_by}.
-	
-Its last value was {counter.last_reset_value}."""
-        send_mail(
-            subject=f"{counter.tool.name} counter reset",
-            content=message,
-            from_email=get_email_from_settings(),
-            to=facility_managers,
-            email_category=EmailCategory.SYSTEM,
-        )
+    if counter.email_facility_managers_when_reset:
+        # Email Lab Managers about the counter being reset.
+        facility_managers = [
+            email
+            for manager in User.objects.filter(is_active=True, is_facility_manager=True)
+            for email in manager.get_emails(manager.get_preferences().email_send_task_updates)
+        ]
+        if facility_managers:
+            message = f"""The {counter.name} counter for the {counter.tool.name} was reset to {counter.default_value} on {formats.localize(counter.last_reset)} by {counter.last_reset_by}.
+        
+    Its last value was {counter.last_reset_value}."""
+            send_mail(
+                subject=f"{counter.tool.name} counter reset",
+                content=message,
+                from_email=get_email_from_settings(),
+                to=facility_managers,
+                email_category=EmailCategory.SYSTEM,
+            )
     return redirect("tool_control")
 
 
@@ -731,38 +759,28 @@ def email_managers_required_questions_disable_tool(
 ):
     user_office_email = EmailsCustomization.get("user_office_email_address")
     abuse_email_address = EmailsCustomization.get("abuse_email_address")
-    cc_users: List[User] = [staff_member, tool.primary_owner]
-    # Add facility managers as CC based on their tool notification preferences if any
-    cc_users.extend(
-        User.objects.filter(is_active=True, is_facility_manager=True).filter(
-            Q(preferences__tool_task_notifications__isnull=True) | Q(preferences__tool_task_notifications__in=[tool])
+    message = get_media_file_contents("tool_required_unanswered_questions_email.html")
+    if message:
+        cc_users: List[User] = [staff_member, tool.primary_owner]
+        # Add facility managers as CC based on their tool notification preferences if any
+        cc_users.extend(
+            User.objects.filter(is_active=True, is_facility_manager=True).filter(
+                Q(preferences__tool_task_notifications__isnull=True)
+                | Q(preferences__tool_task_notifications__in=[tool])
+            )
         )
-    )
-    facility_name = ApplicationCustomization.get("facility_name")
-    ccs = [email for user in cc_users for email in user.get_emails(EmailNotificationType.BOTH_EMAILS)]
-    ccs.append(abuse_email_address)
-    display_questions = "".join(
-        [linebreaksbr(mark_safe(question.render_as_text())) + "<br/><br/>" for question in questions]
-    )
-    message = f"""
-Dear {tool_user.get_name()},<br/>
-You have been logged off by staff from the {tool} that requires answers to the following post-usage questions:<br/>
-<br/>
-{display_questions}
-<br/>
-Regards,<br/>
-<br/>
-{facility_name} Management<br/>
-"""
-    tos = tool_user.get_emails(EmailNotificationType.BOTH_EMAILS)
-    send_mail(
-        subject=f"Unanswered post‑usage questions after logoff from the {tool.name}",
-        content=message,
-        from_email=user_office_email,
-        to=tos,
-        cc=ccs,
-        email_category=EmailCategory.ABUSE,
-    )
+        ccs = [email for user in cc_users for email in user.get_emails(EmailNotificationType.BOTH_EMAILS)]
+        ccs.append(abuse_email_address)
+        rendered_message = render_email_template(message, {"user": tool_user, "tool": tool, "questions": questions})
+        tos = tool_user.get_emails(EmailNotificationType.BOTH_EMAILS)
+        send_mail(
+            subject=f"Unanswered post‑usage questions after logoff from the {tool.name}",
+            content=rendered_message,
+            from_email=user_office_email,
+            to=tos,
+            cc=ccs,
+            email_category=EmailCategory.ABUSE,
+        )
 
 
 def send_tool_usage_counter_email(counter: ToolUsageCounter):
@@ -792,6 +810,7 @@ def format_usage_data(
 
     try:
         user_data = f"{usage_event.user.first_name} {usage_event.user.last_name}"
+        operator_data = f"{usage_event.operator.first_name} {usage_event.operator.last_name}"
         run_data: Dict = loads(usage_run_data)
         for question_key, question in run_data.items():
             if "user_input" in question:
@@ -810,6 +829,7 @@ def format_usage_data(
                                 group_usage_data[name] = user_input
                             if group_usage_data:
                                 group_usage_data["user"] = user_data
+                                group_usage_data["operator"] = operator_data
                                 group_usage_data["date"] = date_data
                                 if show_project_info:
                                     group_usage_data["project"] = usage_event.project.name
@@ -819,6 +839,7 @@ def format_usage_data(
                     usage_data[question_key] = question["user_input"]
         if usage_data:
             usage_data["user"] = user_data
+            usage_data["operator"] = operator_data
             usage_data["date"] = date_data
             if show_project_info:
                 usage_data["project"] = usage_event.project.name

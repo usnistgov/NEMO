@@ -3,20 +3,23 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
-from NEMO.models import AreaAccessRecord, UsageEvent, Alert, Resource, Area
-from NEMO.views.alerts import delete_expired_alerts
+from NEMO.models import Alert, Area, AreaAccessRecord, Resource, UsageEvent
+from NEMO.views.alerts import mark_alerts_as_expired
+from NEMO.views.customization import get_media_file_contents
 
 
 @login_required
 @require_GET
 def jumbotron(request):
-    return render(request, "jumbotron/jumbotron.html")
+    return render(
+        request, "jumbotron/jumbotron.html", {"watermark": bool(get_media_file_contents("jumbotron_watermark.png"))}
+    )
 
 
 @login_required
 @require_GET
 def jumbotron_content(request):
-    delete_expired_alerts()
+    mark_alerts_as_expired()
     reservations_can_expire = Area.objects.filter(requires_reservation=True)
     dictionary = {
         "facility_occupants": AreaAccessRecord.objects.filter(end=None, staff_charge=None)

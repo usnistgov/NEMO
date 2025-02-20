@@ -801,57 +801,58 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	padding-right: 10px;
 }
 
-.buddy-system-requests
+.buddy-system-requests, .staff-assistance-requests
 {
 	margin-top: 20px;
 }
 
-.buddy-list
+.buddy-list, .staff-assistance-list
 {
 	margin-top: 10px;
 }
 
-.buddy-list-item
+.buddy-list-item, .staff-assistance-list-item
 {
 	display: table;
 	width: 100%;
 	margin-bottom: 5px;
 }
 
-.buddy-list-item:first-child
+.buddy-list-item:first-child, .staff-assistance-list-item:first-child
 {
 	margin-top: 10px;
 }
 
-.buddy-list-item-reply
+.buddy-list-item-reply, .staff-assistance-list-item-reply
 {
 	margin-top: 5px;
 }
 
-.buddy-list-item-reply textarea
+.buddy-list-item-reply textarea, .staff-assistance-list-item-reply textarea
 {
 	padding: 10px;
 }
 
-.buddy-list-item-description, .buddy-list-item-buttons
+.buddy-list-item-description, .buddy-list-item-buttons, .staff-assistance-list-item-description, .staff-assistance-list-item-buttons
 {
 	display: table-cell;
+	word-break: break-word;
 	padding: 10px;
 }
 
-.buddy-list-item-reply textarea, .buddy-list .buddy-list-item.list-group-item-info
+.buddy-list-item-reply textarea, .buddy-list .buddy-list-item.list-group-item-info, .staff-assistance-list-item-reply textarea, .staff-assistance-list .staff-assistance-list-item.list-group-item-info
 {
 	border-radius: 8px;
 }
 
-.buddy-list-item-buttons
+.buddy-list-item-buttons, .staff-assistance-list-item-buttons
 {
 	vertical-align: middle;
 	text-align: right;
 	white-space: nowrap;
 }
 
-.buddy-list-item-reply, .buddy-list-item-message
+.buddy-list-item-reply, .buddy-list-item-message, .staff-assistance-list-item-reply, .staff-assistance-list-item-message
 {
 	float: right;
 	width: 90%;
@@ -871,13 +872,13 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	top: 5px;
 }
 
-.buddy-list-item-reply-buttons
+.buddy-list-item-reply-buttons, .staff-assistance-list-item-reply-buttons
 {
 	margin: 15px 0;
 	padding: 0 10px;
 }
 
-.buddy-list-day
+.buddy-list-day, .staff-assistance-list-day
 {
 	margin-top: 20px;
 	padding-inline-start: 40px;
@@ -1045,10 +1046,24 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 }
 
 /* Invalid input for post usage/reservation questions and additional event parameters */
-#tool_control input:invalid, #tool_control select:invalid, #tool_control textarea:invalid,
-#additional_event_parameters input:invalid, #additional_event_parameters select:invalid, #additional_event_parameters textarea:invalid
+.dynamic_form input:invalid, .dynamic_form textarea:invalid, .dynamic_form select:invalid
 {
 	border-color: #dc3545!important;
+	border-width: 2px;
+	background: #ffebeb;
+}
+
+.dynamic_form input:invalid::placeholder
+{
+    color: #505050  ;
+}
+
+.required-question-star
+{
+    color:red;
+    font-size: 20px;
+    font-weight: bold;
+    line-height: .75;
 }
 
 /* Make form-control look like plain text */
@@ -1216,4 +1231,11 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	padding: inherit;
 	text-align: inherit;
 	border-top: inherit;
+}
+
+.progress-bar-default
+{
+ 	background-color: initial;
+ 	background-image: initial;
+	color: gray;
 }

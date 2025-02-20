@@ -1,3 +1,66 @@
+[project]
+name = "NEMO"
+version = "7.0.0"
+description = "NEMO is a laboratory logistics web application. Use it to schedule reservations, control tool access, track maintenance issues, and more."
+keywords = ["NEMO"]
+readme = "README.md"
+authors = [{name = "Center for Nanoscale Science and Technology", email = "CNSTapplications@nist.gov"}]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Web Environment",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: System Administrators",
+    "License :: Public Domain",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Framework :: Django :: 4.2",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+requires-python = ">=3.9, <4"
+dependencies = [
+    "cryptography==44.0.1",
+    "Django==4.2.19",
+    "django-auditlog==3.0.0",
+    "django-filter==25.1",
+    "djangorestframework==3.15.2",
+    "drf-excel==2.5.2",
+    "drf-flex-fields==1.0.2",
+    "ldap3==2.9.1",
+    "Pillow==11.1.0",
+    "python-dateutil==2.9.0",
+    "requests==2.32.3",
+    "packaging==24.2",
+    "django-mptt==0.14.0",
+    "pymodbus==3.8.6",
+]
+license = {file = "LICENSE"}
+
+[project.urls]
+Homepage = "https://github.com/usnistgov/NEMO"
+Changelog = "https://github.com/usnistgov/NEMO/releases"
+Issues = "https://github.com/usnistgov/NEMO/issues"
+
+[project.optional-dependencies]
+dev-tools = ["pre-commit", "djlint", "black"]
+
+[project.scripts]
+nemo = "NEMO.provisioning:entry_point"
+
+[tool.setuptools.packages.find]
+include = ["NEMO*"]
+exclude = ["resources", "resources.*", "build", "build.*"]
+
+[tool.setuptools.package-data]
+"NEMO" = ["**/templates/**/*", "**/static/**/*"]
+
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [tool.black]
 line-length = 120
 target-version = ['py311']

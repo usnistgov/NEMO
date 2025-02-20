@@ -2,10 +2,15 @@ from unittest import mock
 
 from django.conf import settings
 from django.test import TestCase
-from pymodbus.bit_read_message import ReadCoilsRequest, ReadCoilsResponse
-from pymodbus.bit_write_message import WriteSingleCoilRequest, WriteSingleCoilResponse
+from pymodbus import ExceptionResponse
 from pymodbus.client import ModbusTcpClient
-from pymodbus.pdu import ModbusRequest, ModbusResponse
+from pymodbus.pdu import ModbusPDU
+from pymodbus.pdu.bit_message import (
+    ReadCoilsRequest,
+    ReadCoilsResponse,
+    WriteSingleCoilRequest,
+    WriteSingleCoilResponse,
+)
 
 # This method will be used by the mock to replace socket.send
 # In the stanford interlock case, it will return a list of byte
@@ -22,17 +27,17 @@ def mocked_modbus_client(*args, **kwargs):
         def connect(self):
             return True
 
-        def execute(self, request: ModbusRequest = None) -> ModbusResponse:
+        def execute(self, no_response_expected: bool, request: ModbusPDU = None) -> ModbusPDU:
             if isinstance(request, WriteSingleCoilRequest):
                 # store value so we can return it later. if server1, good otherwise set to opposite
-                if self.params.host == server1:
-                    self.tmp_value = request.value
+                if self.comm_params.host == server1:
+                    self.tmp_value = request.bits
                 else:
-                    return request.doException(None)
+                    return ExceptionResponse(request.function_code)
                 return WriteSingleCoilResponse()
             elif isinstance(request, ReadCoilsRequest):
-                return ReadCoilsResponse(values=[self.tmp_value])
-            return ModbusResponse()
+                return ReadCoilsResponse(bits=self.tmp_value)
+            return ModbusPDU()
 
     return MockModbusClient(*args, **kwargs)
 
@@ -70,7 +75,7 @@ class ModbusInterlockTestCase(TestCase):
     def test_server2_command_fail(self, mock_args):
         self.assertFalse(wrong_response_interlock.unlock())
         self.assertEqual(wrong_response_interlock.state, Interlock.State.UNKNOWN)
-        self.assertTrue("Exception Response" in wrong_response_interlock.most_recent_reply)
+        self.assertTrue("ExceptionResponse" in wrong_response_interlock.most_recent_reply)
         self.assertFalse(wrong_response_interlock.lock())
         self.assertEqual(wrong_response_interlock.state, Interlock.State.UNKNOWN)
-        self.assertTrue("Exception Response" in wrong_response_interlock.most_recent_reply)
+        self.assertTrue("ExceptionResponse" in wrong_response_interlock.most_recent_reply)
