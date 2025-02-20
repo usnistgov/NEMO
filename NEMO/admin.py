@@ -91,6 +91,7 @@ from NEMO.models import (
     ScheduledOutageCategory,
     StaffAbsence,
     StaffAbsenceType,
+    StaffAssistanceRequest,
     StaffAvailability,
     StaffAvailabilityCategory,
     StaffCharge,
@@ -1576,15 +1577,8 @@ class TemporaryPhysicalAccessAdmin(admin.ModelAdmin):
         return tpa.physical_access_level.get_schedule_display_with_times()
 
 
-class TemporaryPhysicalAccessRequestFormAdmin(forms.ModelForm):
-    class Meta:
-        model = TemporaryPhysicalAccessRequest
-        fields = "__all__"
-
-
 @register(TemporaryPhysicalAccessRequest)
 class TemporaryPhysicalAccessRequestAdmin(admin.ModelAdmin):
-    form = TemporaryPhysicalAccessRequestFormAdmin
     list_display = (
         "creator",
         "creation_time",
@@ -1943,6 +1937,29 @@ class ToolCredentialsAdmin(ModelAdminRedirectMixin, admin.ModelAdmin):
     @admin.display(ordering="tool__visible", boolean=True, description="Tool visible")
     def is_tool_visible(self, obj: Configuration):
         return obj.tool.visible
+
+
+@register(StaffAssistanceRequest)
+class StaffAssistanceRequestAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "creation_time",
+        "other_users_display",
+        "resolved",
+        "deleted",
+    )
+    list_filter = (
+        "resolved",
+        "deleted",
+        ("user", admin.RelatedOnlyFieldListFilter),
+    )
+    date_hierarchy = "creation_time"
+    readonly_fields = ["creation_time"]
+    autocomplete_fields = ["user"]
+
+    @admin.display(description="Staff members")
+    def other_users_display(self, obj: StaffAssistanceRequest):
+        return mark_safe("<br>".join([u.username for u in obj.creator_and_reply_users() if u != obj.user]))
 
 
 @register(EmailLog)

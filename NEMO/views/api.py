@@ -44,6 +44,7 @@ from NEMO.models import (
     Reservation,
     Resource,
     ScheduledOutage,
+    StaffAssistanceRequest,
     StaffCharge,
     Task,
     TemporaryPhysicalAccessRequest,
@@ -85,6 +86,7 @@ from NEMO.serializers import (
     ReservationSerializer,
     ResourceSerializer,
     ScheduledOutageSerializer,
+    StaffAssistanceRequestsSerializer,
     StaffChargeSerializer,
     TaskSerializer,
     TemporaryPhysicalAccessRequestSerializer,
@@ -768,6 +770,20 @@ class ToolCredentialsViewSet(ModelViewSet):
         "password": string_filters,
         "comments": string_filters,
         "authorized_staff": manykey_filters,
+    }
+
+
+class StaffAssistanceRequestsViewSet(ModelViewSet):
+    filename = "staff_assistance_requests"
+    queryset = StaffAssistanceRequest.objects.all()
+    serializer_class = StaffAssistanceRequestsSerializer
+    filterset_fields = {
+        "id": key_filters,
+        "user": key_filters,
+        "creation_time": datetime_filters,
+        "description": string_filters,
+        "resolved": boolean_filters,
+        "deleted": boolean_filters,
     }
 
 

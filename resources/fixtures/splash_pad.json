@@ -762,7 +762,9 @@
     "fields": {
       "name": "Cleanroom door",
       "welcome_message": "<h2><center>Welcome to the cleanroom!</center></h2>",
-      "areas": [1],
+      "areas": [
+        1
+      ],
       "interlock": 1
     }
   },
@@ -1198,6 +1200,13 @@
   {
     "model": "NEMO.customization",
     "pk": "training_show_self_option_in_tool_control",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "staff_assistance_requests_enabled",
     "fields": {
       "value": "enabled"
     }
@@ -8585,7 +8594,9 @@
       "value": 203,
       "default_value": 0,
       "counter_direction": 1,
-      "tool": ["Unaxis ICP Etcher"],
+      "tool": [
+        "Unaxis ICP Etcher"
+      ],
       "tool_usage_question": "gold_used",
       "last_reset_value": null,
       "last_reset": null,
@@ -8605,7 +8616,9 @@
       "value": 50,
       "default_value": 100,
       "counter_direction": -1,
-      "tool": ["790 RIE Right"],
+      "tool": [
+        "790 RIE Right"
+      ],
       "tool_usage_question": "etch_time",
       "last_reset_value": null,
       "last_reset": null,
@@ -9117,7 +9130,11 @@
       "account": [
         "Cleanroom Staff"
       ],
-      "project_types": [["CHIPS"]],
+      "project_types": [
+        [
+          "CHIPS"
+        ]
+      ],
       "discipline": null,
       "active": true,
       "allow_consumable_withdrawals": true,
@@ -9768,6 +9785,38 @@
     }
   },
   {
+    "model": "NEMO.notification",
+    "pk": 10,
+    "fields": {
+      "user": [
+        "captain"
+      ],
+      "expiration": "2099-02-24T04:59:59.999Z",
+      "notification_type": "staffassistancerequest",
+      "content_type": [
+        "NEMO",
+        "staffassistancerequest"
+      ],
+      "object_id": 1
+    }
+  },
+  {
+    "model": "NEMO.notification",
+    "pk": 11,
+    "fields": {
+      "user": [
+        "professor"
+      ],
+      "expiration": "2099-02-24T04:59:59.999Z",
+      "notification_type": "staffassistancerequest",
+      "content_type": [
+        "NEMO",
+        "staffassistancerequest"
+      ],
+      "object_id": 1
+    }
+  },
+  {
     "model": "NEMO.scheduledoutage",
     "pk": 1,
     "fields": {
@@ -9938,6 +9987,17 @@
       "category": [
         "User training"
       ]
+    }
+  },
+  {
+    "model": "NEMO.staffassistancerequest",
+    "pk": 1,
+    "fields": {
+      "creation_time": "2025-02-20T03:29:14.451Z",
+      "description": "I need help in the lab with a tool",
+      "user": 3,
+      "resolved": false,
+      "deleted": false
     }
   }
 ]

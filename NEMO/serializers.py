@@ -46,6 +46,7 @@ from NEMO.models import (
     Reservation,
     Resource,
     ScheduledOutage,
+    StaffAssistanceRequest,
     StaffCharge,
     Task,
     TaskHistory,
@@ -525,6 +526,16 @@ class ToolCredentialsSerializer(FlexFieldsSerializerMixin, ModelSerializer):
         expandable_fields = {
             "tool": "NEMO.serializers.ToolSerializer",
             "authorized_staff": ("NEMO.serializers.UserSerializer", {"many": True}),
+        }
+
+
+class StaffAssistanceRequestsSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = StaffAssistanceRequest
+        fields = "__all__"
+        expandable_fields = {
+            "tool": "NEMO.serializers.ToolSerializer",
+            "user": "NEMO.serializers.UserSerializer",
         }
 
 

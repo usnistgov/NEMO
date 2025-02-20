@@ -4388,6 +4388,9 @@ class StaffAssistanceRequest(BaseModel):
         default=False, help_text="Indicates the request has been deleted and won't be shown anymore."
     )
 
+    class Meta:
+        ordering = ["-creation_time"]
+
     @property
     def creator(self) -> User:
         return self.user
