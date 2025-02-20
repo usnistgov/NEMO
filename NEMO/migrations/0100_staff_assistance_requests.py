@@ -55,6 +55,7 @@ class Migration(migrations.Migration):
             ],
             options={
                 "abstract": False,
+                "ordering": ["-creation_time"],
             },
         ),
     ]
