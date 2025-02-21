@@ -70,6 +70,30 @@
             <div class="col-md-6 help-block light-grey">The time the day starts in the calendar view (24h format).</div>
         </div>
         <div class="form-group">
+            <label class="control-label col-md-3" for="calendar_slot_duration">Slot duration</label>
+            <div class="col-md-3">
+                <input type="text"
+                       id="calendar_slot_duration"
+                       name="calendar_slot_duration"
+                       class="form-control"
+                       value="{{ calendar_slot_duration }}"
+                       placeholder="00:15:00">
+            </div>
+            <div class="col-md-6 help-block light-grey">The duration between each slot in the calendar.</div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="calendar_slot_label_interval">Slot label interval</label>
+            <div class="col-md-3">
+                <input type="text"
+                       id="calendar_slot_label_interval"
+                       name="calendar_slot_label_interval"
+                       class="form-control"
+                       value="{{ calendar_slot_label_interval }}"
+                       placeholder="1:00">
+            </div>
+            <div class="col-md-6 help-block light-grey">The interval that slot labels are placed on.</div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-md-3" for="calendar_outage_recurrence_limit">Outage recurrence limit</label>
             <div class="col-md-3">
                 <div class="input-group">
