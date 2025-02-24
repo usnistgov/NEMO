@@ -1919,12 +1919,12 @@ class OnboardingPhaseAdmin(admin.ModelAdmin):
 class ToolCredentialsAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["authorized_staff"].queryset = User.objects.filter(is_staff=True)
+        self.fields["authorized_staff"].queryset = User.objects.filter(is_staff=True, is_active=True)
 
 
 @register(ToolCredentials)
 class ToolCredentialsAdmin(ModelAdminRedirectMixin, admin.ModelAdmin):
-    list_display = ["get_tool_category", "tool", "is_tool_visible", "username", "comments"]
+    list_display = ["get_tool_category", "tool", "is_tool_visible", "username", "password", "comments"]
     list_filter = [("tool", admin.RelatedOnlyFieldListFilter), "tool__visible"]
     autocomplete_fields = ["tool"]
     filter_horizontal = ["authorized_staff"]
