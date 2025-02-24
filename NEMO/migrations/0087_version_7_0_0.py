@@ -11,8 +11,12 @@ class Migration(migrations.Migration):
         ("NEMO", "0086_adjustmentrequest_new_quantity"),
     ]
 
+    replaces = [
+        ("NEMO", "0087_version_6_1_0"),  # Add this to indicate renaming
+    ]
+
     def new_version_news(apps, schema_editor):
-        create_news_for_version(apps, "6.1.0", "")
+        create_news_for_version(apps, "7.0.0", "")
 
     operations = [
         migrations.RunPython(new_version_news),

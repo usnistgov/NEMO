@@ -275,6 +275,7 @@ class EmailCategory(IntegerChoices):
     ACCESS_REQUESTS = 9, _("Access Requests")
     SENSORS = 10, _("Sensors")
     ADJUSTMENT_REQUESTS = 11, _("Adjustment Requests")
+    TRAINING = 12, _("Training")
 
 
 class RecurrenceFrequency(Enum):

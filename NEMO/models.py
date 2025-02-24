@@ -171,7 +171,7 @@ class BaseDocumentModel(BaseModel):
     )
     display_order = models.IntegerField(
         default=1,
-        help_text="The order in which choices are displayed on the landing page, from left to right, top to bottom. Lower values are displayed first.",
+        help_text="The order in which the documents will be listed. Lower values are displayed first.",
     )
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
