@@ -1,3 +1,4 @@
+import json
 import re
 from datetime import datetime, timedelta
 from http import HTTPStatus
@@ -7,7 +8,7 @@ from typing import List, Optional, Tuple, Union
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -177,18 +178,9 @@ def event_feed(request):
     if event_type == "reservations":
         return reservation_event_feed(request, start, end)
     if event_type == "reservations and use":
-        # We need to remove the json array brackets from the original responses (last [ of reservations and first ] of usage)
-        reservation_feed = reservation_event_feed(request, start, end)
-        reservation_feed_content = reservation_feed.content
-        position = reservation_feed_content.rfind("]".encode())
-        if position != -1:
-            reservation_feed_content = (
-                reservation_feed_content[:position] + "".encode() + reservation_feed_content[position + 1 :]
-            )
-        reservation_feed.content = reservation_feed_content + usage_event_feed(request, start, end).content.replace(
-            "[".encode(), "".encode(), 1
-        )
-        return reservation_feed
+        reservation_feed = json.loads(reservation_event_feed(request, start, end).content)
+        usage_feed = json.loads(usage_event_feed(request, start, end).content)
+        return JsonResponse(reservation_feed + usage_feed, safe=False)
     elif event_type == f"{facility_name.lower()} use":
         return usage_event_feed(request, start, end)
     # Only staff may request a specific user's history...
