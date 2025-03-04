@@ -3,6 +3,8 @@ import re
 from django.conf import global_settings
 from rest_framework.settings import DEFAULTS
 
+BASE_DIR = "/nemo"
+
 # ------------------------------------------------------------------
 # -------------------- Django settings for NEMO --------------------
 # ------------------------------------------------------------------
@@ -237,7 +239,7 @@ EMAIL_BROADCAST_BCC_CHUNK_SIZE = None
 # -------------------- Email written to files --------------------
 # Uncomment the following for testing
 # EMAIL_BACKEND = "django.core.mail.backends.filebased.EmailBackend"
-# EMAIL_FILE_PATH = "/nemo/emails/"
+# EMAIL_FILE_PATH = BASE_DIR + "/emails/"
 
 # See the list of timezones https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 TIME_ZONE = "America/New_York"
@@ -246,16 +248,16 @@ TIME_ZONE = "America/New_York"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": "/nemo/nemo.db",
+        "NAME": BASE_DIR + "/nemo.db",
     }
 }
 
 # Comment this line out for dev. This makes sure static files have a version to avoid
 # having to clear browser cache between releases.
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
-STATIC_ROOT = "/nemo/static/"
+STATIC_ROOT = BASE_DIR + "/static/"
 STATIC_URL = "/static/"
-MEDIA_ROOT = "/nemo/media/"
+MEDIA_ROOT = BASE_DIR + "/media/"
 MEDIA_URL = "/media/"
 
 # Make this unique, and do not share it with anybody.
@@ -284,12 +286,12 @@ LOGGING = {
         "error_file": {
             "level": "WARNING",  # Log all warnings and errors to this file
             "class": "logging.FileHandler",
-            "filename": "/nemo/logs/nemo_error.log",
+            "filename": BASE_DIR + "/logs/nemo_error.log",
             "formatter": "verbose",
         },
         "file": {
             "class": "logging.FileHandler",
-            "filename": "/nemo/logs/nemo.log",
+            "filename": BASE_DIR + "/logs/nemo.log",
             "formatter": "simple",
         },
         "console": {
