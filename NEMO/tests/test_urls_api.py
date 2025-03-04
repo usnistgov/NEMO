@@ -8,13 +8,13 @@ from rest_framework.test import APIClient
 
 from NEMO.models import User
 from NEMO.tests.test_utilities import login_as
-from NEMO.urls import router  # Replace `your_project` with your project's name
+from NEMO.urls import router
 
 
 class TestAPIUrls(TestCase):
     def setUp(self):
         user = User.objects.create(username="test", is_superuser=True)
-        self.client = APIClient()  # API client for DRF testing
+        self.client = APIClient()
         login_as(self.client, user)
 
     def test_all_api_urls(self):
@@ -23,7 +23,7 @@ class TestAPIUrls(TestCase):
             # Get list of routes for this prefix/viewset
             routes = router.get_routes(viewset)
             for route in routes:
-                # Reverse the full URL path
+                # Reverse the list path
                 try:
                     full_url = reverse(f"{basename}-{route.mapping['get']}")
                 except Exception:
