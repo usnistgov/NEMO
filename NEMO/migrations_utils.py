@@ -47,3 +47,18 @@ def create_news_for_version(apps, version, extra_content=None):
             # (4.2.0 to 4.3.0 for example) would get an exception and get completely stuck.
             notification.notification_type = "news"
             notification.save()
+
+
+def news_for_version_forward(version):
+    def new_version_news(apps, schema_editor):
+        create_news_for_version(apps, version, "")
+
+    return new_version_news
+
+
+def news_for_version_reverse(version):
+    def new_version_news(apps, schema_editor):
+        News = apps.get_model("NEMO", "News")
+        News.objects.filter(title=f"What's new in NEMO {version}?").delete()
+
+    return new_version_news

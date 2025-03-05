@@ -2,7 +2,7 @@
 
 from django.db import migrations
 
-from NEMO.migrations_utils import create_news_for_version
+from NEMO.migrations_utils import news_for_version_forward, news_for_version_reverse
 
 
 class Migration(migrations.Migration):
@@ -15,9 +15,6 @@ class Migration(migrations.Migration):
         ("NEMO", "0087_version_6_1_0"),  # Add this to indicate renaming
     ]
 
-    def new_version_news(apps, schema_editor):
-        create_news_for_version(apps, "7.0.0", "")
-
     operations = [
-        migrations.RunPython(new_version_news),
+        migrations.RunPython(news_for_version_forward("7.0.0"), news_for_version_reverse("7.0.0")),
     ]
