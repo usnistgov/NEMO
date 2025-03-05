@@ -1,8 +1,10 @@
 from abc import ABC
 from datetime import date, datetime
-from typing import Dict, Iterable, List
+from logging import getLogger
+from typing import Dict, Iterable, List, Optional
 
 from dateutil.relativedelta import relativedelta
+from django.apps import apps
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
@@ -13,7 +15,8 @@ from django.core.validators import (
 )
 from django.http import HttpResponseNotFound
 from django.shortcuts import redirect, render
-from django.template import Context, Template
+from django.template import Context, Template, TemplateDoesNotExist
+from django.template.loader import get_template
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
@@ -34,6 +37,8 @@ from NEMO.models import (
 )
 from NEMO.utilities import RecurrenceFrequency, date_input_format, datetime_input_format, quiet_int
 
+customization_logger = getLogger(__name__)
+
 
 class CustomizationBase(ABC):
     _instances = {}
@@ -45,8 +50,34 @@ class CustomizationBase(ABC):
         self.key = key
         self.title = title
 
-    def template(self) -> str:
-        return f"customizations/customizations_{self.key}.html"
+    def template(self) -> Optional[str]:
+        # We want to check if there is a customization template file in the app template dir
+        # Otherwise we load it from the main template dir
+        app = apps.get_containing_app_config(type(self).__module__)
+        if app:
+            for app_dir in [app.label, app.name, ""]:
+                try:
+                    template_path = f"{app_dir}{'/' if app_dir else ''}customizations/customizations_{self.key}.html"
+                    get_template(template_path)  # will raise TemplateDoesNotExist if not found
+                    return template_path
+                except TemplateDoesNotExist:
+                    pass
+        customization_logger.debug(f"could not find any template for customization: {self.key}")
+
+    def template_templates(self) -> Optional[str]:
+        # We have a similar approach here except we are looking for a very specific file
+        # named customizations_{key}_templates.html, and we are only looking in the app template dirs
+        app = apps.get_containing_app_config(type(self).__module__)
+        if app:
+            for app_dir in [app.label, app.name, ""]:
+                try:
+                    template_path = (
+                        f"{app_dir}{'/' if app_dir else ''}customizations/customizations_{self.key}_templates.html"
+                    )
+                    get_template(template_path)  # will raise TemplateDoesNotExist if it doesn't exist
+                    return template_path
+                except TemplateDoesNotExist:
+                    pass
 
     def context(self) -> Dict:
         files_dict = {name: get_media_file_contents(name + extension) for name, extension in type(self).files}

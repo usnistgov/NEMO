@@ -620,6 +620,11 @@
         </ul>
         {% include 'customizations/customizations_upload.html' with element=weekend_access_email name='weekend access email' key='templates' %}
     </div>
+    {% for customization_instance in customization.instances %}
+        {% if customization_instance.template_templates %}
+            {% include customization_instance.template_templates %}
+        {% endif %}
+    {% endfor %}
 </div>
 <script>
     function sort_comp(element)
