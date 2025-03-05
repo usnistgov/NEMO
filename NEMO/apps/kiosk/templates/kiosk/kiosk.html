@@ -459,7 +459,7 @@
         }
         {# Auto hide tooltips on kiosk page after 30 seconds #}
 	    $(document).on('shown.bs.tooltip',  function () {
-          var tooltip = $('.tooltip');
+          let tooltip = $('.tooltip');
           setTimeout(function () {
             tooltip.hide();
           }, 30000);

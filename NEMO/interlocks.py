@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import socket
 import struct
 from abc import ABC, abstractmethod
 from logging import getLogger
 from time import sleep
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, TYPE_CHECKING
 from xml.etree import ElementTree
 
 import requests
@@ -15,11 +17,13 @@ from pymodbus.client import ModbusTcpClient
 from pymodbus.exceptions import ConnectionException
 from requests import Response
 
-from NEMO.admin import InterlockAdminForm, InterlockCardAdminForm
 from NEMO.exceptions import InterlockError
 from NEMO.models import Interlock as Interlock_model, InterlockCardCategory, User
 from NEMO.typing import QuerySetType
 from NEMO.utilities import BasicDisplayTable, EmailCategory, export_format_datetime, format_datetime
+
+if TYPE_CHECKING:
+    from NEMO.admin import InterlockCardAdminForm, InterlockAdminForm
 
 interlocks_logger = getLogger(__name__)
 

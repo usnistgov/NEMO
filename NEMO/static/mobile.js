@@ -2,14 +2,14 @@ function mobile_search(query_element, get_base_url_callback, hide_type)
 {
 	hide_type = hide_type || false;
 	query_element = $(query_element);
-	var results_target = $(query_element.data('search-results-target')).html('');
-	var query = query_element.val();
+	let results_target = $(query_element.data('search-results-target')).html('');
+	let query = query_element.val();
 	if(query.length < 2)
 		return;
-	var search_base = query_element.data('search-base');
-	var result_count = 0;
-	var matching_regular_expression = new RegExp(query, 'i');
-	var results = '<div class="list-group">';
+	let search_base = query_element.data('search-base');
+	let result_count = 0;
+	let matching_regular_expression = new RegExp(query, 'i');
+	let results = '<div class="list-group">';
 	$.each(search_base, function(item_index, item)
 	{
 		if(matching_regular_expression.test(item.name))
