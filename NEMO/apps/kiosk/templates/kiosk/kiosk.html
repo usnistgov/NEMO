@@ -438,10 +438,12 @@
         }
         function fetch_alerts()
         {
-            if(alerts)
-            {
-                $("#alerts").load("{% url 'area_access_alerts' %}");
-            }
+            {% if "NEMO.apps.area_access"|app_installed %}
+                if(alerts)
+                {
+                    $("#alerts").load("{% url 'area_access_alerts' %}");
+                }
+            {% endif %}
         }
 		function close_numpads()
 		{
