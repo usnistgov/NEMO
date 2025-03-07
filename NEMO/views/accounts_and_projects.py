@@ -246,7 +246,11 @@ def add_document_to_project(request, project_id: int):
 @require_GET
 def projects(request):
     user: User = request.user
-    dictionary = {"managed_projects": user.managed_projects.all(), "users": User.objects.all()}
+    dictionary = {
+        "manager_view": True,
+        "managed_projects": user.managed_projects.order_by("-active", "name"),
+        "users": User.objects.all(),
+    }
     return render(request, "accounts_and_projects/projects.html", dictionary)
 
 

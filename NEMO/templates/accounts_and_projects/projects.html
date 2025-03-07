@@ -3,66 +3,42 @@
 {% block title %}Projects{% endblock %}
 {% block content %}
     <h1 style="margin-bottom: 30px">Managed projects</h1>
-    {% for project in managed_projects %}
-        <h3>
-            <a onclick="toggle_details(this)"
-               data-toggle="collapse"
-               data-target="#project_{{ project.id }}_details"
-               class="pointer"
-               style="text-decoration:none">
-                <span id="project_{{ project.id }}_chevron" class="glyphicon glyphicon-chevron-down pull-left chevron"></span>
-                {{ project }}
-            </a>
-            <span class="label {% if project.active %}label-success{% else %}label-danger{% endif %}"
-                  style="vertical-align:50%;
-                         font-size:small">
-                {% if project.active %}
-                    Active
-                {% else %}
-                    Inactive
+    {% regroup managed_projects by active as grouped_projects %}
+    {% for group in grouped_projects %}
+        {% if group.grouper %}
+            {% for project in group.list %}
+                {% if not selected_project or project == selected_project %}
+                    {% include 'accounts_and_projects/project.html' %}
                 {% endif %}
-            </span>
-        </h3>
-        <div style="margin-left:34px">
-            <div id="project_{{ project.id }}_details" class="collapse in">
-                <label class="control-label">Account:</label>
-                <span class="grey">{{ project.account }}</span>
-                <br>
-                <label class="control-label">{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}:</label>
-                <span class="grey">{{ project.application_identifier }}</span>
-                {% if project.discipline %}
-                    <br>
-                    <label class="control-label">Discipline:</label>
-                    <span class="grey">{{ project.discipline }}</span>
-                {% endif %}
-                {% if project.start_date %}
-                    <br>
-                    <label class="control-label">Start date:</label>
-                    <span class="grey">{{ project.start_date }}</span>
-                {% endif %}
-                {% if "projects_and_accounts"|customization:"project_allow_pi_manage_users" %}
-                    <div style="height:10px"></div>
-                    <div id="project_{{ project.id }}_users">
-                        {% include 'accounts_and_projects/users_for_project.html' with users=project.user_set.all %}
-                    </div>
-                {% else %}
-                    <div>
-                        <label class="control-label">Users:</label>
-                    </div>
-                    <div>
-                        {% if project.user_set.all %}
-                            <ul>
-                                {% for u in project.user_set.all %}
-                                    <li class="{% if not u.is_active %}strikethrough light-grey{% endif %}">{{ u }}</li>
-                                {% endfor %}
-                            </ul>
-                        {% else %}
-                            <span class="grey">This project does not have any members.</span>
+            {% endfor %}
+        {% else %}
+            {% if not selected_project %}
+                <div class="h3">
+                    <a onclick="toggle_details(this)"
+                       data-toggle="collapse"
+                       data-target="#inactives_details"
+                       class="pointer"
+                       style="text-decoration:none">
+                        <span id="inactives_chevron"
+                              class="glyphicon {% if selected_project %}glyphicon-chevron-down{% else %}glyphicon-chevron-right{% endif %} pull-left chevron"></span>
+                        <span class="label label-danger" style="vertical-align: 15%">Inactive projects</span>
+                    </a>
+                </div>
+                <div style="margin-left:34px">
+                    <div id="inactives_details" class="collapse {% if selected_project %}in{% endif %}">
+                    {% endif %}
+                    {% for project in group.list %}
+                        {% if not selected_project or project == selected_project %}
+                            {% include 'accounts_and_projects/project.html' %}
                         {% endif %}
+                    {% endfor %}
+                    {% if not selected_project %}
                     </div>
-                {% endif %}
-            </div>
-        </div>
+                </div>
+            {% endif %}
+        {% endif %}
+    {% empty %}
+        <h4>This account does not have any projects</h4>
     {% endfor %}
     <script>
 		function add_user_to_project(jquery_event, search_selection, dataset_name)
