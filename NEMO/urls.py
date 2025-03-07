@@ -23,6 +23,7 @@ from NEMO.views import (
     access_requests,
     accounts_and_projects,
     adjustment_requests,
+    admin_autocomplete,
     alerts,
     api,
     api_file_import,
@@ -609,6 +610,8 @@ urlpatterns += [
 
 if settings.ALLOW_CONDITIONAL_URLS:
     if apps.is_installed("django.contrib.admin"):
+        # Override admin autocomplete so we can fix the permission issue for related models
+        urlpatterns += [path("admin/autocomplete/", admin_autocomplete.as_view(admin.site), name="autocomplete")]
         urlpatterns += [path("admin/", admin.site.urls)]
 
     urlpatterns += [
