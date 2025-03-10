@@ -5,7 +5,7 @@ RUN apt-get install -y less vim
 
 # Intall NEMO (in the current directory) and Gunicorn
 COPY . /nemo/
-RUN python3 -m pip install /nemo/ gunicorn==21.2.0
+RUN python3 -m pip install /nemo/ gunicorn==23.0.0
 RUN rm --recursive --force /nemo/
 
 RUN mkdir /nemo
