@@ -59,9 +59,13 @@
         </div>
         {% if project.project_types.all %}
             <div>
-                <span class="control-label">Project type
-                    {% if "projects_and_accounts"|customization:"project_type_allow_multiple" %}(s){% endif %}
-                :</span>
+                <span class="control-label">
+                    {% if "projects_and_accounts"|customization:"project_type_allow_multiple" %}
+                        Project type(s):
+                    {% else %}
+                        Project type:
+                    {% endif %}
+                </span>
                 <span>{{ project.project_types.all|join:", " }}</span>
             </div>
         {% endif %}
