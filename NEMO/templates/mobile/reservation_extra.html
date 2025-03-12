@@ -6,7 +6,6 @@
     <h3>Extra information needed</h3>
     <form method="post" action="{% url 'make_reservation' %}">
         {% csrf_token %}
-        <input type="hidden" name="date" value="{{ request_date }}">
         <input type="hidden" name="start" value="{{ request_start }}">
         <input type="hidden" name="end" value="{{ request_end }}">
         <input type="hidden" name="item_id" value="{{ reservation.reservation_item.id }}">
