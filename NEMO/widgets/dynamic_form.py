@@ -781,16 +781,28 @@ class DynamicForm:
 
     def _update_tool_counters(self, usage_event: UsageEvent, run_data_json: Dict):
         # This function increments/decrements all counters associated with the given tool
+        pre_post = "post"
+        if run_data_json:
+            if usage_event.pre_run_data and usage_event.run_data:
+                # if we have both check which one matches
+                if loads(usage_event.pre_run_data) == run_data_json:
+                    pre_post = "pre"
+            elif usage_event.pre_run_data:
+                # if we only have pre_run_data then it has to be pre usage question
+                pre_post = "pre"
+        counter_question_name = f"tool_{pre_post}_usage_question"
         active_counters = ToolUsageCounter.objects.filter(is_active=True, tool_id=usage_event.tool_id)
+        active_counters = active_counters.filter(**{f"{counter_question_name}__isnull": False})
         for counter in active_counters:
             additional_value = 0
+            counter_question_field = getattr(counter, counter_question_name)
             for question in self.questions:
                 input_data = run_data_json[question.name] if question.name in run_data_json else None
-                additional_value += get_counter_value_for_question(question, input_data, counter.tool_usage_question)
+                additional_value += get_counter_value_for_question(question, input_data, counter_question_field)
                 if isinstance(question, PostUsageGroupQuestion):
                     for sub_question in question.sub_questions:
                         additional_value += get_counter_value_for_question(
-                            sub_question, input_data, counter.tool_usage_question
+                            sub_question, input_data, counter_question_field
                         )
             if additional_value:
                 counter.value += counter.counter_direction * additional_value

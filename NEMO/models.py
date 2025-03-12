@@ -4230,9 +4230,17 @@ class ToolUsageCounter(BaseModel):
     default_value = models.FloatField(help_text=_("The default value to reset this counter to"))
     counter_direction = models.IntegerField(default=CounterDirection.INCREMENT, choices=CounterDirection.Choices)
     tool = models.ForeignKey(Tool, help_text=_("The tool this counter is for."), on_delete=models.CASCADE)
-    tool_usage_question = models.CharField(
+    tool_pre_usage_question = models.CharField(
+        null=True,
+        blank=True,
         max_length=CHAR_FIELD_MEDIUM_LENGTH,
-        help_text=_("The name of the tool's post usage question which should be used to increment this counter"),
+        help_text=_("The name of the tool's pre usage question which should be used to update this counter"),
+    )
+    tool_post_usage_question = models.CharField(
+        null=True,
+        blank=True,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
+        help_text=_("The name of the tool's post usage question which should be used to update this counter"),
     )
     staff_members_can_reset = models.BooleanField(
         default=True, help_text=_("Check this box to allow staff to reset this counter")
@@ -4306,6 +4314,17 @@ class ToolUsageCounter(BaseModel):
                         )
                     }
                 )
+        if not self.tool_post_usage_question and not self.tool_pre_usage_question:
+            errors.update(
+                {
+                    "tool_post_usage_question": _(
+                        "Either the tool pre usage question or the tool post usage question needs to be set for this counter"
+                    ),
+                    "tool_pre_usage_question": _(
+                        "Either the tool pre usage question or the tool post usage question needs to be set for this counter"
+                    ),
+                }
+            )
         if errors:
             raise ValidationError(errors)
 

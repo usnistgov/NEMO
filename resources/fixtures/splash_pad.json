@@ -8595,9 +8595,9 @@
       "default_value": 0,
       "counter_direction": 1,
       "tool": [
-        "Unaxis ICP Etcher"
+        "4Wave Cluster Sputter"
       ],
-      "tool_usage_question": "gold_used",
+      "tool_post_usage_question": "gold_used",
       "last_reset_value": null,
       "last_reset": null,
       "last_reset_by": null,
@@ -8619,7 +8619,7 @@
       "tool": [
         "790 RIE Right"
       ],
-      "tool_usage_question": "etch_time",
+      "tool_post_usage_question": "etch_time",
       "last_reset_value": null,
       "last_reset": null,
       "last_reset_by": null,
