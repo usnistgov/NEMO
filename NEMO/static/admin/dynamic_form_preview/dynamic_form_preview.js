@@ -63,3 +63,14 @@ window.addEventListener("load", function()
         });
     })(django.jQuery);
 });
+
+function auto_size_textarea(textarea, rows)
+{
+	if (textarea)
+	{
+        console.log("test:" + rows);
+		textarea.rows = rows || 1;
+		textarea.style.height = '';
+		textarea.style.height = textarea.scrollHeight + 3 + 'px';
+	}
+}

@@ -52,6 +52,7 @@ class PostUsageQuestion:
         self.precision = self._init_property("precision")
         self.step = self._init_property("step")
         self.rows = self._init_property("rows")
+        self.auto_resize = self._init_property("auto_resize", boolean=True)
         self.consumable = self._init_property("consumable")
         self.consumable_id = self._init_property("consumable_id")
         self.required = self._init_property("required", boolean=True)
@@ -348,7 +349,17 @@ class PostUsageTextAreaFieldQuestion(PostUsageTextFieldQuestion):
 
     def render_input(self, required: str, pattern: str, placeholder: str, default_value: str) -> str:
         rows = f'rows="{str(self.rows)}"' if self.rows else ""
-        return f'<textarea class="form-control" id="{self.form_name}" name="{self.form_name}" {rows} {placeholder} {required} style="height:inherit" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">{self.get_default_value() or ""}</textarea>'
+        rows_parameter = f", {str(self.rows)}" if self.rows else ""
+        on_input = f'oninput="auto_size_textarea(this{rows_parameter});"' if self.auto_resize else ""
+        return f'<textarea {on_input} class="form-control" id="{self.form_name}" name="{self.form_name}" {rows} {placeholder} {required} style="height:inherit" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">{self.get_default_value() or ""}</textarea>'
+
+    def render_script(self, virtual_inputs: bool, group_question_url: str, item_id: int) -> str:
+        super_script = super().render_script(virtual_inputs, group_question_url, item_id)
+        if self.auto_resize:
+            script_only = super_script.replace("<script>", "").replace("</script>", "")
+            rows_parameter = f", {str(self.rows)}" if self.rows else ""
+            return f"<script>{script_only};auto_size_textarea($('#{self.form_name}')[0]{rows_parameter})</script>"
+        return super_script
 
 
 class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
