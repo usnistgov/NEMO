@@ -214,16 +214,16 @@ def login_to_area(request, door_id):
                 )
             else:
                 project = get_object_or_404(Project, id=project_id)
-                try:
-                    policy.check_billing_to_project(
-                        project, user, area, AreaAccessRecord(area=area, project=project, customer=user)
-                    )
-                except ProjectChargeException as e:
-                    log.details = "The user attempted to bill the project named {} but got error: {}".format(
-                        project.name, e.msg
-                    )
-                    log.save()
-                    return render(request, "area_access/physical_access_denied.html", {"message": e.msg})
+        try:
+            policy.check_billing_to_project(
+                project, user, area, AreaAccessRecord(area=area, project=project, customer=user)
+            )
+        except ProjectChargeException as e:
+            log.details = "The user attempted to bill the project named {} but got error: {}".format(
+                project.name, e.msg
+            )
+            log.save()
+            return render(request, "area_access/physical_access_denied.html", {"message": e.msg})
 
         log.result = PhysicalAccessType.ALLOW
         log.save()
