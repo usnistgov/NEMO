@@ -446,20 +446,25 @@
                                         Use this tool for my own project for training
                                     </label>
                                 {% endif %}
+                                {% if "training"|customization:"training_show_behalf_option_in_tool_control" == "enabled" %}
+                                    <br>
+                                    <label>
+                                        <input type="radio" onchange="use_tool_for_other('', true)" name="staff_charge" value="false">
+                                        Use this tool on behalf of another user for training
+                                    </label>
+                                {% endif %}
                                 <br>
                                 <label>
                                     <input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="false">
-                                    Use this tool on behalf of another user
-                                    {% if "remote_work"|customization:"remote_work_ask_explicitly" %}(no remote){% endif %}
-                                </label>
-                                {% if "remote_work"|customization:"remote_work_ask_explicitly" %}
-                                    {% if "training"|customization:"training_show_behalf_option_in_tool_control" == "enabled" %}
-                                        <br>
-                                        <label>
-                                            <input type="radio" onchange="use_tool_for_other('', true)" name="staff_charge" value="false">
-                                            Use this tool on behalf of another user for training
-                                        </label>
+                                    {% if "remote_work"|customization:"remote_work_on_behalf_of_user" == "always" %}
+                                        Use this tool for a remote project
+                                    {% elif "remote_work"|customization:"remote_work_on_behalf_of_user" == "ask" %}
+                                        Use this tool on behalf of another user (no remote)
+                                    {% else %}
+                                        Use this tool on behalf of another user
                                     {% endif %}
+                                </label>
+                                {% if "remote_work"|customization:"remote_work_on_behalf_of_user" == "ask" %}
                                     <br>
                                     <label>
                                         <input type="radio" onchange="use_tool_for_other(true)" name="staff_charge" value="false">
@@ -476,28 +481,28 @@
                                                title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.">
                                             <input type="radio" onchange="use_tool_for_other()" disabled>
                                             <span id="staff_charge_tooltip_location">Use this tool for a remote project
-                                                {% if "remote_work"|customization:"remote_work_ask_explicitly" %}
-                                                    (charge staff time
+                                                {% if "remote_work"|customization:"remote_work_on_behalf_of_user" == "ask" or "remote_work"|customization:"remote_work_on_behalf_of_user" == "always" %}
                                                     {% if tool.requires_area_access and "remote_work"|customization:"remote_work_start_area_access_automatically" == "enabled" %}
-                                                        & {{ tool.requires_area_access }} time
+                                                        (start staff time & {{ tool.requires_area_access|lower }} time)
+                                                    {% else %}
+                                                        (start staff time)
                                                     {% endif %}
-                                                    )
                                                 {% endif %}
                                             </span>
                                         </label>
                                         <script>$("#staff_charge_tooltip_container").tooltip();</script>
                                     {% endwith %}
-                                {% else %}
+                                {% elif "remote_work"|customization:"remote_work_on_behalf_of_user" != "never" %}
                                     <br>
                                     <label>
                                         <input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="true">
                                         Use this tool for a remote project
-                                        {% if "remote_work"|customization:"remote_work_ask_explicitly" %}
-                                            (charge staff time
+                                        {% if "remote_work"|customization:"remote_work_on_behalf_of_user" == "ask" or "remote_work"|customization:"remote_work_on_behalf_of_user" == "always" %}
                                             {% if tool.requires_area_access and "remote_work"|customization:"remote_work_start_area_access_automatically" == "enabled" %}
-                                                & {{ tool.requires_area_access }} time
+                                                (start staff time & {{ tool.requires_area_access|lower }} time)
+                                            {% else %}
+                                                (start staff time)
                                             {% endif %}
-                                            )
                                         {% endif %}
                                     </label>
                                 {% endif %}

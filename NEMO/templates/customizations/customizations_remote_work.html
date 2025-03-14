@@ -40,17 +40,25 @@
                 <div class="radio">
                     <label>
                         <input type="radio"
-                               name="remote_work_ask_explicitly"
-                               {% if not remote_work_ask_explicitly %}checked{% endif %}
-                               value="">
-                        Staff on behalf of user is always considered remote
+                               name="remote_work_on_behalf_of_user"
+                               {% if remote_work_on_behalf_of_user == "always" %}checked{% endif %}
+                               value="always">
+                        Staff on behalf of user is <b>always</b> considered remote
                     </label>
                     <br />
                     <label>
                         <input type="radio"
-                               name="remote_work_ask_explicitly"
-                               {% if remote_work_ask_explicitly %}checked{% endif %}
-                               value="enabled">
+                               name="remote_work_on_behalf_of_user"
+                               {% if remote_work_on_behalf_of_user == "never" %}checked{% endif %}
+                               value="never">
+                        Staff on behalf of user is <b>never</b> considered remote
+                    </label>
+                    <br />
+                    <label>
+                        <input type="radio"
+                               name="remote_work_on_behalf_of_user"
+                               {% if remote_work_on_behalf_of_user == "ask" %}checked{% endif %}
+                               value="ask">
                         Ask explicitly
                     </label>
                     <br />

@@ -610,7 +610,7 @@ class RemoteWorkCustomization(CustomizationBase):
     variables = {
         "remote_work_validation": "",
         "remote_work_start_area_access_automatically": "enabled",
-        "remote_work_ask_explicitly": "",
+        "remote_work_on_behalf_of_user": "always",
     }
 
 

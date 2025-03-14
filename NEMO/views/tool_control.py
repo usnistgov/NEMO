@@ -397,11 +397,14 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
     bypass_interlock = request.POST.get("bypass", "False") == "True"
     # Figure out if the tool usage is part of remote work
     # 1: Staff charge means it's always remote work
-    # 2: Always remote if operator is different from the user
-    # 3: Unless customization is set to ask explicitly
+    # 2: Never remote if customization is set to never be remote
+    # 3: Always remote if operator is different from the user
+    # 4: Unless customization is set to ask explicitly
     remote_work = user != operator and operator.is_staff
-    if RemoteWorkCustomization.get_bool("remote_work_ask_explicitly"):
+    if RemoteWorkCustomization.get("remote_work_on_behalf_of_user") == "ask":
         remote_work = remote_work and bool(request.POST.get("remote_work", False))
+    elif RemoteWorkCustomization.get("remote_work_on_behalf_of_user") == "never":
+        remote_work = False
     response = policy.check_to_enable_tool(tool, operator, user, project, staff_charge, remote_work)
     if response.status_code != HTTPStatus.OK:
         return response
