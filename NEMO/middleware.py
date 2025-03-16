@@ -103,7 +103,7 @@ class DeviceDetectionMiddleware:
 
 class ImpersonateMiddleware(MiddlewareMixin):
     def process_request(self, request):
-        if request.user.has_perm("NEMO.can_impersonate_users") and "impersonate_id" in request.session:
+        if "impersonate_id" in request.session and request.user.has_perm("NEMO.can_impersonate_users"):
             request.user = User.objects.get(pk=request.session["impersonate_id"])
 
 
