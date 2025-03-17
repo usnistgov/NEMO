@@ -29,10 +29,9 @@ def landing(request):
         landing_page_choices = landing_page_choices.exclude(hide_from_desktop_computers=True)
     if request.device == "mobile":
         landing_page_choices = landing_page_choices.exclude(hide_from_mobile_devices=True)
-    if not user.is_staff and not user.is_facility_manager and not user.is_superuser and not user.is_technician:
-        landing_page_choices = landing_page_choices.exclude(hide_from_users=True)
-    if not user.is_facility_manager and not user.is_superuser and (user.is_staff or user.is_technician):
-        landing_page_choices = landing_page_choices.exclude(hide_from_staff=True)
+    landing_page_choices = [
+        landing_page_choice for landing_page_choice in landing_page_choices if landing_page_choice.can_user_view(user)
+    ]
 
     if not settings.ALLOW_CONDITIONAL_URLS:
         # validate all urls

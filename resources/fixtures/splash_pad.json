@@ -892,8 +892,7 @@
       "secure_referral": false,
       "hide_from_mobile_devices": false,
       "hide_from_desktop_computers": false,
-      "hide_from_users": false,
-      "hide_from_staff": false,
+      "view_permissions": "is_authenticated",
       "notifications": null
     }
   },
@@ -909,8 +908,7 @@
       "secure_referral": false,
       "hide_from_mobile_devices": false,
       "hide_from_desktop_computers": false,
-      "hide_from_users": false,
-      "hide_from_staff": false,
+      "view_permissions": "is_authenticated",
       "notifications": null
     }
   },
@@ -926,8 +924,7 @@
       "secure_referral": false,
       "hide_from_mobile_devices": false,
       "hide_from_desktop_computers": false,
-      "hide_from_users": false,
-      "hide_from_staff": false,
+      "view_permissions": "is_authenticated",
       "notifications": null
     }
   },
@@ -943,8 +940,7 @@
       "secure_referral": false,
       "hide_from_mobile_devices": false,
       "hide_from_desktop_computers": false,
-      "hide_from_users": false,
-      "hide_from_staff": false,
+      "view_permissions": "is_authenticated",
       "notifications": "safetyissue"
     }
   },
@@ -960,8 +956,7 @@
       "secure_referral": false,
       "hide_from_mobile_devices": false,
       "hide_from_desktop_computers": false,
-      "hide_from_users": false,
-      "hide_from_staff": false,
+      "view_permissions": "is_authenticated",
       "notifications": null
     }
   },
@@ -977,8 +972,7 @@
       "secure_referral": false,
       "hide_from_mobile_devices": false,
       "hide_from_desktop_computers": false,
-      "hide_from_users": false,
-      "hide_from_staff": false,
+      "view_permissions": "is_authenticated",
       "notifications": null
     }
   },
@@ -994,8 +988,7 @@
       "secure_referral": false,
       "hide_from_mobile_devices": false,
       "hide_from_desktop_computers": false,
-      "hide_from_users": false,
-      "hide_from_staff": false,
+      "view_permissions": "is_authenticated",
       "notifications": null
     }
   },
@@ -1011,8 +1004,7 @@
       "secure_referral": false,
       "hide_from_mobile_devices": false,
       "hide_from_desktop_computers": false,
-      "hide_from_users": false,
-      "hide_from_staff": false,
+      "view_permissions": "is_authenticated",
       "notifications": null
     }
   },
@@ -1028,8 +1020,7 @@
       "secure_referral": true,
       "hide_from_mobile_devices": false,
       "hide_from_desktop_computers": false,
-      "hide_from_users": false,
-      "hide_from_staff": false,
+      "view_permissions": "is_authenticated",
       "notifications": null
     }
   },
@@ -1045,8 +1036,7 @@
       "secure_referral": false,
       "hide_from_mobile_devices": false,
       "hide_from_desktop_computers": false,
-      "hide_from_users": false,
-      "hide_from_staff": false,
+      "view_permissions": "is_authenticated",
       "notifications": "news"
     }
   },

@@ -1627,12 +1627,22 @@ class LandingPageChoiceAdmin(admin.ModelAdmin):
         "display_order",
         "name",
         "url",
+        "get_view_permissions",
         "open_in_new_tab",
         "secure_referral",
         "hide_from_mobile_devices",
         "hide_from_desktop_computers",
     )
     list_display_links = ("name",)
+
+    @admin.display(description="View permissions", ordering="view_permissions")
+    def get_view_permissions(self, obj: LandingPageChoice):
+        return mark_safe(
+            "<br>".join(
+                str(obj.get_view_permissions_field().role_display(role_str, admin_display=True))
+                for role_str in obj.view_permissions
+            )
+        )
 
 
 @register(Customization)

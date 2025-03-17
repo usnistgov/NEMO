@@ -213,6 +213,7 @@ class DynamicChoicesTextField(DynamicChoicesMixin, models.TextField):
 class RoleGroupPermissionChoiceField(DynamicChoicesTextField):
     class Role(models.TextChoices):
         IS_AUTHENTICATED = "is_authenticated", _("Anyone")
+        NON_STAFF_USERS = "non_staff_users", _("Non-staff users")
         IS_STAFF = "is_staff", _("Staff")
         IS_USER_OFFICE = "is_user_office", _("User Office")
         IS_ACCOUNTING_OFFICER = "is_accounting_officer", _("Accounting officers")
@@ -220,6 +221,14 @@ class RoleGroupPermissionChoiceField(DynamicChoicesTextField):
         IS_TECHNICIAN = "is_technician", _("Technician")
         IS_FACILITY_MANAGER = "is_facility_manager", _("Facility managers")
         IS_SUPERUSER = "is_superuser", _("Administrators")
+
+    NON_STAFF_USER_EXCLUDE_FILTER = (
+        models.Q(is_staff=True)
+        | models.Q(is_accounting_officer=True)
+        | models.Q(is_user_office=True)
+        | models.Q(is_facility_manager=True)
+        | models.Q(is_superuser=True)
+    )
 
     GROUPS_CACHE_KEY = "group_choices"
     PERMISSIONS_CACHE_KEY = "permission_choices"
@@ -268,7 +277,8 @@ class RoleGroupPermissionChoiceField(DynamicChoicesTextField):
             prefix = self.PREFIX_PERMISSION_DISPLAY if admin_display else ""
             if permission_choices is None:
                 permission_choices = [
-                    (p["codename"], prefix + p["name"]) for p in Permission.objects.values("codename", "name")
+                    (f'{p["content_type__app_label"]}.{p["codename"]}', p["name"])
+                    for p in Permission.objects.values("content_type__app_label", "codename", "name")
                 ]
                 cache.set(self.PERMISSIONS_CACHE_KEY, permission_choices)
             role_choice_list.extend([(perm_choice[0], prefix + perm_choice[1]) for perm_choice in permission_choices])
@@ -276,11 +286,15 @@ class RoleGroupPermissionChoiceField(DynamicChoicesTextField):
         return role_choice_list
 
     def has_user_role(self, role: str, user) -> bool:
+        from NEMO.models import User
+
         if not user.is_active:
             return False
         if self.roles:
             if hasattr(user, role):
                 return getattr(user, role, False)
+            elif role == self.Role.NON_STAFF_USERS:
+                return User.objects.filter(pk=user.pk).exclude(self.NON_STAFF_USER_EXCLUDE_FILTER).exists()
         if self.groups:
             # check that it's a number
             if quiet_int(role, None):
@@ -288,9 +302,13 @@ class RoleGroupPermissionChoiceField(DynamicChoicesTextField):
                 if group:
                     return user.groups.filter(id=role).exists()
         if self.permissions:
-            permission = Permission.objects.filter(codename__iexact=role).first()
-            if permission:
-                return user.has_perm(permission)
+            app_label, _, codename = role.partition(".")
+            if app_label and codename:
+                permission = Permission.objects.filter(
+                    content_type__app_label=app_label, codename__iexact=codename
+                ).first()
+                if permission:
+                    return user.has_perm(role)
         return False
 
     def users_with_role(self, role: str) -> QuerySetType:
@@ -303,16 +321,25 @@ class RoleGroupPermissionChoiceField(DynamicChoicesTextField):
             permission_users = User.objects.none()
             if self.roles:
                 try:
-                    role_users = users.filter(**{role: True})
+                    if role == self.Role.NON_STAFF_USERS:
+                        role_users = users.exclude(self.NON_STAFF_USER_EXCLUDE_FILTER)
+                    else:
+                        role_users = users.filter(**{role: True})
                 except FieldError:
                     # we expect this if it's not a real role
                     pass
             if self.groups and role.isdigit():
                 group_users = users.filter(groups__id__in=role)
             if self.permissions:
-                permission_users = users.filter(
-                    models.Q(user_permissions__codename__iexact=role) | models.Q(is_superuser=True)
-                )
+                app_label, _, codename = role.partition(".")
+                if app_label and codename:
+                    permission_users = users.filter(
+                        models.Q(
+                            user_permissions__codename__iexact=codename,
+                            user_permissions__content_type__app_label=app_label,
+                        )
+                        | models.Q(is_superuser=True)
+                    )
             return role_users | group_users | permission_users
         return User.objects.none()
 

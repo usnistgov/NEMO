@@ -40,7 +40,7 @@ from NEMO.constants import (
     CHAR_FIELD_SMALL_LENGTH,
     MEDIA_PROTECTED,
 )
-from NEMO.fields import DynamicChoicesIntegerField
+from NEMO.fields import DynamicChoicesIntegerField, MultiRoleGroupPermissionChoiceField
 from NEMO.mixins import BillableItemMixin, CalendarDisplayMixin, ConfigurationMixin, RecurrenceMixin
 from NEMO.typing import QuerySetType
 from NEMO.utilities import (
@@ -4027,13 +4027,12 @@ class LandingPageChoice(BaseModel):
     hide_from_desktop_computers = models.BooleanField(
         default=False, help_text="Hides this choice when the landing page is viewed from a desktop computer"
     )
-    hide_from_users = models.BooleanField(
-        default=False,
-        help_text="Hides this choice from normal users. When checked, only staff, technicians, facility managers and super-users can see the choice",
-    )
-    hide_from_staff = models.BooleanField(
-        default=False,
-        help_text="Hides this choice from staff and technicians. When checked, only normal users, facility managers and super-users can see the choice",
+    view_permissions = MultiRoleGroupPermissionChoiceField(
+        roles=True,
+        groups=True,
+        permissions=True,
+        default="is_authenticated",
+        help_text=_("The roles/groups/permissions required for users to see this landing page item"),
     )
     notifications = fields.DynamicChoicesCharField(
         max_length=CHAR_FIELD_SMALL_LENGTH,
@@ -4048,6 +4047,13 @@ class LandingPageChoice(BaseModel):
 
     def __str__(self):
         return str(self.name)
+
+    @classmethod
+    def get_view_permissions_field(cls) -> MultiRoleGroupPermissionChoiceField:
+        return cls._meta.get_field("view_permissions")
+
+    def can_user_view(self, user) -> bool:
+        return self.get_view_permissions_field().has_user_roles(self.view_permissions, user)
 
 
 class Customization(BaseModel):
