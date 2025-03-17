@@ -816,7 +816,7 @@ def format_usage_data(
         operator_data = f"{usage_event.operator.first_name} {usage_event.operator.last_name}"
         run_data: Dict = loads(usage_run_data)
         for question_key, question in run_data.items():
-            if "user_input" in question:
+            if "user_input" in question and not question.get("readonly", False):
                 if question["type"] == "group":
                     for sub_question in question["questions"]:
                         table_result.add_header((sub_question["name"], sub_question["title"]))

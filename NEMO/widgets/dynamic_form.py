@@ -57,6 +57,7 @@ class PostUsageQuestion:
         self.consumable_id = self._init_property("consumable_id")
         self.required = self._init_property("required", boolean=True)
         self.inline = self._init_property("inline", boolean=True)
+        self.readonly = self._init_property("readonly", boolean=True)
         # For backwards compatibility keep default choice
         self.default_value = (
             self._init_property("default_value")
@@ -311,11 +312,12 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
             result += f'<div class="input-group">'
         if self.prefix:
             result += f'<span class="input-group-addon">{self.prefix}</span>'
-        required = "required" if self.required else ""
+        readonly = "readonly" if self.readonly else ""
+        required = "required" if self.required and not self.readonly else ""
         pattern = f'pattern="{self.pattern}"' if self.pattern else ""
         placeholder = f'placeholder="{self.placeholder}"' if self.placeholder else ""
         default_value = f'value="{self.get_default_value()}"' if self.get_default_value() is not None else ""
-        result += self.render_input(required, pattern, placeholder, default_value)
+        result += self.render_input(readonly, required, pattern, placeholder, default_value)
         if self.suffix:
             result += f'<span class="input-group-addon">{self.suffix}</span>'
         if input_group_required:
@@ -325,9 +327,9 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
         result += "</div>"
         return result
 
-    def render_input(self, required: str, pattern: str, placeholder: str, default_value: str) -> str:
+    def render_input(self, readonly: str, required: str, pattern: str, placeholder: str, default_value: str) -> str:
         maxlength = f'maxlength="{self.maxlength}"' if self.maxlength else ""
-        return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {maxlength} {placeholder} {pattern} {default_value} {required} spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+        return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {maxlength} {placeholder} {pattern} {default_value} {required} {readonly} spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
     def render_script(self, virtual_inputs: bool, group_question_url: str, item_id: int) -> str:
         if virtual_inputs:
@@ -347,11 +349,11 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
 class PostUsageTextAreaFieldQuestion(PostUsageTextFieldQuestion):
     question_type = "Question of type textarea"
 
-    def render_input(self, required: str, pattern: str, placeholder: str, default_value: str) -> str:
+    def render_input(self, readonly: str, required: str, pattern: str, placeholder: str, default_value: str) -> str:
         rows = f'rows="{str(self.rows)}"' if self.rows else ""
         rows_parameter = f", {str(self.rows)}" if self.rows else ""
         on_input = f'oninput="auto_size_textarea(this{rows_parameter});"' if self.auto_resize else ""
-        return f'<textarea {on_input} class="form-control" id="{self.form_name}" name="{self.form_name}" {rows} {placeholder} {required} style="height:inherit" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">{self.get_default_value() or ""}</textarea>'
+        return f'<textarea {on_input} class="form-control" id="{self.form_name}" name="{self.form_name}" {rows} {placeholder} {required} {readonly} style="height:inherit" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">{self.get_default_value() or ""}</textarea>'
 
     def render_script(self, virtual_inputs: bool, group_question_url: str, item_id: int) -> str:
         super_script = super().render_script(virtual_inputs, group_question_url, item_id)
@@ -365,11 +367,11 @@ class PostUsageTextAreaFieldQuestion(PostUsageTextFieldQuestion):
 class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
     question_type = "Question of type number"
 
-    def render_input(self, required: str, pattern: str, placeholder: str, default_value: str) -> str:
+    def render_input(self, readonly: str, required: str, pattern: str, placeholder: str, default_value: str) -> str:
         minimum = f'min="{self.min}"' if self.min else ""
         maximum = f'max="{self.max}"' if self.max else ""
         step = f'step="{self.step}"' if self.step else ""
-        return f'<input type="number" class="form-control" id="{self.form_name}" name="{self.form_name}" {placeholder} {pattern} {minimum} {maximum} {default_value} {step} {required} spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+        return f'<input type="number" class="form-control" id="{self.form_name}" name="{self.form_name}" {placeholder} {pattern} {minimum} {maximum} {default_value} {step} {required} {readonly} spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
     def render_script(self, virtual_inputs: bool, group_question_url: str, item_id: int) -> str:
         if virtual_inputs:
@@ -397,10 +399,10 @@ class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
 class PostUsageFloatFieldQuestion(PostUsageTextFieldQuestion):
     question_type = "Question of type float"
 
-    def render_input(self, required: str, pattern: str, placeholder: str, default_value: str) -> str:
+    def render_input(self, readonly: str, required: str, pattern: str, placeholder: str, default_value: str) -> str:
         precision = self.precision if self.precision else 2
         pattern = f'pattern="^\s*(?=.*[0-9])\d*(?:\.\d{"{1," + str(precision) + "}"})?\s*$"'
-        return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {placeholder} {pattern} {default_value} {required} spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+        return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {placeholder} {pattern} {default_value} {required} {readonly} spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
     def render_script(self, virtual_inputs: bool, group_question_url: str, item_id: int) -> str:
         if virtual_inputs:
