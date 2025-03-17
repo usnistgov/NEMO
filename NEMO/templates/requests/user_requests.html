@@ -84,27 +84,35 @@
 
         function load_buddy_board()
         {
+            show_spinner();
             let failure_dialog = ajax_complete_callback("Unable to load buddy requests", "There was a problem looking up buddy requests.");
             $("#buddy-requests").load("{% url 'buddy_requests' %}", undefined, failure_dialog);
         }
         function load_access_requests()
         {
+            show_spinner();
             let failure_dialog = ajax_complete_callback("Unable to load access requests", "There was a problem loading access requests.");
             $("#access-requests").load("{% url 'access_requests' %}", undefined, failure_dialog);
         }
         function load_adjustment_requests()
         {
+            show_spinner();
             let failure_dialog = ajax_complete_callback("Unable to load adjustment requests", "There was a problem loading adjustment requests.");
             $("#adjustment-requests").load("{% url 'adjustment_requests' %}", undefined, failure_dialog);
         }
         function load_staff_assistance_requests()
         {
+            show_spinner();
             let failure_dialog = ajax_complete_callback("Unable to load staff assistance requests", "There was a problem looking up staff assistance requests.");
             $("#staff-assistance-requests").load("{% url 'staff_assistance_requests' %}", undefined, failure_dialog);
         }
-        {% if tab == 'buddy' %}load_buddy_board();{% endif %}
-        {% if tab == 'access' %}load_access_requests();{% endif %}
-        {% if tab == 'adjustment' %}load_adjustment_requests();{% endif %}
-        {% if tab == 'staff_assistance' %}load_staff_assistance_requests();{% endif %}
+
+        $(function ()
+        {
+            {% if tab == 'buddy' %}load_buddy_board();{% endif %}
+            {% if tab == 'access' %}load_access_requests();{% endif %}
+            {% if tab == 'adjustment' %}load_adjustment_requests();{% endif %}
+            {% if tab == 'staff_assistance' %}load_staff_assistance_requests();{% endif %}
+        });
     </script>
 {% endblock %}

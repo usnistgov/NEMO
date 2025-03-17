@@ -164,8 +164,8 @@
         });
     }, false);
 
-    {# Hide spinner on page show, just in case for some browser back button reloading it #}
-    window.addEventListener('pageshow', function()
+    {# Hide spinner on page unload, just in case for some browser back button reloading it #}
+    window.addEventListener('unload', function()
     {
         hide_spinner();
     });
