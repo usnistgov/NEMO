@@ -88,19 +88,29 @@ class UserActiveAccessExpirationTestCase(TestCase):
             self.assertFalse(user.is_active)
 
     def test_qualification_expiration_enabled_buffer_days(self):
-        # expired user's access expired yesterday
-        self.expired_user.access_expiration = date.today() - timedelta(days=1)
+        # expired user's access expired 2 days ago
+        self.expired_user.access_expiration = date.today() - timedelta(days=2)
         self.expired_user.save()
 
         # now enable it for users with no types, but set a buffer for 10 days
         UserCustomization.set("user_access_expiration_no_type", "enabled")
         UserCustomization.set("user_access_expiration_buffer_days", "10")
+
+        do_deactivate_access_expired_users()
         # nothing happens
         for user in User.objects.all():
             self.assertTrue(user.is_active)
 
+        # set expiration to 9 days in the past, nothing happens
+        self.expired_user.access_expiration = date.today() - timedelta(days=9)
+        self.expired_user.save()
+        do_deactivate_access_expired_users()
+        for user in User.objects.all():
+            self.assertTrue(user.is_active)
+
         # set expiration to 10 days in the past, should work
-        self.expired_user.access_expiration = date.today() - timedelta(days=1)
+        self.expired_user.access_expiration = date.today() - timedelta(days=10)
+        self.expired_user.save()
         do_deactivate_access_expired_users()
         for user in User.objects.all():
             if user.id == self.expired_user.id:
