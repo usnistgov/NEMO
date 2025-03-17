@@ -45,11 +45,18 @@
                     {% if "NEMO.apps.area_access"|app_installed %}
                         <label>
                             <input type="checkbox"
-                                   name="area_logout_already_logged_in"
-                                   {% if area_logout_already_logged_in %}checked{% endif %}
+                                   name="area_access_logout_already_logged_in"
+                                   {% if area_access_logout_already_logged_in %}checked{% endif %}
                                    value="enabled">
                             Automatically log users out when they try to log in to an area and they are already logged
                             into an area (single entrance/exit tablet mode)
+                        </label>
+                        <label>
+                            <input type="checkbox"
+                                   name="area_access_open_door_on_logout"
+                                   {% if area_access_open_door_on_logout %}checked{% endif %}
+                                   value="enabled">
+                            In area access tablet, trigger the door opening on successful logout
                         </label>
                     {% endif %}
                 </div>

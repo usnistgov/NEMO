@@ -85,7 +85,7 @@ def login_to_area(request, door_id):
 
     current_area_access_record = user.area_access_record()
     if current_area_access_record:
-        if ApplicationCustomization.get_bool("area_logout_already_logged_in"):
+        if ApplicationCustomization.get_bool("area_access_logout_already_logged_in"):
             return logout_of_area(request, door_id)
 
     if not area:
@@ -282,6 +282,11 @@ def logout_of_area(request, door_id):
     record = user.area_access_record()
     if record:
         log_out_user(user)
+        if ApplicationCustomization.get_bool("area_access_open_door_on_logout"):
+            if door.interlock:
+                if not door.interlock.unlock():
+                    return interlock_error(bypass_allowed=True)
+                delay_lock_door(door.id)
         busy_tools = UsageEvent.objects.filter(end=None, user=user)
         staff_charge = user.get_staff_charge()
         if busy_tools or staff_charge:
