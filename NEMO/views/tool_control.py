@@ -61,7 +61,7 @@ from NEMO.views.customization import (
     get_media_file_contents,
 )
 from NEMO.widgets.configuration_editor import ConfigurationEditor
-from NEMO.widgets.dynamic_form import DynamicForm, PostUsageQuestion, render_group_questions
+from NEMO.widgets.dynamic_form import DynamicForm, PostUsageQuestion
 from NEMO.widgets.item_tree import ItemTree
 
 tool_control_logger = getLogger(__name__)
@@ -127,8 +127,8 @@ def tool_status(request, tool_id):
         "rendered_configuration_html": tool.configuration_widget(user),
         "mobile": request.device == "mobile",
         "task_statuses": TaskStatus.objects.all(),
-        "pre_usage_questions": DynamicForm(tool.pre_usage_questions).render("tool_usage_group_question", tool_id),
-        "post_usage_questions": DynamicForm(tool.post_usage_questions).render("tool_usage_group_question", tool_id),
+        "pre_usage_questions": DynamicForm(tool.pre_usage_questions).render(tool, "pre_usage_questions"),
+        "post_usage_questions": DynamicForm(tool.post_usage_questions).render(tool, "post_usage_questions"),
         "show_broadcast_upcoming_reservation": user.is_any_part_of_staff
         or (user_is_qualified and broadcast_upcoming_reservation == "qualified")
         or broadcast_upcoming_reservation == "all",
@@ -691,15 +691,6 @@ def export_comments_and_tasks_to_text(comments_and_tasks: List):
         f"comments_and_tasks_export_{export_format_datetime()}.txt"
     )
     return response
-
-
-@login_required
-@require_GET
-def tool_usage_group_question(request, tool_id, group_name):
-    tool = get_object_or_404(Tool, id=tool_id)
-    return HttpResponse(
-        render_group_questions(request, tool.post_usage_questions, "tool_usage_group_question", tool_id, group_name)
-    )
 
 
 @login_required

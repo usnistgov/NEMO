@@ -1982,14 +1982,14 @@ class Tool(SerializationByNameModel):
             # Validate _pre_usage_questions JSON format
             if self._pre_usage_questions:
                 dynamic_form_errors = validate_dynamic_form_model(
-                    self._pre_usage_questions, "tool_usage_group_question", self.id
+                    self._pre_usage_questions, self, "_pre_usage_questions"
                 )
                 if dynamic_form_errors:
                     errors["_pre_usage_questions"] = dynamic_form_errors
             # Validate _post_usage_questions JSON format
             if self._post_usage_questions:
                 dynamic_form_errors = validate_dynamic_form_model(
-                    self._post_usage_questions, "tool_usage_group_question", self.id
+                    self._post_usage_questions, self, "_post_usage_questions"
                 )
                 if dynamic_form_errors:
                     errors["_post_usage_questions"] = dynamic_form_errors

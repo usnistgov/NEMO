@@ -10,11 +10,14 @@ from logging import getLogger
 from typing import Any, Callable, Dict, List, Optional, Type, Union
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
-from django.http import QueryDict
-from django.urls import NoReverseMatch, reverse
+from django.http import HttpResponse, QueryDict
+from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.http import require_GET
 
 from NEMO.evaluators import evaluate_expression, get_expression_variables
 from NEMO.exceptions import RequiredUnansweredQuestionsException
@@ -106,9 +109,9 @@ class PostUsageQuestion:
         self.validate_property_exists("title")
         self.validate_property_exists("type")
 
-    def render(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
-        return self.render_element(virtual_inputs, group_question_url, group_item_id, extra_class) + self.render_script(
-            virtual_inputs, group_question_url, group_item_id
+    def render(self, virtual_inputs: bool, item, dynamic_field_name, extra_class="") -> str:
+        return self.render_element(virtual_inputs, item, dynamic_field_name, extra_class) + self.render_script(
+            virtual_inputs, item, dynamic_field_name
         )
 
     def render_as_text(self) -> str:
@@ -118,10 +121,10 @@ class PostUsageQuestion:
             result += " (possible choices: " + "|".join(self.choices) + ")"
         return result
 
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
+    def render_element(self, virtual_inputs: bool, item, dynamic_field_name: str, extra_class="") -> str:
         return ""
 
-    def render_script(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
+    def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
         return ""
 
     def extract(self, request, index=None) -> Dict:
@@ -177,7 +180,7 @@ class PostUsageRadioQuestion(PostUsageQuestion):
         super().validate()
         self.validate_labels_and_choices()
 
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
+    def render_element(self, virtual_inputs: bool, item, dynamic_field_name: str, extra_class="") -> str:
         title = self.title_html or self.title
         max_width = f"max-width:{self.max_width}px" if self.max_width else ""
         result = f'<div class="form-group {extra_class}" style="{max_width}">'
@@ -204,7 +207,7 @@ class PostUsageCheckboxQuestion(PostUsageQuestion):
         super().validate()
         self.validate_labels_and_choices()
 
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
+    def render_element(self, virtual_inputs: bool, item, dynamic_field_name: str, extra_class="") -> str:
         title = self.title_html or self.title
         max_width = f"max-width:{self.max_width}px" if self.max_width else ""
         result = f'<div class="form-group {extra_class}" style="{max_width}>'
@@ -231,7 +234,7 @@ class PostUsageCheckboxQuestion(PostUsageQuestion):
         result += "</div>"
         return result
 
-    def render_script(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
+    def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
         result = "<script>"
         result += "function checkbox_required(form_name) {"
         result += "if ($('input[name=' + form_name + ']:checkbox:checked').length > 0) {"
@@ -257,7 +260,7 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
         super().validate()
         self.validate_labels_and_choices()
 
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
+    def render_element(self, virtual_inputs: bool, item, dynamic_field_name: str, extra_class="") -> str:
         title = self.title_html or self.title
         max_width = f"max-width:{self.max_width}px" if self.max_width else ""
         result = f'<div class="form-group {extra_class}" style="{max_width}">'
@@ -302,7 +305,7 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 class PostUsageTextFieldQuestion(PostUsageQuestion):
     question_type = "Question of type text"
 
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
+    def render_element(self, virtual_inputs: bool, item, dynamic_field_name: str, extra_class="") -> str:
         title = self.title_html or self.title
         max_width = f"max-width:{self.max_width}px" if self.max_width else ""
         result = f'<div class="form-group {extra_class}" style="{max_width}">'
@@ -331,10 +334,10 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
         maxlength = f'maxlength="{self.maxlength}"' if self.maxlength else ""
         return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {maxlength} {placeholder} {pattern} {default_value} {required} {readonly} spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
-    def render_script(self, virtual_inputs: bool, group_question_url: str, item_id: int) -> str:
+    def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
         if virtual_inputs:
             return f"<script>$('#{self.form_name}').keyboard();</script>"
-        return super().render_script(virtual_inputs, group_question_url, item_id)
+        return super().render_script(virtual_inputs, item, dynamic_field_name)
 
     def render_as_text(self) -> str:
         result = f"{self.title}\n"
@@ -355,8 +358,8 @@ class PostUsageTextAreaFieldQuestion(PostUsageTextFieldQuestion):
         on_input = f'oninput="auto_size_textarea(this{rows_parameter});"' if self.auto_resize else ""
         return f'<textarea {on_input} class="form-control" id="{self.form_name}" name="{self.form_name}" {rows} {placeholder} {required} {readonly} style="height:inherit" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">{self.get_default_value() or ""}</textarea>'
 
-    def render_script(self, virtual_inputs: bool, group_question_url: str, item_id: int) -> str:
-        super_script = super().render_script(virtual_inputs, group_question_url, item_id)
+    def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
+        super_script = super().render_script(virtual_inputs, item, dynamic_field_name)
         if self.auto_resize:
             script_only = super_script.replace("<script>", "").replace("</script>", "")
             rows_parameter = f", {str(self.rows)}" if self.rows else ""
@@ -373,10 +376,10 @@ class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
         step = f'step="{self.step}"' if self.step else ""
         return f'<input type="number" class="form-control" id="{self.form_name}" name="{self.form_name}" {placeholder} {pattern} {minimum} {maximum} {default_value} {step} {required} {readonly} spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
-    def render_script(self, virtual_inputs: bool, group_question_url: str, item_id: int) -> str:
+    def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
         if virtual_inputs:
             return f"<script>$('#{self.form_name}').numpad({{'readonly': false, 'hidePlusMinusButton': true, 'hideDecimalButton': true}});</script>"
-        return super().render_script(virtual_inputs, group_question_url, item_id)
+        return super().render_script(virtual_inputs, item, dynamic_field_name)
 
     def render_as_text(self) -> str:
         result = super().render_as_text()
@@ -404,10 +407,10 @@ class PostUsageFloatFieldQuestion(PostUsageTextFieldQuestion):
         pattern = f'pattern="^\s*(?=.*[0-9])\d*(?:\.\d{"{1," + str(precision) + "}"})?\s*$"'
         return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {placeholder} {pattern} {default_value} {required} {readonly} spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
-    def render_script(self, virtual_inputs: bool, group_question_url: str, item_id: int) -> str:
+    def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
         if virtual_inputs:
             return f"<script>$('#{self.form_name}').numpad({{'readonly': false, 'hidePlusMinusButton': true, 'hideDecimalButton': false}});</script>"
-        return super().render_script(virtual_inputs, group_question_url, item_id)
+        return super().render_script(virtual_inputs, item, dynamic_field_name)
 
     def extract_for_formula(self, request, index=None) -> Any:
         value = super().extract_for_formula(request, index)
@@ -425,7 +428,7 @@ class PostUsageFormulaQuestion(PostUsageQuestion):
     def all_questions_by_form_name(self):
         return {question.form_name: question for question in self.all_questions}
 
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
+    def render_element(self, virtual_inputs: bool, item, dynamic_field_name: str, extra_class="") -> str:
         return f'<input type="hidden" id="{self.form_name}" name="{self.form_name}">'
 
     def validate(self):
@@ -567,7 +570,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
             index_data = self.initial_data[self.index] or {}
             return index_data.get(sub_question_name, None)
 
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
+    def render_element(self, virtual_inputs: bool, item, dynamic_field_name: str, extra_class="") -> str:
         title = self.title_html or self.title
         result = f'<div class="{extra_class}">'
         result += f'<div class="form-group"><div style="white-space: pre-wrap">{title}</div></div>'
@@ -577,10 +580,10 @@ class PostUsageGroupQuestion(PostUsageQuestion):
         if self.initial_data:
             for index, data in enumerate(self.initial_data):
                 self.load_sub_questions(index, data)
-                result += self.render_group_question(virtual_inputs, group_question_url, group_item_id)
+                result += self.render_group_question(virtual_inputs, item, dynamic_field_name)
                 result += "</div>"
         else:
-            result += self.render_group_question(virtual_inputs, group_question_url, group_item_id)
+            result += self.render_group_question(virtual_inputs, item, dynamic_field_name)
             result += "</div>"
         result += "</div>"
         result += '<div class="form-group">'
@@ -589,15 +592,15 @@ class PostUsageGroupQuestion(PostUsageQuestion):
         result += "</div>"
         return result
 
-    def render_group_question(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
+    def render_group_question(self, virtual_inputs: bool, item, field_name: str) -> str:
         result = ""
         result += f'<div class="{self.group_name}_question" style="padding-top: 10px; padding-bottom: 10px; border-top: 1px solid lightgray">'
-        result += render_grid_questions(self.sub_questions, group_question_url, group_item_id, virtual_inputs)
+        result += render_grid_questions(self.sub_questions, item, field_name, virtual_inputs)
         if self.index:
             result += f'<button type="button" onclick="remove_question_{self.group_name}(this);">Remove</button>'
         return result
 
-    def render_script(self, virtual_inputs: bool, group_question_url: str, item_id: int) -> str:
+    def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
         return f"""
 		<script>
 			if (!$) {{ $ = django.jQuery; }}
@@ -621,7 +624,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 			}}
 			function add_question_{self.group_name}()
 			{{
-				$.ajax({{ type: "GET", url: "{reverse(group_question_url, args=[item_id, self.group_name])}?virtual_inputs={virtual_inputs}&index="+{self.group_name}_question_index, success : function(response)
+				$.ajax({{ type: "GET", url: "{reverse('render_group_question', args=[ContentType.objects.get_for_model(item).id, item.id,dynamic_field_name, self.group_name])}?virtual_inputs={virtual_inputs}&index="+{self.group_name}_question_index, success : function(response)
 				{{
 					{self.group_name}_question_index ++;
 					$("#{self.group_name}_container").append(response);
@@ -675,14 +678,14 @@ class DynamicForm:
                 for sub_question in initialized_question.sub_questions:
                     sub_question.all_questions = all_questions
 
-    def render(self, group_question_url: str, group_item_id: int, virtual_inputs: bool = False):
+    def render(self, item, dynamic_field_name: str, virtual_inputs: bool = False):
         result = ""
         if self.questions:
             result += "<script>if (!$) { $ = django.jQuery; }</script>"
-        result += f'<div class="dynamic_form">{render_grid_questions(self.questions, group_question_url, group_item_id, virtual_inputs)}</div>'
+        result += f'<div class="dynamic_form">{render_grid_questions(self.questions, item, dynamic_field_name, virtual_inputs)}</div>'
         return mark_safe(result)
 
-    def validate(self, group_question_url: str, group_item_id: int):
+    def validate(self, item, dynamic_field_name: str):
         # We need to validate the raw json for types
         for question in self.untreated_questions:
             if question["type"] not in question_types.keys():
@@ -695,14 +698,8 @@ class DynamicForm:
                         )
         for question in self.questions:
             question.validate()
-        # Test the rendering, but catch reverse exception if this the item doesn't have an id yet
-        # (when creating it the first time)
-        try:
-            self.render(group_question_url, group_item_id)
-        except NoReverseMatch:
-            if group_item_id:
-                raise
-            pass
+        # Test the rendering
+        self.render(item, dynamic_field_name)
         # Check for duplicate names, and that if consumable exists they are linked to a number question
         names = []
         for question in self.questions:
@@ -850,17 +847,18 @@ def get_submitted_user_inputs(user_data: Union[str, dict]) -> Dict:
     return user_input
 
 
-def render_group_questions(request, questions, group_question_url, group_item_id, group_name) -> str:
+def render_group_questions(request, item, field_name: str, group_name: str) -> str:
     question_index = request.GET["index"]
     virtual_inputs = bool(strtobool((request.GET["virtual_inputs"])))
-    if questions:
-        for question in PostUsageQuestion.load_questions(loads(questions), question_index):
+    dynamic_field = getattr(item, field_name, None)
+    if dynamic_field:
+        for question in PostUsageQuestion.load_questions(loads(dynamic_field), question_index):
             if isinstance(question, PostUsageGroupQuestion) and question.group_name == group_name:
-                return question.render_group_question(virtual_inputs, group_question_url, group_item_id)
+                return question.render_group_question(virtual_inputs, item, field_name)
     return ""
 
 
-def render_grid_questions(questions, group_question_url: str, group_item_id: int, virtual_inputs: bool):
+def render_grid_questions(questions, item, dynamic_field_name: str, virtual_inputs: bool):
     # only use the grid if we have "form_row" defined for at least one item
     use_grid = max([q.form_row for q in questions if q.form_row], default=0)
     result = ""
@@ -873,7 +871,7 @@ def render_grid_questions(questions, group_question_url: str, group_item_id: int
                 result += '<div class="row">'
                 extra_class = f"col-md-{cell_width or 12}"
             for question in row:
-                result += question.render(virtual_inputs, group_question_url, group_item_id, extra_class)
+                result += question.render(virtual_inputs, item, dynamic_field_name, extra_class)
             if use_grid and max_cells:
                 result += "</div>"
     return result
@@ -934,7 +932,7 @@ def get_counter_value_for_question(question, input_data, counter_question):
     return additional_value
 
 
-def validate_dynamic_form_model(dynamic_form_json: str, group_url: str, item_id) -> List[str]:
+def validate_dynamic_form_model(dynamic_form_json: str, item, dynamic_field_name: str) -> List[str]:
     errors = []
     if dynamic_form_json:
         try:
@@ -943,7 +941,7 @@ def validate_dynamic_form_model(dynamic_form_json: str, group_url: str, item_id)
             errors.append("This field needs to be a valid JSON string")
         try:
             dynamic_form = DynamicForm(dynamic_form_json)
-            dynamic_form.validate(group_url, item_id)
+            dynamic_form.validate(item, dynamic_field_name)
         except KeyError as e:
             errors.append(f"{e} property is required")
         except Exception:
@@ -952,11 +950,11 @@ def validate_dynamic_form_model(dynamic_form_json: str, group_url: str, item_id)
     return errors
 
 
-def admin_render_dynamic_form_preview(dynamic_form_json: str, group_url: str, item_id):
+def admin_render_dynamic_form_preview(dynamic_form_json: str, item, dynamic_field_name: str):
     form_validity_div = ""
     rendered_form = ""
     try:
-        rendered_form = DynamicForm(dynamic_form_json).render(group_url, item_id)
+        rendered_form = DynamicForm(dynamic_form_json).render(item, dynamic_field_name)
         if dynamic_form_json:
             form_validity_div = '<div class="form_validity"></div>'
     except:
@@ -992,6 +990,17 @@ def sort_question_for_grid(questions: List[PostUsageQuestion]) -> List[List[Post
 def match_group_index(form_name: str) -> Optional[re.Pattern]:
     # This will match form_name or any combination of form_name_1, form_name_2 etc.
     return re.compile("^" + form_name + "(_(\d+))?$")
+
+
+@require_GET
+@login_required
+def group_question(request, content_type_id, item_id, field_name, group_name):
+    try:
+        item = ContentType.objects.get(pk=content_type_id).get_object_for_this_type(pk=item_id)
+        return HttpResponse(render_group_questions(request, item, field_name, group_name))
+    except Exception as e:
+        dynamic_form_logger.exception(e)
+    return HttpResponse()
 
 
 question_types: Dict[str, Type[PostUsageQuestion]] = {
