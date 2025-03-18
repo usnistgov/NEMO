@@ -574,6 +574,11 @@ urlpatterns += [
         dynamic_form.group_question,
         name="render_group_question",
     ),
+    path(
+        "formula_preview/<content_type_id>/<item_id>/<field_name>/<formula_name>",
+        dynamic_form.formula_preview,
+        name="formula_preview",
+    ),
     # Media
     re_path(
         r"^media/" + MEDIA_PROTECTED + "/(?P<path>.*)$",

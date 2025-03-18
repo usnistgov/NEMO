@@ -17,7 +17,7 @@ from django.http import HttpResponse, QueryDict
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.evaluators import evaluate_expression, get_expression_variables
 from NEMO.exceptions import RequiredUnansweredQuestionsException
@@ -61,6 +61,7 @@ class PostUsageQuestion:
         self.required = self._init_property("required", boolean=True)
         self.inline = self._init_property("inline", boolean=True)
         self.readonly = self._init_property("readonly", boolean=True)
+        self.show_formula_preview = self._init_property("show_formula_preview", boolean=True)
         # For backwards compatibility keep default choice
         self.default_value = (
             self._init_property("default_value")
@@ -429,7 +430,33 @@ class PostUsageFormulaQuestion(PostUsageQuestion):
         return {question.form_name: question for question in self.all_questions}
 
     def render_element(self, virtual_inputs: bool, item, dynamic_field_name: str, extra_class="") -> str:
-        return f'<input type="hidden" id="{self.form_name}" name="{self.form_name}">'
+        result = f'<input type="hidden" id="{self.form_name}" name="{self.form_name}">'
+        if self.show_formula_preview:
+            result += f'<input type="text" id="formula_preview_{self.form_name}" class="form-control" value="{self.default_value if self.default_value is not None else ""}">'
+            result += f'<button id="formula_preview_button_{self.form_name}" type="button" onclick="preview_result_{self.form_name}(this);">Update</button>'
+        return result
+
+    def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
+        if self.show_formula_preview:
+            return f"""
+        		<script>
+        			if (!$) {{ $ = django.jQuery; }}
+        			function preview_result_{self.form_name}(element)
+        			{{
+        			    let form_element = $('#formula_preview_{self.form_name}').attr('form');
+        			    let data = form_element ? $('#'+form_element).serialize() : $(element).closest('form').serialize();
+        			    if (typeof csrf_token === 'function')
+        			    {{
+        			        data += "&csrfmiddlewaretoken=" + csrf_token();
+                        }}
+        				$.ajax({{ type: "POST", data: data, url: "{reverse("formula_preview", args=[ContentType.objects.get_for_model(item).id, item.id,dynamic_field_name, self.name])}", success : function(response)
+        				{{
+        					$("#formula_preview_{self.form_name}").val(response);
+        				}}
+        				}});
+        			}}
+        		</script>"""
+        return ""
 
     def validate(self):
         super().validate()
@@ -944,7 +971,7 @@ def validate_dynamic_form_model(dynamic_form_json: str, item, dynamic_field_name
             dynamic_form.validate(item, dynamic_field_name)
         except KeyError as e:
             errors.append(f"{e} property is required")
-        except Exception:
+        except:
             error_info = sys.exc_info()
             errors.append(error_info[0].__name__ + ": " + str(error_info[1]))
     return errors
@@ -998,8 +1025,23 @@ def group_question(request, content_type_id, item_id, field_name, group_name):
     try:
         item = ContentType.objects.get(pk=content_type_id).get_object_for_this_type(pk=item_id)
         return HttpResponse(render_group_questions(request, item, field_name, group_name))
-    except Exception as e:
-        dynamic_form_logger.exception(e)
+    except:
+        dynamic_form_logger.exception("Error loading group question")
+    return HttpResponse()
+
+
+@require_POST
+@login_required
+def formula_preview(request, content_type_id, item_id, field_name, formula_name):
+    try:
+        item = ContentType.objects.get(pk=content_type_id).get_object_for_this_type(pk=item_id)
+        try:
+            data = loads(DynamicForm(getattr(item, field_name)).extract(request))
+        except RequiredUnansweredQuestionsException as e:
+            data = loads(e.run_data)
+        return HttpResponse(data.get(formula_name, {}).get("user_input", ""))
+    except:
+        dynamic_form_logger.exception("Error getting formula preview")
     return HttpResponse()
 
 
