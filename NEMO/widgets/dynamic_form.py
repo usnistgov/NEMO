@@ -592,11 +592,6 @@ class PostUsageGroupQuestion(PostUsageQuestion):
                 raise Exception(f"{sub_question.question_type} cannot be used inside a group question")
             sub_question.validate()
 
-    def get_initial_data_for_subquestion(self, sub_question_name):
-        if self.initial_data and self.index is not None and self.index < len(self.initial_data):
-            index_data = self.initial_data[self.index] or {}
-            return index_data.get(sub_question_name, None)
-
     def render_element(self, virtual_inputs: bool, item, dynamic_field_name: str, extra_class="") -> str:
         title = self.title_html or self.title
         result = f'<div class="{extra_class}">'
@@ -1019,6 +1014,24 @@ def match_group_index(form_name: str) -> Optional[re.Pattern]:
     return re.compile("^" + form_name + "(_(\d+))?$")
 
 
+def find_input_value_for_field(user_data: Union[str, dict], question_name) -> Optional[str]:
+    user_inputs = get_submitted_user_inputs(user_data)
+    if question_name in user_inputs:
+        # straightforward question
+        return user_inputs[question_name]
+    else:
+        # group question
+        for name, value in user_inputs.items():
+            if isinstance(value, List):
+                for index, sub_value in enumerate(value):
+                    if isinstance(sub_value, dict):
+                        for key, sub_sub_value in sub_value.items():
+                            name_with_index = f"{key}_{index}"
+                            if question_name == name_with_index or index == 0 and question_name == key:
+                                return sub_sub_value
+    return ""
+
+
 @require_GET
 @login_required
 def group_question(request, content_type_id, item_id, field_name, group_name):
@@ -1039,7 +1052,8 @@ def formula_preview(request, content_type_id, item_id, field_name, formula_name)
             data = loads(DynamicForm(getattr(item, field_name)).extract(request))
         except RequiredUnansweredQuestionsException as e:
             data = loads(e.run_data)
-        return HttpResponse(data.get(formula_name, {}).get("user_input", ""))
+        input_data = find_input_value_for_field(data, formula_name)
+        return HttpResponse(input_data)
     except:
         dynamic_form_logger.exception("Error getting formula preview")
     return HttpResponse()
