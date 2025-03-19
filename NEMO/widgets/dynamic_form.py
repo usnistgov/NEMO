@@ -313,7 +313,7 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
         result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
         input_group_required = True if self.prefix or self.suffix else False
         if input_group_required:
-            result += f'<div class="input-group">'
+            result += '<div class="input-group">'
         if self.prefix:
             result += f'<span class="input-group-addon">{self.prefix}</span>'
         readonly = "readonly" if self.readonly else ""
@@ -432,8 +432,17 @@ class PostUsageFormulaQuestion(PostUsageQuestion):
     def render_element(self, virtual_inputs: bool, item, dynamic_field_name: str, extra_class="") -> str:
         result = f'<input type="hidden" id="{self.form_name}" name="{self.form_name}">'
         if self.show_formula_preview:
-            result += f'<input type="text" id="formula_preview_{self.form_name}" class="form-control" value="{self.default_value if self.default_value is not None else ""}">'
-            result += f'<button id="formula_preview_button_{self.form_name}" type="button" onclick="preview_result_{self.form_name}(this);">Update</button>'
+            title = self.title_html or self.title
+            max_width = f"max-width:{self.max_width}px" if self.max_width else ""
+            result += f'<div class="form-group {extra_class}" style="{max_width}">'
+            result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}</label>'
+            result += '<div class="input-group">'
+            result += f'<input type="text" disabled id="formula_preview_{self.form_name}" class="form-control" value="{self.default_value if self.default_value is not None else ""}">'
+            result += '<span class="input-group-btn">'
+            result += f'<button class="btn btn-default" id="formula_preview_button_{self.form_name}" type="button" onclick="preview_result_{self.form_name}(this);">Update</button>'
+            result += "</span>"
+            result += "</div>"
+            result += "</div>"
         return result
 
     def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
@@ -596,7 +605,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
         title = self.title_html or self.title
         result = f'<div class="{extra_class}">'
         result += f'<div class="form-group"><div style="white-space: pre-wrap">{title}</div></div>'
-        result += f'<div id="{self.group_name}_container">'
+        result += f'<div class="{self.group_name}_container">'
         # It's a bit more complicated here, we need to render multiple groups if we have initial data
         # So we change the index, reload sub questions and render each of them
         if self.initial_data:
@@ -609,53 +618,25 @@ class PostUsageGroupQuestion(PostUsageQuestion):
             result += "</div>"
         result += "</div>"
         result += '<div class="form-group">'
-        result += f'<button id="{self.group_name}_add_button" type="button" onclick="add_question_{self.group_name}()">{self.group_add_button_name}</button>'
+        add_group_url = (
+            reverse(
+                "render_group_question",
+                args=[ContentType.objects.get_for_model(item).id, item.id, dynamic_field_name, self.group_name],
+            )
+            + f"?virtual_inputs={virtual_inputs}"
+        )
+        result += f'<button id="{self.group_name}_add_button" class="{self.group_name}_add_button" type="button" onclick="add_group_question(this, \'{self.group_name}\', {self.max_number}, \'{add_group_url}\')">{self.group_add_button_name}</button>'
         result += "</div>"
         result += "</div>"
         return result
 
     def render_group_question(self, virtual_inputs: bool, item, field_name: str) -> str:
         result = ""
-        result += f'<div class="{self.group_name}_question" style="padding-top: 10px; padding-bottom: 10px; border-top: 1px solid lightgray">'
+        result += f'<div class="{self.group_name}_question" data-group-index="{self.index or 0}" style="padding-top: 10px; padding-bottom: 10px; border-top: 1px solid lightgray">'
         result += render_grid_questions(self.sub_questions, item, field_name, virtual_inputs)
         if self.index:
-            result += f'<button type="button" onclick="remove_question_{self.group_name}(this);">Remove</button>'
+            result += f'<button type="button" onclick="remove_group_question(this, \'{self.group_name}\', {self.max_number});">Remove</button>'
         return result
-
-    def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
-        return f"""
-		<script>
-			if (!$) {{ $ = django.jQuery; }}
-			var {self.group_name}_question_index={len(self.initial_data) if self.initial_data else '1'};
-			function update_add_button_{self.group_name}()
-			{{
-				if ($(".{self.group_name}_question").length < {self.max_number})
-				{{
-					$("#{self.group_name}_add_button").show();
-				}}
-				else
-				{{
-					$("#{self.group_name}_add_button").hide();
-				}}
-			}}
-			function remove_question_{self.group_name}(element)
-			{{
-				$(element).parents(".{self.group_name}_question").remove();
-				$("body").trigger("question-group-changed", ["{self.group_name}"]);
-				update_add_button_{self.group_name}();
-			}}
-			function add_question_{self.group_name}()
-			{{
-				$.ajax({{ type: "GET", url: "{reverse('render_group_question', args=[ContentType.objects.get_for_model(item).id, item.id,dynamic_field_name, self.group_name])}?virtual_inputs={virtual_inputs}&index="+{self.group_name}_question_index, success : function(response)
-				{{
-					{self.group_name}_question_index ++;
-					$("#{self.group_name}_container").append(response);
-					$("body").trigger("question-group-changed", ["{self.group_name}"]);
-					update_add_button_{self.group_name}();
-				}}
-				}});
-			}}
-		</script>"""
 
     def render_as_text(self) -> str:
         result = f"{self.title}\n"
@@ -702,9 +683,60 @@ class DynamicForm:
 
     def render(self, item, dynamic_field_name: str, virtual_inputs: bool = False):
         result = ""
+        item_type_id = ContentType.objects.get_for_model(item).id
         if self.questions:
-            result += "<script>if (!$) { $ = django.jQuery; }</script>"
-        result += f'<div class="dynamic_form">{render_grid_questions(self.questions, item, dynamic_field_name, virtual_inputs)}</div>'
+            data_selector = f'.dynamic_form[data-field-name="{dynamic_field_name}"][data-item-id="{item.id}"][data-field-name="{dynamic_field_name}"]'
+            result += f"""
+            <script>
+            if (!$) {{ $ = django.jQuery; }}
+            
+            $('body').on('change keyup', '{data_selector} input, {data_selector} select, {data_selector} textarea', function()
+            {{
+                $('body').trigger('dynamic-form-field-changed', [{get_js_event_data(item, dynamic_field_name)}]);
+            }});
+
+            function group_update_add_button(dynamic_form_element, group_name, max_number)
+            {{
+                let current_question_count = dynamic_form_element.find("." + group_name + "_question").length;
+                if (current_question_count < max_number)
+                {{
+                    dynamic_form_element.find("." + group_name + "_add_button").show();
+                }}
+                else
+                {{
+                    dynamic_form_element.find("." + group_name + "_add_button").hide();
+                }}
+            }}
+                        
+            function remove_group_question(element, group_name, max_number)
+            {{
+                let element_jq = $(element);
+                let dynamic_form_element = element_jq.closest('.dynamic_form');
+                element_jq.parents("." + group_name +"_question").remove();
+                let event_data = {get_js_event_data(item, dynamic_field_name, {"add": False, "remove": True})}
+                event_data["group_name"] = group_name;
+                $("body").trigger("dynamic-form-group-changed", [event_data]);
+                group_update_add_button(dynamic_form_element, group_name, max_number);
+            }}
+            
+            function add_group_question(element, group_name, max_number, render_group_url)
+            {{
+                let element_jq = $(element);
+                let dynamic_form_element = element_jq.closest('.dynamic_form');
+                let highest_group_index = Math.max(...dynamic_form_element.find("." + group_name + "_question").map(function() {{return isNaN($(this).data("group-index")) ? 0 : +$(this).data("group-index");}}).get());
+                $.ajax({{ type: "GET", url: render_group_url + "&index=" + (highest_group_index + 1), success : function(response)
+                {{
+                    dynamic_form_element.find("." + group_name + "_container").append(response);
+                    let event_data = {get_js_event_data(item, dynamic_field_name, {"add": True, "remove": False})}
+                    event_data["group_name"] = group_name;
+                    $("body").trigger("dynamic-form-group-changed", [event_data]);
+                    group_update_add_button(dynamic_form_element, group_name, max_number);
+                }}
+                }});
+            }}
+            
+            </script>"""
+        result += f'<div class="dynamic_form" data-item-type-id="{item_type_id}" data-item-id="{item.id}" data-field-name="{dynamic_field_name}">{render_grid_questions(self.questions, item, dynamic_field_name, virtual_inputs)}</div>'
         return mark_safe(result)
 
     def validate(self, item, dynamic_field_name: str):
@@ -1014,21 +1046,40 @@ def match_group_index(form_name: str) -> Optional[re.Pattern]:
     return re.compile("^" + form_name + "(_(\d+))?$")
 
 
+def get_js_event_data(item, dynamic_field_name: str, extra_data=None) -> str:
+    if extra_data is None:
+        extra_data = {}
+    return dumps(
+        {
+            "item_type_id": ContentType.objects.get_for_model(item).id,
+            "item_id": item.id,
+            "field_name": dynamic_field_name,
+            **extra_data,
+        }
+    )
+
+
 def find_input_value_for_field(user_data: Union[str, dict], question_name) -> Optional[str]:
-    user_inputs = get_submitted_user_inputs(user_data)
-    if question_name in user_inputs:
-        # straightforward question
-        return user_inputs[question_name]
-    else:
-        # group question
-        for name, value in user_inputs.items():
-            if isinstance(value, List):
-                for index, sub_value in enumerate(value):
-                    if isinstance(sub_value, dict):
-                        for key, sub_sub_value in sub_value.items():
-                            name_with_index = f"{key}_{index}"
-                            if question_name == name_with_index or index == 0 and question_name == key:
-                                return sub_sub_value
+    try:
+        user_data_json: dict = loads(user_data) if isinstance(user_data, str) and user_data else user_data
+        if user_data_json:
+            for field_name, data in user_data_json.items():
+                if "user_input" in data:
+                    if data["type"] != "group":
+                        if question_name == field_name:
+                            return data["user_input"]
+                    else:
+                        for group_index, group_data in data["user_input"].items():
+                            for group_field_name, group_field_data in group_data.items():
+                                name_with_index = f"{group_field_name}_{group_index}"
+                                if (
+                                    question_name == name_with_index
+                                    or group_index == "0"
+                                    and question_name == group_field_name
+                                ):
+                                    return group_field_data
+    except Exception as e:
+        dynamic_form_logger.exception(e)
     return ""
 
 
@@ -1053,7 +1104,7 @@ def formula_preview(request, content_type_id, item_id, field_name, formula_name)
         except RequiredUnansweredQuestionsException as e:
             data = loads(e.run_data)
         input_data = find_input_value_for_field(data, formula_name)
-        return HttpResponse(input_data)
+        return HttpResponse(input_data if input_data is not None else "")
     except:
         dynamic_form_logger.exception("Error getting formula preview")
     return HttpResponse()

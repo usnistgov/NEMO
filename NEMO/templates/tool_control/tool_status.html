@@ -1070,8 +1070,16 @@
     show_alerts();
 	update_stop_button();
     update_start_button();
-	$('body').on('question-group-changed', update_stop_button);
-    $('body').on('question-group-changed', update_start_button);
-	$('body').on('change keyup', '#tool_control input, #tool_control select, #tool_control textarea, #downtime', update_stop_button);
-    $('body').on('change keyup', '#tool_control input, #tool_control select, #tool_control textarea, #downtime', update_start_button);
+	$('body').on('dynamic-form-group-changed dynamic-form-field-changed', function (event, event_data)
+    {
+        if (event_data.field_name === "pre_usage_questions")
+        {
+            update_start_button();
+        }
+        else if (event_data.field_name === "post_usage_questions")
+        {
+            update_stop_button();
+        }
+    });
+	$('body').on('change keyup', '#downtime', update_stop_button);
 </script>
