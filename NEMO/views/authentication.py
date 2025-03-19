@@ -102,7 +102,7 @@ def base_64_decode_basic_auth(remote_user: str):
     return b64decode(pieces[1]).decode().split(":")
 
 
-class RemoteUserAuthenticationBackend(ModelBackend):
+class GenericRemoteUserAuthenticationBackend(ModelBackend):
     """The web server performs authentication and passes the username remotely. (header or env)"""
 
     create_unknown_user = False
@@ -119,12 +119,27 @@ class RemoteUserAuthenticationBackend(ModelBackend):
         )
         return user
 
+
+class RemoteUserAuthenticationBackend(GenericRemoteUserAuthenticationBackend):
+
     def clean_username(self, username):
         """
         Usernames arrive in the form user@DOMAIN.NAME.
         This function chops off Kerberos realm information (i.e. the '@' and everything after).
         """
         return username.partition("@")[0]
+
+
+class GenericBasicAuthenticationHeaderAuthenticationBackend(GenericRemoteUserAuthenticationBackend):
+
+    def clean_username(self, username):
+        """
+        Usernames arrive encoded in base 64
+        """
+        if not username:
+            return None
+        credentials = base_64_decode_basic_auth(username)
+        return credentials[0]
 
 
 class NginxKerberosAuthorizationHeaderAuthenticationBackend(RemoteUserAuthenticationBackend):
@@ -138,7 +153,7 @@ class NginxKerberosAuthorizationHeaderAuthenticationBackend(RemoteUserAuthentica
         if not username:
             return None
         credentials = base_64_decode_basic_auth(username)
-        return credentials if credentials is None else super().clean_username(credentials[0])
+        return None if credentials is None else super().clean_username(credentials[0])
 
 
 class LDAPAuthenticationBackend(ModelBackend):
