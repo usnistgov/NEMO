@@ -434,38 +434,12 @@ class PostUsageFormulaQuestion(PostUsageQuestion):
         if self.show_formula_preview:
             title = self.title_html or self.title
             max_width = f"max-width:{self.max_width}px" if self.max_width else ""
+            formula_url = f'data-formula-url="{reverse("formula_preview", args=[ContentType.objects.get_for_model(item).id, item.id, dynamic_field_name, self.name])}"'
             result += f'<div class="form-group {extra_class}" style="{max_width}">'
             result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}</label>'
-            result += '<div class="input-group">'
-            result += f'<input type="text" disabled id="formula_preview_{self.form_name}" class="form-control" value="{self.default_value if self.default_value is not None else ""}">'
-            result += '<span class="input-group-btn">'
-            result += f'<button class="btn btn-default" id="formula_preview_button_{self.form_name}" type="button" onclick="preview_result_{self.form_name}(this);">Update</button>'
-            result += "</span>"
-            result += "</div>"
+            result += f'<input type="text" {formula_url} disabled class="form-control formula-input-preview" value="{self.default_value if self.default_value is not None else ""}">'
             result += "</div>"
         return result
-
-    def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
-        if self.show_formula_preview:
-            return f"""
-        		<script>
-        			if (!$) {{ $ = django.jQuery; }}
-        			function preview_result_{self.form_name}(element)
-        			{{
-        			    let form_element = $('#formula_preview_{self.form_name}').attr('form');
-        			    let data = form_element ? $('#'+form_element).serialize() : $(element).closest('form').serialize();
-        			    if (typeof csrf_token === 'function')
-        			    {{
-        			        data += "&csrfmiddlewaretoken=" + csrf_token();
-                        }}
-        				$.ajax({{ type: "POST", data: data, url: "{reverse("formula_preview", args=[ContentType.objects.get_for_model(item).id, item.id,dynamic_field_name, self.name])}", success : function(response)
-        				{{
-        					$("#formula_preview_{self.form_name}").val(response);
-        				}}
-        				}});
-        			}}
-        		</script>"""
-        return ""
 
     def validate(self):
         super().validate()
@@ -625,7 +599,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
             )
             + f"?virtual_inputs={virtual_inputs}"
         )
-        result += f'<button id="{self.group_name}_add_button" class="{self.group_name}_add_button" type="button" onclick="add_group_question(this, \'{self.group_name}\', {self.max_number}, \'{add_group_url}\')">{self.group_add_button_name}</button>'
+        result += f'<button class="{self.group_name}_add_button" type="button" onclick="add_group_question(this, \'{self.group_name}\', {self.max_number}, \'{add_group_url}\')">{self.group_add_button_name}</button>'
         result += "</div>"
         result += "</div>"
         return result
@@ -685,29 +659,18 @@ class DynamicForm:
         result = ""
         item_type_id = ContentType.objects.get_for_model(item).id
         if self.questions:
-            data_selector = f'.dynamic_form[data-field-name="{dynamic_field_name}"][data-item-id="{item.id}"][data-field-name="{dynamic_field_name}"]'
+            data_selector = f'.dynamic_form[data-item-type-id="{item_type_id}"][data-item-id="{item.id}"][data-field-name="{dynamic_field_name}"]'
             result += f"""
             <script>
             if (!$) {{ $ = django.jQuery; }}
             
-            $('body').on('change keyup', '{data_selector} input, {data_selector} select, {data_selector} textarea', function()
+            $('body').on('change keyup', '{data_selector} input, {data_selector} select, {data_selector} textarea', function(event)
             {{
-                $('body').trigger('dynamic-form-field-changed', [{get_js_event_data(item, dynamic_field_name)}]);
+                let event_data = {get_js_event_data(item, dynamic_field_name)}
+                event_data["input_field_name"] = $(event.target).attr("name");
+                $('body').trigger('dynamic-form-field-changed', [event_data]);
             }});
 
-            function group_update_add_button(dynamic_form_element, group_name, max_number)
-            {{
-                let current_question_count = dynamic_form_element.find("." + group_name + "_question").length;
-                if (current_question_count < max_number)
-                {{
-                    dynamic_form_element.find("." + group_name + "_add_button").show();
-                }}
-                else
-                {{
-                    dynamic_form_element.find("." + group_name + "_add_button").hide();
-                }}
-            }}
-                        
             function remove_group_question(element, group_name, max_number)
             {{
                 let element_jq = $(element);
@@ -715,8 +678,8 @@ class DynamicForm:
                 element_jq.parents("." + group_name +"_question").remove();
                 let event_data = {get_js_event_data(item, dynamic_field_name, {"add": False, "remove": True})}
                 event_data["group_name"] = group_name;
+                event_data["max_number"] = max_number;
                 $("body").trigger("dynamic-form-group-changed", [event_data]);
-                group_update_add_button(dynamic_form_element, group_name, max_number);
             }}
             
             function add_group_question(element, group_name, max_number, render_group_url)
@@ -729,11 +692,46 @@ class DynamicForm:
                     dynamic_form_element.find("." + group_name + "_container").append(response);
                     let event_data = {get_js_event_data(item, dynamic_field_name, {"add": True, "remove": False})}
                     event_data["group_name"] = group_name;
+                    event_data["max_number"] = max_number;
                     $("body").trigger("dynamic-form-group-changed", [event_data]);
-                    group_update_add_button(dynamic_form_element, group_name, max_number);
                 }}
                 }});
             }}
+            
+            $("body").on("dynamic-form-group-changed", function(event, event_data)
+            {{
+                // Updated add button visibility
+                let group_name = event_data.group_name;
+                let dynamic_form_element = $('.dynamic_form[data-item-type-id="' + event_data.item_type_id + '"][data-item-id="' + event_data.item_id + '"][data-field-name="' + event_data.field_name + '"]');
+                let current_question_count = dynamic_form_element.find("." + group_name + "_question").length;
+                if (current_question_count < event_data.max_number)
+                {{
+                    dynamic_form_element.find("." + group_name + "_add_button").show();
+                }}
+                else
+                {{
+                    dynamic_form_element.find("." + group_name + "_add_button").hide();
+                }}
+            }});
+            
+            $("body").on("dynamic-form-field-changed", function(event, event_data)
+            {{
+                let dynamic_form_element = $('.dynamic_form[data-item-type-id="' + event_data.item_type_id + '"][data-item-id="' + event_data.item_id + '"][data-field-name="' + event_data.field_name + '"]');
+                dynamic_form_element.find(".formula-input-preview").each(function()
+                {{
+                    let element_jq = $(this);
+                    let data = element_jq.attr("form") ? $('#'+element_jq.attr("form")).serialize() : element_jq.closest('form').serialize();
+                    if (typeof csrf_token === 'function')
+                    {{
+                        data += "&csrfmiddlewaretoken=" + csrf_token();
+                    }}
+                    $.ajax({{ type: "POST", data: data, url: element_jq.data("formula-url"), success : function(response)
+                    {{
+                        element_jq.val(response);
+                    }}
+                    }});
+                }});
+            }});
             
             </script>"""
         result += f'<div class="dynamic_form" data-item-type-id="{item_type_id}" data-item-id="{item.id}" data-field-name="{dynamic_field_name}">{render_grid_questions(self.questions, item, dynamic_field_name, virtual_inputs)}</div>'
