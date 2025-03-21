@@ -329,7 +329,7 @@ class RoleGroupPermissionChoiceField(DynamicChoicesTextField):
                     # we expect this if it's not a real role
                     pass
             if self.groups and role.isdigit():
-                group_users = users.filter(groups__id__in=role)
+                group_users = users.filter(groups__id__in=[role])
             if self.permissions:
                 app_label, _, codename = role.partition(".")
                 if app_label and codename:
