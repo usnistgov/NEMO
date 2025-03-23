@@ -399,6 +399,10 @@ class MultiRoleGroupPermissionChoiceField(RoleGroupPermissionChoiceField):
     def get_prep_value(self, value) -> str:
         return CommaSeparatedListConverter.to_string(value)
 
+    def value_from_object(self, obj):
+        value = super().value_from_object(obj)
+        return self.get_prep_value(value)
+
     def has_user_roles(self, roles: List[str], user):
         """
         Override to check a list of roles instead of a single one.
