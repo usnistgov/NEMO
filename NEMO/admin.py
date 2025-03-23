@@ -337,10 +337,10 @@ class ToolAdmin(admin.ModelAdmin):
         return True if obj.post_usage_questions else False
 
     def _pre_usage_preview(self, obj: Tool):
-        return admin_render_dynamic_form_preview(obj.pre_usage_questions, obj, "pre_usage_questions")
+        return admin_render_dynamic_form_preview(obj, "pre_usage_questions")
 
     def _post_usage_preview(self, obj: Tool):
-        return admin_render_dynamic_form_preview(obj.post_usage_questions, obj, "post_usage_questions")
+        return admin_render_dynamic_form_preview(obj, "post_usage_questions")
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """We only want non children tool to be eligible as parents"""
@@ -799,7 +799,7 @@ class ReservationQuestionsAdmin(admin.ModelAdmin):
     )
 
     def questions_preview(self, obj):
-        return admin_render_dynamic_form_preview(obj.questions, obj, "questions")
+        return admin_render_dynamic_form_preview(obj, "questions")
 
 
 @register(UsageEvent)

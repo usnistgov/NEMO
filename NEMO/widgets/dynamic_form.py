@@ -1002,10 +1002,11 @@ def validate_dynamic_form_model(dynamic_form_json: str, item, dynamic_field_name
     return errors
 
 
-def admin_render_dynamic_form_preview(dynamic_form_json: str, item, dynamic_field_name: str):
+def admin_render_dynamic_form_preview(item, dynamic_field_name: str):
     form_validity_div = ""
     rendered_form = ""
     try:
+        dynamic_form_json = getattr(item, dynamic_field_name, None)
         rendered_form = DynamicForm(dynamic_form_json).render(item, dynamic_field_name)
         if dynamic_form_json:
             form_validity_div = '<div class="form_validity"></div>'
