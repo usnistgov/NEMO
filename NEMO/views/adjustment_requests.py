@@ -118,6 +118,9 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
         initial_data["new_end"] = adjustment_request.item.end
     if item_changed and adjustment_request.item and adjustment_request.item.can_quantity_be_changed():
         initial_data["new_quantity"] = adjustment_request.item.quantity
+    description = request.GET.get("description")
+    if description:
+        initial_data["description"] = description
 
     form = AdjustmentRequestForm(
         request.POST or None,
