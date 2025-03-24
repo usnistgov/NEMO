@@ -41,6 +41,5 @@
 	}
 
 	update_submit_button();
-    $('body').on('question-group-changed', update_submit_button);
-	$('body').on('change keyup', '#additional_event_parameters input[required], #additional_event_parameters select[required], #additional_event_parameters textarea[required]', update_submit_button);
+    $('body').on('dynamic-form-group-changed dynamic-form-field-changed', update_submit_button);
 </script>

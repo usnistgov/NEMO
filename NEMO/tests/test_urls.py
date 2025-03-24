@@ -49,7 +49,6 @@ url_kwargs_get_post = {
     "get_projects_for_training": {"get": {"user_id": 1}},
     "tool_control": {"kwargs": {"tool_id": 1}},
     "tool_configuration": {"login_id": 1, "post": {"configuration_id": 1, "slot": 0, "choice": 1}},
-    "tool_usage_group_question": {"get": {"index": 1, "virtual_inputs": 1}},
     "user_requests": {"kwargs": {}},
     "delete_access_request": {"login_id": 3, "kwargs": {"request_id": 1}},
     "edit_buddy_request": {"login_id": 3, "kwargs": {"request_id": 1}},
@@ -70,7 +69,6 @@ url_kwargs_get_post = {
             "personal_schedule": "yes",
         }
     },
-    "reservation_group_question": {"get": {"index": 1, "virtual_inputs": 1}},
     "status_dashboard_tab": {"kwargs": {"tab": "tools"}},
     "modify_qualifications": {"post": {"action": "qualify", "chosen_user": 1, "chosen_tool": 1}},
     "get_qualified_users": {"get": {"tool_id": 1}},

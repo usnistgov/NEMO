@@ -403,6 +403,11 @@ function load_qualified_tools(user_qualifications)
 // Use this function with ajax_get(), ajax_post() or other similar functions.
 function ajax_success_callback(response, status, xml_http_request)
 {
+	if (typeof hide_spinner === "function")
+	{
+		hide_spinner();
+	}
+
 	if(response)
 	{
 		$("#dialog .modal-content").html(response);
@@ -418,6 +423,11 @@ function ajax_failure_callback(title, preface)
 	preface = preface || "";
 	function callback(xml_http_request, status, exception)
 	{
+		if (typeof hide_spinner === "function")
+		{
+			hide_spinner();
+		}
+
 		let dialog_contents =
 			"<div class='modal-header'>" +
 			"<button type='button' class='close' data-dismiss='modal' aria-label='Modal close button'>&times;</button>" +
@@ -438,6 +448,11 @@ function ajax_complete_callback(title, preface)
 	preface = preface || "";
 	function callback(response, status, xml_header_request)
 	{
+		if (typeof hide_spinner === "function")
+		{
+			hide_spinner();
+		}
+
 		if (status !== "error")
 		{
 			return;

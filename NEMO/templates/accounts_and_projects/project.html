@@ -1,0 +1,112 @@
+{% load custom_tags_and_filters %}
+<div class="h3" style="margin-top: 0; padding-top: 15px">
+    <a onclick="toggle_details(this)"
+       data-toggle="collapse"
+       data-target="#project_{{ project.id }}_details"
+       class="pointer"
+       style="text-decoration:none">
+        <span id="project_{{ project.id }}_chevron"
+              class="glyphicon {% if selected_project or manager_view %}glyphicon-chevron-down{% else %}glyphicon-chevron-right{% endif %} pull-left chevron"></span>
+        {{ project }}
+    </a>
+    {% if manager_view %}
+        <span class="label {% if project.active %}label-success{% else %}label-danger{% endif %}"
+              style="vertical-align:50%;
+                     font-size:small">
+            {% if project.active %}
+                Active
+            {% else %}
+                Inactive
+            {% endif %}
+        </span>
+    {% else %}
+        <form style="display:inline" method="post" action="{% url 'toggle_active' 'project' project.id %}">
+            {% csrf_token %}
+            {# Using an 'input submit' element would be preferable to an anchor on the following line, but Bootstrap can't style a 'submit' as a label so you have to use an anchor. #}
+            <a onclick="$(this).closest('form').submit()"
+               class="label {% if project.active %}label-success{% else %}label-danger{% endif %}"
+               style="vertical-align:50%;
+                      font-size:small">
+                {% if project.active %}
+                    Active
+                {% else %}
+                    Inactive
+                {% endif %}
+            </a>
+        </form>
+    {% endif %}
+</div>
+<div style="margin-left:34px">
+    {% if selected_project or manager_view %}
+        <span class="control-label">Account:</span>
+        {% if manager_view %}
+            <span>{{ project.account }}</span>
+        {% else %}
+            <a href="{% url 'account' project.account.id %}">{{ project.account }}</a>
+        {% endif %}
+    {% endif %}
+    {% if project.manager_set.all %}
+        <div>
+            <span class="control-label">PIs:</span>
+            <span>{{ project.manager_set.all|join:", " }}</span>
+        </div>
+    {% endif %}
+    <div id="project_{{ project.id }}_details"
+         class="collapse {% if selected_project or manager_view %}in{% endif %}">
+        <div>
+            <span class="control-label">{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}:</span>
+            <span>{{ project.application_identifier }}</span>
+        </div>
+        {% if project.project_types.all %}
+            <div>
+                <span class="control-label">
+                    {% if "projects_and_accounts"|customization:"project_type_allow_multiple" %}
+                        Project type(s):
+                    {% else %}
+                        Project type:
+                    {% endif %}
+                </span>
+                <span>{{ project.project_types.all|join:", " }}</span>
+            </div>
+        {% endif %}
+        {% if project.discipline %}
+            <div>
+                <span class="control-label">Discipline:</span>
+                <span>{{ project.discipline }}</span>
+            </div>
+        {% endif %}
+        {% if project.start_date %}
+            <div>
+                <span class="control-label">Start date:</span>
+                <span>{{ project.start_date }}</span>
+            </div>
+        {% endif %}
+        {% if manager_view and "projects_and_accounts"|customization:"project_allow_pi_manage_users" or not manager_view %}
+            <div id="project_{{ project.id }}_users">
+                {% include 'accounts_and_projects/users_for_project.html' with users=project.user_set.all %}
+            </div>
+        {% else %}
+            <div>
+                <label class="control-label" style="margin-top: 10px">Users:</label>
+            </div>
+            <div>
+                {% if project.user_set.all %}
+                    <ul>
+                        {% for u in project.user_set.all %}
+                            <li class="{% if not u.is_active %}strikethrough light-grey{% endif %}">{{ u }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <span class="grey">This project does not have any members.</span>
+                {% endif %}
+            </div>
+        {% endif %}
+        {% if not manager_view %}
+            {% if allow_document_upload or project.project_documents.all %}
+                <div id="project_{{ project.id }}_documents">
+                    {% include 'accounts_and_projects/documents_for_project.html' with documents=project.project_documents.all %}
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>

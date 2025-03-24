@@ -40,7 +40,7 @@ from NEMO.constants import (
     CHAR_FIELD_SMALL_LENGTH,
     MEDIA_PROTECTED,
 )
-from NEMO.fields import DynamicChoicesIntegerField
+from NEMO.fields import DynamicChoicesIntegerField, MultiRoleGroupPermissionChoiceField
 from NEMO.mixins import BillableItemMixin, CalendarDisplayMixin, ConfigurationMixin, RecurrenceMixin
 from NEMO.typing import QuerySetType
 from NEMO.utilities import (
@@ -1982,14 +1982,14 @@ class Tool(SerializationByNameModel):
             # Validate _pre_usage_questions JSON format
             if self._pre_usage_questions:
                 dynamic_form_errors = validate_dynamic_form_model(
-                    self._pre_usage_questions, "tool_usage_group_question", self.id
+                    self._pre_usage_questions, self, "_pre_usage_questions"
                 )
                 if dynamic_form_errors:
                     errors["_pre_usage_questions"] = dynamic_form_errors
             # Validate _post_usage_questions JSON format
             if self._post_usage_questions:
                 dynamic_form_errors = validate_dynamic_form_model(
-                    self._post_usage_questions, "tool_usage_group_question", self.id
+                    self._post_usage_questions, self, "_post_usage_questions"
                 )
                 if dynamic_form_errors:
                     errors["_post_usage_questions"] = dynamic_form_errors
@@ -4027,13 +4027,12 @@ class LandingPageChoice(BaseModel):
     hide_from_desktop_computers = models.BooleanField(
         default=False, help_text="Hides this choice when the landing page is viewed from a desktop computer"
     )
-    hide_from_users = models.BooleanField(
-        default=False,
-        help_text="Hides this choice from normal users. When checked, only staff, technicians, facility managers and super-users can see the choice",
-    )
-    hide_from_staff = models.BooleanField(
-        default=False,
-        help_text="Hides this choice from staff and technicians. When checked, only normal users, facility managers and super-users can see the choice",
+    view_permissions = MultiRoleGroupPermissionChoiceField(
+        roles=True,
+        groups=True,
+        permissions=True,
+        default="is_authenticated",
+        help_text=_("The roles/groups/permissions required for users to see this landing page item"),
     )
     notifications = fields.DynamicChoicesCharField(
         max_length=CHAR_FIELD_SMALL_LENGTH,
@@ -4048,6 +4047,13 @@ class LandingPageChoice(BaseModel):
 
     def __str__(self):
         return str(self.name)
+
+    @classmethod
+    def get_view_permissions_field(cls) -> MultiRoleGroupPermissionChoiceField:
+        return cls._meta.get_field("view_permissions")
+
+    def can_user_view(self, user) -> bool:
+        return self.get_view_permissions_field().has_user_roles(self.view_permissions, user)
 
 
 class Customization(BaseModel):
@@ -4230,9 +4236,17 @@ class ToolUsageCounter(BaseModel):
     default_value = models.FloatField(help_text=_("The default value to reset this counter to"))
     counter_direction = models.IntegerField(default=CounterDirection.INCREMENT, choices=CounterDirection.Choices)
     tool = models.ForeignKey(Tool, help_text=_("The tool this counter is for."), on_delete=models.CASCADE)
-    tool_usage_question = models.CharField(
+    tool_pre_usage_question = models.CharField(
+        null=True,
+        blank=True,
         max_length=CHAR_FIELD_MEDIUM_LENGTH,
-        help_text=_("The name of the tool's post usage question which should be used to increment this counter"),
+        help_text=_("The name of the tool's pre usage question which should be used to update this counter"),
+    )
+    tool_post_usage_question = models.CharField(
+        null=True,
+        blank=True,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
+        help_text=_("The name of the tool's post usage question which should be used to update this counter"),
     )
     staff_members_can_reset = models.BooleanField(
         default=True, help_text=_("Check this box to allow staff to reset this counter")
@@ -4306,6 +4320,17 @@ class ToolUsageCounter(BaseModel):
                         )
                     }
                 )
+        if not self.tool_post_usage_question and not self.tool_pre_usage_question:
+            errors.update(
+                {
+                    "tool_post_usage_question": _(
+                        "Either the tool pre usage question or the tool post usage question needs to be set for this counter"
+                    ),
+                    "tool_pre_usage_question": _(
+                        "Either the tool pre usage question or the tool post usage question needs to be set for this counter"
+                    ),
+                }
+            )
         if errors:
             raise ValidationError(errors)
 

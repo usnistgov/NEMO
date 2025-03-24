@@ -1043,7 +1043,7 @@ def do_deactivate_access_expired_users():
     else:
         filter_type &= Q(type__in=user_types)
     users_about_to_expire = User.objects.filter(
-        is_active=True, access_expiration__lte=date.today() + timedelta(days=buffer_days)
+        is_active=True, access_expiration__lte=date.today() - timedelta(days=buffer_days)
     ).filter(filter_type)
     for user in users_about_to_expire:
         user.is_active = False

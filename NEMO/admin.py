@@ -1,5 +1,6 @@
 import datetime
 import json
+from typing import Optional
 
 from django import forms
 from django.contrib import admin, messages
@@ -336,10 +337,10 @@ class ToolAdmin(admin.ModelAdmin):
         return True if obj.post_usage_questions else False
 
     def _pre_usage_preview(self, obj: Tool):
-        return admin_render_dynamic_form_preview(obj.pre_usage_questions, "tool_usage_group_question", obj.id)
+        return admin_render_dynamic_form_preview(obj, "pre_usage_questions")
 
     def _post_usage_preview(self, obj: Tool):
-        return admin_render_dynamic_form_preview(obj.post_usage_questions, "tool_usage_group_question", obj.id)
+        return admin_render_dynamic_form_preview(obj, "post_usage_questions")
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """We only want non children tool to be eligible as parents"""
@@ -765,7 +766,7 @@ class ReservationQuestionsForm(forms.ModelForm):
             )
         # Validate reservation_questions JSON format
         if reservation_questions:
-            errors = validate_dynamic_form_model(reservation_questions, "reservation_group_question", self.instance.id)
+            errors = validate_dynamic_form_model(reservation_questions, self.instance, "questions")
             for error in errors:
                 self.add_error("questions", error)
         return cleaned_data
@@ -798,7 +799,7 @@ class ReservationQuestionsAdmin(admin.ModelAdmin):
     )
 
     def questions_preview(self, obj):
-        return admin_render_dynamic_form_preview(obj.questions, "reservation_group_question", obj.id)
+        return admin_render_dynamic_form_preview(obj, "questions")
 
 
 @register(UsageEvent)
@@ -1626,12 +1627,22 @@ class LandingPageChoiceAdmin(admin.ModelAdmin):
         "display_order",
         "name",
         "url",
+        "get_view_permissions",
         "open_in_new_tab",
         "secure_referral",
         "hide_from_mobile_devices",
         "hide_from_desktop_computers",
     )
     list_display_links = ("name",)
+
+    @admin.display(description="View permissions", ordering="view_permissions")
+    def get_view_permissions(self, obj: LandingPageChoice):
+        return mark_safe(
+            "<br>".join(
+                str(obj.get_view_permissions_field().role_display(role_str, admin_display=True))
+                for role_str in obj.view_permissions
+            )
+        )
 
 
 @register(Customization)
@@ -1690,38 +1701,39 @@ class ToolUsageCounterAdminForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         tool = cleaned_data.get("tool")
-        tool_usage_question_name = cleaned_data.get("tool_usage_question")
-        if tool and tool_usage_question_name:
-            error = None
-            if tool.post_usage_questions or tool.pre_usage_questions:
+        if tool:
+            for question_type in ["pre", "post"]:
+                question_name = f"tool_{question_type}_usage_question"
+                question_data_name = cleaned_data.get(question_name)
+                tool_questions = getattr(tool, f"{question_type}_usage_questions")
+                error = self.clean_counter_question(tool_questions, question_data_name, question_type)
+                if error:
+                    self.add_error(question_name, error)
+        return cleaned_data
+
+    @staticmethod
+    def clean_counter_question(tool_questions: str, counter_question_name: str, pre_post: str) -> Optional[str]:
+        error = None
+        if counter_question_name:
+            if tool_questions:
                 candidate_questions = []
-                if tool.post_usage_questions:
-                    usage_form = DynamicForm(tool.post_usage_questions)
-                    candidate_questions.extend(
-                        usage_form.filter_questions(
-                            lambda x: isinstance(x, (PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion))
-                        )
+                usage_form = DynamicForm(tool_questions)
+                candidate_questions.extend(
+                    usage_form.filter_questions(
+                        lambda x: isinstance(x, (PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion))
                     )
-                if tool.pre_usage_questions:
-                    usage_form = DynamicForm(tool.pre_usage_questions)
-                    candidate_questions.extend(
-                        usage_form.filter_questions(
-                            lambda x: isinstance(x, (PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion))
-                        )
-                    )
+                )
                 matching_tool_question = any(
-                    question for question in candidate_questions if question.name == tool_usage_question_name
+                    question for question in candidate_questions if question.name == counter_question_name
                 )
                 if not matching_tool_question:
                     candidates = {question.name for question in candidate_questions}
-                    error = "The tool has no pre/post usage question of type Number or Float with this name."
+                    error = f"The tool has no {pre_post} usage question of type Number or Float with this name."
                     if candidates:
                         error += f" Valid question names are: {', '.join(candidates)}"
             else:
-                error = "The tool does not have any pre/post usage questions."
-            if error:
-                self.add_error("tool_usage_question", error)
-        return cleaned_data
+                error = f"The tool does not have any {pre_post} usage questions."
+        return error
 
 
 @register(ToolUsageCounter)
@@ -1729,7 +1741,8 @@ class ToolUsageCounterAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "tool",
-        "tool_usage_question",
+        "tool_post_usage_question",
+        "tool_pre_usage_question",
         "value",
         "warning_threshold",
         "default_value",
@@ -1741,6 +1754,8 @@ class ToolUsageCounterAdmin(admin.ModelAdmin):
         "is_active",
     )
     list_filter = (
+        ("tool_post_usage_question", admin.EmptyFieldListFilter),
+        ("tool_pre_usage_question", admin.EmptyFieldListFilter),
         "staff_members_can_reset",
         "qualified_users_can_reset",
         "superusers_can_reset",

@@ -23,6 +23,7 @@ from NEMO.views import (
     access_requests,
     accounts_and_projects,
     adjustment_requests,
+    admin_autocomplete,
     alerts,
     api,
     api_file_import,
@@ -64,6 +65,7 @@ from NEMO.views import (
     user_requests,
     users,
 )
+from NEMO.widgets import dynamic_form
 
 logger = logging.getLogger(__name__)
 
@@ -195,11 +197,6 @@ urlpatterns += [
         tool_control.ten_most_recent_past_comments_and_tasks,
         name="ten_most_recent_past_comments_and_tasks",
     ),
-    path(
-        "tool_usage_group_question/<int:tool_id>/<str:group_name>/",
-        tool_control.tool_usage_group_question,
-        name="tool_usage_group_question",
-    ),
     path("reset_tool_counter/<int:counter_id>/", tool_control.reset_tool_counter, name="reset_tool_counter"),
     # User requests
     path("user_requests/", user_requests.user_requests, name="user_requests"),
@@ -326,11 +323,6 @@ urlpatterns += [
         name="change_reservation_project",
     ),
     path("proxy_reservation/", calendar.proxy_reservation, name="proxy_reservation"),
-    path(
-        "reservation_group_question/<int:reservation_question_id>/<str:group_name>/",
-        calendar.reservation_group_question,
-        name="reservation_group_question",
-    ),
     # Event Details:
     path(
         "event_details/reservation/<int:reservation_id>/", event_details.reservation_details, name="reservation_details"
@@ -576,6 +568,17 @@ urlpatterns += [
     path("news/publish/<int:story_id>/", news.publish, name="publish_news_update"),
     # User Preferences
     path("user_preferences/", users.user_preferences, name="user_preferences"),
+    # Dynamic forms
+    path(
+        "render_group_question/<content_type_id>/<item_id>/<field_name>/<group_name>",
+        dynamic_form.group_question,
+        name="render_group_question",
+    ),
+    path(
+        "formula_preview/<content_type_id>/<item_id>/<field_name>/<formula_name>",
+        dynamic_form.formula_preview,
+        name="formula_preview",
+    ),
     # Media
     re_path(
         r"^media/" + MEDIA_PROTECTED + "/(?P<path>.*)$",
@@ -609,6 +612,8 @@ urlpatterns += [
 
 if settings.ALLOW_CONDITIONAL_URLS:
     if apps.is_installed("django.contrib.admin"):
+        # Override admin autocomplete so we can fix the permission issue for related models
+        urlpatterns += [path("admin/autocomplete/", admin_autocomplete.as_view(admin.site), name="autocomplete")]
         urlpatterns += [path("admin/", admin.site.urls)]
 
     urlpatterns += [

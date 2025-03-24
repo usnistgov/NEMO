@@ -59,7 +59,7 @@ from NEMO.views.customization import (
     ToolCustomization,
     get_media_file_contents,
 )
-from NEMO.widgets.dynamic_form import DynamicForm, render_group_questions
+from NEMO.widgets.dynamic_form import DynamicForm
 
 calendar_logger = getLogger(__name__)
 
@@ -947,17 +947,6 @@ def proxy_reservation(request):
     return render(request, "calendar/proxy_reservation.html", {"users": User.objects.filter(is_active=True)})
 
 
-@login_required
-@require_GET
-def reservation_group_question(request, reservation_question_id, group_name):
-    reservation_questions = get_object_or_404(ReservationQuestions, id=reservation_question_id)
-    return HttpResponse(
-        render_group_questions(
-            request, reservation_questions.questions, "reservation_group_question", reservation_question_id, group_name
-        )
-    )
-
-
 def get_and_combine_reservation_questions(
     item_type: ReservationItemType, item_id: int, project: Project = None
 ) -> List[ReservationQuestions]:
@@ -984,7 +973,7 @@ def render_reservation_questions(
     rendered_questions = ""
     for reservation_question in reservation_questions:
         rendered_questions += DynamicForm(reservation_question.questions).render(
-            "reservation_group_question", reservation_question.id, virtual_inputs
+            reservation_question, "questions", virtual_inputs
         )
     return mark_safe(rendered_questions)
 

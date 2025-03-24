@@ -89,7 +89,7 @@
                                 <option value="">---------</option>
                                 {% for project_type_id, project_type_name in form.fields.project_types.choices %}
                                     <option value="{{ project_type_id }}"
-                                            {% if project_type_id|stringformat:'s' in form.project_types.value %}selected{% endif %}>
+                                            {% if project_type_id in form.project_types.value %}selected{% endif %}>
                                         {{ project_type_name|default_if_none:'' }}
                                     </option>
                                 {% endfor %}

@@ -55,7 +55,9 @@ def adjustment_requests(request):
 
     user: User = request.user
     max_requests = quiet_int(AdjustmentRequestsCustomization.get("adjustment_requests_display_max"), None)
-    adj_requests = AdjustmentRequest.objects.filter(deleted=False)
+    adj_requests = (
+        AdjustmentRequest.objects.filter(deleted=False).select_related("creator", "item_type").prefetch_related("item")
+    )
     my_requests = adj_requests.filter(creator=user)
 
     user_is_reviewer = is_user_a_reviewer(user)
@@ -116,6 +118,9 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
         initial_data["new_end"] = adjustment_request.item.end
     if item_changed and adjustment_request.item and adjustment_request.item.can_quantity_be_changed():
         initial_data["new_quantity"] = adjustment_request.item.quantity
+    description = request.GET.get("description")
+    if description:
+        initial_data["description"] = description
 
     form = AdjustmentRequestForm(
         request.POST or None,

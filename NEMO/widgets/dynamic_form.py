@@ -10,11 +10,14 @@ from logging import getLogger
 from typing import Any, Callable, Dict, List, Optional, Type, Union
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
-from django.http import QueryDict
-from django.urls import NoReverseMatch, reverse
+from django.http import HttpResponse, QueryDict
+from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.evaluators import evaluate_expression, get_expression_variables
 from NEMO.exceptions import RequiredUnansweredQuestionsException
@@ -52,10 +55,13 @@ class PostUsageQuestion:
         self.precision = self._init_property("precision")
         self.step = self._init_property("step")
         self.rows = self._init_property("rows")
+        self.auto_resize = self._init_property("auto_resize", boolean=True)
         self.consumable = self._init_property("consumable")
         self.consumable_id = self._init_property("consumable_id")
         self.required = self._init_property("required", boolean=True)
         self.inline = self._init_property("inline", boolean=True)
+        self.readonly = self._init_property("readonly", boolean=True)
+        self.show_formula_preview = self._init_property("show_formula_preview", boolean=True)
         # For backwards compatibility keep default choice
         self.default_value = (
             self._init_property("default_value")
@@ -104,9 +110,9 @@ class PostUsageQuestion:
         self.validate_property_exists("title")
         self.validate_property_exists("type")
 
-    def render(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
-        return self.render_element(virtual_inputs, group_question_url, group_item_id, extra_class) + self.render_script(
-            virtual_inputs, group_question_url, group_item_id
+    def render(self, virtual_inputs: bool, item, dynamic_field_name, extra_class="") -> str:
+        return self.render_element(virtual_inputs, item, dynamic_field_name, extra_class) + self.render_script(
+            virtual_inputs, item, dynamic_field_name
         )
 
     def render_as_text(self) -> str:
@@ -116,10 +122,10 @@ class PostUsageQuestion:
             result += " (possible choices: " + "|".join(self.choices) + ")"
         return result
 
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
+    def render_element(self, virtual_inputs: bool, item, dynamic_field_name: str, extra_class="") -> str:
         return ""
 
-    def render_script(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
+    def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
         return ""
 
     def extract(self, request, index=None) -> Dict:
@@ -175,7 +181,7 @@ class PostUsageRadioQuestion(PostUsageQuestion):
         super().validate()
         self.validate_labels_and_choices()
 
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
+    def render_element(self, virtual_inputs: bool, item, dynamic_field_name: str, extra_class="") -> str:
         title = self.title_html or self.title
         max_width = f"max-width:{self.max_width}px" if self.max_width else ""
         result = f'<div class="form-group {extra_class}" style="{max_width}">'
@@ -202,12 +208,12 @@ class PostUsageCheckboxQuestion(PostUsageQuestion):
         super().validate()
         self.validate_labels_and_choices()
 
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
+    def render_element(self, virtual_inputs: bool, item, dynamic_field_name: str, extra_class="") -> str:
         title = self.title_html or self.title
         max_width = f"max-width:{self.max_width}px" if self.max_width else ""
         result = f'<div class="form-group {extra_class}" style="{max_width}>'
         result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
-        result += f'<input aria-label="hidden field used for required answer" id="required_{ self.form_name }" type="checkbox" value="" style="display: none" { "required" if self.required else "" }/>'
+        result += f'<input aria-label="hidden field used for required answer" id="required_{ self.form_name }" type="checkbox" value="" style="opacity: 0;height: 1px;width: 1px;" { "required" if self.required else "" } {"checked" if self.get_default_value() else ""}/>'
         result += f"<div class='{'form-control-static' if self.inline else ''}'>"
         for index, choice in enumerate(self.choices):
             label = self.labels[index] if self.labels else choice
@@ -229,7 +235,7 @@ class PostUsageCheckboxQuestion(PostUsageQuestion):
         result += "</div>"
         return result
 
-    def render_script(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
+    def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
         result = "<script>"
         result += "function checkbox_required(form_name) {"
         result += "if ($('input[name=' + form_name + ']:checkbox:checked').length > 0) {"
@@ -255,7 +261,7 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
         super().validate()
         self.validate_labels_and_choices()
 
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
+    def render_element(self, virtual_inputs: bool, item, dynamic_field_name: str, extra_class="") -> str:
         title = self.title_html or self.title
         max_width = f"max-width:{self.max_width}px" if self.max_width else ""
         result = f'<div class="form-group {extra_class}" style="{max_width}">'
@@ -300,21 +306,22 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 class PostUsageTextFieldQuestion(PostUsageQuestion):
     question_type = "Question of type text"
 
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
+    def render_element(self, virtual_inputs: bool, item, dynamic_field_name: str, extra_class="") -> str:
         title = self.title_html or self.title
         max_width = f"max-width:{self.max_width}px" if self.max_width else ""
         result = f'<div class="form-group {extra_class}" style="{max_width}">'
         result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
         input_group_required = True if self.prefix or self.suffix else False
         if input_group_required:
-            result += f'<div class="input-group">'
+            result += '<div class="input-group">'
         if self.prefix:
             result += f'<span class="input-group-addon">{self.prefix}</span>'
-        required = "required" if self.required else ""
+        readonly = "readonly" if self.readonly else ""
+        required = "required" if self.required and not self.readonly else ""
         pattern = f'pattern="{self.pattern}"' if self.pattern else ""
         placeholder = f'placeholder="{self.placeholder}"' if self.placeholder else ""
         default_value = f'value="{self.get_default_value()}"' if self.get_default_value() is not None else ""
-        result += self.render_input(required, pattern, placeholder, default_value)
+        result += self.render_input(readonly, required, pattern, placeholder, default_value)
         if self.suffix:
             result += f'<span class="input-group-addon">{self.suffix}</span>'
         if input_group_required:
@@ -324,14 +331,14 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
         result += "</div>"
         return result
 
-    def render_input(self, required: str, pattern: str, placeholder: str, default_value: str) -> str:
+    def render_input(self, readonly: str, required: str, pattern: str, placeholder: str, default_value: str) -> str:
         maxlength = f'maxlength="{self.maxlength}"' if self.maxlength else ""
-        return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {maxlength} {placeholder} {pattern} {default_value} {required} spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+        return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {maxlength} {placeholder} {pattern} {default_value} {required} {readonly} spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
-    def render_script(self, virtual_inputs: bool, group_question_url: str, item_id: int) -> str:
+    def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
         if virtual_inputs:
             return f"<script>$('#{self.form_name}').keyboard();</script>"
-        return super().render_script(virtual_inputs, group_question_url, item_id)
+        return super().render_script(virtual_inputs, item, dynamic_field_name)
 
     def render_as_text(self) -> str:
         result = f"{self.title}\n"
@@ -346,24 +353,34 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
 class PostUsageTextAreaFieldQuestion(PostUsageTextFieldQuestion):
     question_type = "Question of type textarea"
 
-    def render_input(self, required: str, pattern: str, placeholder: str, default_value: str) -> str:
+    def render_input(self, readonly: str, required: str, pattern: str, placeholder: str, default_value: str) -> str:
         rows = f'rows="{str(self.rows)}"' if self.rows else ""
-        return f'<textarea class="form-control" id="{self.form_name}" name="{self.form_name}" {rows} {placeholder} {required} style="height:inherit" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">{self.get_default_value() or ""}</textarea>'
+        rows_parameter = f", {str(self.rows)}" if self.rows else ""
+        on_input = f'oninput="auto_size_textarea(this{rows_parameter});"' if self.auto_resize else ""
+        return f'<textarea {on_input} class="form-control" id="{self.form_name}" name="{self.form_name}" {rows} {placeholder} {required} {readonly} style="height:inherit" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">{self.get_default_value() or ""}</textarea>'
+
+    def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
+        super_script = super().render_script(virtual_inputs, item, dynamic_field_name)
+        if self.auto_resize:
+            script_only = super_script.replace("<script>", "").replace("</script>", "")
+            rows_parameter = f", {str(self.rows)}" if self.rows else ""
+            return f"<script>{script_only};auto_size_textarea($('#{self.form_name}')[0]{rows_parameter})</script>"
+        return super_script
 
 
 class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
     question_type = "Question of type number"
 
-    def render_input(self, required: str, pattern: str, placeholder: str, default_value: str) -> str:
+    def render_input(self, readonly: str, required: str, pattern: str, placeholder: str, default_value: str) -> str:
         minimum = f'min="{self.min}"' if self.min else ""
         maximum = f'max="{self.max}"' if self.max else ""
         step = f'step="{self.step}"' if self.step else ""
-        return f'<input type="number" class="form-control" id="{self.form_name}" name="{self.form_name}" {placeholder} {pattern} {minimum} {maximum} {default_value} {step} {required} spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+        return f'<input type="number" class="form-control" id="{self.form_name}" name="{self.form_name}" {placeholder} {pattern} {minimum} {maximum} {default_value} {step} {required} {readonly} spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
-    def render_script(self, virtual_inputs: bool, group_question_url: str, item_id: int) -> str:
+    def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
         if virtual_inputs:
             return f"<script>$('#{self.form_name}').numpad({{'readonly': false, 'hidePlusMinusButton': true, 'hideDecimalButton': true}});</script>"
-        return super().render_script(virtual_inputs, group_question_url, item_id)
+        return super().render_script(virtual_inputs, item, dynamic_field_name)
 
     def render_as_text(self) -> str:
         result = super().render_as_text()
@@ -386,15 +403,15 @@ class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
 class PostUsageFloatFieldQuestion(PostUsageTextFieldQuestion):
     question_type = "Question of type float"
 
-    def render_input(self, required: str, pattern: str, placeholder: str, default_value: str) -> str:
+    def render_input(self, readonly: str, required: str, pattern: str, placeholder: str, default_value: str) -> str:
         precision = self.precision if self.precision else 2
         pattern = f'pattern="^\s*(?=.*[0-9])\d*(?:\.\d{"{1," + str(precision) + "}"})?\s*$"'
-        return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {placeholder} {pattern} {default_value} {required} spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+        return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {placeholder} {pattern} {default_value} {required} {readonly} spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
-    def render_script(self, virtual_inputs: bool, group_question_url: str, item_id: int) -> str:
+    def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
         if virtual_inputs:
             return f"<script>$('#{self.form_name}').numpad({{'readonly': false, 'hidePlusMinusButton': true, 'hideDecimalButton': false}});</script>"
-        return super().render_script(virtual_inputs, group_question_url, item_id)
+        return super().render_script(virtual_inputs, item, dynamic_field_name)
 
     def extract_for_formula(self, request, index=None) -> Any:
         value = super().extract_for_formula(request, index)
@@ -412,8 +429,17 @@ class PostUsageFormulaQuestion(PostUsageQuestion):
     def all_questions_by_form_name(self):
         return {question.form_name: question for question in self.all_questions}
 
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
-        return f'<input type="hidden" id="{self.form_name}" name="{self.form_name}">'
+    def render_element(self, virtual_inputs: bool, item, dynamic_field_name: str, extra_class="") -> str:
+        result = f'<input type="hidden" id="{self.form_name}" name="{self.form_name}">'
+        if self.show_formula_preview:
+            title = self.title_html or self.title
+            max_width = f"max-width:{self.max_width}px" if self.max_width else ""
+            formula_url = f'data-formula-url="{reverse("formula_preview", args=[ContentType.objects.get_for_model(item).id, item.id, dynamic_field_name, self.name])}"'
+            result += f'<div class="form-group {extra_class}" style="{max_width}">'
+            result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}</label>'
+            result += f'<input type="text" {formula_url} disabled class="form-control formula-input-preview" value="{self.get_default_value() if self.get_default_value() is not None else ""}">'
+            result += "</div>"
+        return result
 
     def validate(self):
         super().validate()
@@ -549,75 +575,42 @@ class PostUsageGroupQuestion(PostUsageQuestion):
                 raise Exception(f"{sub_question.question_type} cannot be used inside a group question")
             sub_question.validate()
 
-    def get_initial_data_for_subquestion(self, sub_question_name):
-        if self.initial_data and self.index is not None and self.index < len(self.initial_data):
-            index_data = self.initial_data[self.index] or {}
-            return index_data.get(sub_question_name, None)
-
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
+    def render_element(self, virtual_inputs: bool, item, dynamic_field_name: str, extra_class="") -> str:
         title = self.title_html or self.title
         result = f'<div class="{extra_class}">'
         result += f'<div class="form-group"><div style="white-space: pre-wrap">{title}</div></div>'
-        result += f'<div id="{self.group_name}_container">'
+        result += f'<div class="{self.group_name}_container">'
         # It's a bit more complicated here, we need to render multiple groups if we have initial data
         # So we change the index, reload sub questions and render each of them
         if self.initial_data:
             for index, data in enumerate(self.initial_data):
                 self.load_sub_questions(index, data)
-                result += self.render_group_question(virtual_inputs, group_question_url, group_item_id)
+                result += self.render_group_question(virtual_inputs, item, dynamic_field_name)
                 result += "</div>"
         else:
-            result += self.render_group_question(virtual_inputs, group_question_url, group_item_id)
+            result += self.render_group_question(virtual_inputs, item, dynamic_field_name)
             result += "</div>"
         result += "</div>"
         result += '<div class="form-group">'
-        result += f'<button id="{self.group_name}_add_button" type="button" onclick="add_question_{self.group_name}()">{self.group_add_button_name}</button>'
+        add_group_url = (
+            reverse(
+                "render_group_question",
+                args=[ContentType.objects.get_for_model(item).id, item.id, dynamic_field_name, self.group_name],
+            )
+            + f"?virtual_inputs={virtual_inputs}"
+        )
+        result += f'<button class="{self.group_name}_add_button" type="button" onclick="add_group_question(this, \'{self.group_name}\', {self.max_number}, \'{add_group_url}\')">{self.group_add_button_name}</button>'
         result += "</div>"
         result += "</div>"
         return result
 
-    def render_group_question(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
+    def render_group_question(self, virtual_inputs: bool, item, field_name: str) -> str:
         result = ""
-        result += f'<div class="{self.group_name}_question" style="padding-top: 10px; padding-bottom: 10px; border-top: 1px solid lightgray">'
-        result += render_grid_questions(self.sub_questions, group_question_url, group_item_id, virtual_inputs)
+        result += f'<div class="{self.group_name}_question" data-group-index="{self.index or 0}" style="padding-top: 10px; padding-bottom: 10px; border-top: 1px solid lightgray">'
+        result += render_grid_questions(self.sub_questions, item, field_name, virtual_inputs)
         if self.index:
-            result += f'<button type="button" onclick="remove_question_{self.group_name}(this);">Remove</button>'
+            result += f'<button type="button" onclick="remove_group_question(this, \'{self.group_name}\', {self.max_number});">Remove</button>'
         return result
-
-    def render_script(self, virtual_inputs: bool, group_question_url: str, item_id: int) -> str:
-        return f"""
-		<script>
-			if (!$) {{ $ = django.jQuery; }}
-			var {self.group_name}_question_index={len(self.initial_data) if self.initial_data else '1'};
-			function update_add_button_{self.group_name}()
-			{{
-				if ($(".{self.group_name}_question").length < {self.max_number})
-				{{
-					$("#{self.group_name}_add_button").show();
-				}}
-				else
-				{{
-					$("#{self.group_name}_add_button").hide();
-				}}
-			}}
-			function remove_question_{self.group_name}(element)
-			{{
-				$(element).parents(".{self.group_name}_question").remove();
-				$("body").trigger("question-group-changed", ["{self.group_name}"]);
-				update_add_button_{self.group_name}();
-			}}
-			function add_question_{self.group_name}()
-			{{
-				$.ajax({{ type: "GET", url: "{reverse(group_question_url, args=[item_id, self.group_name])}?virtual_inputs={virtual_inputs}&index="+{self.group_name}_question_index, success : function(response)
-				{{
-					{self.group_name}_question_index ++;
-					$("#{self.group_name}_container").append(response);
-					$("body").trigger("question-group-changed", ["{self.group_name}"]);
-					update_add_button_{self.group_name}();
-				}}
-				}});
-			}}
-		</script>"""
 
     def render_as_text(self) -> str:
         result = f"{self.title}\n"
@@ -662,14 +655,89 @@ class DynamicForm:
                 for sub_question in initialized_question.sub_questions:
                     sub_question.all_questions = all_questions
 
-    def render(self, group_question_url: str, group_item_id: int, virtual_inputs: bool = False):
+    def render(self, item, dynamic_field_name: str, virtual_inputs: bool = False):
         result = ""
+        item_type_id = ContentType.objects.get_for_model(item).id
         if self.questions:
-            result += "<script>if (!$) { $ = django.jQuery; }</script>"
-        result += f'<div class="dynamic_form">{render_grid_questions(self.questions, group_question_url, group_item_id, virtual_inputs)}</div>'
+            data_selector = f'.dynamic_form[data-item-type-id="{item_type_id}"][data-item-id="{item.id}"][data-field-name="{dynamic_field_name}"]'
+            result += f"""
+            <script>
+            if (!$) {{ $ = django.jQuery; }}
+            
+            $('body').on('change keyup', '{data_selector} input, {data_selector} select, {data_selector} textarea', function(event)
+            {{
+                let event_data = {get_js_event_data(item, dynamic_field_name)}
+                event_data["input_field_name"] = $(event.target).attr("name");
+                $('body').trigger('dynamic-form-field-changed', [event_data]);
+            }});
+
+            function remove_group_question(element, group_name, max_number)
+            {{
+                let element_jq = $(element);
+                let dynamic_form_element = element_jq.closest('.dynamic_form');
+                element_jq.parents("." + group_name +"_question").remove();
+                let event_data = {get_js_event_data(item, dynamic_field_name, {"add": False, "remove": True})}
+                event_data["group_name"] = group_name;
+                event_data["max_number"] = max_number;
+                $("body").trigger("dynamic-form-group-changed", [event_data]);
+            }}
+            
+            function add_group_question(element, group_name, max_number, render_group_url)
+            {{
+                let element_jq = $(element);
+                let dynamic_form_element = element_jq.closest('.dynamic_form');
+                let highest_group_index = Math.max(...dynamic_form_element.find("." + group_name + "_question").map(function() {{return isNaN($(this).data("group-index")) ? 0 : +$(this).data("group-index");}}).get());
+                $.ajax({{ type: "GET", url: render_group_url + "&index=" + (highest_group_index + 1), success : function(response)
+                {{
+                    dynamic_form_element.find("." + group_name + "_container").append(response);
+                    let event_data = {get_js_event_data(item, dynamic_field_name, {"add": True, "remove": False})}
+                    event_data["group_name"] = group_name;
+                    event_data["max_number"] = max_number;
+                    $("body").trigger("dynamic-form-group-changed", [event_data]);
+                }}
+                }});
+            }}
+            
+            $("body").on("dynamic-form-group-changed", function(event, event_data)
+            {{
+                // Updated add button visibility
+                let group_name = event_data.group_name;
+                let dynamic_form_element = $('.dynamic_form[data-item-type-id="' + event_data.item_type_id + '"][data-item-id="' + event_data.item_id + '"][data-field-name="' + event_data.field_name + '"]');
+                let current_question_count = dynamic_form_element.find("." + group_name + "_question").length;
+                if (current_question_count < event_data.max_number)
+                {{
+                    dynamic_form_element.find("." + group_name + "_add_button").show();
+                }}
+                else
+                {{
+                    dynamic_form_element.find("." + group_name + "_add_button").hide();
+                }}
+            }});
+            
+            $("body").on("dynamic-form-field-changed", function(event, event_data)
+            {{
+                let dynamic_form_element = $('.dynamic_form[data-item-type-id="' + event_data.item_type_id + '"][data-item-id="' + event_data.item_id + '"][data-field-name="' + event_data.field_name + '"]');
+                dynamic_form_element.find(".formula-input-preview").each(function()
+                {{
+                    let element_jq = $(this);
+                    let data = element_jq.attr("form") ? $('#'+element_jq.attr("form")).serialize() : element_jq.closest('form').serialize();
+                    if (typeof csrf_token === 'function')
+                    {{
+                        data += "&csrfmiddlewaretoken=" + csrf_token();
+                    }}
+                    $.ajax({{ type: "POST", data: data, url: element_jq.data("formula-url"), success : function(response)
+                    {{
+                        element_jq.val(response);
+                    }}
+                    }});
+                }});
+            }});
+            
+            </script>"""
+        result += f'<div class="dynamic_form" data-item-type-id="{item_type_id}" data-item-id="{item.id}" data-field-name="{dynamic_field_name}">{render_grid_questions(self.questions, item, dynamic_field_name, virtual_inputs)}</div>'
         return mark_safe(result)
 
-    def validate(self, group_question_url: str, group_item_id: int):
+    def validate(self, item, dynamic_field_name: str):
         # We need to validate the raw json for types
         for question in self.untreated_questions:
             if question["type"] not in question_types.keys():
@@ -682,14 +750,8 @@ class DynamicForm:
                         )
         for question in self.questions:
             question.validate()
-        # Test the rendering, but catch reverse exception if this the item doesn't have an id yet
-        # (when creating it the first time)
-        try:
-            self.render(group_question_url, group_item_id)
-        except NoReverseMatch:
-            if group_item_id:
-                raise
-            pass
+        # Test the rendering
+        self.render(item, dynamic_field_name)
         # Check for duplicate names, and that if consumable exists they are linked to a number question
         names = []
         for question in self.questions:
@@ -770,16 +832,28 @@ class DynamicForm:
 
     def _update_tool_counters(self, usage_event: UsageEvent, run_data_json: Dict):
         # This function increments/decrements all counters associated with the given tool
+        pre_post = "post"
+        if run_data_json:
+            if usage_event.pre_run_data and usage_event.run_data:
+                # if we have both check which one matches
+                if loads(usage_event.pre_run_data) == run_data_json:
+                    pre_post = "pre"
+            elif usage_event.pre_run_data:
+                # if we only have pre_run_data then it has to be pre usage question
+                pre_post = "pre"
+        counter_question_name = f"tool_{pre_post}_usage_question"
         active_counters = ToolUsageCounter.objects.filter(is_active=True, tool_id=usage_event.tool_id)
+        active_counters = active_counters.filter(**{f"{counter_question_name}__isnull": False})
         for counter in active_counters:
             additional_value = 0
+            counter_question_field = getattr(counter, counter_question_name)
             for question in self.questions:
                 input_data = run_data_json[question.name] if question.name in run_data_json else None
-                additional_value += get_counter_value_for_question(question, input_data, counter.tool_usage_question)
+                additional_value += get_counter_value_for_question(question, input_data, counter_question_field)
                 if isinstance(question, PostUsageGroupQuestion):
                     for sub_question in question.sub_questions:
                         additional_value += get_counter_value_for_question(
-                            sub_question, input_data, counter.tool_usage_question
+                            sub_question, input_data, counter_question_field
                         )
             if additional_value:
                 counter.value += counter.counter_direction * additional_value
@@ -825,30 +899,31 @@ def get_submitted_user_inputs(user_data: Union[str, dict]) -> Dict:
     return user_input
 
 
-def render_group_questions(request, questions, group_question_url, group_item_id, group_name) -> str:
+def render_group_questions(request, item, field_name: str, group_name: str) -> str:
     question_index = request.GET["index"]
     virtual_inputs = bool(strtobool((request.GET["virtual_inputs"])))
-    if questions:
-        for question in PostUsageQuestion.load_questions(loads(questions), question_index):
+    dynamic_field = getattr(item, field_name, None)
+    if dynamic_field:
+        for question in PostUsageQuestion.load_questions(loads(dynamic_field), question_index):
             if isinstance(question, PostUsageGroupQuestion) and question.group_name == group_name:
-                return question.render_group_question(virtual_inputs, group_question_url, group_item_id)
+                return question.render_group_question(virtual_inputs, item, field_name)
     return ""
 
 
-def render_grid_questions(questions, group_question_url: str, group_item_id: int, virtual_inputs: bool):
+def render_grid_questions(questions, item, dynamic_field_name: str, virtual_inputs: bool):
     # only use the grid if we have "form_row" defined for at least one item
     use_grid = max([q.form_row for q in questions if q.form_row], default=0)
     result = ""
     for row in sort_question_for_grid(questions):
         if row:
             extra_class = ""
-            max_cells = len([q for q in row if not isinstance(q, PostUsageFormulaQuestion)])
+            max_cells = len([q for q in row if (not isinstance(q, PostUsageFormulaQuestion) or q.show_formula_preview)])
             if use_grid and max_cells:
                 cell_width = 12 // max_cells
                 result += '<div class="row">'
                 extra_class = f"col-md-{cell_width or 12}"
             for question in row:
-                result += question.render(virtual_inputs, group_question_url, group_item_id, extra_class)
+                result += question.render(virtual_inputs, item, dynamic_field_name, extra_class)
             if use_grid and max_cells:
                 result += "</div>"
     return result
@@ -909,7 +984,7 @@ def get_counter_value_for_question(question, input_data, counter_question):
     return additional_value
 
 
-def validate_dynamic_form_model(dynamic_form_json: str, group_url: str, item_id) -> List[str]:
+def validate_dynamic_form_model(dynamic_form_json: str, item, dynamic_field_name: str) -> List[str]:
     errors = []
     if dynamic_form_json:
         try:
@@ -918,20 +993,21 @@ def validate_dynamic_form_model(dynamic_form_json: str, group_url: str, item_id)
             errors.append("This field needs to be a valid JSON string")
         try:
             dynamic_form = DynamicForm(dynamic_form_json)
-            dynamic_form.validate(group_url, item_id)
+            dynamic_form.validate(item, dynamic_field_name)
         except KeyError as e:
             errors.append(f"{e} property is required")
-        except Exception:
+        except:
             error_info = sys.exc_info()
             errors.append(error_info[0].__name__ + ": " + str(error_info[1]))
     return errors
 
 
-def admin_render_dynamic_form_preview(dynamic_form_json: str, group_url: str, item_id):
+def admin_render_dynamic_form_preview(item, dynamic_field_name: str):
     form_validity_div = ""
     rendered_form = ""
     try:
-        rendered_form = DynamicForm(dynamic_form_json).render(group_url, item_id)
+        dynamic_form_json = getattr(item, dynamic_field_name, None)
+        rendered_form = DynamicForm(dynamic_form_json).render(item, dynamic_field_name)
         if dynamic_form_json:
             form_validity_div = '<div class="form_validity"></div>'
     except:
@@ -967,6 +1043,70 @@ def sort_question_for_grid(questions: List[PostUsageQuestion]) -> List[List[Post
 def match_group_index(form_name: str) -> Optional[re.Pattern]:
     # This will match form_name or any combination of form_name_1, form_name_2 etc.
     return re.compile("^" + form_name + "(_(\d+))?$")
+
+
+def get_js_event_data(item, dynamic_field_name: str, extra_data=None) -> str:
+    if extra_data is None:
+        extra_data = {}
+    return dumps(
+        {
+            "item_type_id": ContentType.objects.get_for_model(item).id,
+            "item_id": item.id,
+            "field_name": dynamic_field_name,
+            **extra_data,
+        }
+    )
+
+
+def find_input_value_for_field(user_data: Union[str, dict], question_name) -> Optional[str]:
+    try:
+        user_data_json: dict = loads(user_data) if isinstance(user_data, str) and user_data else user_data
+        if user_data_json:
+            for field_name, data in user_data_json.items():
+                if "user_input" in data:
+                    if data["type"] != "group":
+                        if question_name == field_name:
+                            return data["user_input"]
+                    else:
+                        for group_index, group_data in data["user_input"].items():
+                            for group_field_name, group_field_data in group_data.items():
+                                name_with_index = f"{group_field_name}_{group_index}"
+                                if (
+                                    question_name == name_with_index
+                                    or group_index == "0"
+                                    and question_name == group_field_name
+                                ):
+                                    return group_field_data
+    except Exception as e:
+        dynamic_form_logger.exception(e)
+    return ""
+
+
+@require_GET
+@login_required
+def group_question(request, content_type_id, item_id, field_name, group_name):
+    try:
+        item = ContentType.objects.get(pk=content_type_id).get_object_for_this_type(pk=item_id)
+        return HttpResponse(render_group_questions(request, item, field_name, group_name))
+    except:
+        dynamic_form_logger.exception("Error loading group question")
+    return HttpResponse()
+
+
+@require_POST
+@login_required
+def formula_preview(request, content_type_id, item_id, field_name, formula_name):
+    try:
+        item = ContentType.objects.get(pk=content_type_id).get_object_for_this_type(pk=item_id)
+        try:
+            data = loads(DynamicForm(getattr(item, field_name)).extract(request))
+        except RequiredUnansweredQuestionsException as e:
+            data = loads(e.run_data)
+        input_data = find_input_value_for_field(data, formula_name)
+        return HttpResponse(input_data if input_data is not None else "")
+    except:
+        dynamic_form_logger.exception("Error getting formula preview")
+    return HttpResponse()
 
 
 question_types: Dict[str, Type[PostUsageQuestion]] = {

@@ -3,11 +3,15 @@ import json
 from django.http import QueryDict
 from django.test import TestCase
 
+from NEMO.models import Tool
 from NEMO.utilities import EmptyHttpRequest
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageGroupQuestion
 
 
 class TestDynamicForm(TestCase):
+
+    def setUp(self):
+        self.tool = Tool.objects.create()
 
     def test_question_with_initial_data(self):
         # question and initial data
@@ -21,7 +25,7 @@ class TestDynamicForm(TestCase):
 
         # question with initial and no default => initial
         dynamic_form = DynamicForm(json.dumps(data), initial_data=initial_data)
-        dynamic_form.validate("tool_usage_group_question", 1)
+        dynamic_form.validate(self.tool, "pre_usage_question")
         question = [question for question in dynamic_form.questions if question.name == "test"][0]
         self.assertEqual(question.get_default_value(), initial_data["test"]["user_input"])
 
@@ -87,7 +91,7 @@ class TestDynamicForm(TestCase):
             },
         ]
         dynamic_form = DynamicForm(json.dumps(data))
-        dynamic_form.validate("tool_usage_group_question", 1)
+        dynamic_form.validate(self.tool, "pre_usage_question")
         http_request = EmptyHttpRequest()
         http_request.POST = QueryDict(mutable=True)
         http_request.POST["df_test"] = "2"
@@ -105,7 +109,7 @@ class TestDynamicForm(TestCase):
             },
         ]
         dynamic_form = DynamicForm(json.dumps(data))
-        dynamic_form.validate("tool_usage_group_question", 1)
+        dynamic_form.validate(self.tool, "pre_usage_question")
         http_request = EmptyHttpRequest()
         http_request.POST = QueryDict(mutable=True)
         http_request.POST["df_test"] = "2.0"
@@ -123,7 +127,7 @@ class TestDynamicForm(TestCase):
             },
         ]
         dynamic_form = DynamicForm(json.dumps(data))
-        dynamic_form.validate("tool_usage_group_question", 1)
+        dynamic_form.validate(self.tool, "pre_usage_question")
         http_request = EmptyHttpRequest()
         http_request.POST = QueryDict(mutable=True)
         http_request.POST["df_test"] = "2"
@@ -142,7 +146,7 @@ class TestDynamicForm(TestCase):
             },
         ]
         dynamic_form = DynamicForm(json.dumps(data))
-        dynamic_form.validate("tool_usage_group_question", 1)
+        dynamic_form.validate(self.tool, "pre_usage_question")
         http_request = EmptyHttpRequest()
         http_request.POST = QueryDict(mutable=True)
         http_request.POST["df_test"] = "0"
@@ -169,7 +173,7 @@ class TestDynamicForm(TestCase):
             }
         ]
         dynamic_form = DynamicForm(json.dumps(data))
-        dynamic_form.validate("tool_usage_group_question", 1)
+        dynamic_form.validate(self.tool, "pre_usage_question")
         http_request = EmptyHttpRequest()
         http_request.POST = QueryDict(mutable=True)
         # We are simulating what the request data would look like. Formula questions will render a hidden, no value input
@@ -197,7 +201,7 @@ class TestDynamicForm(TestCase):
             }
         ]
         dynamic_form = DynamicForm(json.dumps(data))
-        dynamic_form.validate("tool_usage_group_question", 1)
+        dynamic_form.validate(self.tool, "pre_usage_question")
         http_request = EmptyHttpRequest()
         http_request.POST = QueryDict(mutable=True)
         # We are simulating what the request data would look like. Formula questions will render a hidden, no value input
@@ -246,7 +250,7 @@ class TestDynamicForm(TestCase):
             },
         ]
         dynamic_form = DynamicForm(json.dumps(data))
-        dynamic_form.validate("tool_usage_group_question", 1)
+        dynamic_form.validate(self.tool, "pre_usage_question")
         http_request = EmptyHttpRequest()
         http_request.POST = QueryDict(mutable=True)
         # We are simulating what the request data would look like. Formula questions will render a hidden, no value input
@@ -297,7 +301,7 @@ class TestDynamicForm(TestCase):
             },
         ]
         dynamic_form = DynamicForm(json.dumps(data))
-        dynamic_form.validate("tool_usage_group_question", 1)
+        dynamic_form.validate(self.tool, "pre_usage_question")
         http_request = EmptyHttpRequest()
         http_request.POST = QueryDict(mutable=True)
         # We are simulating what the request data would look like. Formula questions will render a hidden, no value input
@@ -348,7 +352,7 @@ class TestDynamicForm(TestCase):
             },
         ]
         dynamic_form = DynamicForm(json.dumps(data))
-        dynamic_form.validate("tool_usage_group_question", 1)
+        dynamic_form.validate(self.tool, "pre_usage_question")
         http_request = EmptyHttpRequest()
         http_request.POST = QueryDict(mutable=True)
         # We are simulating what the request data would look like. Formula questions will render a hidden, no value input
@@ -401,7 +405,7 @@ class TestDynamicForm(TestCase):
             },
         ]
         dynamic_form = DynamicForm(json.dumps(data))
-        dynamic_form.validate("tool_usage_group_question", 1)
+        dynamic_form.validate(self.tool, "pre_usage_question")
         http_request = EmptyHttpRequest()
         http_request.POST = QueryDict(mutable=True)
         # We are simulating what the request data would look like. Formula questions will render a hidden, no value input

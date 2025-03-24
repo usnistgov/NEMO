@@ -45,21 +45,31 @@ window.addEventListener("load", function()
             /* create a separate form for testing dynamic form data */
             $("form").last().after('<form id="' + form_id + '"></form>');
 
-            $("#" + preview_id).on("change keyup", "input[form='" + form_id + "'], textarea[form='" + form_id + "'], select[form='" + form_id + "']", function()
-            {
-                update_validation_button(preview_id);
-            });
-
             update_input_form(preview_id);
             update_validation_button(preview_id);
         });
 
-        /* bind event to the correct preview */
-        $("body").on("question-group-changed", function(event, group_name)
+        /* bind events to the correct preview */
+        $("body").on("dynamic-form-group-changed dynamic-form-field-changed", function(event, data)
         {
-            let preview_id = $("#"+ group_name+"_container").closest(".dynamic_form_preview").attr("id");
+            let preview_id = $('.dynamic_form[data-field-name="' + data.field_name + '"]').closest(".dynamic_form_preview").attr("id");
             update_input_form(preview_id);
             update_validation_button(preview_id);
         });
     })(django.jQuery);
 });
+
+function csrf_token()
+{
+    return document.getElementsByName("csrfmiddlewaretoken")[0].value;
+}
+
+function auto_size_textarea(textarea, rows)
+{
+	if (textarea)
+	{
+		textarea.rows = rows || 1;
+		textarea.style.height = '';
+		textarea.style.height = textarea.scrollHeight + 3 + 'px';
+	}
+}

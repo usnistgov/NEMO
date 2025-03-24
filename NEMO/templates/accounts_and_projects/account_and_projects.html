@@ -41,79 +41,39 @@
                         </form>
                     </h2>
                 {% endif %}
-                {% for project in account_projects %}
-                    {% if not selected_project or project == selected_project %}
-                        <div class="h3">
-                            <a onclick="toggle_details(this)"
-                               data-toggle="collapse"
-                               data-target="#project_{{ project.id }}_details"
-                               class="pointer"
-                               style="text-decoration:none">
-                                <span id="project_{{ project.id }}_chevron"
-                                      class="glyphicon {% if selected_project %}glyphicon-chevron-down{% else %}glyphicon-chevron-right{% endif %} pull-left chevron"></span>
-                                {{ project }}
-                            </a>
-                            <form style="display:inline" method="post" action="{% url 'toggle_active' 'project' project.id %}">
-                                {% csrf_token %}
-                                {# Using an 'input submit' element would be preferable to an anchor on the following line, but Bootstrap can't style a 'submit' as a label so you have to use an anchor. #}
-                                <a onclick="$(this).closest('form').submit()"
-                                   class="label {% if project.active %}label-success{% else %}label-danger{% endif %}"
-                                   style="vertical-align:50%;
-                                          font-size:small">
-                                    {% if project.active %}
-                                        Active
-                                    {% else %}
-                                        Inactive
-                                    {% endif %}
+                {% regroup account_projects by active as grouped_projects %}
+                {% for group in grouped_projects %}
+                    {% if group.grouper %}
+                        {% for project in group.list %}
+                            {% if not selected_project or project == selected_project %}
+                                {% include 'accounts_and_projects/project.html' %}
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        {% if not selected_project %}
+                            <div class="h3">
+                                <a onclick="toggle_details(this)"
+                                   data-toggle="collapse"
+                                   data-target="#inactives_details"
+                                   class="pointer"
+                                   style="text-decoration:none">
+                                    <span id="inactives_chevron"
+                                          class="glyphicon {% if selected_project %}glyphicon-chevron-down{% else %}glyphicon-chevron-right{% endif %} pull-left chevron"></span>
+                                    <span class="label label-danger" style="vertical-align: 15%">Inactive projects</span>
                                 </a>
-                            </form>
-                        </div>
-                        <div style="margin-left:34px">
-                            {% if selected_project %}
-                                <span class="control-label">Account:</span>
-                                <a href="{% url 'account' project.account.id %}">{{ project.account }}</a>
-                            {% endif %}
-                            {% if project.manager_set.all %}
-                                <div>
-                                    <span class="control-label">PIs:</span>
-                                    <span>{{ project.manager_set.all|join:", " }}</span>
-                                </div>
-                            {% endif %}
-                            <div id="project_{{ project.id }}_details" class="collapse {% if selected_project %}in{% endif %}">
-                                <div>
-                                    <span class="control-label">{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}:</span>
-                                    <span>{{ project.application_identifier }}</span>
-                                </div>
-                                {% if project.project_types.all %}
-                                    <div>
-                                        <span class="control-label">Project type
-                                            {% if "projects_and_accounts"|customization:"project_type_allow_multiple" %}(s){% endif %}
-                                        :</span>
-                                        <span>{{ project.project_types.all|join:", " }}</span>
-                                    </div>
-                                {% endif %}
-                                {% if project.discipline %}
-                                    <div>
-                                        <span class="control-label">Discipline:</span>
-                                        <span>{{ project.discipline }}</span>
-                                    </div>
-                                {% endif %}
-                                {% if project.start_date %}
-                                    <div>
-                                        <span class="control-label">Start Date:</span>
-                                        <span>{{ project.start_date }}</span>
-                                    </div>
-                                {% endif %}
-                                <div id="project_{{ project.id }}_users">
-                                    {% include 'accounts_and_projects/users_for_project.html' with users=project.user_set.all %}
-                                </div>
-                                {% if allow_document_upload or project.project_documents.all %}
-                                    <div id="project_{{ project.id }}_documents">
-                                        {% include 'accounts_and_projects/documents_for_project.html' with documents=project.project_documents.all %}
-                                    </div>
-                                {% endif %}
                             </div>
-                        </div>
+                            <div style="margin-left:34px">
+                                <div id="inactives_details" class="collapse {% if selected_project %}in{% endif %}">
+                                {% endif %}
+                                {% for project in group.list %}
+                                    {% if not selected_project or project == selected_project %}
+                                        {% include 'accounts_and_projects/project.html' %}
+                                    {% endif %}
+                                {% endfor %}
+                                {% if not selected_project %}
+                                </div>
+                            </div>
+                        {% endif %}
                     {% endif %}
                 {% empty %}
                     <h4>This account does not have any projects</h4>

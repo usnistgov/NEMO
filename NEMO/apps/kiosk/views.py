@@ -304,7 +304,6 @@ def reserve_tool(request):
         dictionary.update(tool.get_configuration_information(user=customer, start=reservation.start))
         dictionary.update(
             {
-                "request_date": request.POST["date"],
                 "request_start": request.POST["start"],
                 "request_end": request.POST["end"],
                 "reservation": reservation,
@@ -468,10 +467,10 @@ def tool_information(request, tool_id, user_id, back):
         "tool_credentials": tool_credentials,
         "rendered_configuration_html": tool.configuration_widget(customer),
         "pre_usage_questions": DynamicForm(tool.pre_usage_questions).render(
-            "tool_usage_group_question", tool.id, virtual_inputs=True
+            tool, "pre_usage_questions", virtual_inputs=True
         ),
         "post_usage_questions": DynamicForm(tool.post_usage_questions).render(
-            "tool_usage_group_question", tool.id, virtual_inputs=True
+            tool, "post_usage_questions", virtual_inputs=True
         ),
         "back": back,
         "tool_control_show_task_details": ToolCustomization.get_bool("tool_control_show_task_details"),

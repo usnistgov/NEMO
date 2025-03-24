@@ -106,6 +106,8 @@ def navigation_url(url_name, description, *conditions):
 
 @register.simple_tag
 def res_question_tbody(dictionary):
+    if not dictionary:
+        return ""
     input_dict = dictionary[list(dictionary.keys())[0]]
     headers = list(input_dict.keys())
     header_cells = "".join([format_html("<th>{}</th>", h) for h in headers])
