@@ -437,7 +437,7 @@ class PostUsageFormulaQuestion(PostUsageQuestion):
             formula_url = f'data-formula-url="{reverse("formula_preview", args=[ContentType.objects.get_for_model(item).id, item.id, dynamic_field_name, self.name])}"'
             result += f'<div class="form-group {extra_class}" style="{max_width}">'
             result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}</label>'
-            result += f'<input type="text" {formula_url} disabled class="form-control formula-input-preview" value="{self.default_value if self.default_value is not None else ""}">'
+            result += f'<input type="text" {formula_url} disabled class="form-control formula-input-preview" value="{self.get_default_value() if self.get_default_value() is not None else ""}">'
             result += "</div>"
         return result
 
