@@ -917,7 +917,7 @@ def render_grid_questions(questions, item, dynamic_field_name: str, virtual_inpu
     for row in sort_question_for_grid(questions):
         if row:
             extra_class = ""
-            max_cells = len([q for q in row if not isinstance(q, PostUsageFormulaQuestion)])
+            max_cells = len([q for q in row if (not isinstance(q, PostUsageFormulaQuestion) or q.show_formula_preview)])
             if use_grid and max_cells:
                 cell_width = 12 // max_cells
                 result += '<div class="row">'
