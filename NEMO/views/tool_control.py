@@ -482,7 +482,7 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
     except Exception as e:
         return HttpResponseBadRequest(str(e))
 
-    return response
+    return HttpResponse()
 
 
 @login_required
