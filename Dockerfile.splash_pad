@@ -21,8 +21,8 @@ COPY resources/splash_pad_rates.json /nemo/media/rates.json
 COPY resources/splash_pad_settings.py /nemo/
 COPY resources/fixtures/splash_pad.json /nemo/
 
-ENV DJANGO_SETTINGS_MODULE "splash_pad_settings"
-ENV PYTHONPATH "/nemo/"
+ENV DJANGO_SETTINGS_MODULE="splash_pad_settings"
+ENV PYTHONPATH="/nemo/"
 
 RUN django-admin makemigrations NEMO
 RUN django-admin migrate
@@ -38,7 +38,7 @@ RUN (cd /nemo/systemd && ls *.timer) | xargs -t -I % systemctl enable %
 
 WORKDIR /nemo
 
-ENV REMOTE_USER "captain"
+ENV REMOTE_USER="captain"
 EXPOSE 8000/tcp
 
 # We have to start systemd jobs manually here unfortunately

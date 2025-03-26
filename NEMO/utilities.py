@@ -1049,10 +1049,13 @@ def update_media_file_on_model_update(instance, file_field_name):
     if old_file:
         new_file = getattr(instance, file_field_name)
         new_file_name = field_instance.generate_filename(instance, os.path.basename(new_file.name))
+        # Account for things like slashes and case sensitivity
+        cleaned_old_file_name = os.path.normcase(os.path.normpath(old_file.name))
+        cleaned_new_file_name = os.path.normcase(os.path.normpath(new_file_name))
         if old_file != new_file:
             # if new file is different from old file, delete old file
             old_file.delete(save=False)
-        elif new_file_name != old_file.name:
+        elif cleaned_new_file_name != cleaned_old_file_name:
             # if the new filename if different but it's the same file, rename it
             copy_media_file(old_file.name, new_file_name, delete_old=True)
             new_file.name = new_file_name
