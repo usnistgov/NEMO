@@ -28,7 +28,8 @@
                name="start_date"
                aria-label="Reservation start date"
                class="form-control"
-               placeholder="Choose a start date">
+               placeholder="Choose a start date"
+               required>
     </div>
     <div class="form-group">
         <input type="text"
@@ -36,7 +37,8 @@
                name="start"
                aria-label="Reservation start time"
                class="form-control"
-               placeholder="Choose a start time">
+               placeholder="Choose a start time"
+               required>
     </div>
     <div class="form-group">
         <input type="text"
@@ -44,7 +46,8 @@
                name="end_date"
                aria-label="Reservation end date"
                class="form-control"
-               placeholder="Choose an end date">
+               placeholder="Choose an end date"
+               required>
     </div>
     <div class="form-group">
         <input type="text"
@@ -52,7 +55,8 @@
                name="end"
                aria-label="Reservation end time"
                class="form-control"
-               placeholder="Choose an end time">
+               placeholder="Choose an end time"
+               required>
     </div>
     <div class="form-group text-center" style="margin-top:40px">
         {% button type="save" submit=False style="text-align:center; margin-bottom:0; font-size:x-large" onclick="reserve_tool()" value="Create the reservation" %}
