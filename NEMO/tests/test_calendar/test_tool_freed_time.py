@@ -638,9 +638,10 @@ class ReservationTestCase(TransactionTestCase):
         login_as(self.client, consumer_2)
         self.client.post(reverse("disable_tool", args=[self.tool.id]), follow=True)
         # Wait a second since the freed time notification is asynchronous
-        sleep(0.5)
-        # This time it should work
+        sleep(0.2)
         minutes = (timezone.now() - reservation.end).total_seconds() // 60
+        sleep(0.2)
+        # This time it should work
         start_of_freed_time = reservation.end + timedelta(minutes=minutes)
         self.assertEqual(
             EmailLog.objects.filter(to=self.consumer.email, subject__startswith=f"[{self.tool.name}]").first().subject,

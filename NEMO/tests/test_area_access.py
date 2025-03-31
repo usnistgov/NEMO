@@ -360,9 +360,10 @@ class SelfLoginAreaAccessTestCase(TestCase):
 
 class NewAreaAccessTestCase(TestCase):
     area: Area = None
+    door: Door = None
 
     def setUp(self):
-        global area
+        global area, door
         interlock_card_category = InterlockCardCategory.objects.get(key="stanford")
         interlock_card = InterlockCard.objects.create(
             server="server.com", port=80, number=1, even_port=1, odd_port=2, category=interlock_card_category

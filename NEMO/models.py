@@ -2652,7 +2652,7 @@ class Account(SerializationByNameModel):
 
 
 class Project(SerializationByNameModel):
-    name = models.CharField(max_length=CHAR_FIELD_LARGE_LENGTH, unique=True)
+    name = models.CharField(max_length=CHAR_FIELD_LARGE_LENGTH)
     application_identifier = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
     project_types = models.ManyToManyField(ProjectType, blank=True)
     account = models.ForeignKey(
@@ -2688,6 +2688,12 @@ class Project(SerializationByNameModel):
 
     def display_with_status(self):
         return f"{'[INACTIVE] ' if not self.active else ''}{self.name}"
+
+    def validate_unique(self, exclude=None):
+        super().validate_unique(exclude)
+        # Check for name uniqueness (excluding self when updating)
+        if Project.objects.filter(name__iexact=self.name).exclude(pk=self.pk).exists():
+            raise ValidationError({"name": "A project with this name already exists."})
 
     def __str__(self):
         return str(self.name)

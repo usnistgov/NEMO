@@ -7,9 +7,8 @@ from logging import getLogger
 from typing import List
 
 from django.conf import settings
-from django.core.management import call_command
 from django.test.client import RequestFactory
-from django.test.testcases import TestCase
+from django.test.testcases import TestCase, TransactionTestCase
 from django.urls import reverse
 from django.urls.resolvers import RegexPattern
 
@@ -180,10 +179,12 @@ urls_to_skip = [
 ]
 
 
-class URLsTestCase(TestCase):
+class URLsTestCase(TransactionTestCase):
+    reset_sequences = True
+    fixtures = ["resources/fixtures/splash_pad.json"]
+
     @classmethod
     def setUpTestData(cls):
-        call_command("loaddata", "resources/fixtures/splash_pad.json", app_label="NEMO")
         EmailsCustomization.set("feedback_email_address", "email@example.org")
         EmailsCustomization.set("user_office_email_address", "email@example.org")
         EmailsCustomization.set("safety_email_address", "email@example.org")
