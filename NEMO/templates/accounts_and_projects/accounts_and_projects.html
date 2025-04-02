@@ -70,7 +70,7 @@
                     </td>
                 </tr>
                 {% regroup account.sorted_projects by active as active_inactive_projects %}
-                {% if active_inactive_projects|length_is:1 and not active_inactive_projects.0.grouper and project_list_active_only %}
+                {% if active_inactive_projects|length == 1 and not active_inactive_projects.0.grouper and project_list_active_only %}
                     <tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
                         <td colspan="4" style="padding-left: 28px">
                             <span>This account does not have any active projects</span>

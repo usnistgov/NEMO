@@ -83,7 +83,7 @@
                             id="charge_type__{{ entry_number }}"
                             name="charge_type__{{ entry_number }}"
                             required>
-                        {% if charge_types|length_is:1 %}
+                        {% if charge_types|length == 1 %}
                             <option value="{{ charge_types.0.0 }}" selected>{{ charge_types.0.1 }}</option>
                         {% else %}
                             <option disabled selected value="">&nbsp;</option>

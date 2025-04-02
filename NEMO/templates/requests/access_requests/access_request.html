@@ -65,7 +65,7 @@
                         - <span style="color:red">{{ form.physical_access_level.errors|striptags }}</span>
                     {% endif %}
                     <select class="form-control" id="physical_access_level" name="physical_access_level" required>
-                        {% if physical_access_levels|length_is:1 %}
+                        {% if physical_access_levels|length == 1 %}
                             <option value="{{ physical_access_levels.0.id }}" selected>
                                 {{ physical_access_levels.0.display_value_for_select }}
                             </option>
