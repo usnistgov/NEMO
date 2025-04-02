@@ -163,7 +163,7 @@ class BillableItemMixin:
             remote_enabled = AdjustmentRequestsCustomization.get_bool("adjustment_requests_staff_staff_charges_enabled")
             return remote_enabled and time_limit_condition and operator_is_staff
         elif self.get_real_type() == BillableItemMixin.TRAINING:
-            return f"{self.get_type_display()} training"
+            return False
         elif self.get_real_type() == BillableItemMixin.CONSUMABLE:
             withdrawal_enabled = AdjustmentRequestsCustomization.get_bool(
                 "adjustment_requests_consumable_withdrawal_enabled"

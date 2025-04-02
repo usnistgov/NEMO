@@ -519,7 +519,11 @@ class PostUsageFormulaQuestion(PostUsageQuestion):
                     if matching_question.extract_for_formula(request, index) is not None
                 ]
             else:
-                value = matching_question.extract_for_formula(request, index)
+                # Special case if we are using a variable/question outside a group while we are in the group
+                formula_inside_group_not_using_group = self.is_sub_question and not matching_question.is_sub_question
+                value = matching_question.extract_for_formula(
+                    request, index if not formula_inside_group_not_using_group else None
+                )
             extracted_form_values[form_key] = value
         # Allow everything other than None as valid value. If None is present
         # we skip the whole formula evaluation

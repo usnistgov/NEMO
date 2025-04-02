@@ -9879,7 +9879,9 @@
     "model": "NEMO.toolcredentials",
     "pk": 1,
     "fields": {
-      "tool": 4,
+      "tool": [
+        "Dicing saw"
+      ],
       "username": "user",
       "password": "password",
       "comments": "user account",
@@ -9890,7 +9892,9 @@
     "model": "NEMO.toolcredentials",
     "pk": 2,
     "fields": {
-      "tool": 4,
+      "tool": [
+        "Dicing saw"
+      ],
       "username": "admin",
       "password": "password",
       "comments": "admin account",
@@ -9985,7 +9989,9 @@
     "fields": {
       "creation_time": "2025-02-20T03:29:14.451Z",
       "description": "I need help in the lab with a tool",
-      "user": 3,
+      "user": [
+        "ned"
+      ],
       "resolved": false,
       "deleted": false
     }

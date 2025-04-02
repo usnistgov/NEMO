@@ -22,7 +22,7 @@ class RestCRUDTestCase(TestCase):
 
     def test_user_view(self):
         user = login_as_user(self.client)
-        retrieve_url = reverse("user-detail", args=[1])
+        retrieve_url = reverse("user-detail", args=[user.id])
         response = self.client.get(retrieve_url, follow=True)
         self.assertEqual(response.status_code, 403)
         user.user_permissions.add(Permission.objects.get(codename="view_user"))

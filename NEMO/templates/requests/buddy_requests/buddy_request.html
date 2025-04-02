@@ -100,7 +100,7 @@
                 {% endif %}
             {% elif form.instance.id and form.instance.area %}
 				select_area(false, {'id': '{{ form.instance.area.id }}', 'name': '{{ form.instance.area.name }}'});
-			{% elif areas|length_is:1 %}
+			{% elif areas|length == 1 %}
 				let auto_select_area = {'id': '{{ areas.0.id }}', 'name': '{{ areas.0.name }}'};
 				select_area(false, auto_select_area);
 			{% endif %}

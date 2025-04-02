@@ -8,12 +8,18 @@ from django.contrib.auth.models import Group, Permission
 from django.core import validators
 from django.core.cache import cache
 from django.core.exceptions import FieldError, ValidationError
-from django.db import connection, models
+from django.db import models
 from django.db.models.signals import post_delete, post_save
 from django.utils.translation import gettext_lazy as _
 
 from NEMO.typing import QuerySetType
-from NEMO.utilities import CommaSeparatedListConverter, DelimiterSeparatedListConverter, quiet_int, strtobool
+from NEMO.utilities import (
+    CommaSeparatedListConverter,
+    DelimiterSeparatedListConverter,
+    quiet_int,
+    safe_lazy_queryset_evaluation,
+    strtobool,
+)
 
 DEFAULT_SEPARATOR = ","
 
@@ -264,23 +270,28 @@ class RoleGroupPermissionChoiceField(DynamicChoicesTextField):
             for role_choice in self.Role.choices:
                 role_choice_list.append((role_choice[0], prefix + role_choice[1]))
 
-        if self.groups and "auth_group" in connection.introspection.table_names():
+        if self.groups:
             group_choices = cache.get(self.GROUPS_CACHE_KEY)
             prefix = self.PREFIX_GROUP_DISPLAY if admin_display else ""
             if group_choices is None:
-                group_choices = [(str(group.id), group.name) for group in Group.objects.all()]
-                cache.set(self.GROUPS_CACHE_KEY, group_choices)
+                groups_db, error = safe_lazy_queryset_evaluation(Group.objects.all())
+                group_choices = [(str(group.id), group.name) for group in groups_db]
+                if not error:
+                    cache.set(self.GROUPS_CACHE_KEY, group_choices)
             role_choice_list.extend([(group_choice[0], prefix + group_choice[1]) for group_choice in group_choices])
 
-        if self.permissions and "auth_permission" in connection.introspection.table_names():
+        if self.permissions:
             permission_choices = cache.get(self.PERMISSIONS_CACHE_KEY)
             prefix = self.PREFIX_PERMISSION_DISPLAY if admin_display else ""
             if permission_choices is None:
+                permissions_db, error = safe_lazy_queryset_evaluation(
+                    Permission.objects.values("content_type__app_label", "codename", "name")
+                )
                 permission_choices = [
-                    (f'{p["content_type__app_label"]}.{p["codename"]}', p["name"])
-                    for p in Permission.objects.values("content_type__app_label", "codename", "name")
+                    (f'{p["content_type__app_label"]}.{p["codename"]}', p["name"]) for p in permissions_db
                 ]
-                cache.set(self.PERMISSIONS_CACHE_KEY, permission_choices)
+                if not error:
+                    cache.set(self.PERMISSIONS_CACHE_KEY, permission_choices)
             role_choice_list.extend([(perm_choice[0], prefix + perm_choice[1]) for perm_choice in permission_choices])
 
         return role_choice_list

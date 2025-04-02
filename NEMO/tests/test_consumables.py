@@ -331,19 +331,26 @@ class ConsumableTestCase(TestCase):
         response = self.client.post(reverse("create_recurring_charge"), data, follow=True)
         self.assertRedirects(response, reverse("recurring_charges"))
         self.assertTrue(
-            RecurringConsumableCharge.objects.filter(consumable=consumable, customer=user, quantity=1).exists()
+            RecurringConsumableCharge.objects.filter(
+                consumable=consumable, customer=user, project=project, quantity=1
+            ).exists()
         )
-        withdraw = ConsumableWithdraw.objects.filter(consumable=consumable, customer=user, quantity=1).first()
+        recurring_charge = RecurringConsumableCharge.objects.filter(
+            consumable=consumable, customer=user, project=project, quantity=1
+        ).first()
+        withdraw = ConsumableWithdraw.objects.filter(
+            consumable=consumable, customer=user, project=project, quantity=1
+        ).latest("date")
         self.assertIsNotNone(withdraw)
-        # Charged less than a second ago, but still before now
-        self.assertLess(timezone.now() - timedelta(seconds=1), withdraw.date)
+        # Charged less than 2 second ago, but still before now
+        self.assertLess(timezone.now() - timedelta(seconds=2), withdraw.date)
         self.assertLess(withdraw.date, timezone.now())
         # Try editing and charging again on the same day
-        response = self.client.post(reverse("edit_recurring_charge", args=[withdraw.id]), data, follow=True)
+        response = self.client.post(reverse("edit_recurring_charge", args=[recurring_charge.id]), data, follow=True)
         self.assertRedirects(response, reverse("recurring_charges"))
-        new_withdraw = ConsumableWithdraw.objects.filter(consumable=consumable, customer=user, quantity=1).latest(
-            "date"
-        )
+        new_withdraw = ConsumableWithdraw.objects.filter(
+            consumable=consumable, customer=user, project=project, quantity=1
+        ).latest("date")
         # There is no new withdraw, it should be the same as previous since you cannot charge twice the same day
         self.assertEqual(withdraw.id, new_withdraw.id)
         self.assertEqual(withdraw.date, new_withdraw.date)

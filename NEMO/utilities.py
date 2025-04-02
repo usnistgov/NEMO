@@ -27,6 +27,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
+from django.db import OperationalError
 from django.db.models import FileField, IntegerChoices, QuerySet
 from django.http import HttpRequest, HttpResponse, QueryDict
 from django.shortcuts import resolve_url
@@ -94,6 +95,8 @@ py_to_pick_date_formats = {
     "%y": "yy",
     "%%": "%",
 }
+
+UNSET = object()
 
 
 # Convert a python format string to javascript format string
@@ -1059,3 +1062,41 @@ def update_media_file_on_model_update(instance, file_field_name):
             # if the new filename if different but it's the same file, rename it
             copy_media_file(old_file.name, new_file_name, delete_old=True)
             new_file.name = new_file_name
+
+
+def safe_lazy_queryset_evaluation(qs: QuerySet, default=UNSET, raise_exception=False) -> Tuple[Any, bool]:
+    """
+    Safely evaluates a queryset and returns the evaluated queryset or a default value.
+
+    This function attempts to force the evaluation of a Django queryset. In case an
+    OperationalError occurs during the evaluation, it can either return a default value or
+    raise the exception, based on the provided arguments. Additionally, it logs a warning
+    message when the queryset evaluation fails and `raise_exception` is set to False. This
+    can be helpful in handling database operational issues more gracefully.
+
+    Parameters:
+        qs (QuerySet): The Django queryset to be evaluated.
+        default (Any, optional): The default value to return in case of an error. Defaults
+            to an unset value (interpreted as an empty list).
+        raise_exception (bool, optional): Whether to raise the encountered
+            OperationalError or not. Defaults to False.
+
+    Returns:
+        Tuple[Any, bool]: A tuple where the first element is the evaluated queryset (or the
+        default value in case of an error) and the second element is a boolean flag
+        indicating whether an error occurred.
+
+    Raises:
+        OperationalError: If `raise_exception` is True and an OperationalError occurs.
+    """
+    if default is UNSET:
+        default = []
+    try:
+        # force evaluation of queryset
+        _ = list(qs)
+        return qs, False
+    except OperationalError:
+        if raise_exception:
+            raise
+        utilities_logger.warning("Could not fetch queryset", exc_info=True)
+        return default, True
