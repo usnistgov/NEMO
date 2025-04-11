@@ -1,6 +1,7 @@
 {% load static %}
 {% load custom_tags_and_filters %}
 {% with element_name=name.split|join:"_"|lower extension=extension|default:"html" %}
+    {% file_url file_name=element_name|concat:"."|concat:extension as element_file_url %}
     <form method="POST"
           action="{% url 'customize' key element_name %}#{{ element_name }}_id"
           enctype="multipart/form-data">
@@ -12,7 +13,7 @@
                    onchange="this.style.color = 'inherit';$('#{{ element_name }}_span').hide()">
             {% if element %}
                 <a id="{{ element_name }}_span"
-                   href="{% get_media_prefix %}{{ element_name }}.{{ extension }}"
+                   href="{{ element_file_url }}"
                    download="{{ element_name }}.{{ extension }}"
                    target="_blank">{{ element_link_name|default:element_name }}.{{ extension }}</a>
             {% endif %}
@@ -25,8 +26,7 @@
             </div>
             {% if element and not hide_content %}
                 <div style="display: inline-block;margin-top: 15px">
-                    {% get_media_prefix as media_prefix %}
-                    {% button type="info" url=media_prefix|concat:element_name|concat:"."|concat:extension target="_blank" value="Show current content" icon="glyphicon-eye-open" %}
+                    {% button type="info" url=element_file_url target="_blank" value="Show current content" icon="glyphicon-eye-open" %}
                 </div>
             {% endif %}
         </div>

@@ -65,7 +65,7 @@
                                 <img style="display:block;
                                             width: 100%"
                                      alt="{{ hazard.name }} logo"
-                                     src="{% get_media_prefix %}{{ hazard.logo }}" />
+                                     src="{{ hazard.logo.url }}" />
                             </th>
                         {% endfor %}
                         <th class="sds-box-shadow-bottom"
