@@ -260,10 +260,12 @@
         window.addEventListener("load", function ()
         {
             $('#customer_search').autocomplete('users', fetch_projects, {{ users|json_search_base }});
-            {% if form.cleaned_data %}
-                {% if form.cleaned_data.customer %}
-                    fetch_projects(null, {'id': '{{ form.cleaned_data.customer.id }}', 'name': '{{ form.cleaned_data.customer.get_name }}' }, null, function(){$('#project').val('{{ form.cleaned_data.project.id }}');});
-                {% endif %}
+            {% if form.customer.value %}
+                {% for user_option in users %}
+                    {% if user_option.id == form.customer.value|to_int %}
+                        fetch_projects(null, {'id': '{{ user_option.id }}', 'name': '{{ user_option.get_name }}' }, null, function(){$('#project').val('{{ form.project.value }}');});
+                    {% endif %}
+                {% endfor %}
             {% elif form.instance.id and form.instance.customer %}
                 fetch_projects(null, {'id': '{{ form.instance.customer.id }}', 'name': '{{ form.instance.customer.get_name }}' }, null, function(){$('#project').val('{{ form.instance.project.id }}');});
             {% endif %}

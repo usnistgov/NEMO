@@ -3253,9 +3253,20 @@ class RecurringConsumableCharge(BaseModel, RecurrenceMixin):
             return
         else:
             from NEMO.views.consumables import make_withdrawal
+            from NEMO.views.customization import RecurringChargesCustomization
 
+            skip_customer_validation = RecurringChargesCustomization.get_bool(
+                "recurring_charges_skip_customer_validation"
+            )
             self.full_clean()
-            make_withdrawal(self.consumable.id, self.quantity, self.project.id, self.last_updated_by, self.customer.id)
+            make_withdrawal(
+                self.consumable.id,
+                self.quantity,
+                self.project.id,
+                self.last_updated_by,
+                self.customer.id,
+                skip_customer_validation=skip_customer_validation,
+            )
             self.last_charge = timezone.now()
             self.save()
 
