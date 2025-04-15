@@ -888,10 +888,12 @@ def get_app_metadata():
     other_packages = []
 
     for package in metadata.distributions():
-        if package.name.lower().startswith("nemo"):
-            nemo_packages.append(f"{package.name}=={package.version}")
+        package_name = package.metadata["name"]
+        package_version = package.metadata["version"]
+        if package_name.lower().startswith("nemo"):
+            nemo_packages.append(f"{package_name}=={package_version}")
         else:
-            other_packages.append(f"{package.name}=={package.version}")
+            other_packages.append(f"{package_name}=={package_version}")
     return {
         "nemo_version": app_version(),
         "python_version": platform.python_version(),
