@@ -4,6 +4,7 @@ from typing import List
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
@@ -246,11 +247,14 @@ def create_recurring_charge(request, recurring_charge_id: int = None):
     if request.method == "POST":
         if form.is_valid():
             obj: RecurringConsumableCharge = form.save(commit=False)
-            if "save_and_charge" in request.POST:
-                obj.save_and_charge_with_user(request.user)
-            else:
-                obj.save_with_user(request.user)
-            return redirect("recurring_charges")
+            try:
+                if "save_and_charge" in request.POST:
+                    obj.save_and_charge_with_user(request.user)
+                else:
+                    obj.save_with_user(request.user)
+                return redirect("recurring_charges")
+            except ValidationError as e:
+                form.add_error(None, e)
     return render(request, "consumables/recurring_charge.html", dictionary)
 
 
@@ -280,7 +284,14 @@ def extended_permissions(request) -> bool:
 
 
 def make_withdrawal(
-    consumable_id: int, quantity: int, project_id: int, merchant: User, customer_id: int, usage_event=None, request=None
+    consumable_id: int,
+    quantity: int,
+    project_id: int,
+    merchant: User,
+    customer_id: int,
+    usage_event=None,
+    skip_customer_validation=False,
+    request=None,
 ):
     withdraw = ConsumableWithdraw(
         consumable_id=consumable_id,
@@ -290,7 +301,11 @@ def make_withdrawal(
         project_id=project_id,
         usage_event=usage_event,
     )
-    withdraw.full_clean()
+    try:
+        withdraw.full_clean()
+    except ValidationError as e:
+        if not skip_customer_validation or list(e.error_dict.keys()) != ["customer"]:
+            raise
     withdraw.save()
     if not withdraw.consumable.reusable:
         # Only withdraw if it's an actual consumable (not reusable)

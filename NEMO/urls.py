@@ -116,6 +116,7 @@ router.register(r"training_sessions", api.TrainingSessionViewSet)
 router.register(r"usage_events", api.UsageEventViewSet)
 router.register(r"users", api.UserViewSet)
 router.register(r"user_documents", api.UserDocumentsViewSet)
+router.register(r"metadata", api.MetadataViewSet, basename="metadata")
 router.registry.sort(key=sort_urls)
 
 reservation_item_types = f'(?P<item_type>{"|".join(ReservationItemType.values())})'
@@ -619,7 +620,6 @@ if settings.ALLOW_CONDITIONAL_URLS:
     urlpatterns += [
         # REST API
         path("api/", include(router.urls)),
-        path(r"api/metadata/", api.MetadataAPIView.as_view(), name="api_metadata"),
         re_path(r"^api/media/(?P<path>.*)$", api.MediaAPIView.as_view(), name="api_media"),
         path("api/file_import/", api_file_import.file_import, name="api_file_import"),
         # Area access

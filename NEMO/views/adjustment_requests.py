@@ -138,7 +138,9 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
         else adjustment_request.item
     )
 
-    dictionary = {"item": item, "eligible_items": adjustment_eligible_items(user, current_item=item), "form": form}
+    dictionary = {"item": item, "form": form}
+    if not edit:
+        dictionary["eligible_items"] = adjustment_eligible_items(user, current_item=item)
 
     if request.method == "POST":
         # some extra validation needs to be done here because it depends on the user

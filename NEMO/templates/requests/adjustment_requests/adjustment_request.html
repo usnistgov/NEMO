@@ -47,7 +47,7 @@
                         <input type="hidden" name="item_type" value="{{ form.item_type.value|default_if_none:"" }}">
                         <input type="hidden" name="item_id" value="{{ form.item_id.value|default_if_none:"" }}">
                         <label for="billable_item" class="control-label">Charge</label>
-                        <select class="form-control" id="billable_item" name="item">
+                        <select class="form-control" id="billable_item" name="item" {% if instance_id %}readonly{% endif %}>
                             <option url="{% if instance_id %}{% url 'edit_adjustment_request' instance_id %}{% else %}{% url 'create_adjustment_request' %}{% endif %}"
                                     selected
                                     value="">General adjustment request</option>

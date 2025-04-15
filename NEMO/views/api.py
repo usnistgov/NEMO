@@ -17,6 +17,7 @@ from rest_framework.renderers import BrowsableAPIRenderer
 from rest_framework.response import Response
 from rest_framework.serializers import ListSerializer
 from rest_framework.views import APIView
+from rest_framework.viewsets import ViewSet
 
 from NEMO.models import (
     Account,
@@ -871,10 +872,10 @@ class ToolStatusViewSet(XLSXFileMixin, viewsets.GenericViewSet):
         return f"tool_status-{export_format_datetime()}.xlsx"
 
 
-class MetadataAPIView(APIView):
+class MetadataViewSet(ViewSet):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwargs):
         metadata_dict = get_app_metadata()
         metadata_dict["authenticators"] = [
             authenticator.__class__.__name__ for authenticator in self.get_authenticators()
@@ -887,10 +888,12 @@ def get_app_metadata():
     other_packages = []
 
     for package in metadata.distributions():
-        if package.name.lower().startswith("nemo"):
-            nemo_packages.append(f"{package.name}=={package.version}")
+        package_name = package.metadata["name"]
+        package_version = package.metadata["version"]
+        if package_name.lower().startswith("nemo"):
+            nemo_packages.append(f"{package_name}=={package_version}")
         else:
-            other_packages.append(f"{package.name}=={package.version}")
+            other_packages.append(f"{package_name}=={package_version}")
     return {
         "nemo_version": app_version(),
         "python_version": platform.python_version(),
