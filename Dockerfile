@@ -29,4 +29,7 @@ EXPOSE 8000/tcp
 
 COPY start_NEMO_in_Docker.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/start_NEMO_in_Docker.sh
+# Add non-root user
+RUN addgroup --system --gid 963 nemo && \
+    adduser --system --home /home/nemo --shell /usr/bin/bash --gid 963 --uid 963  --comment "NEMO user" nemo
 CMD ["start_NEMO_in_Docker.sh"]
