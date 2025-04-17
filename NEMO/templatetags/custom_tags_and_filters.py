@@ -6,6 +6,7 @@ from urllib.parse import quote
 
 from django import template
 from django.contrib.contenttypes.models import ContentType
+from django.core.files.storage import default_storage
 from django.shortcuts import resolve_url
 from django.template import Context, Template
 from django.template.defaultfilters import date, time
@@ -102,6 +103,12 @@ def navigation_url(url_name, description, *conditions):
         except NoReverseMatch:
             pass
     return ""
+
+
+@register.simple_tag
+def file_url(file_name):
+   if file_name and default_storage.exists(file_name):
+        return default_storage.url(file_name)
 
 
 @register.simple_tag

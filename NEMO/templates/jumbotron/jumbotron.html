@@ -19,7 +19,7 @@
         <title>Jumbotron</title>
     </head>
     <body class="jumbotron-body"
-          style="{% if watermark %}background-image:linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0.5)), url('{{ MEDIA_URL }}jumbotron_watermark.png'){% endif %}">
+        style="{% if watermark %}background-image:linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0.5)), url('{% file_url file_name="jumbotron_watermark.png" %}'){% endif %}">
         <div id="jumbotron-container" style="min-height: calc(100vh - 61px); padding:10px 30px 0 30px">
             <div class="container-fluid" style="background:transparent">
                 <div class="row" id="content" style="background:transparent"></div>
