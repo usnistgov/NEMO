@@ -29,4 +29,4 @@ su nemo -c "django-admin collectstatic --no-input --clear"
 su nemo -c "django-admin migrate"
 
 # Run NEMO
-su nemo -c "exec gunicorn --config=/etc/gunicorn_configuration.py NEMO.wsgi:application"
+exec su nemo -c "gunicorn --config=/etc/gunicorn_configuration.py NEMO.wsgi:application"
