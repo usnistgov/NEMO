@@ -41,5 +41,13 @@ WORKDIR /nemo
 ENV REMOTE_USER="captain"
 EXPOSE 8000/tcp
 
+COPY --chmod=755 <<EOT /splash.sh
+#!/bin/bash
+set -e
 # We have to start systemd jobs manually here unfortunately
 CMD (cd /nemo/systemd && ls *.timer) | sed -e 's/\.timer$//' | xargs -t -I % systemctl start % ; exec django-admin runserver 0.0.0.0:8000
+
+(cd /nemo/systemd && ls *.timer) | sed -e 's/\.timer$//' | xargs -t -I % systemctl start %
+exec django-admin runserver 0.0.0.0:8000
+EOT
+CMD ["/splash.sh"]
