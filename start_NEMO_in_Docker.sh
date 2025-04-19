@@ -12,27 +12,21 @@ fi
 # Set the PUID and PGID environment variables
 PUID=${PUID:-963}
 PGID=${PGID:-963}
-# If PUID is not 0 (root)
+# Change the user and group IDs
+groupmod -o -g "$PGID" nemo
+usermod -o -u "$PUID" -g "$PGID" nemo
 if [ -n "$PUID" ]; then
-    if [ -n "$PGID" ]; then
-        groupmod -g "$PGID" nemo
-    fi
-    # Change the user and group IDs
-    usermod -u "$PUID" -g "$PGID" nemo
     # Change the ownership of the application directory
     chown -R nemo:nemo /nemo
     chown -R root:nemo /etc/gunicorn_configuration.py
-    NEMO_USER=nemo
-else
-    NEMO_USER=root
 fi
-echo "Running NEMO as user '$(id $NEMO_USER)'"
+echo "Running NEMO as user '$(id nemo)'"
 
 # Collect static files
-su "${NEMO_USER}" -c "django-admin collectstatic --no-input --clear"
+su nemo -c "django-admin collectstatic --no-input --clear"
 
 # Run migrations to create or update the database
-su "${NEMO_USER}" -c "django-admin migrate"
+su nemo -c "django-admin migrate"
 
 # Run NEMO
-su "${NEMO_USER}" -c "exec gunicorn --config=/etc/gunicorn_configuration.py NEMO.wsgi:application"
+su nemo -c "exec gunicorn --config=/etc/gunicorn_configuration.py NEMO.wsgi:application"
