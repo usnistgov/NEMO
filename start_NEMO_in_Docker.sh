@@ -12,11 +12,11 @@ fi
 # Set the PUID and PGID environment variables
 PUID=${PUID:-963}
 PGID=${PGID:-963}
-if [ -n "$PGID" ]; then
-  groupmod -g "$PGID" nemo
-fi
 # If PUID is not 0 (root)
 if [ -n "$PUID" ]; then
+    if [ -n "$PGID" ]; then
+        groupmod -g "$PGID" nemo
+    fi
     # Change the user and group IDs
     usermod -u "$PUID" -g "$PGID" nemo
     # Change the ownership of the application directory
