@@ -151,6 +151,13 @@ def tool_status(request, tool_id):
             )
         ),
     }
+    if tool.get_current_usage_event() and ToolCustomization.get_bool(
+        "tool_control_prefill_post_usage_with_pre_usage_answers"
+    ):
+        pre_run_data = tool.get_current_usage_event().pre_run_data_json()
+        dictionary["post_usage_questions"] = DynamicForm(
+            tool.post_usage_questions, initial_data=pre_run_data or None
+        ).render(tool, "post_usage_questions")
 
     try:
         current_reservation = Reservation.objects.get(
