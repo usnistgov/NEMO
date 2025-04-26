@@ -13,3 +13,5 @@ workers = int(os.getenv("GUNICORN_WORKER_COUNT", min(cpu_count() * 2 + 1, 9)) or
 threads = int(os.getenv("GUNICORN_THREAD_COUNT", "8") or "8")
 keepalive = int(os.getenv("GUNICORN_KEEPALIVE_SECONDS", "300") or "300")
 capture_output = (os.getenv("GUNICORN_CAPTURE_OUTPUT", "True") or "True") == "True"
+if os.getenv("GUNICORN_SCRIPT_NAME"):
+    os.environ.setdefault("SCRIPT_NAME", os.getenv("GUNICORN_SCRIPT_NAME"))
