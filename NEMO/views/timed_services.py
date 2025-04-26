@@ -565,13 +565,23 @@ def send_email_usage_reminders(projects_to_exclude=None, request=None):
         }
     for usage_event in busy_tools:
         key = usage_event.operator_id
-        if key in aggregate:
-            aggregate[key]["resources_in_use"].append(usage_event.tool.name)
-        else:
-            aggregate[key] = {
-                "user": usage_event.operator,
-                "resources_in_use": [usage_event.tool],
-            }
+        has_ongoing_reservation = Reservation.objects.filter(
+            cancelled=False,
+            missed=False,
+            shortened=False,
+            tool=usage_event.tool,
+            user=usage_event.operator,
+            start__lte=timezone.now(),
+            end__gte=timezone.now(),
+        ).exists()
+        if not has_ongoing_reservation:
+            if key in aggregate:
+                aggregate[key]["resources_in_use"].append(usage_event.tool.name)
+            else:
+                aggregate[key] = {
+                    "user": usage_event.operator,
+                    "resources_in_use": [usage_event.tool],
+                }
 
     user_office_email = EmailsCustomization.get("user_office_email_address")
 
