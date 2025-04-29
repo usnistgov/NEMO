@@ -116,7 +116,7 @@ class ModelSerializer(serializers.ModelSerializer):
             # Don't perform model validation on fields that were defined
             # manually on the form and excluded via the Serializer's Meta
             # class.
-            elif meta_fields and field not in meta_fields:
+            elif meta_fields and meta_fields != "__all__" and field not in meta_fields:
                 exclude.append(f.name)
             elif meta_exclude and field in meta_exclude:
                 exclude.append(f.name)
