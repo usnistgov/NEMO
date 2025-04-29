@@ -810,7 +810,29 @@ function auto_size_textarea(textarea, rows)
 	{
 		textarea.rows = rows || 1;
 		textarea.style.height = '';
-		textarea.style.height = textarea.scrollHeight + 3 + 'px';
+		const content = textarea.value || '';
+		const placeholder = textarea.placeholder || '';
+
+		// Create a temporary element to measure the placeholder size
+		if (!content && placeholder)
+		{
+			const tempDiv = document.createElement('div');
+			tempDiv.style.visibility = 'hidden';
+			tempDiv.style.position = 'absolute';
+			tempDiv.style.whiteSpace = 'pre-wrap';
+			tempDiv.style.font = window.getComputedStyle(textarea).font; // Match font style and size
+
+			tempDiv.textContent = placeholder;
+			document.body.appendChild(tempDiv);
+			const contentHeight = tempDiv.scrollHeight;
+			document.body.removeChild(tempDiv);
+
+			textarea.style.height = contentHeight + 15 + 'px';
+		}
+		else
+		{
+			textarea.style.height = textarea.scrollHeight + 3 + 'px';
+		}
 	}
 }
 
