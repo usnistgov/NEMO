@@ -583,7 +583,7 @@ class TemporaryPhysicalAccess(BaseModel):
 
     class Meta:
         ordering = ["-end_time"]
-        verbose_name_plural = "TemporaryPhysicalAccess"
+        verbose_name_plural = "Temporary physical access"
 
 
 class TemporaryPhysicalAccessRequest(BaseModel):
