@@ -18,7 +18,6 @@ usermod -o -u "$PUID" -g "$PGID" nemo
 if [ -n "$PUID" ]; then
     # Change the ownership of the application directory
     chown -R nemo:nemo /nemo
-    chown -R root:nemo /etc/gunicorn_configuration.py
 fi
 echo "Running NEMO as user '$(id nemo)'"
 
