@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
     def migrate_adjustment_request_reviewers_forward(apps, schema_editor):
         Tool = apps.get_model("NEMO", "Tool")
         Area = apps.get_model("NEMO", "Area")
-        User = apps.get_model("NEMO", "User")
+        User = apps.get_model(settings.AUTH_USER_MODEL)
         UserPreferences = apps.get_model("NEMO", "UserPreferences")
         tool_adjustments: Dict[int, Set] = defaultdict(set)
         area_adjustments: Dict[int, Set] = defaultdict(set)

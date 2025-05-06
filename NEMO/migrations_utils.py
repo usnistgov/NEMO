@@ -13,7 +13,7 @@ def create_news_for_version(apps, version, extra_content=None):
     if getattr(settings, "NEW_VERSION_NEWS", True):
         News = apps.get_model("NEMO", "News")
         Notification = apps.get_model("NEMO", "Notification")
-        User = apps.get_model("NEMO", "User")
+        User = apps.get_model(settings.AUTH_USER_MODEL)
         news_content_type = apps.get_model("contenttypes", "ContentType").objects.get_for_model(News)
         now = timezone.now()
         story = News()

@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
         create_news_for_version(apps, "4.3.0", "")
 
     def migrate_qualifications(apps, schema_editor):
-        User = apps.get_model("NEMO", "User")
+        User = apps.get_model(settings.AUTH_USER_MODEL)
         Qualification = apps.get_model("NEMO", "Qualification")
         for user in User.objects.all():
             for tool in user.qualifications.all():
