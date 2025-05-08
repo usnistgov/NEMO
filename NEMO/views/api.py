@@ -296,6 +296,7 @@ class ToolViewSet(ModelViewSet):
         "id": key_filters,
         "name": string_filters,
         "visible": boolean_filters,
+        "_serial": string_filters,
         "_category": string_filters,
         "_operational": boolean_filters,
         "_location": string_filters,
