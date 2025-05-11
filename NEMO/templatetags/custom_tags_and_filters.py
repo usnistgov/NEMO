@@ -17,7 +17,7 @@ from django.utils.safestring import mark_safe
 
 from NEMO.constants import NEXT_PARAMETER_NAME
 from NEMO.mixins import BillableItemMixin
-from NEMO.models import User
+from NEMO.models import Tool, User
 from NEMO.utilities import get_full_url
 from NEMO.views.customization import CustomizationBase, ProjectsAccountsCustomization
 
@@ -301,3 +301,17 @@ def can_be_adjusted(value, arg) -> bool:
         return False
     else:
         return value.can_be_adjusted(arg)
+
+
+@register.filter(name="is_staff_on_tool")
+def is_staff_on_tool(user: User, tool: Tool) -> bool:
+    if not user:
+        return False
+    elif user.is_staff:
+        # Regular staff is staff regardless of tool
+        return True
+    else:
+        if not tool or not isinstance(tool, Tool):
+            return False
+        else:
+            return user in tool.staff.all()

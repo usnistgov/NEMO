@@ -18,7 +18,7 @@ def reservation_details(request, reservation_id):
         )
         return HttpResponseNotFound(error_message)
     reservation_project_can_be_changed = (
-        (request.user.is_staff or request.user == reservation.user)
+        (request.user.is_staff or request.user.is_staff_on_tool(reservation.tool) or request.user == reservation.user)
         and reservation.has_not_ended
         and reservation.has_not_started
         and reservation.user.active_project_count() > 1

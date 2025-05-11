@@ -103,7 +103,7 @@ def do_cancel_unused_reservations(request=None):
         )
         for r in reservation:
             # Staff may abandon reservations.
-            if r.user.is_staff:
+            if r.user.is_staff or r.user.is_staff_on_tool(tool):
                 continue
             # If there was no tool enable or disable event since the threshold timestamp then we assume the reservation has been missed.
             if not (

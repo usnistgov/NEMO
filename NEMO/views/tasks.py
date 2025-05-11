@@ -345,7 +345,7 @@ def set_task_status(request, task, status_name, user):
     if not status_name:
         return
 
-    if not user.is_staff:
+    if not user.is_staff and not user.is_staff_on_tool(task.tool):
         raise ValueError("Only staff can set task status")
 
     status = TaskStatus.objects.get(name=status_name)
@@ -412,6 +412,8 @@ def get_task_email_recipients(task: Task, new=False) -> Tuple[List[str], List[st
     bcc_users: Set[User] = set()
     # Add backup owners
     recipient_users.update(task.tool.backup_owners.all())
+    # Add tool staff
+    recipient_users.update(task.tool.staff.all())
     if ToolCustomization.get_bool("tool_task_updates_superusers"):
         recipient_users.update(task.tool.superusers.all())
     # Add facility managers and take into account their preferences

@@ -180,7 +180,7 @@
                         <div id="task-notification-list" class="col-sm-offset-5 col-md-offset-4 col-lg-offset-3 col-sm-7">
                             You are currently viewing/receiving maintenance notifications for all tools
                             {% if not user.is_facility_manager or not "tool"|customization:"tool_task_updates_facility_managers" == "enabled" %}
-                                you are an owner or backup owners of
+                                you are an owner, backup owners or staff of
                             {% endif %}
                             .
                         </div>

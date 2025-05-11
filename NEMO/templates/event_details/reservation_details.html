@@ -61,7 +61,7 @@
         </div>
     {% endif %}
     <table class="table table-striped" style="margin-bottom: 0">
-        {% if user.is_staff %}
+        {% if user.is_staff or user|is_staff_on_tool:reservation.tool %}
             <tr>
                 <td style="vertical-align: middle">
                     <label for="title">Title:</label>
@@ -283,7 +283,7 @@
 </table>
 {# Allow the user to cancel the reservation if they have that privilege. #}
 {% if not reservation.missed and not reservation.cancelled %}
-    {% if reservation.user.id == user.id and reservation.has_not_ended or user.is_staff %}
+    {% if reservation.user.id == user.id and reservation.has_not_ended or user|is_staff_on_tool:reservation.tool %}
         <div class="modal-footer" style="padding: 15px 0 0 0;">
             {# You must provide a reason if you are cancelling someone else's reservation. #}
             {% if reservation.user == user %}

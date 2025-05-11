@@ -227,7 +227,7 @@
 			try_post_catch_interlock_error(url, data, [refresh_tool_status, ajax_success_callback], enable_stop_button);
 		}
 
-		{% if user.is_staff %}
+		{% if user.is_staff or user.is_tool_staff %}
 
 			{# Only staff can perform the functions in this if-block. #}
 

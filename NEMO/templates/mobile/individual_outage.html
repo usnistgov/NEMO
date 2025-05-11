@@ -21,7 +21,7 @@
             <br>
             {{ outage.details|linebreaksbr }}
         {% endif %}
-        {% if user.is_staff %}
+        {% if user.is_staff or user|is_staff_on_tool:outage.tool %}
             <div style="height:10px">{# Vertical spacer #}</div>
             <form method="post" action="{% url 'cancel_outage' outage.id %}">
                 {% csrf_token %}

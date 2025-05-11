@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.decorators import staff_member_required
+from NEMO.decorators import staff_member_or_tool_staff_required, staff_member_required
 from NEMO.exceptions import ProjectChargeException
 from NEMO.models import Area, AreaAccessRecord, Project, StaffCharge, UsageEvent, User
 from NEMO.policy import policy_class as policy
@@ -17,14 +17,16 @@ from NEMO.utilities import (
     extract_optional_beginning_and_end_dates,
     get_month_timeframe,
     month_list,
+    remove_duplicates,
 )
 from NEMO.views.area_access import load_areas_for_use_in_template
 from NEMO.views.customization import RemoteWorkCustomization
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_GET
 def remote_work(request):
+    staff_on_project = not request.user.is_staff
     if request.GET.get("start") or request.GET.get("end"):
         start_date, end_date = extract_optional_beginning_and_end_dates(request.GET, date_only=True)
     else:
@@ -39,6 +41,9 @@ def remote_work(request):
     else:
         operator = request.user
 
+    if staff_on_project:
+        operator = request.user
+
     project = request.GET.get("project")
     if project and project != "all projects":
         project = get_object_or_404(Project, id=project)
@@ -46,6 +51,15 @@ def remote_work(request):
         project = None
     usage_events = UsageEvent.objects.filter(remote_work=True)
     s_charges = StaffCharge.objects.filter()
+    if staff_on_project:
+        project_list = remove_duplicates(
+            list(usage_events.filter(operator_id=operator.id).values_list("project", flat=True))
+            + list(s_charges.filter(staff_member_id=operator.id).values_list("project", flat=True))
+        )
+    else:
+        project_list = remove_duplicates(
+            list(usage_events.values_list("project", flat=True)) + list(s_charges.values_list("project", flat=True))
+        )
     if start_date:
         usage_events = usage_events.filter(start__gte=start_date)
         s_charges = s_charges.filter(start__gte=start_date)
@@ -53,8 +67,8 @@ def remote_work(request):
         usage_events = usage_events.filter(start__lte=end_date)
         s_charges = s_charges.filter(start__lte=end_date)
     if operator:
-        usage_events = usage_events.exclude(~Q(operator_id=operator.id))
-        s_charges = s_charges.exclude(~Q(staff_member_id=operator.id))
+        usage_events = usage_events.filter(operator_id=operator.id)
+        s_charges = s_charges.filter(staff_member_id=operator.id)
     if project:
         usage_events = usage_events.filter(project=project)
         s_charges = s_charges.filter(project=project)
@@ -128,8 +142,12 @@ def remote_work(request):
     dictionary = {
         "usage": usage_events,
         "staff_charges": s_charges,
-        "staff_list": User.objects.filter(is_staff=True),
-        "project_list": Project.objects.filter(active=True),
+        "staff_list": (
+            User.objects.filter(Q(is_staff=True) | Q(staff_for_tools__isnull=False))
+            if request.user.is_staff
+            else [request.user]
+        ),
+        "project_list": Project.objects.in_bulk(project_list).values(),
         "start_date": start_date,
         "end_date": end_date,
         "month_list": month_list(),
@@ -140,12 +158,15 @@ def remote_work(request):
     return render(request, "remote_work/remote_work.html", dictionary)
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_GET
 def staff_charges(request):
     staff_member: User = request.user
     staff_charge: StaffCharge = staff_member.get_staff_charge()
     dictionary = dict()
+    if not staff_charge and not staff_member.is_staff:
+        # for staff on tools, redirect to past work (they cannot start a staff charge directly)
+        return redirect("remote_work")
     if staff_charge:
         try:
             dictionary["staff_charge"] = staff_charge
@@ -221,7 +242,7 @@ def begin_staff_charge(request):
     return redirect(reverse("staff_charges"))
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_POST
 def end_staff_charge(request):
     user: User = request.user
@@ -270,7 +291,7 @@ def begin_staff_area_charge(request):
     return redirect(reverse("staff_charges"))
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_POST
 def end_staff_area_charge(request):
     user: User = request.user
@@ -283,7 +304,7 @@ def end_staff_area_charge(request):
     return redirect(reverse("staff_charges"))
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_POST
 def edit_staff_charge_note(request):
     user: User = request.user

@@ -27,7 +27,7 @@
                             The tool was shut down because of this task.
                             <br>
                         {% endif %}
-                        {% if user.is_staff %}
+                        {% if user|is_staff_on_tool:tool %}
                             You can <a href="{% url 'task_update_form' i.id %}">reopen</a> this task if it was mistakenly resolved.
                         {% endif %}
                     </span>

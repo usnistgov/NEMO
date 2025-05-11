@@ -92,7 +92,7 @@
                         </h2>
                     {% endwith %}
                 </div>
-                {% if time_left and not user.is_staff %}
+                {% if time_left and not user|is_staff_on_tool:tool %}
                     <div>
                         Your reservation for this tool will end at {{ time_left|time }}. The remainder of your reservation will be relinquished when you stop using this tool.
                     </div>
@@ -246,7 +246,7 @@
                             <div id="task_{{ t.id }}_details" class="collapse{% if tool_control_show_task_details %} in{% endif %}">
                                 <span class="media-bottom">
                                     This task was created by {{ t.creator }} on {{ t.creation_time }}.
-                                    {% if user.is_staff %}
+                                    {% if user|is_staff_on_tool:tool %}
                                         You can <a href="{% url 'task_update_form' t.id %}">update</a> or <a href="{% url 'task_resolution_form' t.id %}">resolve</a> this task.
                                     {% endif %}
                                     {% if t.force_shutdown %}The tool will remain shut down until this task is resolved.{% endif %}
@@ -285,12 +285,12 @@
                 {% endfor %}
             </div>
         {% endif %}
-        {% if tool.comments or user.is_staff and tool.staff_only_comments|length > 0 %}
+        {% if tool.comments or user|is_staff_on_tool:tool and tool.staff_only_comments|length > 0 %}
             <div class="tool-comments">
                 {# Display all comments... #}
                 {% for c in tool.comments %}
                     <div class="media">
-                        {% if user.id == c.author.id or user.is_staff %}
+                        {% if user.id == c.author.id or user|is_staff_on_tool:tool %}
                             <a onclick="toggle_details(this)"
                                data-toggle="collapse"
                                data-target="#comment_{{ c.id }}_actions"
@@ -298,14 +298,14 @@
                             {% endif %}
                             <span class="glyphicon glyphicon-comment pull-left notification-icon primary-highlight"
                                   title="{% if c.expiration_date %}This comment will expire and become hidden on {{ c.expiration_date }}{% else %}This comment will be displayed indefinitely.{% endif %}"></span>
-                            {% if user.id == c.author.id or user.is_staff %}
+                            {% if user.id == c.author.id or user|is_staff_on_tool:tool %}
                                 <span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
                             </a>
                         {% endif %}
                         <div class="media-body">
                             <span class="media-middle">{{ c.content|linebreaksbr }}</span>
                             <span class="media-bottom">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
-                            {% if user.id == c.author.id or user.is_staff %}
+                            {% if user.id == c.author.id or user|is_staff_on_tool:tool %}
                                 <div id="comment_{{ c.id }}_actions" class="collapse grey">
                                     <form action="{% url 'hide_comment' c.id %}" method="post">
                                         {% csrf_token %}
@@ -317,7 +317,7 @@
                     </div>
                 {% endfor %}
                 {# Display all staff comments #}
-                {% if user.is_staff and tool.staff_only_comments|length > 0 %}
+                {% if user|is_staff_on_tool:tool and tool.staff_only_comments|length > 0 %}
                     <div class="media">
                         <a onclick="toggle_details(this)"
                            data-toggle="collapse"
@@ -330,7 +330,7 @@
                             <div id="staff_only_comments" class="collapse">
                                 {% for c in tool.staff_only_comments %}
                                     <div class="media">
-                                        {% if user.id == c.author.id or user.is_staff %}
+                                        {% if user.id == c.author.id or user|is_staff_on_tool:tool %}
                                             <a onclick="toggle_details(this)"
                                                data-toggle="collapse"
                                                data-target="#comment_{{ c.id }}_actions"
@@ -338,14 +338,14 @@
                                             {% endif %}
                                             <span class="glyphicon glyphicon-comment pull-left notification-icon primary-highlight"
                                                   title="{% if c.expiration_date %}This comment will expire and become hidden on {{ c.expiration_date }}{% else %}This comment will be displayed indefinitely.{% endif %}"></span>
-                                            {% if user.id == c.author.id or user.is_staff %}
+                                            {% if user.id == c.author.id or user|is_staff_on_tool:tool %}
                                                 <span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
                                             </a>
                                         {% endif %}
                                         <div class="media-body">
                                             <span class="media-middle">{{ c.content|linebreaksbr }}</span>
                                             <span class="media-bottom">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
-                                            {% if user.id == c.author.id or user.is_staff %}
+                                            {% if user.id == c.author.id or user|is_staff_on_tool:tool %}
                                                 <div id="comment_{{ c.id }}_actions" class="collapse grey">
                                                     <form action="{% url 'hide_comment' c.id %}" method="post">
                                                         {% csrf_token %}
@@ -401,7 +401,7 @@
                             {% url 'disable_tool' tool.get_current_usage_event.tool.id as disable_tool_url %}
                             {% button type="delete" id="stop" icon="glyphicon-stop" onclick="disable_tool('"|concat:disable_tool_url|concat:"'); return false;" value="Stop using the "|concat:tool.name_or_child_in_use_name %}
                         </div>
-                        {% if time_left and user.is_staff %}
+                        {% if time_left and user|is_staff_on_tool:tool %}
                             <div style="display:inline-block"
                                  data-toggle="tooltip"
                                  data-placement="bottom"
@@ -429,7 +429,7 @@
                     </a>
                 {% endif %}
                 <div id="use-tool" class="{% if show_wait_list and not wait_list_position == 1 %}collapse{% endif %}">
-                    {% if user.is_staff or user.is_service_personnel and tool in user.qualifications.all %}
+                    {% if user|is_staff_on_tool:tool or user.is_service_personnel and tool in user.qualifications.all %}
                         <h4 id="what_to_do_label">What would you like to do?</h4>
                         <input type="hidden" id="remote_work" name="remote_work" value="">
                         <input type="hidden" id="training" name="training" value="">
@@ -438,7 +438,7 @@
                                 <input type="radio" onchange="use_tool_for_self()" name="staff_charge" value="false">
                                 Use this tool for my own project
                             </label>
-                            {% if user.is_staff %}
+                            {% if user|is_staff_on_tool:tool %}
                                 {% if "training"|customization:"training_show_self_option_in_tool_control" == "enabled" %}
                                     <br>
                                     <label>
@@ -531,7 +531,7 @@
                         {% include 'tool_control/get_projects.html' with active_projects=user.active_projects user_id=user.id %}
                     {% endif %}
                     <div id="pre_usage_questions" style="display:none">{{ pre_usage_questions }}</div>
-                    {% if user.is_staff or user.is_service_personnel and tool in user.qualifications.all or tool.ready_to_use %}
+                    {% if user|is_staff_on_tool:tool or user.is_service_personnel and tool in user.qualifications.all or tool.ready_to_use %}
                         <div id="start" style="display:none">
                             {% if tool.is_parent_tool %}
                                 You have {{ tool.tool_children_set.all|length|add:1 }} options to use this tool:
@@ -647,7 +647,7 @@
     </div>
     <div class="tab-pane" id="details">
         {% if tool.in_use %}
-            {% if user.is_staff or user.is_user_office %}
+            {% if user|is_staff_on_tool:tool or user.is_user_office %}
                 <p>
                     You may <a href="javascript:void(0)" onclick="disable_tool('{% url 'disable_tool' tool.id %}')">force {{ tool.get_current_usage_event.operator }} off this tool</a>.
                 </p>
@@ -718,7 +718,7 @@
                 {% endif %}
             </div>
         </div>
-        {% if user.is_staff and tool_credentials %}
+        {% if user|is_staff_on_tool:tool and tool_credentials %}
             <div class="media">
                 <a onclick="toggle_details(this)"
                    data-toggle="collapse"
@@ -742,7 +742,7 @@
                 </div>
             </div>
         {% endif %}
-        {% if user.is_staff %}
+        {% if user|is_staff_on_tool:tool %}
             <div id="qualified_users_container" class="media">{% include 'tool_control/qualified_users.html' %}</div>
         {% elif user in tool.superusers.all or "tool"|customization:"tool_control_show_qualified_users_to_all" == "enabled" %}
             {% with tool.user_set.all as qualified_users %}
@@ -917,7 +917,7 @@
                     </select>
                 </div>
             {% endif %}
-            {% if task_statuses and user.is_staff %}
+            {% if task_statuses and user|is_staff_on_tool:tool %}
                 <div class="form-group">
                     <label for="status">What is the status of this task?</label>
                     <select id="status" name="status" class="form-control" style="max-width:300px">
@@ -932,7 +932,7 @@
                 </label>
                 <textarea id="description" name="description" class="form-control" rows="7" required></textarea>
             </div>
-            {% if user.is_staff %}
+            {% if user|is_staff_on_tool:tool %}
                 <div class="form-group">
                     <div style="position:relative">
                         <label for="estimated_resolution_time" class="control-label">
@@ -1005,7 +1005,7 @@
                 <label for="content-area">What would you like to say?</label>
                 <textarea name="content" id="content-area" class="form-control" rows="6" required></textarea>
             </div>
-            {% if user.is_staff %}
+            {% if user|is_staff_on_tool:tool %}
                 <div class="form-group">
                     <input type="checkbox" id="staff_only" name="staff_only" />
                     <label for="staff_only" style="padding-left: 5px">Make this comment only visible to staff users</label>

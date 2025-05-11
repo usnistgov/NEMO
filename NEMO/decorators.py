@@ -108,8 +108,11 @@ facility_manager_required = permission_decorator(lambda u: u.is_active and (u.is
 staff_member_required = permission_decorator(lambda u: u.is_active and (u.is_staff or u.is_superuser))
 user_office_required = permission_decorator(lambda u: u.is_active and (u.is_user_office or u.is_superuser))
 accounting_required = permission_decorator(lambda u: u.is_active and (u.is_accounting_officer or u.is_superuser))
-staff_member_or_tool_superuser_required = permission_decorator(
-    lambda u: u.is_active and (u.is_staff or u.is_tool_superuser or u.is_superuser)
+staff_member_or_tool_superuser_or_tool_staff_required = permission_decorator(
+    lambda u: u.is_active and (u.is_staff or u.is_tool_superuser or u.is_tool_staff or u.is_superuser)
+)
+staff_member_or_tool_staff_required = permission_decorator(
+    lambda u: u.is_active and (u.is_staff or u.is_tool_staff or u.is_superuser)
 )
 staff_member_or_user_office_required = permission_decorator(
     lambda u: u.is_active and (u.is_staff or u.is_user_office or u.is_superuser)

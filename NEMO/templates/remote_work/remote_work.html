@@ -30,7 +30,9 @@
             <label class="control-label col-md-2" for="operator">View charges for</label>
             <div class="col-md-4">
                 <select id="operator" name="operator" class="form-control">
-                    <option {% if selected_staff == "all staff" %}selected{% endif %}>all staff</option>
+                    {% if user.is_staff %}
+                        <option {% if selected_staff == "all staff" %}selected{% endif %}>all staff</option>
+                    {% endif %}
                     {% for s in staff_list %}
                         <option value="{{ s.id }}" {% if s.id == selected_staff %}selected{% endif %}>{{ s }}</option>
                     {% endfor %}

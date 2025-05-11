@@ -63,7 +63,7 @@
         {% endif %}
         {# Allow the user to cancel the reservation if they have that privilege. #}
         {% if not reservation.missed and not reservation.cancelled %}
-            {% if reservation.user.id == user.id and reservation.has_not_ended or user.is_staff %}
+            {% if reservation.user.id == user.id and reservation.has_not_ended or user|is_staff_on_tool:reservation.tool %}
                 <div style="height:10px">{# Vertical spacer #}</div>
                 <form method="post" action="{% url 'cancel_reservation' reservation.id %}">
                     {% csrf_token %}
