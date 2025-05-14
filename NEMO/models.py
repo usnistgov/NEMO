@@ -1182,7 +1182,7 @@ class Tool(SerializationByNameModel):
         default=False,
         help_text="Marking the tool non-operational will prevent users from using the tool.",
     )
-    _properties = JSONField(schema=load_properties_schemas("Tool"), null=True, blank=True)
+    _properties = JSONField(schema=load_properties_schemas("Tool"), db_column="properties", null=True, blank=True)
     # Tool permissions
     _primary_owner = models.ForeignKey(
         User,
