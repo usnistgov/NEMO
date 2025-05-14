@@ -894,6 +894,20 @@
                 </div>
             </div>
         </div>
+        {% if tool.properties %}
+            <div class="media">
+                <a onclick="toggle_details(this)" data-toggle="collapse" data-target="#properties" class="pointer">
+                    <span class="glyphicon glyphicon-reverse glyphicon-tag pull-left notification-icon primary-highlight"></span>
+                    <span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+                </a>
+                <div class="media-body">
+                    <h4 class="media-heading">Tool properties</h4>
+                    <div id="properties" class="collapse">
+                        <div class="tool-properties-container">{% render_tool_properties tool.properties %}</div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
         <div style="height:150px">{# Spacer #}</div>
     </div>
     <div class="tab-pane" id="config">{# the data to be loaded here is in tool_control/config_history.html #}</div>

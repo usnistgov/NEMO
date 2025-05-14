@@ -1100,3 +1100,40 @@ def safe_lazy_queryset_evaluation(qs: QuerySet, default=UNSET, raise_exception=F
             raise
         utilities_logger.warning("Could not fetch queryset", exc_info=True)
         return default, True
+
+
+def merge_dicts(first_dict: dict, second_dict: dict):
+    """Recursively merge two dictionaries."""
+    for key, value in second_dict.items():
+        if key in first_dict and isinstance(first_dict[key], dict) and isinstance(value, dict):
+            merge_dicts(first_dict[key], value)
+        else:
+            first_dict[key] = deepcopy(value)
+    return first_dict
+
+
+def load_properties_schemas(model_name: str) -> dict:
+    """Dynamically load and merge schemas from settings.py and all apps."""
+
+    def get_schemas():
+        combined_schemas = {}
+
+        variable_name = f"{model_name.upper()}_PROPERTIES_JSON_SCHEMA"
+        # Load schemas from each installed app (from properties_schemas.py)
+        for app_config in apps.get_app_configs():
+            try:
+                module = importlib.import_module(f"{app_config.name}.properties_schemas")
+                if hasattr(module, variable_name):
+                    combined_schemas = merge_dicts(combined_schemas, getattr(module, variable_name))
+            except ModuleNotFoundError:
+                # Ignore apps without schemas.py
+                continue
+
+        # Load schemas from `settings.py` if defined
+        global_schemas = getattr(settings, variable_name, {})
+        if isinstance(global_schemas, dict):
+            combined_schemas = merge_dicts(combined_schemas, global_schemas)
+
+        return combined_schemas
+
+    return get_schemas()

@@ -315,3 +315,33 @@ def is_staff_on_tool(user: User, tool: Tool) -> bool:
             return False
         else:
             return user in tool.staff.all()
+
+
+@register.simple_tag
+def render_tool_properties(tool_properties):
+    """
+    Recursively renders a tool's properties, including nested dictionaries.
+    The key format for nested values will be `parent key - child key`.
+    """
+    html_output = ""
+
+    def render_nested_properties(props, parent_key):
+        nonlocal html_output
+        for key, value in props.items():
+            # Format the key with `parent key - child key`
+            property_key = f"{parent_key.capitalize()} - {key.capitalize()}" if parent_key else key.capitalize()
+
+            if isinstance(value, dict):  # Handle nested dictionaries
+                render_nested_properties(value, property_key)
+            else:  # Handle simple key-value properties
+                if value:  # Only render non-empty values
+                    if isinstance(value, list):
+                        value = ", ".join([str(val) for val in value])
+                    html_output += f"""
+                    <div class="tool-property">
+                        <strong>{property_key}:</strong> {value}
+                    </div>
+                    """
+
+    render_nested_properties(tool_properties, "")
+    return mark_safe(html_output)

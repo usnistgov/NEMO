@@ -110,6 +110,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.admin",
     "django.contrib.humanize",
+    "django_jsonform",
     "NEMO.apps.kiosk",  # Comment out if you are not planning on using the Kiosk tablet pages
     "NEMO.apps.area_access",  # Comment out if you are not planning on using the Area Access tablets screen
     "NEMO",

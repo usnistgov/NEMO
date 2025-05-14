@@ -101,7 +101,7 @@ from NEMO.serializers import (
 )
 from NEMO.templatetags.custom_tags_and_filters import app_version
 from NEMO.typing import QuerySetType
-from NEMO.utilities import export_format_datetime, remove_duplicates
+from NEMO.utilities import export_format_datetime, load_properties_schemas, remove_duplicates
 from NEMO.views.api_billing import (
     BillingFilterForm,
     get_billing_charges,
@@ -903,6 +903,7 @@ def get_app_metadata():
         "facility_name": ApplicationCustomization.get("facility_name"),
         "nemo_plugins": nemo_packages,
         "other_packages": other_packages,
+        "json_properties_schemas": {"tool": load_properties_schemas("Tool")},
     }
 
 

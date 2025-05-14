@@ -278,7 +278,10 @@ class ToolAdmin(admin.ModelAdmin):
                 )
             },
         ),
-        ("Additional Information", {"fields": ("_description", "_serial", "_image", "_tool_calendar_color")}),
+        (
+            "Additional Information",
+            {"fields": ("_description", "_serial", "_image", "_tool_calendar_color", "_properties")},
+        ),
         ("Current state", {"fields": ("visible", "_operational")}),
         (
             "Contact information",

@@ -29,6 +29,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
+from django_jsonform.models.fields import JSONField
 from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
 
@@ -59,6 +60,7 @@ from NEMO.utilities import (
     get_model_instance,
     get_task_image_filename,
     get_tool_image_filename,
+    load_properties_schemas,
     new_model_copy,
     render_email_template,
     send_mail,
@@ -1180,6 +1182,7 @@ class Tool(SerializationByNameModel):
         default=False,
         help_text="Marking the tool non-operational will prevent users from using the tool.",
     )
+    _properties = JSONField(schema=load_properties_schemas("Tool"), null=True, blank=True)
     # Tool permissions
     _primary_owner = models.ForeignKey(
         User,
@@ -1419,6 +1422,15 @@ class Tool(SerializationByNameModel):
     def operational(self, value):
         self.raise_setter_error_if_child_tool("operational")
         self._operational = value
+
+    @property
+    def properties(self):
+        return self.parent_tool.properties if self.is_child_tool() else self._properties
+
+    @properties.setter
+    def properties(self, value):
+        self.raise_setter_error_if_child_tool("properties")
+        self._properties = value
 
     @property
     def primary_owner(self) -> User:
