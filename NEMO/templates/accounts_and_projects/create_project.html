@@ -217,6 +217,17 @@
                 {% endif %}
             });
 
+            {% if not project_types_allow_multiple %}
+                const form = document.querySelector("form");
+                $(form).on("submit", function (event)
+                {
+                    const select = document.getElementById("project_types");
+                    if (!select.value) {
+                        select.removeAttribute("name"); // Exclude the field when blank
+                    }
+                });
+            {% endif %}
+
         </script>
     {% endwith %}
 {% endblock %}

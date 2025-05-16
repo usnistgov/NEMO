@@ -799,7 +799,7 @@ function submit_and_disable(input_submit)
 				value: input_submit.value
 			}));
 		}
-		input_submit.form.submit();
+		$(input_submit.form).submit();
 		input_submit.disabled = true;
 	}
 }
