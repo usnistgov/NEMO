@@ -24,21 +24,21 @@
                         </div>
                         Active users are listed below in black.
                         <div class="inactive-label" style="display: none">
-                            Inactive users are <span class="light-grey strikethrough">crossed out</span>.
+                            Inactive users are <span class="danger-highlight">red</span>.
                         </div>
                         <div class="access-expired-label" style="display: none">
-                            Users with expired access are <span class="light-grey strikethrough-double">double-crossed out</span>.
+                            Users with expired access are <span class="warning-highlight">orange</span>.
                         </div>
                         <div class="checkbox">
                             <label>
-                                <input type="checkbox" name="only_active_users" onclick="updated_email_link()" checked>
-                                Only send this email to users with an active account
+                                <input type="checkbox" name="only_active_users" onclick="updated_email_link()">
+                                Send this email to users with an inactive account
                             </label>
                         </div>
                         <div class="checkbox">
                             <label>
-                                <input type="checkbox" name="only_active_access_users" onclick="updated_email_link()" checked>
-                                Only send this email to users with active access (no access expiration or set in the future)
+                                <input type="checkbox" name="only_active_access_users" onclick="updated_email_link()">
+                                Send this email to users with expired access (no access expiration or set in the future)
                             </label>
                         </div>
                         <div class="checkbox">
@@ -48,7 +48,7 @@
                             </label>
                         </div>
                         {% for u in users %}
-                            <div {% if not u.is_active %}class="light-grey strikethrough" style="display: none" {% elif u.has_access_expired %}class="light-grey strikethrough-double" style="display: none"{% endif %}>
+                            <div {% if not u.is_active %}class="danger-highlight" style="display: none" {% elif u.has_access_expired %}class="warning-highlight" style="display: none"{% endif %}>
                                 {{ u }} - {{ u.email }}
                             </div>
                         {% endfor %}
@@ -169,8 +169,8 @@
         function export_user_emails()
         {
             let export_url = "{% url 'export_email_addresses' %}?"
-            let active_users_only = $('input[name=only_active_users]').is(':checked') ? 'on' : '';
-            let access_active_users_only = $('input[name=only_active_access_users]').is(':checked') ? 'on' : '';
+            let active_users_only = $('input[name=only_active_users]').is(':checked') ? '' : 'on';
+            let access_active_users_only = $('input[name=only_active_access_users]').is(':checked') ? '' : 'on';
             export_url += "&active=" + active_users_only;
             export_url += "&active_access=" + access_active_users_only;
             export_url += "&audience=" + "{{ audience }}";
@@ -201,10 +201,10 @@
         {% if user.is_any_part_of_staff %}
         function email_using_client(user_email, user_emails, active_user_emails, active_access_user_emails, active_active_access_user_emails)
         {
-            let inactive_users = $("div.strikethrough, div.inactive-label");
-            let access_expired_users = $("div.strikethrough-double, div.access-expired-label");
-            let only_active = $('input[name=only_active_users]')[0].checked;
-            let only_active_access = $('input[name=only_active_access_users]')[0].checked;
+            let inactive_users = $("div.danger-highlight, div.inactive-label");
+            let access_expired_users = $("div.warning-highlight, div.access-expired-label");
+            let only_active = !$('input[name=only_active_users]')[0].checked;
+            let only_active_access = !$('input[name=only_active_access_users]')[0].checked;
             let copy_me = $('input[name=copy_me]')[0].checked;
             let subject = $('input[name=subject]').val();
             let title = $('input[name=title]').val();
