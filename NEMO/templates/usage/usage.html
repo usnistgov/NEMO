@@ -10,6 +10,16 @@
                     <br>
                     Adjustment requests can be made for charges ending after {{ adjustment_time_limit.date }}.
                 {% endif %}
+                <div>
+                    <br>
+                    <label class="control-label">
+                        <input type="checkbox"
+                               value=""
+                               onclick="const params = new URLSearchParams(window.location.search); params.set('run_data_collapse', $(this).is(':checked')); window.location.search = params.toString(); "
+                               {% if run_data_collapse %}checked{% endif %}>
+                        Collapse pre/post run data by default
+                    </label>
+                </div>
             </p>
             {% if no_charges %}<h3>There was no usage between {{ start_date|date }} and {{ end_date|date }}.</h3>{% endif %}
             {% if missed_reservations %}
@@ -160,9 +170,11 @@
                                  data-toggle="collapse"
                                  data-target="#{{ u.id }}_pre_run_data"
                                  class="pointer">
-                                <span class="glyphicon glyphicon-chevron-right chevron" style="margin-top: 15px"></span>Pre run data
+                                <span class="glyphicon {% if run_data_collapse %}glyphicon-chevron-right{% else %}glyphicon-chevron-down{% endif %} chevron"
+                                      style="color:inherit;
+                                             margin-top: 15px"></span>Pre run data
                             </div>
-                            <div id="{{ u.id }}_pre_run_data" class="collapse">
+                            <div id="{{ u.id }}_pre_run_data" class="collapse {% if not run_data_collapse %}in{% endif %}">
                                 <table class="table table-striped" style="background-color: #fff; margin-top: 10px; margin-bottom: 0">
                                     {% for question_name, data in u.pre_run_data_json.items %}
                                         {% if not data.readonly %}
@@ -197,9 +209,11 @@
                                  data-toggle="collapse"
                                  data-target="#{{ u.id }}_post_run_data"
                                  class="pointer">
-                                <span class="glyphicon glyphicon-chevron-right chevron" style="margin-top: 15px"></span>Post run data
+                                <span class="glyphicon {% if run_data_collapse %}glyphicon-chevron-right{% else %}glyphicon-chevron-down{% endif %} chevron"
+                                      style="color: inherit;
+                                             margin-top: 15px"></span>Post run data
                             </div>
-                            <div id="{{ u.id }}_post_run_data" class="collapse">
+                            <div id="{{ u.id }}_post_run_data" class="collapse {% if not run_data_collapse %}in{% endif %}">
                                 <table class="table table-striped" style="background-color: #fff; margin-top:10px; margin-bottom: 0">
                                     {% for question_name, data in u.post_run_data_json.items %}
                                         {% if not data.readonly %}

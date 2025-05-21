@@ -98,6 +98,7 @@ def date_parameters_dictionary(request, default_function: Callable = get_month_t
         "billing_service": get_billing_service().get("available", False),
         "adjustment_time_limit": AdjustmentRequestsCustomization.get_date_limit(),
         "existing_adjustments": existing_adjustments,
+        "run_data_collapse": set_run_data_collapse(request),
     }
     return dictionary, start_date, end_date, kind, identifier
 
@@ -558,6 +559,15 @@ def get_managed_projects(user: User) -> Set[Project]:
         except Exception:
             logger.exception("error loading project leads from billing service")
     return managed_projects
+
+
+def set_run_data_collapse(request):
+    if request.GET.get("run_data_collapse"):
+        request.session["run_data_collapse"] = request.GET.get("run_data_collapse") == "true"
+    run_data_collapse = False
+    if "run_data_collapse" in request.session:
+        run_data_collapse = request.session["run_data_collapse"]
+    return run_data_collapse
 
 
 def get_billing_service():
