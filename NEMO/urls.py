@@ -419,7 +419,7 @@ urlpatterns += [
     path("send_broadcast_email/", email.send_broadcast_email, name="send_broadcast_email"),
     # Maintenance:
     re_path(
-        r"^maintenance/(?P<sort_by>urgency|force_shutdown|tool|problem_category|last_updated|creation_time)/$",
+        r"^maintenance/(?P<sort_by>urgency|force_shutdown|tool|tool___category|problem_category|last_updated|creation_time)/$",
         maintenance.maintenance,
         name="maintenance",
     ),

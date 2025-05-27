@@ -178,6 +178,21 @@ supported_embedded_extensions = supported_embedded_pdf_extensions + supported_em
 CommaSeparatedListConverter = DelimiterSeparatedListConverter()
 
 
+# Class for Project Applications that can be used for autocomplete
+class ProjectApplication(object):
+    def __init__(self, name):
+        self.name = name
+        self.id = name
+
+    def __str__(self):
+        return self.name
+
+
+# Class for Tool Categories that can be used for autocomplete
+class ToolCategory(ProjectApplication):
+    pass
+
+
 class EmptyHttpRequest(HttpRequest):
     def __init__(self):
         super().__init__()

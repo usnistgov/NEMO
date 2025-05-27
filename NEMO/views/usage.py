@@ -25,6 +25,7 @@ from NEMO.models import (
 )
 from NEMO.utilities import (
     BasicDisplayTable,
+    ProjectApplication,
     export_format_datetime,
     extract_optional_beginning_and_end_dates,
     get_day_timeframe,
@@ -45,16 +46,6 @@ from NEMO.views.customization import AdjustmentRequestsCustomization, ProjectsAc
 logger = getLogger(__name__)
 
 
-# Class for Applications that can be used for autocomplete
-class Application(object):
-    def __init__(self, name):
-        self.name = name
-        self.id = name
-
-    def __str__(self):
-        return self.name
-
-
 def get_project_applications():
     applications = []
     projects = Project.objects.filter(
@@ -62,7 +53,7 @@ def get_project_applications():
     )
     for project in projects:
         if not any(list(filter(lambda app: app.name == project.application_identifier, applications))):
-            applications.append(Application(project.application_identifier))
+            applications.append(ProjectApplication(project.application_identifier))
     return applications
 
 

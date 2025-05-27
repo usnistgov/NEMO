@@ -1,12 +1,13 @@
 from itertools import chain
+from typing import List
 
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET
 
 from NEMO.decorators import staff_member_required
-from NEMO.models import Task, TaskCategory, TaskStatus, User
-from NEMO.utilities import as_timezone
+from NEMO.models import Task, TaskCategory, TaskStatus, Tool, User
+from NEMO.utilities import ToolCategory, as_timezone
 
 
 @staff_member_required
@@ -14,13 +15,26 @@ from NEMO.utilities import as_timezone
 def maintenance(request, sort_by=""):
     user: User = request.user
     pending_tasks = Task.objects.filter(cancelled=False, resolved=False)
+    tool_category = request.GET.get("tool_category")
     if user.get_preferences().tool_task_notifications.exists():
         # Limit tools to preferences + tools user is the owner of + tools user is a backup owner of.
         limit_tools = set(user.get_preferences().tool_task_notifications.all())
         limit_tools.update(user.primary_tool_owner.all())
         limit_tools.update(user.backup_for_tools.all())
         pending_tasks = pending_tasks.filter(tool__in=limit_tools)
-    if sort_by in ["urgency", "force_shutdown", "tool", "problem_category", "last_updated", "creation_time"]:
+    if tool_category:
+        pending_tasks = pending_tasks.filter(
+            Q(tool___category=tool_category) | (Q(tool___category__startswith=tool_category + "/"))
+        )
+    if sort_by in [
+        "urgency",
+        "force_shutdown",
+        "tool",
+        "tool___category",
+        "problem_category",
+        "last_updated",
+        "creation_time",
+    ]:
         if sort_by == "last_updated":
             pending_tasks = pending_tasks.exclude(last_updated=None).order_by("-last_updated")
             not_yet_updated_tasks = Task.objects.filter(cancelled=False, resolved=False, last_updated=None).order_by(
@@ -41,6 +55,8 @@ def maintenance(request, sort_by=""):
     dictionary = {
         "pending_tasks": pending_tasks,
         "closed_tasks": closed_tasks,
+        "tool_categories": get_all_tool_categories(),
+        "tool_category": tool_category,
     }
     return render(request, "maintenance/maintenance.html", dictionary)
 
@@ -67,3 +83,10 @@ def task_details(request, task_id):
         dictionary["rendered_configuration_html"] = task.tool.configuration_widget(request.user)
 
     return render(request, "maintenance/pending_task_details.html", dictionary)
+
+
+def get_all_tool_categories() -> List[ToolCategory]:
+    categories = []
+    for tool in Tool.objects.filter(visible=True).order_by("_category").values_list("_category").distinct():
+        categories.append(ToolCategory(tool[0]))
+    return categories

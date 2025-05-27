@@ -278,6 +278,7 @@ table > thead > tr.no-border > td, table > thead > tr.no-border > th
 	bottom: 0;
 	width: 50%;
 	overflow-y: scroll;
+	min-width: 375px;
 }
 
 .split-screen-right-panel
