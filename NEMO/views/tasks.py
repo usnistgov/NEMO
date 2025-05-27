@@ -142,16 +142,13 @@ def send_new_task_emails(request, task: Task, user, task_images: List[TaskImages
         message = render_email_template(message, dictionary, request)
         tos, bcc = get_task_email_recipients(task, new=True)
         if ToolCustomization.get_bool("tool_problem_send_to_all_qualified_users"):
-            for qualified_user in task.tool.user_set.all():
-                if qualified_user.is_active:
-                    bcc.extend(
-                        [
-                            email
-                            for email in qualified_user.get_emails(
-                                qualified_user.get_preferences().email_send_task_updates
-                            )
-                        ]
-                    )
+            for qualified_user in task.tool.user_set.filter(is_active=True):
+                bcc.extend(
+                    [
+                        email
+                        for email in qualified_user.get_emails(qualified_user.get_preferences().email_send_task_updates)
+                    ]
+                )
         send_mail(
             subject=subject,
             content=message,
@@ -407,7 +404,7 @@ def save_task_images(request, task: Task) -> List[TaskImages]:
 
 
 def get_task_email_recipients(task: Task, new=False) -> Tuple[List[str], List[str]]:
-    # Add all recipients, starting with primary owner
+    # Add all recipients, starting with the primary owner
     recipient_users: Set[User] = {task.tool.primary_owner}
     bcc_users: Set[User] = set()
     # Add backup owners
@@ -441,6 +438,10 @@ def get_task_email_recipients(task: Task, new=False) -> Tuple[List[str], List[st
         bcc_users.update(
             User.objects.filter(is_active=True).filter(Q(preferences__tool_task_notifications__in=[task.tool]))
         )
+    if task.resolved and ToolCustomization.get_bool("tool_problem_send_to_all_qualified_users"):
+        # If the task is resolved and the option is set to send new problems to all qualified users,
+        # then we need to send them when those tasks are resolved (otherwise they'll think there are only issues)
+        bcc_users.update(task.tool.user_set.filter(is_active=True))
     tos = [
         email for user in recipient_users for email in user.get_emails(user.get_preferences().email_send_task_updates)
     ]
