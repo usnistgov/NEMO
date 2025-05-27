@@ -438,10 +438,15 @@ def get_task_email_recipients(task: Task, new=False) -> Tuple[List[str], List[st
         bcc_users.update(
             User.objects.filter(is_active=True).filter(Q(preferences__tool_task_notifications__in=[task.tool]))
         )
-    if task.resolved and ToolCustomization.get_bool("tool_problem_send_to_all_qualified_users"):
+    if task.resolved:
         # If the task is resolved and the option is set to send new problems to all qualified users,
         # then we need to send them when those tasks are resolved (otherwise they'll think there are only issues)
-        bcc_users.update(task.tool.user_set.filter(is_active=True))
+        if ToolCustomization.get_bool("tool_problem_send_to_all_qualified_users"):
+            bcc_users.update(task.tool.user_set.filter(is_active=True))
+        if ToolCustomization.get_bool("tool_problem_allow_regular_user_preferences"):
+            bcc_users.update(
+                User.objects.filter(is_active=True).filter(Q(preferences__tool_task_notifications__in=[task.tool]))
+            )
     tos = [
         email for user in recipient_users for email in user.get_emails(user.get_preferences().email_send_task_updates)
     ]
