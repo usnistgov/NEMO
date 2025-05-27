@@ -254,12 +254,13 @@ def usage_data_history(request, tool_id):
     pre_usage_events = usage_events.order_by("-start")
     post_usage_events = usage_events.filter(end__isnull=False).order_by("-end")
     if last:
-        try:
-            last = int(last)
-        except ValueError:
-            last = 25
-        pre_usage_events = pre_usage_events[:last]
-        post_usage_events = post_usage_events[:last]
+        if last != "all":
+            try:
+                last = int(last)
+            except ValueError:
+                last = 25
+            pre_usage_events = pre_usage_events[:last]
+            post_usage_events = post_usage_events[:last]
 
     table_pre_run_data = BasicDisplayTable()
     table_pre_run_data.add_header(("user", "User"))
