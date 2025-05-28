@@ -29,6 +29,7 @@ from NEMO.models import (
     Area,
     AreaAccessRecord,
     BuddyRequest,
+    Comment,
     Configuration,
     ConfigurationOption,
     Consumable,
@@ -529,7 +530,18 @@ class ToolCredentialsSerializer(FlexFieldsSerializerMixin, ModelSerializer):
         }
 
 
-class StaffAssistanceRequestsSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+class ToolCommentSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = "__all__"
+        expandable_fields = {
+            "tool": "NEMO.serializers.ToolSerializer",
+            "author": "NEMO.serializers.UserSerializer",
+            "hidden_by": "NEMO.serializers.UserSerializer",
+        }
+
+
+class StaffAssistanceRequestSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     class Meta:
         model = StaffAssistanceRequest
         fields = "__all__"

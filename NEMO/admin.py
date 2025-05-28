@@ -1035,10 +1035,11 @@ class CommentAdmin(admin.ModelAdmin):
         "expiration_date",
         "visible",
         "staff_only",
+        "pinned",
         "hidden_by",
         "hide_date",
     )
-    list_filter = ("visible", "creation_date", ("tool", admin.RelatedOnlyFieldListFilter), "staff_only")
+    list_filter = ("visible", "creation_date", ("tool", admin.RelatedOnlyFieldListFilter), "staff_only", "pinned")
     date_hierarchy = "creation_date"
     search_fields = ("content",)
     autocomplete_fields = ["author", "tool", "hidden_by"]

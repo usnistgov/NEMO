@@ -28,6 +28,7 @@ from NEMO.models import (
     Area,
     AreaAccessRecord,
     BuddyRequest,
+    Comment,
     Configuration,
     ConfigurationOption,
     Consumable,
@@ -87,10 +88,11 @@ from NEMO.serializers import (
     ReservationSerializer,
     ResourceSerializer,
     ScheduledOutageSerializer,
-    StaffAssistanceRequestsSerializer,
+    StaffAssistanceRequestSerializer,
     StaffChargeSerializer,
     TaskSerializer,
     TemporaryPhysicalAccessRequestSerializer,
+    ToolCommentSerializer,
     ToolCredentialsSerializer,
     ToolSerializer,
     ToolStatusSerializer,
@@ -775,10 +777,29 @@ class ToolCredentialsViewSet(ModelViewSet):
     }
 
 
-class StaffAssistanceRequestsViewSet(ModelViewSet):
+class ToolCommentViewSet(ModelViewSet):
+    filename = "tool_comments"
+    queryset = Comment.objects.all()
+    serializer_class = ToolCommentSerializer
+    filterset_fields = {
+        "id": key_filters,
+        "tool": key_filters,
+        "author": key_filters,
+        "creation_date": datetime_filters,
+        "expiration_date": datetime_filters,
+        "visible": boolean_filters,
+        "hide_date": datetime_filters,
+        "hidden_by": key_filters,
+        "content": string_filters,
+        "staff_only": boolean_filters,
+        "pinned": boolean_filters,
+    }
+
+
+class StaffAssistanceRequestViewSet(ModelViewSet):
     filename = "staff_assistance_requests"
     queryset = StaffAssistanceRequest.objects.all()
-    serializer_class = StaffAssistanceRequestsSerializer
+    serializer_class = StaffAssistanceRequestSerializer
     filterset_fields = {
         "id": key_filters,
         "user": key_filters,
