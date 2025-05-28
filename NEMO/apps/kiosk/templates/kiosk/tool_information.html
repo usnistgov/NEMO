@@ -167,7 +167,7 @@
         {% endfor %}
     </div>
 {% endif %}
-{% if user|is_staff_on_tool:tool and tool_credentials %}
+{% if customer|is_staff_on_tool:tool and tool_credentials %}
     <div class="media" style="margin-bottom: 20px">
         <a onclick="toggle_details(this)"
            data-toggle="collapse"
@@ -327,11 +327,11 @@
                                     font-size:x-large"
                              onclick="disable_tool()">
                             <span class="glyphicon glyphicon-stop"></span> Stop using the {{ tool.name_or_child_in_use_name }}
-                            {% if not user|is_staff_on_tool:tool and remaining_reservation_duration %}
+                            {% if not customer|is_staff_on_tool:tool and remaining_reservation_duration %}
                                 and relinquish the remaining {{ remaining_reservation_duration }} minutes of your reservation
                             {% endif %}
                         </div>
-                        {% if remaining_reservation_duration and user|is_staff_on_tool:tool %}
+                        {% if remaining_reservation_duration and customer|is_staff_on_tool:tool %}
                             <div class="alert alert-danger"
                                  style="text-align:center;
                                         margin-bottom:0;

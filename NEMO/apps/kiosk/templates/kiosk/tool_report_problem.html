@@ -41,7 +41,7 @@
             </select>
         </div>
     {% endif %}
-    {% if task_statuses and user|is_staff_on_tool:tool %}
+    {% if task_statuses and customer|is_staff_on_tool:tool %}
         <div class="form-group">
             <label for="status">What is the status of this task?</label>
             <select id="status" name="status" class="form-control" style="max-width:300px">
@@ -56,7 +56,7 @@
         </label>
         <textarea id="description" name="description" class="form-control" rows="7" required>{{ form.description.value }}</textarea>
     </div>
-    {% if user|is_staff_on_tool:tool %}
+    {% if customer|is_staff_on_tool:tool %}
         <div class="form-group">
             <div style="position:relative">
                 <label for="estimated_resolution_tm" class="control-label">
@@ -109,7 +109,7 @@
 	{% if task_categories %}
 		$('#problem_category option[value="{{ form.problem_category.value }}"]').prop('selected', true);
 	{% endif %}
-	{% if task_statuses and user|is_staff_on_tool:tool %}
+	{% if task_statuses and customer|is_staff_on_tool:tool %}
 		$('#status option[value="{{ form.status.value }}"]').prop('selected', true);
 	{% endif %}
 
