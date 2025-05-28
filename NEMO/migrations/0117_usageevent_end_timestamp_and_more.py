@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
         UsageEvent = apps.get_model("NEMO", "UsageEvent")
         for usage_event in UsageEvent.objects.all():
             usage_event.end_timestamp = 0 if usage_event.end is None else int(usage_event.end.timestamp() * 1000)
-            usage_event.save()
+            usage_event.save(update_fields=["end_timestamp"])
 
     operations = [
         migrations.AddField(

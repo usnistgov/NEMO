@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
         AreaAccessRecord = apps.get_model("NEMO", "AreaAccessRecord")
         for area_access in AreaAccessRecord.objects.all():
             area_access.end_timestamp = 0 if area_access.end is None else int(area_access.end.timestamp() * 1000)
-            area_access.save()
+            area_access.save(update_fields=["end_timestamp"])
 
     operations = [
         migrations.AddField(
