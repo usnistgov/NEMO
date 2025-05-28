@@ -96,6 +96,23 @@
         {% endfor %}
     </div>
 {% endif %}
+{% if tool.pinned_comments %}
+    <div class="tool-comments">
+        {% for pinned_comment in tool.pinned_comments %}
+            {% if not pinned_comment.staff_only or customer|is_staff_on_tool:tool %}
+                <div class="media">
+                    <span class="glyphicon glyphicon-comment pull-left notification-icon danger-highlight"></span>
+                    <div class="media-body" style="display: ruby">
+                        <div class="alert alert-danger" style="margin-bottom: 0">
+                            <span class="media-middle">{{ pinned_comment.content|linebreaksbr }}</span>
+                            <span class="media-bottom">{{ pinned_comment.author }} wrote this comment on {{ pinned_comment.creation_date }}</span>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+{% endif %}
 {# dangers #}
 {% if tool.unavailable_required_resources or tool.scheduled_outages %}
     <div class="danger-status">

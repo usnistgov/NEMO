@@ -1833,17 +1833,25 @@ class Tool(SerializationByNameModel):
     def comments(self):
         unexpired = Q(expiration_date__isnull=True) | Q(expiration_date__gt=timezone.now())
         return (
-            self.parent_tool.comment_set.filter(visible=True, staff_only=False).filter(unexpired)
+            self.parent_tool.comment_set.filter(visible=True, staff_only=False, pinned=False).filter(unexpired)
             if self.is_child_tool()
-            else self.comment_set.filter(visible=True, staff_only=False).filter(unexpired)
+            else self.comment_set.filter(visible=True, staff_only=False, pinned=False).filter(unexpired)
         )
 
     def staff_only_comments(self):
         unexpired = Q(expiration_date__isnull=True) | Q(expiration_date__gt=timezone.now())
         return (
-            self.parent_tool.comment_set.filter(visible=True, staff_only=True).filter(unexpired)
+            self.parent_tool.comment_set.filter(visible=True, staff_only=True, pinned=False).filter(unexpired)
             if self.is_child_tool()
-            else self.comment_set.filter(visible=True, staff_only=True).filter(unexpired)
+            else self.comment_set.filter(visible=True, staff_only=True, pinned=False).filter(unexpired)
+        )
+
+    def pinned_comments(self):
+        unexpired = Q(expiration_date__isnull=True) | Q(expiration_date__gt=timezone.now())
+        return (
+            self.parent_tool.comment_set.filter(visible=True, pinned=True).filter(unexpired)
+            if self.is_child_tool()
+            else self.comment_set.filter(visible=True, pinned=True).filter(unexpired)
         )
 
     def required_resource_is_unavailable(self) -> bool:
@@ -3674,6 +3682,7 @@ class Comment(BaseModel):
     )
     content = models.TextField()
     staff_only = models.BooleanField(default=False)
+    pinned = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-creation_date"]

@@ -165,6 +165,42 @@
                 {% endfor %}
             </div>
         {% endif %}
+        {% if tool.pinned_comments %}
+            <div class="tool-comments">
+                {% for pinned_comment in tool.pinned_comments %}
+                    {% if not pinned_comment.staff_only or user|is_staff_on_tool:tool %}
+                        <div class="media">
+                            {% if user.id == pinned_comment.author.id or user|is_staff_on_tool:tool %}
+                                <a onclick="toggle_details(this)"
+                                   data-toggle="collapse"
+                                   data-target="#comment_{{ pinned_comment.id }}_actions"
+                                   class="pointer">
+                                {% endif %}
+                                <span class="glyphicon glyphicon-comment pull-left notification-icon danger-highlight"
+                                      title="{% if pinned_comment.expiration_date %}This comment will expire and become hidden on {{ c.expiration_date }}{% else %}This comment will be displayed indefinitely.{% endif %}"></span>
+                                {% if user.id == pinned_comment.author.id or user|is_staff_on_tool:tool %}
+                                    <span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+                                </a>
+                            {% endif %}
+                            <div class="media-body" style="display: ruby">
+                                <div class="alert alert-danger" style="margin-bottom: 0">
+                                    <span class="media-middle">{{ pinned_comment.content|linebreaksbr }}</span>
+                                    <span class="media-bottom">{{ pinned_comment.author }} wrote this comment on {{ pinned_comment.creation_date }}</span>
+                                    {% if user.id == pinned_comment.author.id or user|is_staff_on_tool:tool %}
+                                        <div id="comment_{{ pinned_comment.id }}_actions" class="collapse grey">
+                                            <form action="{% url 'hide_comment' pinned_comment.id %}" method="post">
+                                                {% csrf_token %}
+                                                <a href="javascript:void(0)" onclick="$(this).closest('form').submit()">Hide this comment</a>.
+                                            </form>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
         {% if tool.unavailable_required_resources or tool.scheduled_outages %}
             <div class="danger-status">
                 {# Display any unavailable required resources... #}
@@ -1023,6 +1059,10 @@
                 <div class="form-group">
                     <input type="checkbox" id="staff_only" name="staff_only" />
                     <label for="staff_only" style="padding-left: 5px">Make this comment only visible to staff users</label>
+                </div>
+                <div class="form-group">
+                    <input type="checkbox" id="pinned" name="pinned" />
+                    <label for="pinned" style="padding-left: 5px">Pin and highlight this comment at the top the list</label>
                 </div>
             {% endif %}
             <div class="form-group">{% button type="save" value="Post comment" icon="glyphicon-send" %}</div>
