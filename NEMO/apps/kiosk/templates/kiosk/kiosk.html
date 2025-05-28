@@ -92,6 +92,7 @@
             </div>
             <div class="countdown" style="position: fixed; bottom: 0; right: 0;font-size: x-large"></div>
         </div>
+        <div class="pull-left logged_in_user" style="margin-top: 24px; padding-left:5px; font-size: x-large"></div>
         {% include 'base/footer.html' with no_links=True %}
         <script type="text/javascript">
         {% with show_badge_number="application"|customization:"show_badge_number" %}
@@ -183,6 +184,7 @@
 			error_interlock_element.hide();
 			error_element.hide();
 			$("#badge_number").html("");
+            set_logged_in_user("");
 			default_content_element.show();
 		}
 		function clear_timeout()
@@ -195,6 +197,10 @@
 			countdown_handle = null;
 			$(".countdown").html("");
 		}
+        function set_logged_in_user(user)
+        {
+            $(".logged_in_user").html(user);
+        }
 		function select_project(element, project_id)
 		{
 			$(".project-choice").removeClass('active');

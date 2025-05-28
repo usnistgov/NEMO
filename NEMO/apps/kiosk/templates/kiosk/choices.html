@@ -44,4 +44,7 @@
         {% endfor %}
     </div>
 {% endif %}
-<script>revert(75);</script>
+<script>
+    revert(75);
+    set_logged_in_user("{{ customer.first_name }}");
+</script>
