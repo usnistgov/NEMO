@@ -9283,6 +9283,7 @@
       ],
       "start": "2018-06-21T20:36:33.777Z",
       "end": null,
+      "end_timestamp": 0,
       "validated": false,
       "remote_work": false,
       "run_data": null
@@ -9306,6 +9307,7 @@
       ],
       "start": "2023-03-04T15:54:00Z",
       "end": "2023-03-05T16:00:00Z",
+      "end_timestamp": 1678032000,
       "validated": false,
       "remote_work": false,
       "run_data": ""
@@ -9329,6 +9331,7 @@
       ],
       "start": "2023-02-10T10:54:00Z",
       "end": "2023-02-11T15:00:00Z",
+      "end_timestamp": 1676127600,
       "validated": false,
       "remote_work": false,
       "run_data": ""
@@ -9352,6 +9355,7 @@
       ],
       "start": "2023-01-20T23:54:00Z",
       "end": "2023-01-21T19:00:00Z",
+      "end_timestamp": 1674327600,
       "validated": false,
       "remote_work": false,
       "run_data": ""
@@ -9854,6 +9858,7 @@
       ],
       "start": "2023-06-21T20:10:00Z",
       "end": null,
+      "end_timestamp": 0,
       "staff_charge": null,
       "validated": false
     }
@@ -9871,6 +9876,7 @@
       ],
       "start": "2023-07-21T20:10:00Z",
       "end": null,
+      "end_timestamp": 0,
       "staff_charge": null,
       "validated": false
     }

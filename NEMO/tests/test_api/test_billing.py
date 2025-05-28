@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.contrib.auth.models import Permission
 from django.test import TestCase
@@ -27,7 +27,8 @@ class BillingAPITestCase(TestCase):
             user=owner1,
             tool=tool1,
             project=self.project,
-            end=datetime.now().astimezone(timezone.get_current_timezone()),
+            start=(datetime.now() - timedelta(minutes=5)).astimezone(timezone.get_current_timezone()),
+            end=(datetime.now() - timedelta(minutes=1)).astimezone(timezone.get_current_timezone()),
         )
         UsageEvent.objects.create(
             operator=self.owner2,

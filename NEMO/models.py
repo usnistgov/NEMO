@@ -2618,6 +2618,7 @@ class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     project = models.ForeignKey("Project", on_delete=models.CASCADE)
     start = models.DateTimeField(default=timezone.now)
     end = models.DateTimeField(null=True, blank=True)
+    end_timestamp = models.PositiveIntegerField(default=0)
     staff_charge = models.ForeignKey(StaffCharge, blank=True, null=True, on_delete=models.CASCADE)
     validated = models.BooleanField(default=False)
     validated_by = models.ForeignKey(
@@ -2638,19 +2639,18 @@ class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):
         indexes = [
             models.Index(fields=["end"]),
         ]
+        # This constraint is to get around db limitations with null values for end date being sometimes unique, sometimes not
+        constraints = [
+            models.UniqueConstraint(fields=["customer", "area", "end_timestamp"], name="unique_area_user_end_timestamp")
+        ]
 
     def __str__(self):
         return str(self.id)
 
-    def validate_unique(self, exclude=None):
-        super().validate_unique(exclude)
-        already_logged_in = (
-            AreaAccessRecord.objects.filter(customer_id=self.customer_id, area_id=self.area_id, end=None)
-            .exclude(id=self.id)
-            .exists()
-        )
-        if self.area and self.customer and not self.end and already_logged_in:
-            raise ValidationError(_("You are already logged in to this area"))
+    def save(self, *args, **kwargs):
+        # Set end_timestamp to 0 if the end is NULL, otherwise set it to the unique timestamp
+        self.end_timestamp = 0 if self.end is None else int(self.end.timestamp() * 1000)
+        super().save(*args, **kwargs)
 
 
 class ConfigurationHistory(BaseModel):
@@ -2991,6 +2991,7 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     )  # The related_name='+' disallows reverse lookups. Helper functions of other models should be used instead.
     start = models.DateTimeField(default=timezone.now)
     end = models.DateTimeField(null=True, blank=True)
+    end_timestamp = models.PositiveIntegerField(default=0)
     validated = models.BooleanField(default=False)
     validated_by = models.ForeignKey(
         User, null=True, blank=True, related_name="usage_event_validated_set", on_delete=models.CASCADE
@@ -3027,19 +3028,16 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
     class Meta:
         ordering = ["-start"]
+        # This constraint is to get around db limitations with null values for end date being sometimes unique, sometimes not
+        constraints = [models.UniqueConstraint(fields=["tool", "end_timestamp"], name="unique_tool_end_timestamp")]
 
     def __str__(self):
         return str(self.id)
 
-    def validate_unique(self, exclude=None):
-        super().validate_unique(exclude)
-        tool_already_in_use = (
-            UsageEvent.objects.filter(tool_id__in=self.tool.get_family_tool_ids(), end=None)
-            .exclude(id=self.id)
-            .exists()
-        )
-        if self.tool and not self.end and tool_already_in_use:
-            raise ValidationError(_("This tool is already in use"))
+    def save(self, *args, **kwargs):
+        # Set end_timestamp to 0 if the end is NULL, otherwise set it to the unique timestamp
+        self.end_timestamp = 0 if self.end is None else int(self.end.timestamp() * 1000)
+        super().save(*args, **kwargs)
 
 
 class Consumable(BaseModel):
@@ -4962,7 +4960,7 @@ class EmailLog(BaseModel):
         ordering = ["-when"]
 
 
-def validate_waive_information(item: [BillableItemMixin]) -> Dict:
+def validate_waive_information(item: BillableItemMixin) -> Dict:
     errors = {}
     if item.waived:
         if not item.waived_by:

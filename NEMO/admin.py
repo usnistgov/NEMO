@@ -543,6 +543,7 @@ class AreaAccessRecordAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, ad
     list_filter = (("area", TreeRelatedFieldListFilter), "start", "waived")
     date_hierarchy = "start"
     autocomplete_fields = ["customer", "project", "validated_by", "waived_by"]
+    readonly_fields = ["end_timestamp"]
     actions = [waive_selected_charges]
 
 
@@ -814,6 +815,7 @@ class UsageEventAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.Mo
     list_filter = ("remote_work", "training", "start", "end", "waived", ("tool", admin.RelatedOnlyFieldListFilter))
     date_hierarchy = "start"
     autocomplete_fields = ["tool", "user", "operator", "project", "validated_by", "waived_by"]
+    readonly_fields = ["end_timestamp"]
     actions = [waive_selected_charges]
 
 

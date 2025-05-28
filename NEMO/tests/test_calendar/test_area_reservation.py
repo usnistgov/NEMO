@@ -466,7 +466,6 @@ class AreaReservationTestCase(TransactionTestCase):
             missed=False,
             short_notice=False,
         )
-        AreaAccessRecord.objects.create(area=area, customer=consumer, start=timezone.now(), project=project)
         response = self.client.post(
             reverse("resize_reservation"), {"delta": -10, "id": older_resa_still_ongoing.id}, follow=True
         )
