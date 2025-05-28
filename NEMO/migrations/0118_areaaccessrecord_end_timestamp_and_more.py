@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="areaaccessrecord",
             name="end_timestamp",
-            field=models.PositiveIntegerField(default=0),
+            field=models.PositiveBigIntegerField(default=0),
         ),
         migrations.RunPython(set_area_access_end_timestamp, migrations.RunPython.noop),
         migrations.AddConstraint(

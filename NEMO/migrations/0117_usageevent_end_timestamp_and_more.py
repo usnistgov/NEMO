@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="usageevent",
             name="end_timestamp",
-            field=models.PositiveIntegerField(default=0),
+            field=models.PositiveBigIntegerField(default=0),
         ),
         migrations.RunPython(set_usage_event_end_timestamp, migrations.RunPython.noop),
         migrations.AddConstraint(

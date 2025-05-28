@@ -2618,7 +2618,7 @@ class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     project = models.ForeignKey("Project", on_delete=models.CASCADE)
     start = models.DateTimeField(default=timezone.now)
     end = models.DateTimeField(null=True, blank=True)
-    end_timestamp = models.PositiveIntegerField(default=0)
+    end_timestamp = models.PositiveBigIntegerField(default=0)
     staff_charge = models.ForeignKey(StaffCharge, blank=True, null=True, on_delete=models.CASCADE)
     validated = models.BooleanField(default=False)
     validated_by = models.ForeignKey(
@@ -2991,7 +2991,7 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     )  # The related_name='+' disallows reverse lookups. Helper functions of other models should be used instead.
     start = models.DateTimeField(default=timezone.now)
     end = models.DateTimeField(null=True, blank=True)
-    end_timestamp = models.PositiveIntegerField(default=0)
+    end_timestamp = models.PositiveBigIntegerField(default=0)
     validated = models.BooleanField(default=False)
     validated_by = models.ForeignKey(
         User, null=True, blank=True, related_name="usage_event_validated_set", on_delete=models.CASCADE
