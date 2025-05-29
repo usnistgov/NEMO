@@ -44,7 +44,7 @@
         <div id="kiosk-container">
             <div class="container-fluid">
                 <div id="default_content">
-                    <h1>Scan your badge to control tools</h1>
+                    {{ "application"|customization:"kiosk_message"|default_if_none:"<h1>Scan your badge to control tools</h1>"|safe }}
                     <div id="occupancy"></div>
                     <div id="usage_title"></div>
                     <div class="tab-pane{% if tools_exist and tab == 'tools' %} active{% endif %} info-tooltip-container"

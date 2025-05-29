@@ -151,6 +151,14 @@
                     </div>
                 </div>
             </div>
+            {% if "NEMO.apps.kiosk"|app_installed %}
+                <div class="form-group">
+                    <label class="control-label col-md-3" for="kiosk_message">Kiosk message</label>
+                    <div class="col-md-9">
+                        <textarea oninput="auto_size_textarea(this);" id="kiosk_message" name="kiosk_message" class="form-control">{{ kiosk_message }}</textarea>
+                    </div>
+                </div>
+            {% endif %}
         {% endif %}
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Page title settings</h3>
@@ -223,3 +231,11 @@
         <div class="text-center">{% button type="save" value="Save settings" %}</div>
     </form>
 </div>
+<script type="text/javascript">
+    $("#application-tab-link").click(function() {setTimeout(on_application_tab_show, 50)});
+    function on_application_tab_show()
+    {
+        auto_size_textarea(document.getElementById('kiosk_message'));
+    }
+    on_application_tab_show();
+</script>

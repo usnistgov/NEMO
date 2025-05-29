@@ -224,6 +224,7 @@ class ApplicationCustomization(CustomizationBase):
         "status_dashboard_page_title": "Status dashboard",
         "requests_page_title": "Requests",
         "safety_page_title": "Safety",
+        "kiosk_message": "<h1>Scan your badge to control tools</h1>",
     }
 
     def context(self) -> Dict:
