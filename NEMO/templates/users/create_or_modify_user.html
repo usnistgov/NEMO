@@ -539,7 +539,11 @@
 		}
 		function add_tool_qualification(tool_name, tool_id)
 		{
-			add_to_list("#qualification-list", "remove_tool_qualification", tool_id, tool_name, "Disqualify this user from using the " + tool_name, "qualifications", {{ readonly|yesno:"true,false" }});
+            let tool_text = tool_name;
+            {% if user.is_accounting_officer or user.is_user_office or user.is_facility_manager or user.is_superuser %}
+            tool_text += " <a style='text-decoration: none;color: inherit' title='Go to the tool\'s page' href='"+"{% url "tool_control" 999 %}".replace("999", tool_id)+"'><i style='font-size: small;' class='glyphicon glyphicon-link'></i></a>";
+            {% endif %}
+			add_to_list("#qualification-list", "remove_tool_qualification", tool_id, tool_text, "Disqualify this user from using the " + tool_name, "qualifications", {{ readonly|yesno:"true,false" }});
 		}
 		function remove_tool_qualification(tool_id)
 		{

@@ -50,6 +50,11 @@
                         {% for u in users %}
                             <div {% if not u.is_active %}class="danger-highlight" style="display: none" {% elif u.has_access_expired %}class="warning-highlight" style="display: none"{% endif %}>
                                 {{ u }} - {{ u.email }}
+                                {% if not u.is_active %}
+                                    [INACTIVE]
+                                {% elif u.has_access_expired %}
+                                    [EXPIRED ACCESS]
+                                {% endif %}
                             </div>
                         {% endfor %}
                     </div>

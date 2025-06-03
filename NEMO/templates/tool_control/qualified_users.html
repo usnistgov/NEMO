@@ -31,7 +31,7 @@
                     You can email <a href="{% url 'compose_email' %}?audience=tool&selection={{ tool.id }}"><span class="glyphicon glyphicon-send"></span> all qualified users</a>.
                 </p>
                 <p>
-                    Current qualified users are listed below. Inactive qualified users are <span class="strikethrough light-grey">crossed out</span>.
+                    Current qualified users are listed below. Inactive qualified users are <span class="danger-highlight">red</span>.
                     <br>
                     {% for u in qualified_users %}
                         {% if u.is_active %}
@@ -41,8 +41,12 @@
                         {% else %}
                             <a href="javascript:remove_qualified_user('{{ u.id }}', '{{ tool.id }}')"
                                class="grey hover-black"
-                               title="Disqualify {{ u.first_name }}"><span class="glyphicon glyphicon-remove-circle"></span></a> <span class="strikethrough light-grey">{{ u }}</span>
+                               title="Disqualify {{ u.first_name }}"><span class="glyphicon glyphicon-remove-circle"></span></a> <span class="danger-highlight">{{ u }} [INACTIVE]</span>
                         {% endif %}
+                        <a style="text-decoration: none;
+                                  color: inherit"
+                           title="Go to user's page"
+                           href="{% url "create_or_modify_user" u.id %}"><i style="font-size: small;" class="glyphicon glyphicon-link"></i></a>
                         <br>
                     {% endfor %}
                 </p>

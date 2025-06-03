@@ -796,7 +796,7 @@
                             <div id="qualified_users" class="collapse {% if expanded %}in{% endif %}">
                                 <p>Only qualified users are able to operate the {{ tool.name }}.</p>
                                 <p>
-                                    Current qualified users are listed below. Inactive qualified users are <span class="strikethrough light-grey">crossed out</span>.
+                                    Current qualified users are listed below. Inactive qualified users are <span class="danger-highlight">red</span>.
                                     <br>
                                 </p>
                                 <ul>
@@ -805,7 +805,7 @@
                                             <li class="">{{ u }}</li>
                                         {% else %}
                                             <li class="grey">
-                                                <span class="strikethrough light-grey">{{ u }}</span>
+                                                <span class="danger-highlight">{{ u }} [INACTIVE]</span>
                                             </li>
                                         {% endif %}
                                     {% endfor %}
