@@ -416,13 +416,19 @@ def send_email_out_of_time_reservation_notification(request=None):
         threshold = (
             trigger_time if not area.logout_grace_period else trigger_time - timedelta(minutes=area.logout_grace_period)
         )
-        physical_access = PhysicalAccessLevel.objects.filter(user=customer, area=area).first()
-        # Check first if allowed schedule has just expired
-        if (
-            physical_access
-            and physical_access.accessible_at(threshold - timedelta(minutes=1))
-            and not physical_access.accessible_at(threshold)
-        ):
+        # This will include temporary access as well
+        physical_accesses = customer.accessible_access_levels_for_area(area)
+        schedule_expired = False
+        # We only check for access that just expired if the user is allowed to be in there
+        if not any([physical_access.accessible_at(threshold) for physical_access in physical_accesses]):
+            # Check if the allowed schedule has just expired
+            for physical_access in physical_accesses:
+                if physical_access.accessible_at(
+                    threshold - timedelta(minutes=1)
+                ) and not physical_access.accessible_at(threshold):
+                    schedule_expired = True
+                    break
+        if physical_accesses and schedule_expired:
             out_of_time_user_reservations.append(Reservation(user=customer, area=area, end=threshold))
         else:
             if area.requires_reservation:
