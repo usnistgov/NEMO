@@ -30,6 +30,9 @@
                 <li>
                     <b>Last login</b>: {{ user.last_login }}
                 </li>
+                <li>
+                    <b>Access expiration</b>: {{ user.access_expiration|default_if_none:"Access never expires" }}
+                </li>
             </ul>
         </div>
     </div>
