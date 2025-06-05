@@ -273,6 +273,8 @@ def project_usage(request):
     projects = []
     user = None
     selection = ""
+    selected_account_type = request.GET.get("account_type", None)
+
     try:
         if kind == "application":
             projects = Project.objects.filter(application_identifier=identifier)
@@ -309,6 +311,15 @@ def project_usage(request):
             staff_charges = staff_charges.filter(customer=user)
             training_sessions = training_sessions.filter(trainee=user)
             usage_events = usage_events.filter(user=user)
+        if selected_account_type:
+            # Get a subset of projects and filter the other records using that subset.
+            projects_by_account_type = Project.objects.filter(account__type__name=selected_account_type)
+            area_access = area_access.filter(project__in=projects_by_account_type)
+            consumables = consumables.filter(project__in=projects_by_account_type)
+            missed_reservations = missed_reservations.filter(project__in=projects_by_account_type)
+            staff_charges = staff_charges.filter(project__in=projects_by_account_type)
+            training_sessions = training_sessions.filter(project__in=projects_by_account_type)
+            usage_events = usage_events.filter(project__in=projects_by_account_type)
         if bool(request.GET.get("csv", False)):
             return csv_export_response(
                 request.user,
@@ -321,6 +332,10 @@ def project_usage(request):
             )
     except:
         pass
+
+    # Get a list of unique account types for the dropdown field.
+    account_types = Account.objects.values_list('type__name', flat=True).distinct().order_by('type__name')
+
     dictionary = {
         "search_items": set(Account.objects.all())
         | set(Project.objects.all())
@@ -334,6 +349,8 @@ def project_usage(request):
         "usage_events": usage_events,
         "project_autocomplete": True,
         "selection": selection,
+        "account_types": account_types,
+        "selected_account_type": selected_account_type,
     }
     dictionary["no_charges"] = not (
         dictionary["area_access"]
