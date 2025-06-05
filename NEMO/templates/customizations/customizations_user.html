@@ -144,7 +144,7 @@
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
-        <h3 class="customization-section-title">Access expiration - deactivate users</h3>
+        <h3 class="customization-section-title">Access expiration - deactivate users' NEMO account</h3>
         <div class="form-group {% if errors.user_access_expiration_types %}has-error{% endif %}">
             <label class="control-label col-md-4 col-lg-3" for="user_access_expiration_no_type">User types</label>
             <div class="col-md-8 col-lg-9">
@@ -174,7 +174,7 @@
                 {% if errors.user_access_expiration_types %}
                     {{ errors.user_access_expiration_types.error }}
                 {% else %}
-                    Check to automatically deactivate users with the selected types when their access expiration is reached. If nothing is selected, no one will be deactivated
+                    Check to automatically deactivate users' NEMO account with the selected types when their access expiration is reached. If nothing is selected, no one will be deactivated
                 {% endif %}
             </div>
         </div>
