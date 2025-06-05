@@ -106,7 +106,45 @@
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
-        <h3 class="customization-section-title">Access expiration - reminders</h3>
+        <h3 class="customization-section-title">Access expiration - Site alerts</h3>
+        <div class="form-group {% if errors.user_access_expiration_banner_warning %}has-error{% endif %}">
+            <label class="control-label col-md-4 col-lg-3" for="user_access_expiration_banner_warning">Display warning</label>
+            <div class="col-md-3">
+                <input type="number"
+                       id="user_access_expiration_banner_warning"
+                       name="user_access_expiration_banner_warning"
+                       class="form-control"
+                       step="1"
+                       value="{% if errors.user_access_expiration_banner_warning %}{{ errors.user_access_expiration_banner_warning.value }}{% else %}{{ user_access_expiration_banner_warning }}{% endif %}" />
+            </div>
+            <div class="col-lg-offset-3 col-md-offset-4 col-md-8 col-lg-9 help-block light-grey">
+                {% if errors.user_access_expiration_banner_warning %}
+                    {{ errors.user_access_expiration_banner_warning.error }}
+                {% else %}
+                    The number of days before the user's access expiration to display an orange warning banner (on the landing page and kiosk). Leave blank for no warning.
+                {% endif %}
+            </div>
+        </div>
+        <div class="form-group {% if errors.user_access_expiration_banner_danger %}has-error{% endif %}">
+            <label class="control-label col-md-4 col-lg-3" for="user_access_expiration_banner_danger">Display alert</label>
+            <div class="col-md-3">
+                <input type="number"
+                       id="user_access_expiration_banner_danger"
+                       name="user_access_expiration_banner_danger"
+                       class="form-control"
+                       step="1"
+                       value="{% if errors.user_access_expiration_banner_danger %}{{ errors.user_access_expiration_banner_danger.value }}{% else %}{{ user_access_expiration_banner_danger }}{% endif %}" />
+            </div>
+            <div class="col-lg-offset-3 col-md-offset-4 col-md-8 col-lg-9 help-block light-grey">
+                {% if errors.user_access_expiration_banner_danger %}
+                    {{ errors.user_access_expiration_banner_danger.error }}
+                {% else %}
+                    The number of days before the user's access expiration to display a red danger banner (on the landing page and kiosk). Leave blank for no warning.
+                {% endif %}
+            </div>
+        </div>
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
+        <h3 class="customization-section-title">Access expiration - Reminders</h3>
         <div class="form-group {% if errors.user_access_expiration_reminder_days %}has-error{% endif %}">
             <label class="control-label col-md-4 col-lg-3" for="user_access_expiration_reminder_days">Reminder days</label>
             <div class="col-md-8 col-lg-9">
@@ -144,7 +182,7 @@
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
-        <h3 class="customization-section-title">Access expiration - deactivate users' NEMO account</h3>
+        <h3 class="customization-section-title">Access expiration - Deactivate users {{ site_title }} account</h3>
         <div class="form-group {% if errors.user_access_expiration_types %}has-error{% endif %}">
             <label class="control-label col-md-4 col-lg-3" for="user_access_expiration_no_type">User types</label>
             <div class="col-md-8 col-lg-9">
@@ -174,7 +212,7 @@
                 {% if errors.user_access_expiration_types %}
                     {{ errors.user_access_expiration_types.error }}
                 {% else %}
-                    Check to automatically deactivate users' NEMO account with the selected types when their access expiration is reached. If nothing is selected, no one will be deactivated
+                    Check to automatically deactivate users {{ site_title }} account with the selected types when their access expiration is reached. If nothing is selected, no one will be deactivated
                 {% endif %}
             </div>
         </div>

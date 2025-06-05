@@ -1,3 +1,4 @@
+import datetime
 from datetime import timedelta
 
 import requests
@@ -12,6 +13,7 @@ from django.views.decorators.http import require_GET
 from NEMO.models import Alert, LandingPageChoice, Reservation, Resource, UsageEvent, User
 from NEMO.views.alerts import mark_alerts_as_expired
 from NEMO.views.area_access import able_to_self_log_in_to_area, able_to_self_log_out_of_area
+from NEMO.views.customization import UserCustomization
 from NEMO.views.notifications import delete_expired_notifications
 
 
@@ -51,7 +53,20 @@ def landing(request):
             area=user.area_access_record().area, start__lte=fifteen_minutes_from_now
         )
     upcoming_reservations = upcoming_reservations.order_by("start")[:3]
+
+    show_access_expiration_banner = False
+    expiration_warning = UserCustomization.get_int("user_access_expiration_banner_warning")
+    expiration_danger = UserCustomization.get_int("user_access_expiration_banner_danger")
+    if user.access_expiration and (expiration_warning or expiration_danger):
+        access_expiration_datetime = datetime.datetime.combine(user.access_expiration, datetime.time.min).astimezone()
+        if access_expiration_datetime >= timezone.now():
+            if expiration_warning and access_expiration_datetime < timezone.now() + timedelta(days=expiration_warning):
+                show_access_expiration_banner = "warning"
+            if expiration_danger and access_expiration_datetime < timezone.now() + timedelta(days=expiration_danger):
+                show_access_expiration_banner = "danger"
+
     dictionary = {
+        "show_access_expiration_banner": show_access_expiration_banner,
         "now": timezone.now(),
         "alerts": Alert.objects.filter(
             Q(user=None) | Q(user=user), debut_time__lte=timezone.now(), expired=False, deleted=False

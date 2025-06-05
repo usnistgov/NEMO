@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from http import HTTPStatus
 from typing import Dict
 
@@ -37,7 +37,7 @@ from NEMO.views.calendar import (
     set_reservation_configuration,
     shorten_reservation,
 )
-from NEMO.views.customization import ApplicationCustomization, ToolCustomization
+from NEMO.views.customization import ApplicationCustomization, ToolCustomization, UserCustomization
 from NEMO.views.tasks import save_task
 from NEMO.views.tool_control import (
     email_managers_required_questions_disable_tool,
@@ -405,7 +405,19 @@ def choices(request):
         }
         return render(request, "kiosk/acknowledgement.html", dictionary)
 
+    show_access_expiration_banner = False
+    expiration_warning = UserCustomization.get_int("user_access_expiration_banner_warning")
+    expiration_danger = UserCustomization.get_int("user_access_expiration_banner_danger")
+    if customer.access_expiration and (expiration_warning or expiration_danger):
+        access_expiration_datetime = datetime.combine(customer.access_expiration, time.min).astimezone()
+        if access_expiration_datetime >= timezone.now():
+            if expiration_warning and access_expiration_datetime < timezone.now() + timedelta(days=expiration_warning):
+                show_access_expiration_banner = "warning"
+            if expiration_danger and access_expiration_datetime < timezone.now() + timedelta(days=expiration_danger):
+                show_access_expiration_banner = "danger"
+
     dictionary = {
+        "show_access_expiration_banner": show_access_expiration_banner,
         "now": timezone.now(),
         "customer": customer,
         "usage_events": list(usage_events),

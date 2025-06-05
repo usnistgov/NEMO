@@ -272,6 +272,8 @@ class UserCustomization(CustomizationBase):
         "user_access_expiration_buffer_days": "",
         "user_access_expiration_no_type": "",
         "user_access_expiration_types": "-1",
+        "user_access_expiration_banner_warning": "",
+        "user_access_expiration_banner_danger": "",
         "user_allow_document_upload": "",
         "user_allow_profile_view": "",
     }

@@ -26,6 +26,13 @@
             </div>
         </div>
     {% endif %}
+    {% if user.access_expiration %}
+        {% if show_access_expiration_banner %}
+            <div class="col-lg-12 text-center alert alert-{{ show_access_expiration_banner }}">
+                <i class="glyphicon glyphicon-alert"></i> Your access expires in {{ user.access_expiration|timeuntil }} on {{ user.access_expiration|date:'SHORT_DATE_FORMAT' }}
+            </div>
+        {% endif %}
+    {% endif %}
     <div class="row">
         {% if upcoming_reservations %}
             <div class="col-lg-4">
