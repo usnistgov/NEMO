@@ -138,7 +138,7 @@
                 </div>
             {% endif %}
         </div>
-        {% if project_autocomplete %}
+        {% if project_autocomplete and account_types %}
             <div class="form-group">
                 <label for="account_type_select" class="control-label col-sm-2">Account Type:</label>
                 <div class="col-sm-3 col-md-3 col-lg-2">
@@ -150,6 +150,8 @@
                     </select>
                 </div>
             </div>
+        {% endif %}
+        {% if project_autocomplete and project_types %}
             <div class="form-group">
                 <label for="project_type_select" class="control-label col-sm-2">Project Type:</label>
                 <div class="col-sm-3 col-md-3 col-lg-2">
