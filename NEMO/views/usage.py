@@ -352,12 +352,10 @@ def project_usage(request):
         pass
 
     # Get a list of unique account types for the dropdown field.
-    #account_types = Account.objects.values_list('type__name', flat=True).distinct().order_by('type__name')
-    account_types = AccountType.objects.all();
+    account_types = AccountType.objects.filter(id__in=Account.objects.values_list('type__id', flat=True))
 
     # Get a list of unique project types for the dropdown field.
-    #project_types = Project.objects.filter(project_types__isnull=False).values_list('project_types__name', flat=True).distinct().order_by('project_types__name')
-    project_types = ProjectType.objects.all();
+    project_types = ProjectType.objects.filter(id__in=Project.objects.values_list('project_types__id', flat=True))
 
     dictionary = {
         "search_items": set(Account.objects.all())
