@@ -13,10 +13,12 @@ from requests import get
 from NEMO.decorators import accounting_or_user_office_or_manager_required, any_staff_required
 from NEMO.models import (
     Account,
+    AccountType,
     AdjustmentRequest,
     AreaAccessRecord,
     ConsumableWithdraw,
     Project,
+    ProjectType,
     Reservation,
     StaffCharge,
     TrainingSession,
@@ -273,8 +275,14 @@ def project_usage(request):
     projects = []
     user = None
     selection = ""
+
+    # Get selection as strings.
     selected_account_type = request.GET.get("account_type", None)
     selected_project_type = request.GET.get("project_type", None)
+
+    # Convert to int for id comparison.
+    selected_account_type = int(selected_account_type) if selected_account_type else None
+    selected_project_type = int(selected_project_type) if selected_project_type else None
 
     try:
         if kind == "application":
@@ -314,7 +322,7 @@ def project_usage(request):
             usage_events = usage_events.filter(user=user)
         if selected_account_type:
             # Get a subset of projects and filter the other records using that subset.
-            projects_by_account_type = Project.objects.filter(account__type__name=selected_account_type)
+            projects_by_account_type = Project.objects.filter(account__type__id=selected_account_type)
             area_access = area_access.filter(project__in=projects_by_account_type)
             consumables = consumables.filter(project__in=projects_by_account_type)
             missed_reservations = missed_reservations.filter(project__in=projects_by_account_type)
@@ -323,7 +331,7 @@ def project_usage(request):
             usage_events = usage_events.filter(project__in=projects_by_account_type)
         if selected_project_type:
             # Get a subset of projects and filter the other records using that subset.
-            projects_by_type = Project.objects.filter(project_types__name=selected_project_type)
+            projects_by_type = Project.objects.filter(project_types__id=selected_project_type)
             area_access = area_access.filter(project__in=projects_by_type)
             consumables = consumables.filter(project__in=projects_by_type)
             missed_reservations = missed_reservations.filter(project__in=projects_by_type)
@@ -344,10 +352,12 @@ def project_usage(request):
         pass
 
     # Get a list of unique account types for the dropdown field.
-    account_types = Account.objects.values_list('type__name', flat=True).distinct().order_by('type__name')
+    #account_types = Account.objects.values_list('type__name', flat=True).distinct().order_by('type__name')
+    account_types = AccountType.objects.all();
 
     # Get a list of unique project types for the dropdown field.
-    project_types = Project.objects.filter(project_types__isnull=False).values_list('project_types__name', flat=True).distinct().order_by('project_types__name')
+    #project_types = Project.objects.filter(project_types__isnull=False).values_list('project_types__name', flat=True).distinct().order_by('project_types__name')
+    project_types = ProjectType.objects.all();
 
     dictionary = {
         "search_items": set(Account.objects.all())

@@ -145,7 +145,7 @@
                     <select name="account_type" id="account_type_select" class="form-control" style="margin-right: 5px; text-align-last:center;">
                         <option value="">- Any -</option> {# Option to clear filter #}
                         {% for type in account_types %}
-                            <option value="{{ type }}" {% if type == selected_account_type %}selected{% endif %}>{{ type }}</option>
+                            <option value="{{ type.id }}" {% if type.id == selected_account_type %}selected{% endif %}>{{ type.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -153,12 +153,12 @@
         {% endif %}
         {% if project_autocomplete and project_types %}
             <div class="form-group">
-                <label for="project_type_select" class="control-label col-sm-2">Project Type:</label>
+                <label for="project_type_select" class="control-label col-sm-2">Project Type</label>
                 <div class="col-sm-3 col-md-3 col-lg-2">
                     <select name="project_type" id="project_type_select" class="form-control" style="margin-right: 5px; text-align-last:center;">
                         <option value="">- Any -</option> {# Option to clear filter #}
                         {% for type in project_types %}
-                            <option value="{{ type }}" {% if type == selected_project_type %}selected{% endif %}>{{ type }}</option>
+                            <option value="{{ type.id }}" {% if type.id == selected_project_type %}selected{% endif %}>{{ type.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
