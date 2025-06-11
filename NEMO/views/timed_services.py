@@ -820,6 +820,7 @@ def send_email_user_access_expiration_reminders(request=None):
                     from_email=user_office_email,
                     cc=ccs,
                     email_notification=email_notification,
+                    email_category=EmailCategory.ACCESS_EXPIRATION_REMINDERS,
                 )
     return HttpResponse()
 

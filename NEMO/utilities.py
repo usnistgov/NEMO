@@ -294,6 +294,7 @@ class EmailCategory(IntegerChoices):
     SENSORS = 10, _("Sensors")
     ADJUSTMENT_REQUESTS = 11, _("Adjustment Requests")
     TRAINING = 12, _("Training")
+    ACCESS_EXPIRATION_REMINDERS = 13, _("Access Expiration Reminders")
 
 
 class RecurrenceFrequency(Enum):
