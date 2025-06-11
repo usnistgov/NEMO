@@ -161,20 +161,17 @@ def tool_status(request, tool_id):
             tool.post_usage_questions, initial_data=pre_run_data or None
         ).render(tool, "post_usage_questions")
 
-    try:
-        current_reservation = Reservation.objects.get(
-            start__lt=timezone.now(),
-            end__gt=timezone.now(),
-            cancelled=False,
-            missed=False,
-            shortened=False,
-            user=user,
-            tool=tool,
-        )
-        if user == current_reservation.user:
-            dictionary["time_left"] = current_reservation.end
-    except Reservation.DoesNotExist:
-        pass
+    current_reservation = Reservation.objects.filter(
+        start__lt=timezone.now(),
+        end__gt=timezone.now(),
+        cancelled=False,
+        missed=False,
+        shortened=False,
+        user=user,
+        tool=tool,
+    ).last()
+    if current_reservation:
+        dictionary["time_left"] = current_reservation.end
 
     dictionary["next_reservation"] = (
         Reservation.objects.filter(

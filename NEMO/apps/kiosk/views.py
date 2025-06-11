@@ -502,23 +502,23 @@ def tool_information(request, tool_id, user_id, back):
             )
         ),
     }
-    try:
-        current_reservation = Reservation.objects.get(
-            start__lt=timezone.now(),
-            end__gt=timezone.now(),
-            cancelled=False,
-            missed=False,
-            shortened=False,
-            user=customer,
-            tool=tool,
-        )
+
+    current_reservation = Reservation.objects.filter(
+        start__lt=timezone.now(),
+        end__gt=timezone.now(),
+        cancelled=False,
+        missed=False,
+        shortened=False,
+        user=customer,
+        tool=tool,
+    ).last()
+    if current_reservation:
         remaining_reservation_duration = int((current_reservation.end - timezone.now()).total_seconds() / 60)
         # We don't need to bother telling the user their reservation will be shortened if there's less than two minutes left.
         # Staff are exempt from reservation shortening.
         if remaining_reservation_duration > 2:
             dictionary["remaining_reservation_duration"] = remaining_reservation_duration
-    except Reservation.DoesNotExist:
-        pass
+
     return render(request, "kiosk/tool_information.html", dictionary)
 
 
