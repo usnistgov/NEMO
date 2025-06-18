@@ -269,12 +269,8 @@ def project_usage(request):
     selection = ""
 
     # Get selection as strings.
-    selected_account_type = request.GET.get("account_type", None)
-    selected_project_type = request.GET.get("project_type", None)
-
-    # Convert to int for id comparison.
-    selected_account_type = int(selected_account_type) if selected_account_type else None
-    selected_project_type = int(selected_project_type) if selected_project_type else None
+    selected_account_type = request.GET.get("account_type")
+    selected_project_type = request.GET.get("project_type")
 
     try:
         if kind == "application":
@@ -344,10 +340,10 @@ def project_usage(request):
         pass
 
     # Get a list of unique account types for the dropdown field.
-    account_types = AccountType.objects.filter(id__in=Account.objects.values_list('type__id', flat=True))
+    account_types = AccountType.objects.filter(id__in=Account.objects.values_list("type__id", flat=True))
 
     # Get a list of unique project types for the dropdown field.
-    project_types = ProjectType.objects.filter(id__in=Project.objects.values_list('project_types__id', flat=True))
+    project_types = ProjectType.objects.filter(id__in=Project.objects.values_list("project_types__id", flat=True))
 
     dictionary = {
         "search_items": set(Account.objects.all())
