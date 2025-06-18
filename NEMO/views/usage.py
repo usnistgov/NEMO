@@ -13,10 +13,12 @@ from requests import get
 from NEMO.decorators import accounting_or_user_office_or_manager_required, any_staff_required
 from NEMO.models import (
     Account,
+    AccountType,
     AdjustmentRequest,
     AreaAccessRecord,
     ConsumableWithdraw,
     Project,
+    ProjectType,
     Reservation,
     StaffCharge,
     TrainingSession,
@@ -265,6 +267,15 @@ def project_usage(request):
     projects = []
     user = None
     selection = ""
+
+    # Get selection as strings.
+    selected_account_type = request.GET.get("account_type", None)
+    selected_project_type = request.GET.get("project_type", None)
+
+    # Convert to int for id comparison.
+    selected_account_type = int(selected_account_type) if selected_account_type else None
+    selected_project_type = int(selected_project_type) if selected_project_type else None
+
     try:
         if kind == "application":
             projects = Project.objects.filter(application_identifier=identifier)
@@ -301,6 +312,24 @@ def project_usage(request):
             staff_charges = staff_charges.filter(customer=user)
             training_sessions = training_sessions.filter(trainee=user)
             usage_events = usage_events.filter(user=user)
+        if selected_account_type:
+            # Get a subset of projects and filter the other records using that subset.
+            projects_by_account_type = Project.objects.filter(account__type__id=selected_account_type)
+            area_access = area_access.filter(project__in=projects_by_account_type)
+            consumables = consumables.filter(project__in=projects_by_account_type)
+            missed_reservations = missed_reservations.filter(project__in=projects_by_account_type)
+            staff_charges = staff_charges.filter(project__in=projects_by_account_type)
+            training_sessions = training_sessions.filter(project__in=projects_by_account_type)
+            usage_events = usage_events.filter(project__in=projects_by_account_type)
+        if selected_project_type:
+            # Get a subset of projects and filter the other records using that subset.
+            projects_by_type = Project.objects.filter(project_types__id=selected_project_type)
+            area_access = area_access.filter(project__in=projects_by_type)
+            consumables = consumables.filter(project__in=projects_by_type)
+            missed_reservations = missed_reservations.filter(project__in=projects_by_type)
+            staff_charges = staff_charges.filter(project__in=projects_by_type)
+            training_sessions = training_sessions.filter(project__in=projects_by_type)
+            usage_events = usage_events.filter(project__in=projects_by_type)
         if bool(request.GET.get("csv", False)):
             return csv_export_response(
                 request.user,
@@ -313,6 +342,13 @@ def project_usage(request):
             )
     except:
         pass
+
+    # Get a list of unique account types for the dropdown field.
+    account_types = AccountType.objects.filter(id__in=Account.objects.values_list('type__id', flat=True))
+
+    # Get a list of unique project types for the dropdown field.
+    project_types = ProjectType.objects.filter(id__in=Project.objects.values_list('project_types__id', flat=True))
+
     dictionary = {
         "search_items": set(Account.objects.all())
         | set(Project.objects.all())
@@ -326,6 +362,10 @@ def project_usage(request):
         "usage_events": usage_events,
         "project_autocomplete": True,
         "selection": selection,
+        "account_types": account_types,
+        "selected_account_type": selected_account_type,
+        "project_types": project_types,
+        "selected_project_type": selected_project_type,
     }
     dictionary["no_charges"] = not (
         dictionary["area_access"]
