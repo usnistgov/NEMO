@@ -8,7 +8,7 @@
 {% endif %}
 {% if door.interlock %}<h1>The door is open.</h1>{% endif %}
 <h2>Access time is being charged to the project named {{ project }}.</h2>
-{% if "NEMO.apps.kiosk"|app_installed and "application"|customization:"area_access_kiosk_option_login_success" == "enabled" %}
+{% if "NEMO.apps.kiosk"|app_installed and customizations|get_item:"area_access_kiosk_option_login_success" == "enabled" %}
     <p>
         <a href="javascript:void(0)"
            role="button"

@@ -54,13 +54,13 @@
     <div id="project_{{ project.id }}_details"
          class="collapse {% if selected_project or manager_view %}in{% endif %}">
         <div>
-            <span class="control-label">{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}:</span>
+            <span class="control-label">{{ customizations|get_item:"project_application_identifier_name" }}:</span>
             <span>{{ project.application_identifier }}</span>
         </div>
         {% if project.project_types.all %}
             <div>
                 <span class="control-label">
-                    {% if "projects_and_accounts"|customization:"project_type_allow_multiple" %}
+                    {% if customizations|get_item:"project_type_allow_multiple" == "enabled" %}
                         Project type(s):
                     {% else %}
                         Project type:
@@ -81,7 +81,7 @@
                 <span>{{ project.start_date }}</span>
             </div>
         {% endif %}
-        {% if manager_view and "projects_and_accounts"|customization:"project_allow_pi_manage_users" or not manager_view %}
+        {% if manager_view and customizations|get_item:"project_allow_pi_manage_users" == "enabled" or not manager_view %}
             <div id="project_{{ project.id }}_users">
                 {% include 'accounts_and_projects/users_for_project.html' with users=project.user_set.all %}
             </div>

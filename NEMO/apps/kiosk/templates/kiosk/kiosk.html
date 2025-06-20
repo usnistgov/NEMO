@@ -44,7 +44,7 @@
         <div id="kiosk-container">
             <div class="container-fluid">
                 <div id="default_content">
-                    {{ "application"|customization:"kiosk_message"|default_if_none:"<h1>Scan your badge to control tools</h1>"|safe }}
+                    {{ customizations|get_item:"kiosk_message"|default_if_none:"<h1>Scan your badge to control tools</h1>"|safe }}
                     <div id="occupancy"></div>
                     <div id="usage_title"></div>
                     <div class="tab-pane{% if tools_exist and tab == 'tools' %} active{% endif %} info-tooltip-container"
@@ -95,7 +95,7 @@
         <div class="pull-left logged_in_user" style="margin-top: 24px; padding-left:5px; font-size: x-large"></div>
         {% include 'base/footer.html' with no_links=True %}
         <script type="text/javascript">
-        {% with show_badge_number="application"|customization:"show_badge_number" %}
+        {% with show_badge_number=customizations|get_item:"show_badge_number" %}
 		let kiosk_badge_reader = new BadgeReader(send_badge_number, "{{ badge_reader.send_key }}", {% if badge_reader.record_key %}"{{ badge_reader.record_key }}"{% else %}undefined{% endif %}, {{ show_badge_number|yesno:"true,false" }});
         {% endwith %}
 		let timeout_handle = null;

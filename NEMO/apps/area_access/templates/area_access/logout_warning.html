@@ -20,7 +20,7 @@
         </ul>
     {% endif %}
 </h2>
-{% if "NEMO.apps.kiosk"|app_installed and "application"|customization:"area_access_kiosk_option_logout_warning" == "enabled" %}
+{% if "NEMO.apps.kiosk"|app_installed and customizations|get_item:"area_access_kiosk_option_logout_warning" == "enabled" %}
     <p>
         <a href="javascript:void(0)"
            role="button"

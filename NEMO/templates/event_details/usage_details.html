@@ -38,7 +38,7 @@
             <td>Identifier:</td>
             <td>{{ event.id }}</td>
         </tr>
-        {% if "tool"|customization:"tool_control_hide_data_history_users" != "enabled" or user|is_staff_on_tool:event.tool or user == event.user %}
+        {% if customizations|get_item:"tool_control_hide_data_history_users" != "enabled" or user|is_staff_on_tool:event.tool or user == event.user %}
             {% if event.pre_run_data_json.items %}
                 <tr>
                     <td>Pre run data:</td>
@@ -110,7 +110,7 @@
         {% endif %}
     </table>
     {% if popup_view %}
-        {% if "tool"|customization:"tool_control_hide_data_history_users" != "enabled" or user|is_staff_on_tool:event.tool or user == event.user %}
+        {% if customizations|get_item:"tool_control_hide_data_history_users" != "enabled" or user|is_staff_on_tool:event.tool or user == event.user %}
             {% if event.pre_run_data_json.items or event.post_run_data_json.items %}
                 <script>$('#dialog .modal-dialog').addClass('modal-lg');</script>
             {% endif %}

@@ -80,7 +80,7 @@
                                         {% navigation_url 'training' 'Training' user.is_staff user.is_superuser %}
                                         {% navigation_url 'tool_credentials' 'Tool credentials' user.is_staff user.is_superuser %}
                                     {% endif %}
-                                    {% if user.is_facility_manager or user.is_superuser or user.is_staff and "contracts"|customization:"contracts_view_staff" == "enabled" or user.is_user_office and "contracts"|customization:"contracts_view_user_office" == "enabled" or user.is_accounting_officer and "contracts"|customization:"contracts_view_accounting_officer" == "enabled" %}
+                                    {% if user.is_facility_manager or user.is_superuser or user.is_staff and customizations|get_item:"contracts_view_staff" == "enabled" or user.is_user_office and customizations|get_item:"contracts_view_user_office" == "enabled" or user.is_accounting_officer and customizations|get_item:"contracts_view_accounting_officer" == "enabled" %}
                                         {% navigation_url 'service_contracts' 'Contracts & procurements' %}
                                     {% endif %}
                                     {% navigation_url 'customization' 'Customization' user.is_superuser %}
@@ -98,7 +98,7 @@
                                     {% endif %}
                                     {% navigation_url 'consumables' 'Supplies' user.is_staff user.is_user_office user.is_superuser %}
                                     {% navigation_url 'users' 'Users' %}
-                                    {% if "projects_and_accounts"|customization:"project_allow_transferring_charges" == "enabled" %}
+                                    {% if customizations|get_item:"project_allow_transferring_charges" == "enabled" %}
                                         {% navigation_url 'transfer_charges' 'Transfer charges' user.is_accounting_officer user.is_facility_manager user.is_superuser %}
                                     {% endif %}
                                 {% elif user.is_tool_superuser or user.is_project_pi or user.is_tool_staff %}

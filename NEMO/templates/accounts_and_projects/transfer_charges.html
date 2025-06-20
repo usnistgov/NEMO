@@ -148,7 +148,7 @@
                         <th>Quantity</th>
                         <th>User</th>
                         <th>Project</th>
-                        <th class="text-right">{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}</th>
+                        <th class="text-right">{{ customizations|get_item:"project_application_identifier_name" }}</th>
                     </tr>
                 </thead>
                 {% for charge in charges %}

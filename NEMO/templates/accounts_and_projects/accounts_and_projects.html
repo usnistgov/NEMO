@@ -26,7 +26,7 @@
             <tr>
                 <th>{% include 'pagination/pagination_column.html' with order_by='name' name='Name' %}</th>
                 {% if project_types or account_types %}<th>Type(s)</th>{% endif %}
-                <th>{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}</th>
+                <th>{{ customizations|get_item:"project_application_identifier_name" }}</th>
                 <th class="button-column-minimum">
                     {% include 'pagination/pagination_column.html' with order_by='active' name='Active' %}
                 </th>

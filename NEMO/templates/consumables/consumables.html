@@ -53,7 +53,7 @@
             <div class="form-group">
                 <div class="col-sm-12">
                     <table class="table">
-                        {% with category_collapse="application"|customization:"consumable_category_collapse" %}
+                        {% with category_collapse=customizations|get_item:"consumable_category_collapse" %}
                             {% regroup consumables by category as categories %}
                             {% for category in categories %}
                                 {% if categories|length > 1 or category.grouper %}

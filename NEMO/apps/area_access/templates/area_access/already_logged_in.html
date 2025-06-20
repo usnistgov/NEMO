@@ -40,7 +40,7 @@
        class="btn btn-success btn-lg btn-block btn-extra-large"
        onclick="exit_area('{{ badge_number }}')">Log out of the {{ area }}</a>
 </p>
-{% if "NEMO.apps.kiosk"|app_installed and "application"|customization:"area_access_kiosk_option_login_success" == "enabled" %}
+{% if "NEMO.apps.kiosk"|app_installed and customizations|get_item:"area_access_kiosk_option_login_success" == "enabled" %}
     <p>
         <a href="javascript:void(0)"
            role="button"

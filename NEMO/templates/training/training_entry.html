@@ -4,7 +4,7 @@
      style="display: flex;
             flex-flow: row wrap;
             padding: 15px 0">
-    {% with date_allowed="training"|customization:"training_allow_date" %}
+    {% with date_allowed=customizations|get_item:"training_allow_date" %}
         {% with label_class=date_allowed|yesno:"col-sm-2 col-md-1,col-sm-2 col-md-1" input_class=date_allowed|yesno:"col-sm-4 col-md-3,col-sm-4 col-md-3" %}
             <div class="text-center" style="width: 3%; margin-left: 5px">
                 <div class="glyphicon glyphicon-remove-circle grey pointer"

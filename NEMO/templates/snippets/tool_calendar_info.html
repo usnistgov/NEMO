@@ -1,10 +1,10 @@
 {# This snippet is displayed at the top of the calendar on desktop to show important tool information #}
 {% load custom_tags_and_filters %}
 <div class="label label-primary" id="calendar-selected-element-name">{{ tool.name }}</div>
-{% if "calendar"|customization:"calendar_status_bar_show_tool_pinned_comments" == "enabled" %}
+{% if customizations|get_item:"calendar_status_bar_show_tool_pinned_comments" == "enabled" %}
     {% for pinned_comment in tool.pinned_comments.all %}
         <div class="label label-danger"
-             style="max-width: {{ "calendar"|customization:"calendar_status_bar_tool_max_width" }}px"
+             style="max-width: {{ customizations|get_item:"calendar_status_bar_tool_max_width" }}px"
              data-toggle="tooltip"
              title="{{ pinned_comment.content|linebreaksbr|escape }}">
             <i class="glyphicon glyphicon-comment"></i>
@@ -12,10 +12,10 @@
         </div>
     {% endfor %}
 {% endif %}
-{% if "calendar"|customization:"calendar_status_bar_show_tool_latest_problem" == "enabled" %}
+{% if customizations|get_item:"calendar_status_bar_show_tool_latest_problem" == "enabled" %}
     {% if last_problem %}
         <div class="label label-warning"
-             style="max-width: {{ "calendar"|customization:"calendar_status_bar_tool_max_width" }}px"
+             style="max-width: {{ customizations|get_item:"calendar_status_bar_tool_max_width" }}px"
              data-toggle="tooltip"
              title="{{ last_problem.problem_description|linebreaksbr|escape }}">
             <i class="glyphicon glyphicon-wrench"></i>
