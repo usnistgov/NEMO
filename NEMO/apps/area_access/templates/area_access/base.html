@@ -85,6 +85,8 @@
 		let error_element = $("#error");
 		let error_interlock_element = $("#interlock_error");
 		let bypass_button = $("#inter_bypass");
+         /* Clear kiosk_badge_number */
+        localStorage.removeItem("kiosk_badge_number");
 
 		function send_badge_number(badge_number)
 		{
@@ -231,6 +233,11 @@
             {
                 load_complete(response, status, xml_http_request);
             }
+        }
+        function go_to_kiosk(badge_number)
+        {
+            localStorage.setItem('kiosk_badge_number', badge_number);
+            window.open("{% url 'kiosk' %}", "_blank", "noopener,noreferrer");
         }
 	
         </script>

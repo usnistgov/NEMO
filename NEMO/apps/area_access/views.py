@@ -252,7 +252,7 @@ def login_to_area(request, door_id):
         dictionary = {
             "door": door,
             "area": area,
-            "name": user.first_name,
+            "customer": user,
             "project": project,
             "previous_area": previous_area,
         }

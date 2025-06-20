@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 <h1>According to our records, you're already logged in the {{ area }} under the project named {{ project }}.</h1>
 {% if max_capacity_reached %}
     {% if max_capacity_reached.area == area %}
@@ -39,4 +40,12 @@
        class="btn btn-success btn-lg btn-block btn-extra-large"
        onclick="exit_area('{{ badge_number }}')">Log out of the {{ area }}</a>
 </p>
+{% if "NEMO.apps.kiosk"|app_installed and "application"|customization:"area_access_kiosk_option_login_success" == "enabled" %}
+    <p>
+        <a href="javascript:void(0)"
+           role="button"
+           class="btn btn-success btn-lg btn-block btn-extra-large"
+           onclick="go_to_kiosk('{{ badge_number }}')">Open the kiosk</a>
+    </p>
+{% endif %}
 <script>revert(15);</script>

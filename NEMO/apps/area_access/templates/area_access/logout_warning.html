@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 <script>$('body').removeClass().addClass('logout-warning')</script>
 <h1>
     <p>{% now "h:i A" %}</p>
@@ -19,6 +20,14 @@
         </ul>
     {% endif %}
 </h2>
+{% if "NEMO.apps.kiosk"|app_installed and "application"|customization:"area_access_kiosk_option_logout_warning" == "enabled" %}
+    <p>
+        <a href="javascript:void(0)"
+           role="button"
+           class="btn btn-success btn-lg btn-block btn-extra-large"
+           onclick="go_to_kiosk('{{ badge_user.badge_number }}')">Open the kiosk</a>
+    </p>
+{% endif %}
 {% if door.areas.count != 1 %}
     <div class="alert alert-warning clearfix" style="margin-top: 55px;">
         <h3 class="" style="margin-bottom: 0">Would you like to log into another area?</h3>

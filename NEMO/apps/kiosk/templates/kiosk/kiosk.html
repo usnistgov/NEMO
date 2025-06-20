@@ -108,6 +108,14 @@
 		let error_element = $("#error");
 		let error_interlock_element = $("#interlock_error");
 		let bypass_button = $("#inter_bypass");
+        let close_when_done = false;
+
+        if (localStorage.getItem("kiosk_badge_number") !== null)
+        {
+            send_badge_number(localStorage.getItem("kiosk_badge_number"));
+            localStorage.removeItem("kiosk_badge_number");
+            close_when_done = true;
+        }
 
         function show_alerts()
         {
@@ -185,6 +193,10 @@
 			error_element.hide();
 			$("#badge_number").html("");
             set_logged_in_user("");
+            if (close_when_done)
+            {
+                window.close();
+            }
 			default_content_element.show();
 		}
 		function clear_timeout()
