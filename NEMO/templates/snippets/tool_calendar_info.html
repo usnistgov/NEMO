@@ -1,0 +1,37 @@
+{# This snippet is displayed at the top of the calendar on desktop to show important tool information #}
+{% load custom_tags_and_filters %}
+<div class="label label-primary" id="calendar-selected-element-name">{{ tool.name }}</div>
+{% if "calendar"|customization:"calendar_status_bar_show_tool_pinned_comments" == "enabled" %}
+    {% for pinned_comment in tool.pinned_comments.all %}
+        <div class="label label-danger"
+             style="max-width: {{ "calendar"|customization:"calendar_status_bar_tool_max_width" }}px"
+             data-toggle="tooltip"
+             title="{{ pinned_comment.content|linebreaksbr|escape }}">
+            <i class="glyphicon glyphicon-comment"></i>
+            {{ pinned_comment.content }}
+        </div>
+    {% endfor %}
+{% endif %}
+{% if "calendar"|customization:"calendar_status_bar_show_tool_latest_problem" == "enabled" %}
+    {% if last_problem %}
+        <div class="label label-warning"
+             style="max-width: {{ "calendar"|customization:"calendar_status_bar_tool_max_width" }}px"
+             data-toggle="tooltip"
+             title="{{ last_problem.problem_description|linebreaksbr|escape }}">
+            <i class="glyphicon glyphicon-wrench"></i>
+            {{ last_problem.problem_description }}
+        </div>
+    {% endif %}
+    {% if other_problems > 0 %}
+        <div style="display: inline-block;">
+            {# djlint:off #}
+            <a class="btn btn-xs btn-success label"
+               style="text-decoration: none;
+                      padding: 4px 10px"
+               href="{% url 'tool_control' tool.id %}">see {{ other_problems }} more problem{% if other_problems > 1 %}s{% endif %}
+            </a>
+            {# djlint:on #}
+        </div>
+    {% endif %}
+{% endif %}
+<script>$("#calendar-selected-element div[data-toggle='tooltip']").tooltip({"html": true, placement: 'bottom'});</script>

@@ -325,6 +325,7 @@ urlpatterns += [
         name="change_reservation_project",
     ),
     path("proxy_reservation/", calendar.proxy_reservation, name="proxy_reservation"),
+    path("tool_calendar_info/<int:tool_id>/", calendar.get_selected_tool_calendar_info, name="tool_calendar_info"),
     # Event Details:
     path(
         "event_details/reservation/<int:reservation_id>/", event_details.reservation_details, name="reservation_details"

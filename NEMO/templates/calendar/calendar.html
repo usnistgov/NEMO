@@ -660,7 +660,9 @@ function create_calendar()
 		}
 	};
 	$("#calendar").fullCalendar(calendar_properties);
-    $(".fc-view-container").prepend('<div class="label label-primary" id="calendar-selected-tool"></div>');
+    $(".fc-view-container").prepend('<div id="calendar-selected-element"></div>');
+    {# For later usage in javascript #}
+    localStorage.setItem("calendarToolInfoUrl", "{% url 'tool_calendar_info' 999 %}");
 }
 
 function reserve_for_someone_else()

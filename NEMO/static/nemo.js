@@ -286,7 +286,18 @@ function set_selected_item(element, save_state)
 	{
 		save_sidebar_state();
 	}
-	$("#calendar-selected-tool").html($(element).data("item-name") || $(element).text());
+	const element_is_tool = $(element).data('item-type') === 'tool';
+	const tool_info_url = localStorage.getItem("calendarToolInfoUrl");
+	if (element_is_tool && tool_info_url)
+	{
+		$("#calendar-selected-element").load(tool_info_url.replace('999', $(element).data('item-id')));
+	}
+	else
+	{
+		const element_name = $(element).data("item-name") || $(element).text()
+		const element_name_div = '<div class="label label-primary" id="calendar-selected-element-name">{{ element }}</div>'
+		$("#calendar-selected-element").html(element_name_div.replace('{{ element }}', element_name));
+	}
 }
 
 function set_selected_item_by_id(item_id, item_type)
@@ -310,6 +321,7 @@ function set_selected_item_by_class(item_class)
 function save_sidebar_state()
 {
 	let showQualifiedTools = localStorage.getItem("showQualifiedTools");
+	let calendarToolInfoUrl = localStorage.getItem("calendarToolInfoUrl");
 
 	localStorage.clear();
 	localStorage["sidebarExpanded"] = $("#sidebar").attr("aria-expanded") || "false";
@@ -332,6 +344,10 @@ function save_sidebar_state()
 
 	if(showQualifiedTools !== null) {
 		localStorage.setItem("showQualifiedTools", showQualifiedTools)
+	}
+	if (calendarToolInfoUrl !== null)
+	{
+		localStorage.setItem("calendarToolInfoUrl", calendarToolInfoUrl)
 	}
 }
 

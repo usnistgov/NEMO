@@ -144,10 +144,36 @@ body.impersonating .application-sidebar, body.impersonating .application-content
 	opacity: .4;
 }
 
-#calendar-selected-tool
+#calendar-selected-element
 {
-	padding-bottom: 2px;
+	margin-top: -10px;
+}
+
+#calendar-selected-element .label
+{
 	font-size: 13px;
+	display: inline-block;
+	vertical-align: bottom;
+	padding: 5px 10px;
+	margin-top: 10px;
+}
+
+#calendar-selected-element .label .glyphicon
+{
+	padding-right: 3px;
+	font-size: 11px;
+}
+
+#calendar-selected-element .label:not(:last-of-type)
+{
+	margin-right: 10px;
+}
+
+#calendar-selected-element .label.label-danger, #calendar-selected-element .label.label-warning
+{
+	white-space: nowrap;
+  	overflow: hidden;
+  	text-overflow: ellipsis;
 }
 
 .status-icon
