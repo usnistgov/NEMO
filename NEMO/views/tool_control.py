@@ -276,12 +276,19 @@ def usage_data_history(request, tool_id):
     for usage_event in pre_usage_events:
         if usage_event.pre_run_data:
             format_usage_data(
-                table_pre_run_data, usage_event, usage_event.pre_run_data, usage_event.start, show_project_info
+                table_pre_run_data,
+                usage_event,
+                usage_event.pre_run_data,
+                usage_event.start,
+                show_project_info,
+                csv_export,
             )
 
     for usage_event in post_usage_events:
         if usage_event.run_data:
-            format_usage_data(table_run_data, usage_event, usage_event.run_data, usage_event.end, show_project_info)
+            format_usage_data(
+                table_run_data, usage_event, usage_event.run_data, usage_event.end, show_project_info, csv_export
+            )
 
     if csv_export:
         response = table_run_data.to_csv() if csv_export == "run" else table_pre_run_data.to_csv()
@@ -811,6 +818,7 @@ def format_usage_data(
     usage_run_data: str,
     date_field: datetime,
     show_project_info: str,
+    csv_export: str,
 ):
     usage_data = {}
     date_data = format_datetime(date_field, "SHORT_DATETIME_FORMAT")
@@ -822,18 +830,31 @@ def format_usage_data(
         for question_key, question in run_data.items():
             if "user_input" in question and not question.get("readonly", False):
                 if question["type"] == "group":
-                    for sub_question in question["questions"]:
+                    sub_questions = {q["name"]: q for q in question.get("questions", [])}
+                    for sub_question in sub_questions.values():
                         table_result.add_header((sub_question["name"], sub_question["title"]))
                     for index, user_inputs in question["user_input"].items():
                         if index == "0":
                             # Special case here the "initial" group of user inputs will go along with the rest of the non-group user inputs
                             for name, user_input in user_inputs.items():
-                                usage_data[name] = user_input
+                                question_for_input = sub_questions.get(name)
+                                suffix = (
+                                    f" {question_for_input.get('suffix')}"
+                                    if not csv_export and question_for_input and "suffix" in question_for_input
+                                    else ""
+                                )
+                                usage_data[name] = user_input + suffix if user_input else ""
                         else:
                             # For the other groups of user inputs, we have to add a whole new row
                             group_usage_data = {}
                             for name, user_input in user_inputs.items():
-                                group_usage_data[name] = user_input
+                                question_for_input = sub_questions.get(name)
+                                suffix = (
+                                    f" {question_for_input.get('suffix')}"
+                                    if not csv_export and question_for_input and "suffix" in question_for_input
+                                    else ""
+                                )
+                                group_usage_data[name] = user_input + suffix if user_input else ""
                             if group_usage_data:
                                 group_usage_data["user"] = user_data
                                 group_usage_data["operator"] = operator_data
@@ -843,7 +864,8 @@ def format_usage_data(
                                 table_result.add_row(group_usage_data)
                 else:
                     table_result.add_header((question_key, question["title"]))
-                    usage_data[question_key] = question["user_input"]
+                    suffix = f" {question.get('suffix')}" if not csv_export and "suffix" in question else ""
+                    usage_data[question_key] = question["user_input"] + suffix if question["user_input"] else ""
         if usage_data:
             usage_data["user"] = user_data
             usage_data["operator"] = operator_data

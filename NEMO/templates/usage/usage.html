@@ -186,7 +186,7 @@
                                                     </td>
                                                     <td style="padding: 0;{% if forloop.first %}border-top:none;{% endif %}">
                                                         <table class="table table-striped" style="margin-bottom: 0;">
-                                                            {% res_question_tbody data.user_input %}
+                                                            {% res_question_tbody data %}
                                                         </table>
                                                     </td>
                                                 </tr>
@@ -196,7 +196,10 @@
                                                         {{ data.title }}
                                                         {% if data.title|slice:"-1:" != ":" %}:{% endif %}
                                                     </td>
-                                                    <td {% if forloop.first %}style="border-top:none;"{% endif %}>{{ data.user_input|linebreaksbr }}</td>
+                                                    <td {% if forloop.first %}style="border-top:none;"{% endif %}>
+                                                        {{ data.user_input|linebreaksbr }}
+                                                        {% if data.user_input and data.suffix %}{{ data.suffix }}{% endif %}
+                                                    </td>
                                                 </tr>
                                             {% endif %}
                                         {% endif %}
@@ -225,7 +228,7 @@
                                                     </td>
                                                     <td style="padding: 0;{% if forloop.first %}border-top:none;{% endif %}">
                                                         <table class="table table-striped" style="margin-bottom: 0;">
-                                                            {% res_question_tbody data.user_input %}
+                                                            {% res_question_tbody data %}
                                                         </table>
                                                     </td>
                                                 </tr>
@@ -235,7 +238,10 @@
                                                         {{ data.title }}
                                                         {% if data.title|slice:"-1:" != ":" %}:{% endif %}
                                                     </td>
-                                                    <td {% if forloop.first %}style="border-top:none;"{% endif %}>{{ data.user_input|linebreaksbr }}</td>
+                                                    <td {% if forloop.first %}style="border-top:none;"{% endif %}>
+                                                        {{ data.user_input|linebreaksbr }}
+                                                        {% if data.user_input and data.suffix %}{{ data.suffix }}{% endif %}
+                                                    </td>
                                                 </tr>
                                             {% endif %}
                                         {% endif %}

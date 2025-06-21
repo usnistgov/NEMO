@@ -106,24 +106,33 @@ def navigation_url(url_name, description, *conditions):
 
 
 @register.simple_tag
-def res_question_tbody(dictionary):
+def res_question_tbody(data):
+    if not data:
+        return ""
+    dictionary = data.get("user_input", data)
     if not dictionary:
         return ""
-    input_dict = dictionary[list(dictionary.keys())[0]]
+
+    input_dict = dictionary[next(iter(dictionary.keys()))]
     headers = list(input_dict.keys())
     header_cells = "".join([format_html("<th>{}</th>", h) for h in headers])
     head_html = format_html("<thead><tr><th>#</th>{}</tr></thead>", mark_safe(header_cells))
 
+    questions = {q["name"]: q for q in data.get("questions", [])}
     rows = []
-    for i, (index, d) in enumerate(dictionary.items()):
-        data_cells_html = "".join(
-            [
-                format_html("<td>{}</td>", ", ".join(d[h]) if isinstance(d.get(h), list) else d.get(h, ""))
-                for h in headers
-            ]
-        )
-        row_html = format_html("<tr><th>{}</th>{}</tr>", i + 1, mark_safe(data_cells_html))
-        rows.append(row_html)
+
+    for i, (_, d) in enumerate(dictionary.items(), start=1):
+        data_cells_html = ""
+        for h in headers:
+            question = questions.get(h)
+            suffix = f" {question.get('suffix')}" if question and "suffix" in question else ""
+            user_input = d.get(h)
+            cell_data = user_input + suffix if user_input else ""
+            if isinstance(user_input, list):
+                cell_data = ", ".join([u + suffix for u in user_input if u])
+            data_cells_html += format_html("<td>{}</td>", cell_data)
+        rows.append(format_html("<tr><th>{}</th>{}</tr>", i, mark_safe(data_cells_html)))
+
     body_html = format_html("<tbody>{}</tbody>", mark_safe("".join(rows)))
     return head_html + body_html
 
