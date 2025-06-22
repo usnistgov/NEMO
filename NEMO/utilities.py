@@ -184,6 +184,15 @@ class ProjectApplication(object):
         self.name = name
         self.id = name
 
+    def __hash__(self):
+        # Use the id attribute (or name) for generating a hash
+        return hash(self.id)
+
+    def __eq__(self, other):
+        if isinstance(other, ProjectApplication):
+            return self.id == other.id
+        return False
+
     def __str__(self):
         return self.name
 

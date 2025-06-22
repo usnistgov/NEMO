@@ -86,7 +86,10 @@ def task_details(request, task_id):
 
 
 def get_all_tool_categories() -> List[ToolCategory]:
-    categories = []
-    for tool in Tool.objects.filter(visible=True).order_by("_category").values_list("_category").distinct():
-        categories.append(ToolCategory(tool[0]))
-    return categories
+    categories = set()
+    for cat in Tool.objects.filter(visible=True).order_by("_category").values_list("_category").distinct():
+        parts = cat[0].split("/")
+        prefixes = ["/".join(parts[: i + 1]) for i in range(len(parts))]
+        for category in prefixes:
+            categories.add(ToolCategory(category))
+    return sorted(categories, key=lambda x: str(x))
