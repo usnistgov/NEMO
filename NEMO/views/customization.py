@@ -772,6 +772,8 @@ def set_customization(name, value):
 @require_GET
 def customization(request, key: str = "application"):
     customization_instance: CustomizationBase = CustomizationBase.get_instance(key)
+    if not customization_instance:
+        return HttpResponseNotFound(f"Customizations with key: '{key}' not found")
     return render(request, "customizations/customizations.html", customization_instance.context())
 
 
