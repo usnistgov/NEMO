@@ -16,9 +16,13 @@
         {{ title }} <small class="light-grey">between {{ start_date|date }} and {{ end_date|date }}</small>
     </h1>
     <p>
-        This page presents a monthly report of your {{ facility_name }} use
-        {% if billing_service %}and billing information{% endif %}
-        . Approved adjustments are
+        This page presents a monthly report of your {{ facility_name }}
+        {% if billing_service %}
+            use and billing information.
+        {% else %}
+            use.
+        {% endif %}
+        Approved adjustments are
         {% if not billing_service %}not{% endif %}
         reflected
         {% if billing_service %}in the billing information data but not{% endif %}

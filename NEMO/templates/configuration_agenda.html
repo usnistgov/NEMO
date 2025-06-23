@@ -142,13 +142,14 @@
         </script>
     {% else %}
         <p>
-            No tools require configuration
+            No tools require
             {% if time_period == 'today' %}
-                today
+                configuration today.
             {% elif time_period == 'near_future' %}
-                for the near future
+                configuration for the near future.
+            {% else %}
+                configuration.
             {% endif %}
-            .
         </p>
         <p>
             You can also

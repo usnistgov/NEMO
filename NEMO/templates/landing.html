@@ -133,11 +133,9 @@
                             {% if user.in_area %}
                                 {% with user.active_project_count as active_project_count %}
                                     <div class="alert alert-info">
-                                        You are logged in to the <b>{{ user.area_access_record.area }}</b>
-                                        {% if self_log_out %}
-                                            (<a href="{% url 'self_log_out' user.id %}">logout</a>)
-                                        {% endif %}
-                                        .
+                                        {# djlint:off #}
+                                        You are logged in to the <b>{{ user.area_access_record.area }}</b>{% if self_log_out %} (<a href="{% url 'self_log_out' user.id %}">logout</a>){% endif %}.
+                                        {# djlint:on #}
                                         Usage time is being billed to the project named <b>{{ user.billing_to_project }}</b>.
                                         {% if active_project_count > 1 %}
                                             <a href="{% url 'change_project' %}">Click here to bill to a different project at any time.</a>

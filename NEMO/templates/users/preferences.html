@@ -178,11 +178,12 @@
                     </div>
                     <div class="form-group">
                         <div id="task-notification-list" class="col-sm-offset-5 col-md-offset-4 col-lg-offset-3 col-sm-7">
-                            You are currently viewing/receiving maintenance notifications for all tools
+                            You are currently viewing/receiving maintenance notifications for all
                             {% if not user.is_facility_manager or not customizations|get_item:"tool_task_updates_facility_managers" == "enabled" %}
-                                you are an owner, backup owners or staff of
+                                tools you are an owner, backup owners or staff of.
+                            {% else %}
+                                tools.
                             {% endif %}
-                            .
                         </div>
                     </div>
                 </div>
