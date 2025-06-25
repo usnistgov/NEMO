@@ -56,7 +56,7 @@
                 </ul>
             </div>
             <div id="expand-collapse" class="btn-group sidebar-item">
-                {% if calendar_qualified_tools and not user.is_staff %}
+                {% if user.is_staff or customizations|get_item:"calendar_qualified_tools" == "enabled" %}
                     <button type="button"
                             class="btn btn-default"
                             style="width:50%"
@@ -66,10 +66,10 @@
                     </button>
                     <button type="button"
                             class="btn btn-default"
-                            id="qualified_tools_btn"
+                            id="my_tools_btn"
                             style="width:50%"
-                            onclick="toggle_qualified_tools(retrieve_user_qualifications())"
-                            title="Only show qualified tools">
+                            onclick="toggle_my_tools(retrieve_my_tools())"
+                            title="Only show {% if user.is_staff %}my{% else %}qualified{% endif %} tools">
                         <span class="glyphicon glyphicon-check"></span>
                     </button>
                 {% else %}
@@ -889,10 +889,10 @@ function clear_specific_user()
 	update_event_sources();
 }
 
-function retrieve_user_qualifications()
+function retrieve_my_tools()
 {
-    return {{ user.qualifications.all|json_search_base }}.map(
-        qualification => { return qualification.id; }
+    return {{ user.my_tools|json_search_base }}.map(
+        tool => { return tool.id; }
     );
 }
 
@@ -1025,9 +1025,9 @@ function on_load()
 	$("#item_search").focus();
 	load_sidebar_state();
     update_clear_selection_btn_display();
-    {% if calendar_qualified_tools and not user.is_staff  %}
-        {# Filter qualified tools depending on the status of the button. #}
-        load_qualified_tools(retrieve_user_qualifications());
+    {% if user.is_staff or customizations|get_item:"calendar_qualified_tools" == "enabled" %}
+        {# Filter "my tools" depending on the status of the button. #}
+        load_my_tools(retrieve_my_tools());
     {% endif %}
 	$('input[type=checkbox].item-checkbox').show();
 	$(".item_tree").show(); {# Item tree is initially hidden so that previous expand/collapse state of categories is configured before it's visible. #}

@@ -1039,6 +1039,17 @@ class User(BaseModel, PermissionsMixin):
                 ).exists()
         return False
 
+    def my_tools(self) -> Optional[List[Tool]]:
+        # Returns the list of tools for the user. Staff don't get qualifications since they are qualified on all tools
+        tools = set()
+        tools.update(self.primary_tool_owner.all())
+        tools.update(self.backup_for_tools.all())
+        tools.update(self.staff_for_tools.all())
+        tools.update(self.superuser_for_tools.all())
+        if not self.is_staff:
+            tools.update(self.qualifications.all())
+        return list(tools)
+
     def billing_to_project(self):
         access_record = self.area_access_record()
         if access_record is None:
