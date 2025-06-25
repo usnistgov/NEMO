@@ -3627,6 +3627,9 @@ class TaskStatus(SerializationByNameModel):
     notify_backup_tool_owners = models.BooleanField(
         default=False, help_text="Notify the backup tool owners when a task transitions to this status"
     )
+    notify_tool_staff = models.BooleanField(
+        default=False, help_text="Notify the users who are staff on this tool when a task transitions to this status"
+    )
     notify_tool_notification_email = models.BooleanField(
         default=False,
         help_text="Send an email to the tool notification email address when a task transitions to this status",

@@ -1006,6 +1006,7 @@ class TaskStatusAdmin(admin.ModelAdmin):
         "name",
         "notify_primary_tool_owner",
         "notify_backup_tool_owners",
+        "notify_tool_staff",
         "notify_tool_notification_email",
         "custom_notification_email_address",
     )

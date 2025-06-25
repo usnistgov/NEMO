@@ -5,12 +5,13 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.db.models import Q
+from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.decorators import staff_member_required
+from NEMO.decorators import staff_member_or_tool_staff_required
 from NEMO.forms import TaskForm, TaskImagesForm, nice_errors
 from NEMO.models import (
     Interlock,
@@ -279,10 +280,13 @@ Visit {url} to view the tool control page for the task.<br/>
         tasks_logger.exception(error_message)
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_POST
 def update(request, task_id):
     task = get_object_or_404(Task, id=task_id)
+    user: User = request.user
+    if not user.is_staff and task.tool_id not in user.staff_for_tools.values_list("id", flat=True):
+        return HttpResponseBadRequest("You are not authorized to update this task.")
     images_form = TaskImagesForm(request.POST, request.FILES)
     form = TaskForm(request.user, data=request.POST, instance=task)
     next_page = request.POST.get("next_page", "tool_control")
@@ -306,10 +310,13 @@ def update(request, task_id):
         return redirect("tool_control")
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_GET
 def task_update_form(request, task_id):
+    user: User = request.user
     task = get_object_or_404(Task, id=task_id)
+    if not user.is_staff and task.tool_id not in user.staff_for_tools.values_list("id", flat=True):
+        return HttpResponseBadRequest("You are not authorized to update this task.")
     categories = TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT)
     dictionary = {
         "categories": categories,
@@ -323,10 +330,13 @@ def task_update_form(request, task_id):
     return render(request, "tasks/update.html", dictionary)
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_GET
 def task_resolution_form(request, task_id):
+    user: User = request.user
     task = get_object_or_404(Task, id=task_id)
+    if not user.is_staff and task.tool_id not in user.staff_for_tools.values_list("id", flat=True):
+        return HttpResponseBadRequest("You are not authorized to resolve this task.")
     categories = TaskCategory.objects.filter(stage=TaskCategory.Stage.COMPLETION)
     dictionary = {
         "categories": categories,
@@ -372,6 +382,9 @@ def set_task_status(request, task, status_name, user):
         if status.notify_backup_tool_owners:
             # Add backup owners
             recipient_users.extend(task.tool.backup_owners.all())
+        if status.notify_tool_staff:
+            # add staff on tool
+            recipient_users.extend(task.tool.staff.all())
         recipients = [
             email
             for user in recipient_users

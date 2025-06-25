@@ -26,7 +26,7 @@ from NEMO.views.customization import RemoteWorkCustomization
 @staff_member_or_tool_staff_required
 @require_GET
 def remote_work(request):
-    staff_on_project = not request.user.is_staff
+    staff_on_tool = not request.user.is_staff
     if request.GET.get("start") or request.GET.get("end"):
         start_date, end_date = extract_optional_beginning_and_end_dates(request.GET, date_only=True)
     else:
@@ -41,7 +41,7 @@ def remote_work(request):
     else:
         operator = request.user
 
-    if staff_on_project:
+    if staff_on_tool:
         operator = request.user
 
     project = request.GET.get("project")
@@ -51,7 +51,7 @@ def remote_work(request):
         project = None
     usage_events = UsageEvent.objects.filter(remote_work=True)
     s_charges = StaffCharge.objects.filter()
-    if staff_on_project:
+    if staff_on_tool:
         project_list = remove_duplicates(
             list(usage_events.filter(operator_id=operator.id).values_list("project", flat=True))
             + list(s_charges.filter(staff_member_id=operator.id).values_list("project", flat=True))

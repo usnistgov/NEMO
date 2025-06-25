@@ -2,19 +2,23 @@ from itertools import chain
 from typing import List
 
 from django.db.models import Q
+from django.http import HttpResponseNotFound
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET
 
-from NEMO.decorators import staff_member_required
+from NEMO.decorators import staff_member_or_tool_staff_required
 from NEMO.models import Task, TaskCategory, TaskStatus, Tool, User
 from NEMO.utilities import ToolCategory, as_timezone
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_GET
 def maintenance(request, sort_by=""):
     user: User = request.user
     pending_tasks = Task.objects.filter(cancelled=False, resolved=False)
+    if not user.is_staff:
+        # restrict to tools that the user is staff for
+        pending_tasks = pending_tasks.filter(tool__in=user.staff_for_tools.all())
     tool_category = request.GET.get("tool_category")
     if user.get_preferences().tool_task_notifications.exists():
         # Limit tools to preferences + tools user is the owner of + tools user is a backup owner of.
@@ -61,10 +65,13 @@ def maintenance(request, sort_by=""):
     return render(request, "maintenance/maintenance.html", dictionary)
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_GET
 def task_details(request, task_id):
+    user: User = request.user
     task = get_object_or_404(Task, id=task_id)
+    if not user.is_staff and task.tool_id not in user.staff_for_tools.values_list("id", flat=True):
+        return HttpResponseNotFound("Task not found")
 
     if task.cancelled or task.resolved:
         return render(request, "maintenance/closed_task_details.html", {"task": task})
@@ -80,7 +87,7 @@ def task_details(request, task_id):
     }
 
     if task.tool.is_configurable():
-        dictionary["rendered_configuration_html"] = task.tool.configuration_widget(request.user)
+        dictionary["rendered_configuration_html"] = task.tool.configuration_widget(user)
 
     return render(request, "maintenance/pending_task_details.html", dictionary)
 
