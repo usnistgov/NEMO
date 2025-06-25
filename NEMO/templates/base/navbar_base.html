@@ -85,7 +85,7 @@
                                     {% endif %}
                                     {% navigation_url 'customization' 'Customization' user.is_superuser %}
                                     {% navigation_url 'email_broadcast' 'Email' %}
-                                    {% navigation_url 'project_billing' 'Project billing' user.is_accounting_officer user.is_user_office user.is_superuser %}
+                                    {% navigation_url 'project_billing' 'Project billing' user.is_accounting_officer user.is_user_office user.is_facility_manager user.is_superuser %}
                                     {% navigation_url 'recurring_charges' recurring_charges_name user.is_user_office user.is_facility_manager user.is_superuser %}
                                     {% navigation_url 'staff_charges' 'Remote work' user.is_staff user.is_superuser %}
                                     {% navigation_url 'resources' 'Resources' user.is_staff user.is_superuser %}
