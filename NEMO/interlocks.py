@@ -18,7 +18,7 @@ from pymodbus.exceptions import ConnectionException
 from requests import Response
 
 from NEMO.exceptions import InterlockError
-from NEMO.models import Interlock as Interlock_model, InterlockCardCategory, User
+from NEMO.models import Interlock as Interlock_model, InterlockCard, InterlockCardCategory, User
 from NEMO.typing import QuerySetType
 from NEMO.utilities import BasicDisplayTable, EmailCategory, export_format_datetime, format_datetime
 
@@ -382,10 +382,30 @@ class ProXrInterlock(Interlock):
         # only the last byte of the response is important
         return relay_socket.recv(64)[-1]
 
-    def _get_state(self, relay_socket, interlock_channel, interlock_bank):
+    @classmethod
+    def _get_command_value(cls, interlock: Interlock_model, state):
+        """Returns the command value to be sent to the interlock."""
+        reverse_signal = interlock.card.extra_args_dict.get("reverse_signal", False)
+        off_command = (99 + interlock.channel) if interlock.channel != 0 else 129
+        on_command = (107 + interlock.channel) if interlock.channel != 0 else 130
+        if reverse_signal:
+            return on_command if state == cls.PXR_RELAY_OFF else off_command
+        else:
+            return off_command if state == cls.PXR_RELAY_OFF else on_command
+
+    @classmethod
+    def _get_state_value(cls, interlock_card: InterlockCard, state):
+        """Returns the command value to be compared to the interlock state."""
+        reverse_signal = interlock_card.extra_args_dict.get("reverse_signal", False)
+        if reverse_signal:
+            return cls.PXR_RELAY_ON if state == cls.PXR_RELAY_OFF else cls.PXR_RELAY_OFF
+        return state
+
+    def _get_state(self, relay_socket, interlock_card: InterlockCard, interlock_channel, interlock_bank):
         """
         Returns current NEMO state of the relay.
         Argument relay_socket is a connected socket object.
+        Argument interlock_card is the NEMO interlock.card.
         Argument interlock_channel is the NEMO interlock.channel.
         Argument interlock_bank is the NEMO interlock.unit_id.
         """
@@ -394,9 +414,9 @@ class ProXrInterlock(Interlock):
         # We cannot read relay 0 since it means all relays, so check the first one
         read_channel = interlock_channel if interlock_channel != 0 else 1
         state = self._send_bytes(relay_socket, (254, 115 + read_channel, read_bank))
-        if state == self.PXR_RELAY_OFF:
+        if state == self._get_state_value(interlock_card, self.PXR_RELAY_OFF):
             return Interlock_model.State.LOCKED
-        elif state == self.PXR_RELAY_ON:
+        elif state == self._get_state_value(interlock_card, self.PXR_RELAY_ON):
             return Interlock_model.State.UNLOCKED
         else:
             return Interlock_model.State.UNKNOWN
@@ -413,14 +433,14 @@ class ProXrInterlock(Interlock):
             ) as relay_socket:
                 if command_type == Interlock_model.State.LOCKED:
                     # turn the interlock channel off
-                    off_command = (99 + interlock.channel) if interlock.channel != 0 else 129
+                    off_command = self._get_command_value(interlock, self.PXR_RELAY_OFF)
                     self._send_bytes(relay_socket, (254, off_command, bank))
-                    state = self._get_state(relay_socket, interlock.channel, bank)
+                    state = self._get_state(relay_socket, interlock.card, interlock.channel, bank)
                 elif command_type == Interlock_model.State.UNLOCKED:
                     # turn the interlock channel on
-                    on_command = (107 + interlock.channel) if interlock.channel != 0 else 130
+                    on_command = self._get_command_value(interlock, self.PXR_RELAY_ON)
                     self._send_bytes(relay_socket, (254, on_command, bank))
-                    state = self._get_state(relay_socket, interlock.channel, bank)
+                    state = self._get_state(relay_socket, interlock.card, interlock.channel, bank)
         except Exception as error:
             raise InterlockError(interlock=interlock, msg="Communication error: " + str(error))
         return state
@@ -460,13 +480,21 @@ class WebRelayHttpInterlock(Interlock):
         if error:
             raise ValidationError(error)
 
+    @classmethod
+    def _get_command_value(cls, interlock: Interlock_model, state):
+        """Returns the command value to be sent to the interlock."""
+        reverse_signal = interlock.card.extra_args_dict.get("reverse_signal", False)
+        if reverse_signal:
+            return cls.WEB_RELAY_ON if state == cls.WEB_RELAY_OFF else cls.WEB_RELAY_OFF
+        return state
+
     def _send_command(self, interlock: Interlock_model, command_type: Interlock_model.State) -> Interlock_model.State:
         state = Interlock_model.State.UNKNOWN
         try:
             if command_type == Interlock_model.State.LOCKED:
-                state = self.set_relay_state(interlock, self.WEB_RELAY_OFF)
+                state = self.set_relay_state(interlock, self._get_command_value(interlock, self.WEB_RELAY_OFF))
             elif command_type == Interlock_model.State.UNLOCKED:
-                state = self.set_relay_state(interlock, self.WEB_RELAY_ON)
+                state = self.set_relay_state(interlock, self._get_command_value(interlock, self.WEB_RELAY_ON))
         except Exception as error:
             raise InterlockError(interlock=interlock, msg="General exception: " + str(error))
         return state
@@ -504,9 +532,9 @@ class WebRelayHttpInterlock(Interlock):
             if element is not None:
                 state = int(element.text)
                 break
-        if state == cls.WEB_RELAY_OFF:
+        if state == cls._get_command_value(interlock, cls.WEB_RELAY_OFF):
             return Interlock_model.State.LOCKED
-        elif state == cls.WEB_RELAY_ON:
+        elif state == cls._get_command_value(interlock, cls.WEB_RELAY_ON):
             return Interlock_model.State.UNLOCKED
         else:
             raise Exception(f"Unexpected state received from interlock: {state}")
@@ -553,12 +581,20 @@ class ModbusTcpInterlock(Interlock):
         state = Interlock_model.State.UNKNOWN
         try:
             if command_type == Interlock_model.State.LOCKED:
-                state = self.set_relay_state(interlock, self.MODBUS_OFF)
+                state = self.set_relay_state(interlock, self._get_command_value(interlock, self.MODBUS_OFF))
             elif command_type == Interlock_model.State.UNLOCKED:
-                state = self.set_relay_state(interlock, self.MODBUS_ON)
+                state = self.set_relay_state(interlock, self._get_command_value(interlock, self.MODBUS_ON))
         except Exception as error:
             interlocks_logger.exception(error)
             raise Exception("General exception: " + str(error))
+        return state
+
+    @classmethod
+    def _get_command_value(cls, interlock: Interlock_model, state):
+        """Returns the command value to be sent to the interlock."""
+        reverse_signal = interlock.card.extra_args_dict.get("reverse_signal", False)
+        if reverse_signal:
+            return cls.MODBUS_ON if state == cls.MODBUS_OFF else cls.MODBUS_OFF
         return state
 
     @classmethod
@@ -581,9 +617,9 @@ class ModbusTcpInterlock(Interlock):
             if read_reply.isError():
                 raise Exception(str(read_reply))
             state = read_reply.bits[0]
-            if state == cls.MODBUS_OFF:
+            if state == cls._get_command_value(interlock, cls.MODBUS_OFF):
                 return Interlock_model.State.LOCKED
-            elif state == cls.MODBUS_ON:
+            elif state == cls._get_command_value(interlock, cls.MODBUS_ON):
                 return Interlock_model.State.UNLOCKED
         finally:
             client.close()
