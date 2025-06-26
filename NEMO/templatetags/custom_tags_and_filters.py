@@ -14,7 +14,6 @@ from django.utils import timezone
 from django.utils.formats import localize_input
 from django.utils.html import escape, escapejs, format_html
 from django.utils.safestring import mark_safe
-from typing_extensions import deprecated
 
 from NEMO.constants import NEXT_PARAMETER_NAME
 from NEMO.mixins import BillableItemMixin
@@ -182,7 +181,7 @@ def concat(value, arg):
     return str(value) + str(arg)
 
 
-@deprecated("deprecated, use `customizations|get_item:'item_key'`")
+# deprecated, use `customizations|get_item:'item_key'`
 @register.filter()
 def customization(customization_key, key):
     return CustomizationBase.get_instance(customization_key).get(key)
