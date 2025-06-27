@@ -103,7 +103,7 @@ def do_cancel_unused_reservations(request=None):
         )
         for r in reservation:
             # Staff may abandon reservations.
-            if r.user.is_staff or r.user.is_staff_on_tool(tool):
+            if r.user.is_staff_on_tool(tool):
                 continue
             # If there was no tool enable or disable event since the threshold timestamp then we assume the reservation has been missed.
             if not (
@@ -866,7 +866,8 @@ def do_manage_tool_qualifications(request=None):
                         if qualification_expiration_never_used
                         else None
                     )
-                if expiration_date:
+                # Check for staff on tools
+                if expiration_date and not user.is_staff_on_tool(tool):
                     if expiration_date <= date.today():
                         qualification.delete()
                         send_tool_qualification_expiring_email(
