@@ -430,6 +430,7 @@ class ReservationViewSet(ModelViewSet):
         "area": key_filters,
         "question_data": string_filters,
         "cancelled": boolean_filters,
+        "shortened": boolean_filters,
         "missed": boolean_filters,
         "validated": boolean_filters,
         "validated_by": key_filters,
