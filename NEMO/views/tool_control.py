@@ -750,11 +750,7 @@ def reset_tool_counter(request, counter_id):
 
 
 def interlock_bypass_allowed(user: User, item):
-    return (
-        user.is_staff
-        or user.is_staff_on_tool(item)
-        or InterlockCustomization.get_bool("allow_bypass_interlock_on_failure")
-    )
+    return user.is_staff_on_tool(item) or InterlockCustomization.get_bool("allow_bypass_interlock_on_failure")
 
 
 def interlock_error(action: str, user: User, item=None):
