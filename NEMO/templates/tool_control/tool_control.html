@@ -389,7 +389,7 @@
 				{% if selected_tool %}
 					expand_to_item({{ selected_tool }}, 'tool');
 				{% endif %}
-				{#set_interval_when_visible(document, refresh_sidebar_tool_icons, 30000);#}
+				set_interval_when_visible(document, refresh_sidebar_tool_icons, 30000);
 			{% endif %}
 			refresh_tool_status();
 		}
