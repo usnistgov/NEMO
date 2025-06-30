@@ -110,6 +110,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.admin",
     "django.contrib.humanize",
+    "django_jsonform",
     "NEMO.apps.kiosk",  # Comment out if you are not planning on using the Kiosk tablet pages
     "NEMO.apps.area_access",  # Comment out if you are not planning on using the Area Access tablets screen
     "NEMO",
@@ -370,20 +371,8 @@ INTERLOCKS_ENABLED = False
 # Audit log. Update this list based on your audit needs. See supported fields at
 # https://django-auditlog.readthedocs.io/en/latest/usage.html#settings
 AUDITLOG_INCLUDE_TRACKING_MODELS = (
-    # Track changes to user access expiration, roles and managed projects
-    {
-        "model": "NEMO.User",
-        "include_fields": [
-            "access_expiration",
-            "is_staff",
-            "is_service_personnel",
-            "is_technician",
-            "is_facility_manager",
-            "is_superuser",
-        ],
-        "m2m_fields": ["managed_projects"],
-    },
-    # Track all project, account and Customization changes
+    # Track all user, project, account and Customization changes
+    "NEMO.User",
     "NEMO.Project",
     "NEMO.Account",
     "NEMO.Customization",
@@ -403,4 +392,13 @@ IGNORABLE_404_URLS = [
     re.compile(r"^/robots.txt$"),
     re.compile(r"^/apple-touch-icon.*\.png$"),
     re.compile(r"^/favicon\.ico$"),
+    re.compile(r"^/event_details/reservation/[0-9]+/\?popup_view=true"),
 ]
+
+# This is where the JSON schema for tool properties can be defined.
+# See https://django-jsonform.readthedocs.io/en/latest/schema.html
+TOOL_PROPERTIES_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": True,
+}

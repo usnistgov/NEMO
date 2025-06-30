@@ -68,7 +68,7 @@
                         </select>
                     </div>
                     <div class="col-sm-12 help-block">
-                        Only the {{ "adjustment_requests"|customization:"adjustment_requests_charges_display_number" }} most recent charges are displayed. To find earlier charges, go to your <a href='{% url "user_usage" %}'>Usage</a> page and create an adjustment request from there.
+                        Only the {{ customizations|get_item:"adjustment_requests_charges_display_number" }} most recent charges are displayed. To find earlier charges, go to your <a href='{% url "user_usage" %}'>Usage</a> page and create an adjustment request from there.
                     </div>
                 </div>
             </div>
@@ -164,7 +164,7 @@
             <div class="text-right">
                 {% if form.instance.get_status_display == "Pending" %}
                     {% if instance_id and user in form.instance.reviewers %}
-                        {% if form.instance.adjustable_charge and "adjustment_requests"|customization:"adjustment_requests_apply_button" == "enabled" %}
+                        {% if form.instance.adjustable_charge and customizations|get_item:"adjustment_requests_apply_button" == "enabled" %}
                             {% button type="save" submit=False name="approve_apply_request" title="Approve and adjust the original charge" icon="glyphicon-ok-circle" value="Approve and adjust" onclick="confirm_review_dialog(this, 'approve and adjust the actual charge of');" %}
                             {% button type="save" submit=False name="approve_request" title="Approve without adjusting" icon="glyphicon-ok-circle" value="Approve only" onclick="confirm_review_dialog(this);" %}
                         {% else %}

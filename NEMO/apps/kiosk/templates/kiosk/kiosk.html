@@ -44,7 +44,7 @@
         <div id="kiosk-container">
             <div class="container-fluid">
                 <div id="default_content">
-                    <h1>Scan your badge to control tools</h1>
+                    {{ customizations|get_item:"kiosk_message"|default_if_none:"<h1>Scan your badge to control tools</h1>"|safe }}
                     <div id="occupancy"></div>
                     <div id="usage_title"></div>
                     <div class="tab-pane{% if tools_exist and tab == 'tools' %} active{% endif %} info-tooltip-container"
@@ -92,9 +92,10 @@
             </div>
             <div class="countdown" style="position: fixed; bottom: 0; right: 0;font-size: x-large"></div>
         </div>
+        <div class="pull-left logged_in_user" style="margin-top: 24px; padding-left:5px; font-size: x-large"></div>
         {% include 'base/footer.html' with no_links=True %}
         <script type="text/javascript">
-        {% with show_badge_number="application"|customization:"show_badge_number" %}
+        {% with show_badge_number=customizations|get_item:"show_badge_number" %}
 		let kiosk_badge_reader = new BadgeReader(send_badge_number, "{{ badge_reader.send_key }}", {% if badge_reader.record_key %}"{{ badge_reader.record_key }}"{% else %}undefined{% endif %}, {{ show_badge_number|yesno:"true,false" }});
         {% endwith %}
 		let timeout_handle = null;
@@ -107,6 +108,14 @@
 		let error_element = $("#error");
 		let error_interlock_element = $("#interlock_error");
 		let bypass_button = $("#inter_bypass");
+        let close_when_done = false;
+
+        if (localStorage.getItem("kiosk_badge_number") !== null)
+        {
+            send_badge_number(localStorage.getItem("kiosk_badge_number"));
+            localStorage.removeItem("kiosk_badge_number");
+            close_when_done = true;
+        }
 
         function show_alerts()
         {
@@ -183,6 +192,11 @@
 			error_interlock_element.hide();
 			error_element.hide();
 			$("#badge_number").html("");
+            set_logged_in_user("");
+            if (close_when_done)
+            {
+                window.close();
+            }
 			default_content_element.show();
 		}
 		function clear_timeout()
@@ -195,6 +209,10 @@
 			countdown_handle = null;
 			$(".countdown").html("");
 		}
+        function set_logged_in_user(user)
+        {
+            $(".logged_in_user").html(user);
+        }
 		function select_project(element, project_id)
 		{
 			$(".project-choice").removeClass('active');

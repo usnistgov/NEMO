@@ -127,7 +127,7 @@ def make_reservation(request):
     except ProjectChargeException as e:
         return render(request, "mobile/error.html", {"message": e.msg})
     except:
-        if not user.is_staff:
+        if not user.is_staff and not user.is_staff_on_tool(item):
             return render(request, "mobile/error.html", {"message": "You must specify a project for your reservation"})
 
     reservation_questions = render_reservation_questions(item_type, item.id, reservation.project)

@@ -419,8 +419,8 @@ def adjustment_eligible_items(user: User, current_item=None) -> List[BillableIte
             type_filter = type_filter & ~Q(usage_event__isnull=False)
         consumable_withdrawals = consumable_withdrawals.filter(type_filter)
         items.extend(consumable_withdrawals[:item_number])
-    if user.is_staff and AdjustmentRequestsCustomization.get_bool("adjustment_requests_staff_staff_charges_enabled"):
-        # Add all charges where staff is the operator and remove the ones where user is the operator
+    if AdjustmentRequestsCustomization.get_bool("adjustment_requests_staff_staff_charges_enabled"):
+        # Add all charges where staff is the operator and remove the ones where the user is the operator
         items.extend(
             UsageEvent.objects.filter(operator=user, end__isnull=False)
             .exclude(user=F("operator"))

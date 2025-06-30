@@ -1,11 +1,19 @@
 {% load custom_tags_and_filters %}
 <div class="row" style="margin-top:30px">
-    <div class="col-xs-offset-3 col-xs-6" onclick="revert()">
-        <div class="alert alert-warning" style="text-align:center; margin-bottom:0">
+    <div class="col-sm-offset-3 col-sm-6" onclick="revert()">
+        <div class="alert alert-warning text-center" style="margin-bottom:0">
             <span style="font-size:x-large">I've finished using this kiosk</span>
         </div>
     </div>
 </div>
+{% if customer.access_expiration %}
+    {% if show_access_expiration_banner %}
+        <div class="col-lg-12 text-center alert alert-{{ show_access_expiration_banner }}"
+             style="margin-top: 15px">
+            <i class="glyphicon glyphicon-alert"></i> Your access expires in {{ customer.access_expiration|timeuntil }} on {{ customer.access_expiration|date:'SHORT_DATE_FORMAT' }}
+        </div>
+    {% endif %}
+{% endif %}
 {% if messages %}
     {% for message in messages %}
         <div class="alert alert-{{ message.level_tag }} alert-dismissible show-on-load"
@@ -44,4 +52,7 @@
         {% endfor %}
     </div>
 {% endif %}
-<script>revert(75);</script>
+<script>
+    revert(75);
+    set_logged_in_user("{{ customer.first_name }}");
+</script>

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load humanize %}
+{% load custom_tags_and_filters %}
 {% block extrahead %}
     {% load static %}
     <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
@@ -21,6 +22,17 @@
     <div class="tab-content">
         <div id="pending" class="tab-pane active">
             <div class="split-screen-left-panel">
+                <div class="form-inline" style="margin: 15px;">
+                    <label class="form-group control-label text-left" for="tool_category_search">Tool category:</label>
+                    <div class="form-group" style="display: inline-block;margin-left: 15px;width: 60%; min-width: 150px;">
+                        <input id="tool_category_search"
+                               type="text"
+                               class="form-group form-control"
+                               placeholder="Filter by tool category"
+                               value="{{ tool_category|default_if_none:'' }}"
+                               style="width: 100%" />
+                    </div>
+                </div>
                 <table id="pending_tasks" class="table table-hover">
                     <thead>
                         <tr>
@@ -34,7 +46,10 @@
                                 <a href="{% url 'maintenance' sort_by='tool' %}">Tool</a>
                             </th>
                             <th>
-                                <a href="{% url 'maintenance' sort_by='problem_category' %}">Category</a>
+                                <a href="{% url 'maintenance' sort_by='tool___category' %}">Tool category</a>
+                            </th>
+                            <th>
+                                <a href="{% url 'maintenance' sort_by='problem_category' %}">Problem category</a>
                             </th>
                             <th>
                                 <a href="{% url 'maintenance' sort_by='last_updated' %}">Last updated</a>
@@ -57,6 +72,7 @@
                                 {% endif %}
                             </td>
                             <td>{{ task.tool.name }}</td>
+                            <td>{{ task.tool.category }}</td>
                             <td>{{ task.problem_category|default_if_none:"" }}</td>
                             <td>
                                 {% if task.last_updated and task.last_updated_by %}
@@ -171,6 +187,13 @@
 		localStorage['Maintenance page, active task'] = active_row.data('task-id');
 	}
 
+    function filter_tool_category(jquery_event, search_selection)
+    {
+        const this_url = new URL(window.location.href);
+        this_url.searchParams.set("tool_category", search_selection.name);
+        window.location.href = this_url.toString();
+    }
+
 	function on_load()
 	{
 		$("#tabs a").click(switch_tab);
@@ -180,6 +203,16 @@
 			let row = $("#pending_tasks tr[data-task-id='" + active_row + "']");
 			row.click();
 		}
+        $("#tool_category_search")
+        .autocomplete('tool_categories', filter_tool_category, {% json_search_base_with_extra_fields tool_categories %}, true)
+        .on("input", function ()
+        {
+            if (!$(this).val())
+            {
+                filter_tool_category('', {'name': ''});
+            }
+        });
+
 	}
 
 	$(on_load);

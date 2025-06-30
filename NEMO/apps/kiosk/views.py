@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from http import HTTPStatus
 from typing import Dict
 
@@ -28,7 +28,7 @@ from NEMO.models import (
     User,
 )
 from NEMO.policy import policy_class as policy
-from NEMO.utilities import localize, quiet_int
+from NEMO.utilities import localize, quiet_int, remove_duplicates
 from NEMO.views.area_access import log_out_user
 from NEMO.views.calendar import (
     cancel_the_reservation,
@@ -37,7 +37,7 @@ from NEMO.views.calendar import (
     set_reservation_configuration,
     shorten_reservation,
 )
-from NEMO.views.customization import ApplicationCustomization, ToolCustomization
+from NEMO.views.customization import ApplicationCustomization, ToolCustomization, UserCustomization
 from NEMO.views.tasks import save_task
 from NEMO.views.tool_control import (
     email_managers_required_questions_disable_tool,
@@ -74,10 +74,10 @@ def do_enable_tool(request, tool_id):
 
     # All policy checks passed so enable the tool for the user.
     if tool.interlock and not tool.interlock.unlock():
-        if bypass_interlock and interlock_bypass_allowed(customer):
+        if bypass_interlock and interlock_bypass_allowed(customer, tool):
             pass
         else:
-            return interlock_error("Enable", customer)
+            return interlock_error("Enable", customer, tool)
 
     # Create a new usage event to track how long the user uses the tool.
     new_usage_event = UsageEvent()
@@ -138,10 +138,10 @@ def do_disable_tool(request, tool_id):
 
     # All policy checks passed so try to disable the tool for the user.
     if tool.interlock and not tool.interlock.lock():
-        if bypass_interlock and interlock_bypass_allowed(customer):
+        if bypass_interlock and interlock_bypass_allowed(customer, tool):
             pass
         else:
-            return interlock_error("Disable", customer)
+            return interlock_error("Disable", customer, tool)
 
     # Shorten the user's tool reservation since we are now done using the tool
     current_usage_event = tool.get_current_usage_event()
@@ -217,9 +217,9 @@ def enter_wait_list(request):
         dictionary = {"message": "The tool is free to use.", "delay": 10}
         return render(request, "kiosk/acknowledgement.html", dictionary)
 
-    # The user must be qualified to use the tool itself, or the parent tool in case of alternate tool.
+    # The user must be qualified to use the tool itself or the parent tool in case of an alternate tool.
     tool_to_check_qualifications = tool.parent_tool if tool.is_child_tool() else tool
-    if tool_to_check_qualifications not in customer.qualifications.all() and not customer.is_staff:
+    if tool_to_check_qualifications not in customer.qualifications.all() and not customer.is_staff_on_tool(tool):
         dictionary = {"message": "You are not qualified to use this tool.", "delay": 10}
         return render(request, "kiosk/acknowledgement.html", dictionary)
 
@@ -293,7 +293,7 @@ def reserve_tool(request):
         return render(request, "kiosk/error.html", dictionary)
 
     # All policy checks have passed.
-    if project is None and not customer.is_staff:
+    if project is None and not customer.is_staff_on_tool(tool):
         dictionary["message"] = "You must specify a project for your reservation"
         return render(request, "kiosk/error.html", dictionary)
 
@@ -405,7 +405,19 @@ def choices(request):
         }
         return render(request, "kiosk/acknowledgement.html", dictionary)
 
+    show_access_expiration_banner = False
+    expiration_warning = UserCustomization.get_int("user_access_expiration_banner_warning")
+    expiration_danger = UserCustomization.get_int("user_access_expiration_banner_danger")
+    if customer.access_expiration and (expiration_warning or expiration_danger):
+        access_expiration_datetime = datetime.combine(customer.access_expiration, time.min).astimezone()
+        if access_expiration_datetime >= timezone.now():
+            if expiration_warning and access_expiration_datetime < timezone.now() + timedelta(days=expiration_warning):
+                show_access_expiration_banner = "warning"
+            if expiration_danger and access_expiration_datetime < timezone.now() + timedelta(days=expiration_danger):
+                show_access_expiration_banner = "danger"
+
     dictionary = {
+        "show_access_expiration_banner": show_access_expiration_banner,
         "now": timezone.now(),
         "customer": customer,
         "usage_events": list(usage_events),
@@ -455,7 +467,7 @@ def tool_information(request, tool_id, user_id, back):
     )
     tool_credentials = []
     if ToolCustomization.get_bool("tool_control_show_tool_credentials") and (
-        customer.is_staff or customer.is_facility_manager
+        customer.is_staff_on_tool(tool) or customer.is_facility_manager
     ):
         if customer.is_facility_manager:
             tool_credentials = tool.toolcredentials_set.all()
@@ -490,23 +502,23 @@ def tool_information(request, tool_id, user_id, back):
             )
         ),
     }
-    try:
-        current_reservation = Reservation.objects.get(
-            start__lt=timezone.now(),
-            end__gt=timezone.now(),
-            cancelled=False,
-            missed=False,
-            shortened=False,
-            user=customer,
-            tool=tool,
-        )
+
+    current_reservation = Reservation.objects.filter(
+        start__lt=timezone.now(),
+        end__gt=timezone.now(),
+        cancelled=False,
+        missed=False,
+        shortened=False,
+        user=customer,
+        tool=tool,
+    ).last()
+    if current_reservation:
         remaining_reservation_duration = int((current_reservation.end - timezone.now()).total_seconds() / 60)
         # We don't need to bother telling the user their reservation will be shortened if there's less than two minutes left.
         # Staff are exempt from reservation shortening.
         if remaining_reservation_duration > 2:
             dictionary["remaining_reservation_duration"] = remaining_reservation_duration
-    except Reservation.DoesNotExist:
-        pass
+
     return render(request, "kiosk/tool_information.html", dictionary)
 
 
@@ -666,13 +678,15 @@ def get_categories_and_tools_dictionary(customer: User, category=None) -> Dict:
     if category:
         tools = tools.filter(_category__istartswith=category + "/")
     categories = [t[0] for t in tools.order_by("_category").values_list("_category").distinct()]
+    tool_ids_user_is_qualified = remove_duplicates(
+        list(customer.qualifications.all().values_list("id", flat=True))
+        + list(customer.staff_for_tools.all().values_list("id", flat=True))
+    )
     unqualified_categories = [
         category
         for category in categories
         if not customer.is_staff
-        and not Tool.objects.filter(
-            visible=True, _category=category, id__in=customer.qualifications.all().values_list("id")
-        ).exists()
+        and not Tool.objects.filter(visible=True, _category=category, id__in=tool_ids_user_is_qualified).exists()
     ]
     tools_in_this_category = list(Tool.objects.filter(visible=True, _category__iexact=category))
     return {
@@ -683,6 +697,6 @@ def get_categories_and_tools_dictionary(customer: User, category=None) -> Dict:
         "unqualified_tools": [
             tool
             for tool in tools_in_this_category
-            if not customer.is_staff and tool not in customer.qualifications.all()
+            if not customer.is_staff and tool.id not in tool_ids_user_is_qualified
         ],
     }

@@ -15,10 +15,12 @@
         <a href="javascript:remove_user_from_project('{{ u.id }}', '{{ project.id }}')"
            class="grey hover-black"
            title="Remove {{ u.first_name }}"><span class="glyphicon glyphicon-remove-circle"></span></a>
-        {% if u.is_active %}
+        {% if u.is_active and not u.has_access_expired %}
             {{ u }}
+        {% elif u.has_access_expired %}
+            <span class="warning-highlight" title="This user's access has expired">{{ u }} [EXPIRED ACCESS]</span>
         {% else %}
-            <span class="strikethrough light-grey" title="This user is inactive">{{ u }}</span>
+            <span class="danger-highlight" title="This user is inactive">{{ u }} [INACTIVE]</span>
         {% endif %}
         <a style="text-decoration: none;
                   color: inherit"

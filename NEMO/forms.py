@@ -212,7 +212,7 @@ class TaskImagesForm(ModelForm):
 class CommentForm(ModelForm):
     class Meta:
         model = Comment
-        fields = ["tool", "content", "staff_only"]
+        fields = ["tool", "content", "staff_only", "pinned"]
 
     expiration = IntegerField(label="Expiration date", min_value=-1)
 

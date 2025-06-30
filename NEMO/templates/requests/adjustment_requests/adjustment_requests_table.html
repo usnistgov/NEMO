@@ -40,7 +40,7 @@
                     {% if request_status == 'approved' or request_status == 'denied' %}
                         {{ a_request.reviewer.get_name }}
                         {% if not a_request.applied and request_status == 'approved' %}
-                            {% if "adjustment_requests"|customization:"adjustment_requests_edit_charge_button" == "enabled" %}
+                            {% if customizations|get_item:"adjustment_requests_edit_charge_button" == "enabled" %}
                                 {% url "user_requests" "adjustment" as redirect_adjustment_url %}
                                 {% admin_edit_url a_request.item redirect_adjustment_url as edit_url %}
                                 {% if edit_url %}
@@ -49,7 +49,7 @@
                                 {% endif %}
                             {% endif %}
                             {% if user.is_user_office or user in a_request.reviewers %}
-                                {% if user in a_request.reviewers and "adjustment_requests"|customization:"adjustment_requests_apply_button" == "enabled" and a_request.adjustable_charge %}
+                                {% if user in a_request.reviewers and customizations|get_item:"adjustment_requests_apply_button" == "enabled" and a_request.adjustable_charge %}
                                     <br>
                                     {% button id="apply_"|concat:a_request.id icon="glyphicon-edit" type="save" size="small" value="Adjust charge" onclick="apply_adjustment("|concat:a_request.id|concat:")" style="margin-bottom: 5px" %}
                                 {% endif %}

@@ -68,7 +68,7 @@
                                         <div style="margin-top: 8px">
                                             {% url 'enable_tool' tool_id=reservation.tool.id user_id=reservation.user.id project_id=reservation.project.id staff_charge='false' as enable_tool_for_user_url %}
                                             {% button type="info" icon="glyphicon-play" value="Enable the tool on behalf of "|concat:reservation.user.first_name onclick="enable_tool('"|concat:enable_tool_for_user_url|concat:"');" %}
-                                            {% if "remote_work"|customization:"remote_work_on_behalf_of_user" == "ask" %}
+                                            {% if customizations|get_item:"remote_work_on_behalf_of_user" == "ask" %}
                                                 <div style="margin-top: 5px">
                                                     {% button type="info" icon="glyphicon-play" value="Enable the tool on behalf of "|concat:reservation.user.first_name|concat:" for remote work" onclick="enable_tool('"|concat:enable_tool_for_user_url|concat:"', true);" %}
                                                 </div>
@@ -142,13 +142,14 @@
         </script>
     {% else %}
         <p>
-            No tools require configuration
+            No tools require
             {% if time_period == 'today' %}
-                today
+                configuration today.
             {% elif time_period == 'near_future' %}
-                for the near future
+                configuration for the near future.
+            {% else %}
+                configuration.
             {% endif %}
-            .
         </p>
         <p>
             You can also

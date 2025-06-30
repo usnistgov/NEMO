@@ -16,7 +16,7 @@
         {% csrf_token %}
         <input type="hidden" name="item_id" value="{{ item.id }}">
         <input type="hidden" name="item_type" value="{{ item_type }}">
-        {% if not user.is_staff %}
+        {% if not user|is_staff_on_tool:item %}
             {% if user.active_project_count == 1 %}
                 <input type="hidden" name="project_id" value="{{ user.active_projects.0.id }}">
             {% elif user.active_project_count > 1 %}

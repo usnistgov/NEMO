@@ -70,6 +70,7 @@ class ToolTestCase(TestCase):
             "_policy_off_weekend": True,
             "visible": True,
             "_operation_mode": Tool.OperationMode.REGULAR,
+            "_properties": "{}",
         }
         area_door = Door.objects.create(name="cleanroom door", interlock=cleanroom_interlock)
         area_door.areas.set([cleanroom])
@@ -81,6 +82,7 @@ class ToolTestCase(TestCase):
             "parent_tool": tool.id,
             "visible": True,
             "_operation_mode": Tool.OperationMode.REGULAR,
+            "_properties": "{}",
         }
         alternate_tool_form = ToolAdminForm(alternate_tool_data)
         self.assertTrue(alternate_tool_form.is_valid(), alternate_tool_form.errors.as_text())

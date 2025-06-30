@@ -29,6 +29,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
+from django_jsonform.models.fields import JSONField
 from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
 
@@ -59,6 +60,7 @@ from NEMO.utilities import (
     get_model_instance,
     get_task_image_filename,
     get_tool_image_filename,
+    load_properties_schemas,
     new_model_copy,
     render_email_template,
     send_mail,
@@ -583,7 +585,7 @@ class TemporaryPhysicalAccess(BaseModel):
 
     class Meta:
         ordering = ["-end_time"]
-        verbose_name_plural = "TemporaryPhysicalAccess"
+        verbose_name_plural = "Temporary physical access"
 
 
 class TemporaryPhysicalAccessRequest(BaseModel):
@@ -886,6 +888,10 @@ class User(BaseModel, PermissionsMixin):
         return self.superuser_for_tools.exists()
 
     @property
+    def is_tool_staff(self):
+        return self.staff_for_tools.exists()
+
+    @property
     def is_project_pi(self):
         return self.managed_projects.exists()
 
@@ -900,6 +906,11 @@ class User(BaseModel, PermissionsMixin):
                 self.is_superuser,
             ]
         )
+
+    def is_staff_on_tool(self, tool):
+        from NEMO.templatetags.custom_tags_and_filters import is_staff_on_tool
+
+        return is_staff_on_tool(self, tool)
 
     def get_username(self):
         return self.username
@@ -1028,6 +1039,17 @@ class User(BaseModel, PermissionsMixin):
                 ).exists()
         return False
 
+    def my_tools(self) -> Optional[List[Tool]]:
+        # Returns the list of tools for the user. Staff don't get qualifications since they are qualified on all tools
+        tools = set()
+        tools.update(self.primary_tool_owner.all())
+        tools.update(self.backup_for_tools.all())
+        tools.update(self.staff_for_tools.all())
+        tools.update(self.superuser_for_tools.all())
+        if not self.is_staff:
+            tools.update(self.qualifications.all())
+        return list(tools)
+
     def billing_to_project(self):
         access_record = self.area_access_record()
         if access_record is None:
@@ -1040,6 +1062,9 @@ class User(BaseModel, PermissionsMixin):
 
     def active_projects(self):
         return self.projects.filter(active=True, account__active=True)
+
+    def inactive_projects(self):
+        return self.projects.exclude(active=True, account__active=True)
 
     def charging_staff_time(self) -> bool:
         return StaffCharge.objects.filter(staff_member=self.id, end=None).exists()
@@ -1171,6 +1196,7 @@ class Tool(SerializationByNameModel):
         default=False,
         help_text="Marking the tool non-operational will prevent users from using the tool.",
     )
+    _properties = JSONField(schema=load_properties_schemas("Tool"), db_column="properties", null=True, blank=True)
     # Tool permissions
     _primary_owner = models.ForeignKey(
         User,
@@ -1194,6 +1220,13 @@ class Tool(SerializationByNameModel):
         blank=True,
         related_name="superuser_for_tools",
         help_text="Superusers who can train users on this tool.",
+    )
+    _staff = models.ManyToManyField(
+        User,
+        db_table="NEMO_tool_staff",
+        blank=True,
+        related_name="staff_for_tools",
+        help_text="Users who can act as staff for this tool..",
     )
     _adjustment_request_reviewers = models.ManyToManyField(
         User,
@@ -1405,6 +1438,15 @@ class Tool(SerializationByNameModel):
         self._operational = value
 
     @property
+    def properties(self):
+        return self.parent_tool.properties if self.is_child_tool() else self._properties
+
+    @properties.setter
+    def properties(self, value):
+        self.raise_setter_error_if_child_tool("properties")
+        self._properties = value
+
+    @property
     def primary_owner(self) -> User:
         return self.parent_tool.primary_owner if self.is_child_tool() else self._primary_owner
 
@@ -1430,6 +1472,15 @@ class Tool(SerializationByNameModel):
     def superusers(self, value):
         self.raise_setter_error_if_child_tool("superusers")
         self._superusers = value
+
+    @property
+    def staff(self) -> QuerySetType[User]:
+        return self.parent_tool.staff if self.is_child_tool() else self._staff
+
+    @staff.setter
+    def staff(self, value):
+        self.raise_setter_error_if_child_tool("staff")
+        self._staff = value
 
     @property
     def adjustment_request_reviewers(self) -> QuerySetType[User]:
@@ -1719,7 +1770,7 @@ class Tool(SerializationByNameModel):
         return self.name
 
     def is_child_tool(self):
-        return self.parent_tool is not None
+        return self.parent_tool_id is not None
 
     def is_parent_tool(self, parent_ids=None):
         if not parent_ids:
@@ -1796,17 +1847,25 @@ class Tool(SerializationByNameModel):
     def comments(self):
         unexpired = Q(expiration_date__isnull=True) | Q(expiration_date__gt=timezone.now())
         return (
-            self.parent_tool.comment_set.filter(visible=True, staff_only=False).filter(unexpired)
+            self.parent_tool.comment_set.filter(visible=True, staff_only=False, pinned=False).filter(unexpired)
             if self.is_child_tool()
-            else self.comment_set.filter(visible=True, staff_only=False).filter(unexpired)
+            else self.comment_set.filter(visible=True, staff_only=False, pinned=False).filter(unexpired)
         )
 
     def staff_only_comments(self):
         unexpired = Q(expiration_date__isnull=True) | Q(expiration_date__gt=timezone.now())
         return (
-            self.parent_tool.comment_set.filter(visible=True, staff_only=True).filter(unexpired)
+            self.parent_tool.comment_set.filter(visible=True, staff_only=True, pinned=False).filter(unexpired)
             if self.is_child_tool()
-            else self.comment_set.filter(visible=True, staff_only=True).filter(unexpired)
+            else self.comment_set.filter(visible=True, staff_only=True, pinned=False).filter(unexpired)
+        )
+
+    def pinned_comments(self):
+        unexpired = Q(expiration_date__isnull=True) | Q(expiration_date__gt=timezone.now())
+        return (
+            self.parent_tool.comment_set.filter(visible=True, pinned=True).filter(unexpired)
+            if self.is_child_tool()
+            else self.comment_set.filter(visible=True, pinned=True).filter(unexpired)
         )
 
     def required_resource_is_unavailable(self) -> bool:
@@ -2148,9 +2207,11 @@ class Configuration(BaseModel, ConfigurationMixin):
             return color_list[index] if color_list and len(color_list) > index else None
 
     def user_is_maintainer(self, user):
-        if user in self.maintainers.all() or user.is_staff:
+        if user.is_staff_on_tool(self.tool):
             return True
-        if self.qualified_users_are_maintainers and (user in self.tool.user_set.all() or user.is_staff):
+        if user in self.maintainers.all():
+            return True
+        if self.qualified_users_are_maintainers and user in self.tool.user_set.all():
             return True
         return False
 
@@ -2571,6 +2632,7 @@ class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     project = models.ForeignKey("Project", on_delete=models.CASCADE)
     start = models.DateTimeField(default=timezone.now)
     end = models.DateTimeField(null=True, blank=True)
+    has_ended = models.PositiveBigIntegerField(default=0)
     staff_charge = models.ForeignKey(StaffCharge, blank=True, null=True, on_delete=models.CASCADE)
     validated = models.BooleanField(default=False)
     validated_by = models.ForeignKey(
@@ -2591,19 +2653,23 @@ class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):
         indexes = [
             models.Index(fields=["end"]),
         ]
+        # This constraint is to get around db limitations with null values for end date being sometimes unique, sometimes not
+        constraints = [
+            models.UniqueConstraint(fields=["customer", "area", "has_ended"], name="unique_area_user_has_ended")
+        ]
 
     def __str__(self):
         return str(self.id)
 
-    def validate_unique(self, exclude=None):
-        super().validate_unique(exclude)
-        already_logged_in = (
-            AreaAccessRecord.objects.filter(customer_id=self.customer_id, area_id=self.area_id, end=None)
-            .exclude(id=self.id)
-            .exists()
-        )
-        if self.area and self.customer and not self.end and already_logged_in:
-            raise ValidationError(_("You are already logged in to this area"))
+    def save(self, *args, **kwargs):
+        # Set has_ended to 0 if the end is NULL (always), otherwise set it to a unique number (max +1)
+        if self.end is None:
+            self.has_ended = 0
+        elif not self.has_ended:
+            # Covers cases where has_ended was not set (None) or previously set to 0 but now has an end.
+            last_custom = AreaAccessRecord.objects.aggregate(models.Max("has_ended"))["has_ended__max"] or 0
+            self.has_ended = last_custom + 1
+        super().save(*args, **kwargs)
 
 
 class ConfigurationHistory(BaseModel):
@@ -2944,6 +3010,7 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     )  # The related_name='+' disallows reverse lookups. Helper functions of other models should be used instead.
     start = models.DateTimeField(default=timezone.now)
     end = models.DateTimeField(null=True, blank=True)
+    has_ended = models.PositiveBigIntegerField(default=0)
     validated = models.BooleanField(default=False)
     validated_by = models.ForeignKey(
         User, null=True, blank=True, related_name="usage_event_validated_set", on_delete=models.CASCADE
@@ -2980,19 +3047,21 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
     class Meta:
         ordering = ["-start"]
+        # This constraint is to get around db limitations with null values for end date being sometimes unique, sometimes not
+        constraints = [models.UniqueConstraint(fields=["tool", "has_ended"], name="unique_tool_has_ended")]
 
     def __str__(self):
         return str(self.id)
 
-    def validate_unique(self, exclude=None):
-        super().validate_unique(exclude)
-        tool_already_in_use = (
-            UsageEvent.objects.filter(tool_id__in=self.tool.get_family_tool_ids(), end=None)
-            .exclude(id=self.id)
-            .exists()
-        )
-        if self.tool and not self.end and tool_already_in_use:
-            raise ValidationError(_("This tool is already in use"))
+    def save(self, *args, **kwargs):
+        # Set has_ended to 0 if the end is NULL (always), otherwise set it to a unique number (max +1)
+        if self.end is None:
+            self.has_ended = 0
+        elif not self.has_ended:
+            # Covers cases where has_ended was not set (None) or previously set to 0 but now has an end.
+            last_custom = UsageEvent.objects.aggregate(models.Max("has_ended"))["has_ended__max"] or 0
+            self.has_ended = last_custom + 1
+        super().save(*args, **kwargs)
 
 
 class Consumable(BaseModel):
@@ -3582,6 +3651,9 @@ class TaskStatus(SerializationByNameModel):
     notify_backup_tool_owners = models.BooleanField(
         default=False, help_text="Notify the backup tool owners when a task transitions to this status"
     )
+    notify_tool_staff = models.BooleanField(
+        default=False, help_text="Notify the users who are staff on this tool when a task transitions to this status"
+    )
     notify_tool_notification_email = models.BooleanField(
         default=False,
         help_text="Send an email to the tool notification email address when a task transitions to this status",
@@ -3635,6 +3707,7 @@ class Comment(BaseModel):
     )
     content = models.TextField()
     staff_only = models.BooleanField(default=False)
+    pinned = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-creation_date"]
@@ -4318,6 +4391,7 @@ class ToolUsageCounter(BaseModel):
         user_filter = Q(is_facility_manager=True) | Q(is_superuser=True)
         if self.staff_members_can_reset:
             user_filter |= Q(is_staff=True)
+            user_filter |= Q(staff_for_tools__in=[self.tool])
         if self.superusers_can_reset:
             user_filter |= Q(superuser_for_tools__in=[self.tool])
         if self.qualified_users_can_reset:
@@ -4913,7 +4987,7 @@ class EmailLog(BaseModel):
         ordering = ["-when"]
 
 
-def validate_waive_information(item: [BillableItemMixin]) -> Dict:
+def validate_waive_information(item: BillableItemMixin) -> Dict:
     errors = {}
     if item.waived:
         if not item.waived_by:

@@ -29,11 +29,13 @@ from NEMO.models import (
     Area,
     AreaAccessRecord,
     BuddyRequest,
+    Comment,
     Configuration,
     ConfigurationOption,
     Consumable,
     ConsumableCategory,
     ConsumableWithdraw,
+    Customization,
     Interlock,
     InterlockCard,
     InterlockCardCategory,
@@ -116,7 +118,7 @@ class ModelSerializer(serializers.ModelSerializer):
             # Don't perform model validation on fields that were defined
             # manually on the form and excluded via the Serializer's Meta
             # class.
-            elif meta_fields and field not in meta_fields:
+            elif meta_fields and meta_fields != "__all__" and field not in meta_fields:
                 exclude.append(f.name)
             elif meta_exclude and field in meta_exclude:
                 exclude.append(f.name)
@@ -441,6 +443,12 @@ class ContentTypeSerializer(ModelSerializer):
         fields = "__all__"
 
 
+class CustomizationSerializer(ModelSerializer):
+    class Meta:
+        model = Customization
+        fields = "__all__"
+
+
 class InterlockCardCategorySerializer(ModelSerializer):
     class Meta:
         model = InterlockCardCategory
@@ -529,7 +537,18 @@ class ToolCredentialsSerializer(FlexFieldsSerializerMixin, ModelSerializer):
         }
 
 
-class StaffAssistanceRequestsSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+class ToolCommentSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = "__all__"
+        expandable_fields = {
+            "tool": "NEMO.serializers.ToolSerializer",
+            "author": "NEMO.serializers.UserSerializer",
+            "hidden_by": "NEMO.serializers.UserSerializer",
+        }
+
+
+class StaffAssistanceRequestSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     class Meta:
         model = StaffAssistanceRequest
         fields = "__all__"

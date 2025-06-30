@@ -28,11 +28,13 @@ from NEMO.models import (
     Area,
     AreaAccessRecord,
     BuddyRequest,
+    Comment,
     Configuration,
     ConfigurationOption,
     Consumable,
     ConsumableCategory,
     ConsumableWithdraw,
+    Customization,
     Interlock,
     InterlockCard,
     InterlockCardCategory,
@@ -73,6 +75,7 @@ from NEMO.serializers import (
     ConsumableSerializer,
     ConsumableWithdrawSerializer,
     ContentTypeSerializer,
+    CustomizationSerializer,
     GroupSerializer,
     InterlockCardCategorySerializer,
     InterlockCardSerializer,
@@ -87,10 +90,11 @@ from NEMO.serializers import (
     ReservationSerializer,
     ResourceSerializer,
     ScheduledOutageSerializer,
-    StaffAssistanceRequestsSerializer,
+    StaffAssistanceRequestSerializer,
     StaffChargeSerializer,
     TaskSerializer,
     TemporaryPhysicalAccessRequestSerializer,
+    ToolCommentSerializer,
     ToolCredentialsSerializer,
     ToolSerializer,
     ToolStatusSerializer,
@@ -101,7 +105,7 @@ from NEMO.serializers import (
 )
 from NEMO.templatetags.custom_tags_and_filters import app_version
 from NEMO.typing import QuerySetType
-from NEMO.utilities import export_format_datetime, remove_duplicates
+from NEMO.utilities import export_format_datetime, load_properties_schemas, remove_duplicates
 from NEMO.views.api_billing import (
     BillingFilterForm,
     get_billing_charges,
@@ -296,6 +300,7 @@ class ToolViewSet(ModelViewSet):
         "id": key_filters,
         "name": string_filters,
         "visible": boolean_filters,
+        "_serial": string_filters,
         "_category": string_filters,
         "_operational": boolean_filters,
         "_location": string_filters,
@@ -425,6 +430,7 @@ class ReservationViewSet(ModelViewSet):
         "area": key_filters,
         "question_data": string_filters,
         "cancelled": boolean_filters,
+        "shortened": boolean_filters,
         "missed": boolean_filters,
         "validated": boolean_filters,
         "validated_by": key_filters,
@@ -641,6 +647,16 @@ class ContentTypeViewSet(XLSXFileMixin, viewsets.ReadOnlyModelViewSet):
         return f"{self.filename}-{export_format_datetime()}.xlsx"
 
 
+class CustomizationViewSet(ModelViewSet):
+    filename = "customizations"
+    queryset = Customization.objects.all()
+    serializer_class = CustomizationSerializer
+    filterset_fields = {
+        "name": string_filters,
+        "value": string_filters,
+    }
+
+
 class InterlockCardCategoryViewSet(ModelViewSet):
     filename = "interlock_card_categories"
     queryset = InterlockCardCategory.objects.all()
@@ -774,10 +790,29 @@ class ToolCredentialsViewSet(ModelViewSet):
     }
 
 
-class StaffAssistanceRequestsViewSet(ModelViewSet):
+class ToolCommentViewSet(ModelViewSet):
+    filename = "tool_comments"
+    queryset = Comment.objects.all()
+    serializer_class = ToolCommentSerializer
+    filterset_fields = {
+        "id": key_filters,
+        "tool": key_filters,
+        "author": key_filters,
+        "creation_date": datetime_filters,
+        "expiration_date": datetime_filters,
+        "visible": boolean_filters,
+        "hide_date": datetime_filters,
+        "hidden_by": key_filters,
+        "content": string_filters,
+        "staff_only": boolean_filters,
+        "pinned": boolean_filters,
+    }
+
+
+class StaffAssistanceRequestViewSet(ModelViewSet):
     filename = "staff_assistance_requests"
     queryset = StaffAssistanceRequest.objects.all()
-    serializer_class = StaffAssistanceRequestsSerializer
+    serializer_class = StaffAssistanceRequestSerializer
     filterset_fields = {
         "id": key_filters,
         "user": key_filters,
@@ -902,6 +937,7 @@ def get_app_metadata():
         "facility_name": ApplicationCustomization.get("facility_name"),
         "nemo_plugins": nemo_packages,
         "other_packages": other_packages,
+        "json_properties_schemas": {"tool": load_properties_schemas("Tool")},
     }
 
 

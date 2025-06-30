@@ -29,7 +29,7 @@
                                    type="checkbox"
                                    {% if user_preferences.create_reservation_confirmation_override %}checked{% endif %}>
                             Check this box to
-                            {% if "calendar"|customization:"create_reservation_confirmation" == "enabled" %}
+                            {% if customizations|get_item:"create_reservation_confirmation" == "enabled" %}
                                 not be asked to confirm before making a reservation
                             {% else %}
                                 be asked to confirm before making a reservation
@@ -41,7 +41,7 @@
                                    type="checkbox"
                                    {% if user_preferences.change_reservation_confirmation_override %}checked{% endif %}>
                             Check this box to
-                            {% if "calendar"|customization:"change_reservation_confirmation" == "enabled" %}
+                            {% if customizations|get_item:"change_reservation_confirmation" == "enabled" %}
                                 not be asked to confirm before moving or resizing a reservation
                             {% else %}
                                 be asked to confirm before moving or resizing a reservation
@@ -155,13 +155,13 @@
                 </div>
             </div>
         </div>
-        {% if "tool"|customization:"tool_problem_allow_regular_user_preferences" == "enabled" or "tool"|customization:"tool_task_updates_allow_regular_user_preferences" == "enabled" or user.is_staff or user.is_facility_manager or user.is_service_personnel %}
+        {% if customizations|get_item:"tool_problem_allow_regular_user_preferences" == "enabled" or customizations|get_item:"tool_task_updates_allow_regular_user_preferences" == "enabled" or user.is_staff or user.is_facility_manager or user.is_service_personnel %}
             <div class="panel panel-default">
                 <div class="panel-body">
                     <h3 id="adjustment_requests_label">Tool maintenance & notifications</h3>
                     <div class="form-group">
                         <label class="col-sm-5 col-md-4 col-lg-3 form-control-static" for="tool_task_notification_search">
-                            {% if user.is_facility_manager and "tool"|customization:"tool_task_updates_facility_managers" == "enabled" %}
+                            {% if user.is_facility_manager and customizations|get_item:"tool_task_updates_facility_managers" == "enabled" %}
                                 Limit
                             {% else %}
                                 View/receive
@@ -178,11 +178,12 @@
                     </div>
                     <div class="form-group">
                         <div id="task-notification-list" class="col-sm-offset-5 col-md-offset-4 col-lg-offset-3 col-sm-7">
-                            You are currently viewing/receiving maintenance notifications for all tools
-                            {% if not user.is_facility_manager or not "tool"|customization:"tool_task_updates_facility_managers" == "enabled" %}
-                                you are an owner or backup owners of
+                            You are currently viewing/receiving maintenance notifications for all
+                            {% if not user.is_facility_manager or not customizations|get_item:"tool_task_updates_facility_managers" == "enabled" %}
+                                tools you are an owner, backup owners or staff of.
+                            {% else %}
+                                tools.
                             {% endif %}
-                            .
                         </div>
                     </div>
                 </div>
@@ -319,7 +320,7 @@
             }
             function remove_tool_task_notification(tool_id)
             {
-                remove_from_list("#task-notification-list", "#tool_task_notifications_" + tool_id, "You are currently viewing/receiving maintenance notifications for all tools{% if not user.is_facility_manager or not 'tool'|customization:'tool_task_updates_facility_managers' == 'enabled' %} you are an owner or backup owners of{% endif %}.");
+                remove_from_list("#task-notification-list", "#tool_task_notifications_" + tool_id, "You are currently viewing/receiving maintenance notifications for all tools{% if not user.is_facility_manager or not customizations|get_item:'tool_task_updates_facility_managers' == 'enabled' %} you are an owner or backup owners of{% endif %}.");
             }
             function add_tool_notification(jquery_event, search_selection, dataset_name)
             {

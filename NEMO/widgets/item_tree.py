@@ -5,6 +5,7 @@ from django.utils.safestring import mark_safe
 
 from NEMO.model_tree import TreeItem, get_area_model_tree
 from NEMO.models import ReservationItemType, Tool, User
+from NEMO.utilities import remove_duplicates
 from NEMO.views.customization import CalendarCustomization
 
 
@@ -52,7 +53,12 @@ class ItemTree(Widget):
         tool_parent_ids = Tool.objects.filter(parent_tool__isnull=False).values_list("parent_tool_id", flat=True)
         user_accessible_areas = [] if not user or not area_tree_items else user.accessible_areas()
         user_qualified_tool_ids = (
-            [] if not user or not tools else user.qualifications.all().values_list("id", flat=True)
+            []
+            if not user or not tools
+            else remove_duplicates(
+                list(user.qualifications.all().values_list("id", flat=True))
+                + list(user.staff_for_tools.all().values_list("id", flat=True))
+            )
         )
         parent_areas_dict = {}
         if area_tree_items:

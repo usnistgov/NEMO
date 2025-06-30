@@ -17,7 +17,12 @@ from django.utils.timezone import make_aware
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
-from NEMO.decorators import disable_session_expiry_refresh, postpone, staff_member_required, synchronized
+from NEMO.decorators import (
+    disable_session_expiry_refresh,
+    postpone,
+    staff_member_or_tool_staff_required,
+    synchronized,
+)
 from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
 from NEMO.forms import ScheduledOutageForm, save_scheduled_outage
 from NEMO.models import (
@@ -101,7 +106,6 @@ def calendar(request, item_type=None, item_id=None):
     calendar_all_tools = CalendarCustomization.get("calendar_all_tools")
     calendar_all_areas = CalendarCustomization.get("calendar_all_areas")
     calendar_all_areastools = CalendarCustomization.get("calendar_all_areastools")
-    calendar_qualified_tools = CalendarCustomization.get("calendar_qualified_tools")
 
     # Create reservation confirmation setting
     create_reservation_confirmation_default = CalendarCustomization.get_bool("create_reservation_confirmation")
@@ -137,7 +141,6 @@ def calendar(request, item_type=None, item_id=None):
         "calendar_all_tools": calendar_all_tools,
         "calendar_all_areas": calendar_all_areas,
         "calendar_all_areastools": calendar_all_areastools,
-        "calendar_qualified_tools": calendar_qualified_tools,
         "create_reservation_confirmation": create_reservation_confirmation,
         "change_reservation_confirmation": change_reservation_confirmation,
         "reservation_confirmation_date_format": reservation_confirmation_date_format,
@@ -418,10 +421,14 @@ def create_reservation(request):
 
 
 @synchronized("current_user")
-def create_item_reservation(request, current_user, start, end, item_type: ReservationItemType, item_id):
+def create_item_reservation(request, current_user: User, start, end, item_type: ReservationItemType, item_id):
     item = get_object_or_404(item_type.get_object_class(), id=item_id)
+    staff_on_tool = current_user.is_staff_on_tool(item)
     explicit_policy_override = False
-    if current_user.is_staff:
+    reservation_for_other_error = None
+    if not current_user.is_staff and not staff_on_tool and request.POST.get("impersonate"):
+        reservation_for_other_error = "You are not allowed to create a reservation for someone else on this tool."
+    if current_user.is_staff or staff_on_tool:
         try:
             user = User.objects.get(id=request.POST["impersonate"])
         except:
@@ -446,18 +453,20 @@ def create_item_reservation(request, current_user, start, end, item_type: Reserv
     policy_problems, overridable = policy.check_to_save_reservation(
         cancelled_reservation=None,
         new_reservation=new_reservation,
-        user_creating_reservation=request.user,
+        user_creating_reservation=current_user,
         explicit_policy_override=explicit_policy_override,
     )
+    if reservation_for_other_error:
+        policy_problems.append(reservation_for_other_error)
 
-    # If there was a policy problem with the reservation then return the error...
+    # If there was a policy problem with the reservation, then return the error...
     if policy_problems:
         return render(
             request,
             "calendar/policy_dialog.html",
             {
                 "policy_problems": policy_problems,
-                "overridable": overridable and request.user.is_staff,
+                "overridable": overridable and (current_user.is_staff or staff_on_tool),
                 "reservation_action": "create",
             },
         )
@@ -466,7 +475,7 @@ def create_item_reservation(request, current_user, start, end, item_type: Reserv
 
     # If the user only has one project then associate it with the reservation.
     # Otherwise, present a dialog box for the user to choose which project to associate.
-    if not user.is_staff:
+    if not user.is_staff and not staff_on_tool:
         active_projects = user.active_projects()
         if len(active_projects) == 1:
             new_reservation.project = active_projects[0]
@@ -630,7 +639,7 @@ def parse_configuration_entry(reservation: Reservation, key, value) -> Optional[
     return display_order, option_value
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_POST
 def create_outage(request):
     """Create an outage."""
@@ -641,6 +650,8 @@ def create_outage(request):
     except Exception as e:
         return HttpResponseBadRequest(str(e))
     item = get_object_or_404(item_type.get_object_class(), id=item_id)
+    if not request.user.is_staff and not request.user.is_staff_on_tool(item):
+        return HttpResponseBadRequest("You are not allowed to create an outage for this tool.")
     # Create the new outage:
     form = ScheduledOutageForm(request.POST)
     if not form.is_valid():
@@ -674,7 +685,7 @@ def resize_reservation(request):
     return modify_reservation(request, request.user, None, delta)
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_POST
 def resize_outage(request):
     """Resize an outage"""
@@ -696,10 +707,10 @@ def move_reservation(request):
     return modify_reservation(request, request.user, delta, delta)
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_POST
 def move_outage(request):
-    """Move a reservation for a user."""
+    """Move an outage for a user."""
     try:
         delta = timedelta(minutes=int(request.POST["delta"]))
     except:
@@ -723,6 +734,7 @@ def modify_reservation(request, current_user, start_delta, end_delta):
         explicit_policy_override = request.POST["explicit_policy_override"] == "true"
     except:
         pass
+    staff_on_tool = current_user.is_staff_on_tool(reservation_to_cancel.tool)
     # Record the current time so that the timestamp of the cancelled reservation and the new reservation match exactly.
     now = timezone.now()
     # Create a new reservation for the user by copying the original one.
@@ -756,7 +768,7 @@ def modify_reservation(request, current_user, start_delta, end_delta):
             "calendar/policy_dialog.html",
             {
                 "policy_problems": policy_problems,
-                "overridable": overridable and request.user.is_staff,
+                "overridable": overridable and (request.user.is_staff or staff_on_tool),
                 "reservation_action": reservation_action,
             },
         )
@@ -774,6 +786,8 @@ def modify_outage(request, start_delta, end_delta):
         outage = ScheduledOutage.objects.get(pk=request.POST.get("id"))
     except ScheduledOutage.DoesNotExist:
         return HttpResponseNotFound("The outage that you wish to modify doesn't exist!")
+    if not request.user.is_staff and not request.user.is_staff_on_tool(outage.tool):
+        return HttpResponseBadRequest("You are not allowed to modify this outage.")
     if start_delta:
         outage.start += start_delta
     if end_delta:
@@ -809,10 +823,12 @@ def cancel_reservation(request, reservation_id):
             return render(request, "mobile/error.html", {"message": response.content})
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_POST
 def cancel_outage(request, outage_id):
     outage = get_object_or_404(ScheduledOutage, id=outage_id)
+    if not request.user.is_staff and not request.user.is_staff_on_tool(outage.tool):
+        return HttpResponseBadRequest("You are not allowed to cancel this outage.")
     outage.delete()
     if request.device == "desktop":
         return HttpResponse()
@@ -821,29 +837,35 @@ def cancel_outage(request, outage_id):
         return render(request, "mobile/cancellation_result.html", dictionary)
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_POST
 def set_reservation_title(request, reservation_id):
     """Change reservation title for a user."""
     reservation = get_object_or_404(Reservation, id=reservation_id)
+    if not request.user.is_staff and not request.user.is_staff_on_tool(reservation.tool):
+        return HttpResponseBadRequest("You are not allowed to edit this reservation.")
     reservation.title = request.POST.get("title", "")[: reservation._meta.get_field("title").max_length]
     reservation.save()
     return HttpResponse()
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_POST
 def change_outage_title(request, outage_id):
     outage = get_object_or_404(ScheduledOutage, id=outage_id)
+    if not request.user.is_staff and not request.user.is_staff_on_tool(outage.tool):
+        return HttpResponseBadRequest("You are not allowed to edit this outage.")
     outage.title = request.POST.get("title", "")[: outage._meta.get_field("title").max_length]
     outage.save(update_fields=["title"])
     return HttpResponse()
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_POST
 def change_outage_details(request, outage_id):
     outage = get_object_or_404(ScheduledOutage, id=outage_id)
+    if not request.user.is_staff and not request.user.is_staff_on_tool(outage.tool):
+        return HttpResponseBadRequest("You are not allowed to edit this outage.")
     outage.details = request.POST.get("details", "")
     outage.save(update_fields=["details"])
     return HttpResponse()
@@ -879,11 +901,13 @@ def change_reservation_date(request):
         return HttpResponseBadRequest("Invalid delta")
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_POST
 def change_outage_date(request):
     """Change an outage's start or end date."""
     outage = get_object_or_404(ScheduledOutage, id=request.POST["id"])
+    if not request.user.is_staff and not request.user.is_staff_on_tool(outage.tool):
+        return HttpResponseBadRequest("You are not allowed to edit this outage.")
     start_delta, end_delta = None, None
     new_start = request.POST.get("new_start", None)
     if new_start:
@@ -912,7 +936,7 @@ def change_outage_date(request):
 @login_required
 @require_POST
 def change_reservation_project(request, reservation_id):
-    """Change reservation project for a user."""
+    """Change the reservation project for a user."""
     reservation = get_object_or_404(Reservation, id=reservation_id)
     project = get_object_or_404(Project, id=request.POST["project_id"])
     try:
@@ -921,7 +945,7 @@ def change_reservation_project(request, reservation_id):
         return HttpResponseBadRequest(e.msg)
 
     if (
-        (request.user.is_staff or request.user == reservation.user)
+        (request.user.is_staff or request.user.is_staff_on_tool(reservation.tool) or request.user == reservation.user)
         and reservation.has_not_ended()
         and reservation.has_not_started()
         and project in reservation.user.active_projects()
@@ -930,7 +954,9 @@ def change_reservation_project(request, reservation_id):
         reservation.save()
     else:
         # project for reservation was not eligible to be changed
-        if not (request.user.is_staff or request.user == reservation.user):
+        if not (
+            request.user.is_staff or request.user.is_staff_on_tool(reservation.tool) or request.user == reservation.user
+        ):
             return HttpResponseForbidden(f"{request.user} is not authorized to change the project for this reservation")
         if not reservation.has_not_ended():
             return HttpResponseBadRequest("Project cannot be changed; reservation has already ended")
@@ -941,10 +967,23 @@ def change_reservation_project(request, reservation_id):
     return HttpResponse()
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_GET
 def proxy_reservation(request):
     return render(request, "calendar/proxy_reservation.html", {"users": User.objects.filter(is_active=True)})
+
+
+@login_required
+@require_GET
+def get_selected_tool_calendar_info(request, tool_id):
+    tool = get_object_or_404(Tool.objects.prefetch_related("comment_set"), pk=tool_id)
+    other_problems = tool.problems().count() - 1
+    last_problem = tool.problems().latest("creation_time")
+    return render(
+        request,
+        "snippets/tool_calendar_info.html",
+        {"tool": tool, "other_problems": other_problems, "last_problem": last_problem},
+    )
 
 
 def get_and_combine_reservation_questions(
@@ -997,7 +1036,7 @@ def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime =
         )
         current_reservation = current_reservation_qs.get(**{ReservationItemType.from_item(item).value: item})
         # Staff are exempt from mandatory reservation shortening.
-        if user.is_staff is False or force:
+        if (user.is_staff is False and user.is_staff_on_tool(item) is False) or force:
             new_reservation = current_reservation.copy(new_end=new_end)
             new_reservation.save()
             current_reservation.shortened = True

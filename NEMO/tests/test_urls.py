@@ -406,7 +406,7 @@ def login_as_relevant_user(test_case: TestCase, annotations: List[str]):
         login_as_user(test_case.client)
     elif (
         "staff_member_required" in annotations
-        or "staff_member_or_tool_superuser_required" in annotations
+        or "staff_member_or_tool_superuser_or_tool_staff_required" in annotations
         or "staff_member_or_user_office_required" in annotations
     ):
         login_as_staff(test_case.client)

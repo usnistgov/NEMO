@@ -15,9 +15,10 @@ class ReservationTestCase(TransactionTestCase):
     owner: User = None
     consumer: User = None
     staff: User = None
+    staff_on_tool: User = None
 
     def setUp(self):
-        global tool, consumer, staff
+        global tool, consumer, staff, staff_on_tool
         owner = User.objects.create(username="mctest", first_name="Testy", last_name="McTester")
         area = Area.objects.create(name="test_area", category="Imaging", reservation_warning=2)
         tool = Tool.objects.create(
@@ -26,6 +27,10 @@ class ReservationTestCase(TransactionTestCase):
         account = Account.objects.create(name="account1")
         project = Project.objects.create(name="project1", account=account)
         staff = User.objects.create(username="staff", first_name="Staff", last_name="Member", is_staff=True)
+        staff_on_tool = User.objects.create(
+            username="staff_on_tool", first_name="on tool", last_name="Member", is_staff=False
+        )
+        staff_on_tool.staff_for_tools.add(tool)
         consumer = User.objects.create(username="jsmith", first_name="John", last_name="Smith", training_required=False)
         consumer.qualifications.add(tool)
         consumer.projects.add(project)
@@ -339,6 +344,20 @@ class ReservationTestCase(TransactionTestCase):
         self.assertEqual(Reservation.objects.get(tool=tool).user, consumer)
         self.assertEqual(Reservation.objects.get(tool=tool).creator, staff)
 
+    def test_create_reservation_for_somebody_else_as_staff_on_tool(self):
+        start = datetime.now() + timedelta(hours=1)
+        end = start + timedelta(hours=1)
+        data = self.get_reservation_data(start, end, tool)
+        data["impersonate"] = consumer.id
+
+        login_as(self.client, staff_on_tool)
+        response = self.client.post(reverse("create_reservation"), data, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Reservation.objects.all().count(), 1)
+        self.assertTrue(Reservation.objects.get(tool=tool))
+        self.assertEqual(Reservation.objects.get(tool=tool).user, consumer)
+        self.assertEqual(Reservation.objects.get(tool=tool).creator, staff_on_tool)
+
     def test_resize_reservation(self):
         # create reservation
         start = datetime.now() + timedelta(hours=1)
@@ -585,6 +604,31 @@ class ReservationTestCase(TransactionTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(Reservation.objects.get(pk=other_resa.id).cancelled)
         self.assertEqual(Reservation.objects.get(pk=other_resa.id).cancelled_by, staff)
+
+        # test staff on tool cancelling somebody else's reservation
+        other_resa = Reservation.objects.create(
+            tool=tool,
+            start=(start - timedelta(days=3)).astimezone(),
+            end=(end - timedelta(days=3)).astimezone(),
+            user=consumer,
+            creator=consumer,
+            short_notice=False,
+        )
+        login_as(self.client, staff_on_tool)
+        response = self.client.post(
+            reverse("cancel_reservation", kwargs={"reservation_id": other_resa.id}), {}, follow=True
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            "You must provide a reason when cancelling someone else's reservation.", response.content.decode()
+        )
+
+        response = self.client.post(
+            reverse("cancel_reservation", kwargs={"reservation_id": other_resa.id}), {"reason": "reason"}, follow=True
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(Reservation.objects.get(pk=other_resa.id).cancelled)
+        self.assertEqual(Reservation.objects.get(pk=other_resa.id).cancelled_by, staff_on_tool)
 
     def test_reservation_details(self):
         # create reservation

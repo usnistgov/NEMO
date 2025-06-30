@@ -79,6 +79,7 @@ def base_context(request):
         facility_managers_exist = False
     customization_values = CustomizationBase.get_all()
     return {
+        "customizations": customization_values,
         "facility_name": customization_values.get("facility_name"),
         "recurring_charges_name": customization_values.get("recurring_charges_name"),
         "site_title": customization_values.get("site_title"),

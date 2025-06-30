@@ -30,6 +30,9 @@
                 <li>
                     <b>Last login</b>: {{ user.last_login }}
                 </li>
+                <li>
+                    <b>Access expiration</b>: {{ user.access_expiration|default_if_none:"Access never expires" }}
+                </li>
             </ul>
         </div>
     </div>
@@ -38,13 +41,25 @@
             <h3 style="margin-top: 0">Projects</h3>
             {% if user.projects %}
                 <ul>
-                    {% for project in user.projects.all %}
-                        <li>{% project_selection_display project %}</li>
-                    {% endfor %}
+                    {% if user.active_projects %}
+                        <li>
+                            Active:
+                            <ul>
+                                {% for project in user.active_projects %}<li>{{ project.display_with_pis|safe }}</li>{% endfor %}
+                            </ul>
+                        </li>
+                    {% endif %}
+                    {% if user.inactive_projects %}
+                        <li>
+                            Inactive:
+                            <ul>
+                                {% for project in user.inactive_projects %}<li>{{ project.display_with_pis|safe }}</li>{% endfor %}
+                            </ul>
+                        </li>
+                    {% endif %}
                 </ul>
-            {% else %}
-                <p>You do not have any projects.</p>
             {% endif %}
+            {% if not user.projects %}<p>You do not have any projects.</p>{% endif %}
         </div>
     </div>
     <div class="panel panel-default">
@@ -59,6 +74,47 @@
             {% endif %}
         </div>
     </div>
+    {% if user.primary_tool_owner.all or user.backup_for_tools.all or user.superuser_for_tools.all or user.staff_for_tools.all %}
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <h3 style="margin-top: 0">Tool responsibilities</h3>
+                <ul>
+                    {% if user.primary_tool_owner.all %}
+                        <li>
+                            Primary owner:
+                            <ul>
+                                {% for tool in user.primary_tool_owner.all %}<li>{{ tool }}</li>{% endfor %}
+                            </ul>
+                        </li>
+                    {% endif %}
+                    {% if user.backup_for_tools.all %}
+                        <li>
+                            Backup owner:
+                            <ul>
+                                {% for tool in user.backup_for_tools.all %}<li>{{ tool }}</li>{% endfor %}
+                            </ul>
+                        </li>
+                    {% endif %}
+                    {% if user.staff_for_tools.all %}
+                        <li>
+                            Staff:
+                            <ul>
+                                {% for tool in user.staff_for_tools.all %}<li>{{ tool }}</li>{% endfor %}
+                            </ul>
+                        </li>
+                    {% endif %}
+                    {% if user.superuser_for_tools.all %}
+                        <li>
+                            Superuser:
+                            <ul>
+                                {% for tool in user.superuser_for_tools.all %}<li>{{ tool }}</li>{% endfor %}
+                            </ul>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
     {% if user.accessible_access_levels.exists %}
         <div class="panel panel-default">
             <div class="panel-body">

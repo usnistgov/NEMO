@@ -3,9 +3,11 @@
 {% block content %}
     <div class="clearfix" style="margin-top: 0;margin-bottom: 15px">
         <ul class="nav nav-pills nav-pills-spacer" id="tabs" style="display: inline-block;float: right;">
-            <li class="{% block staff_charges_tab_class %}{% endblock %}">
-                <a href="#remote_work_tab" onclick="location.href = '{% url "staff_charges" %}'">Staff charges</a>
-            </li>
+            {% if user.is_staff or user.get_staff_charge %}
+                <li class="{% block staff_charges_tab_class %}{% endblock %}">
+                    <a href="#remote_work_tab" onclick="location.href = '{% url "staff_charges" %}'">Staff charges</a>
+                </li>
+            {% endif %}
             <li class="{% block remote_work_tab_class %}{% endblock %}">
                 <a href="#remote_work_tab" onclick="location.href = '{% url "remote_work" %}'">Previous work</a>
             </li>

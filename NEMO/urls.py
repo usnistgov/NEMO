@@ -92,6 +92,7 @@ router.register(r"consumable_categories", api.ConsumableCategoryViewSet)
 router.register(r"consumable_withdrawals", api.ConsumableWithdrawViewSet)
 router.register(r"consumables", api.ConsumableViewSet)
 router.register(r"content_types", api.ContentTypeViewSet)
+router.register(r"customizations", api.CustomizationViewSet)
 router.register(r"interlock_card_categories", api.InterlockCardCategoryViewSet)
 router.register(r"interlock_cards", api.InterlockCardViewSet)
 router.register(r"interlocks", api.InterlockViewSet)
@@ -106,10 +107,11 @@ router.register(r"reservations", api.ReservationViewSet)
 router.register(r"reservation_configuration_options", api.ConfigurationOptionViewSet)
 router.register(r"resources", api.ResourceViewSet)
 router.register(r"scheduled_outages", api.ScheduledOutageViewSet)
-router.register(r"staff_assistance_requests", api.StaffAssistanceRequestsViewSet)
+router.register(r"staff_assistance_requests", api.StaffAssistanceRequestViewSet)
 router.register(r"staff_charges", api.StaffChargeViewSet)
 router.register(r"tasks", api.TaskViewSet)
 router.register(r"tools", api.ToolViewSet)
+router.register(r"tool_comments", api.ToolCommentViewSet)
 router.register(r"tool_credentials", api.ToolCredentialsViewSet)
 router.register(r"tool_status", api.ToolStatusViewSet, basename="tool_status")
 router.register(r"training_sessions", api.TrainingSessionViewSet)
@@ -324,6 +326,7 @@ urlpatterns += [
         name="change_reservation_project",
     ),
     path("proxy_reservation/", calendar.proxy_reservation, name="proxy_reservation"),
+    path("tool_calendar_info/<int:tool_id>/", calendar.get_selected_tool_calendar_info, name="tool_calendar_info"),
     # Event Details:
     path(
         "event_details/reservation/<int:reservation_id>/", event_details.reservation_details, name="reservation_details"
@@ -419,7 +422,7 @@ urlpatterns += [
     path("send_broadcast_email/", email.send_broadcast_email, name="send_broadcast_email"),
     # Maintenance:
     re_path(
-        r"^maintenance/(?P<sort_by>urgency|force_shutdown|tool|problem_category|last_updated|creation_time)/$",
+        r"^maintenance/(?P<sort_by>urgency|force_shutdown|tool|tool___category|problem_category|last_updated|creation_time)/$",
         maintenance.maintenance,
         name="maintenance",
     ),

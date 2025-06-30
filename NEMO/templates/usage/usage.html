@@ -6,10 +6,20 @@
             <br />
             <p>
                 Adjustment activities <b>are not included</b> in the usage information.
-                {% if "adjustment_requests"|customization:"adjustment_requests_enabled" and adjustment_time_limit %}
+                {% if customizations|get_item:"adjustment_requests_enabled" == "enabled" and adjustment_time_limit %}
                     <br>
                     Adjustment requests can be made for charges ending after {{ adjustment_time_limit.date }}.
                 {% endif %}
+                <div>
+                    <br>
+                    <label class="control-label">
+                        <input type="checkbox"
+                               value=""
+                               onclick="const params = new URLSearchParams(window.location.search); params.set('run_data_collapse', $(this).is(':checked')); window.location.search = params.toString(); "
+                               {% if run_data_collapse %}checked{% endif %}>
+                        Collapse pre/post run data by default
+                    </label>
+                </div>
             </p>
             {% if no_charges %}<h3>There was no usage between {{ start_date|date }} and {{ end_date|date }}.</h3>{% endif %}
             {% if missed_reservations %}
@@ -154,6 +164,90 @@
                         Charged to project {{ u.project }}
                         {% if u|can_be_adjusted:user %}
                             {% include "usage/adjustment_request_button.html" with charge=u %}
+                        {% endif %}
+                        {% if u.pre_run_data_json.items %}
+                            <div onclick="toggle_details(this)"
+                                 data-toggle="collapse"
+                                 data-target="#{{ u.id }}_pre_run_data"
+                                 class="pointer">
+                                <span class="glyphicon {% if run_data_collapse %}glyphicon-chevron-right{% else %}glyphicon-chevron-down{% endif %} chevron"
+                                      style="color:inherit;
+                                             margin-top: 15px"></span>Pre run data
+                            </div>
+                            <div id="{{ u.id }}_pre_run_data" class="collapse {% if not run_data_collapse %}in{% endif %}">
+                                <table class="table table-striped" style="background-color: #fff; margin-top: 10px; margin-bottom: 0">
+                                    {% for question_name, data in u.pre_run_data_json.items %}
+                                        {% if not data.readonly %}
+                                            {% if data.type == 'group' %}
+                                                <tr>
+                                                    <td {% if forloop.first %}style="border-top:none;"{% endif %}>
+                                                        {{ data.title }}
+                                                        {% if data.title|slice:"-1:" != ":" %}:{% endif %}
+                                                    </td>
+                                                    <td style="padding: 0;{% if forloop.first %}border-top:none;{% endif %}">
+                                                        <table class="table table-striped" style="margin-bottom: 0;">
+                                                            {% res_question_tbody data %}
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                            {% else %}
+                                                <tr>
+                                                    <td {% if forloop.first %}style="border-top:none;"{% endif %}>
+                                                        {{ data.title }}
+                                                        {% if data.title|slice:"-1:" != ":" %}:{% endif %}
+                                                    </td>
+                                                    <td {% if forloop.first %}style="border-top:none;"{% endif %}>
+                                                        {{ data.user_input|linebreaksbr }}
+                                                        {% if data.user_input and data.suffix %}{{ data.suffix }}{% endif %}
+                                                    </td>
+                                                </tr>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </table>
+                            </div>
+                        {% endif %}
+                        {% if u.post_run_data_json.items %}
+                            <div onclick="toggle_details(this)"
+                                 data-toggle="collapse"
+                                 data-target="#{{ u.id }}_post_run_data"
+                                 class="pointer">
+                                <span class="glyphicon {% if run_data_collapse %}glyphicon-chevron-right{% else %}glyphicon-chevron-down{% endif %} chevron"
+                                      style="color: inherit;
+                                             margin-top: 15px"></span>Post run data
+                            </div>
+                            <div id="{{ u.id }}_post_run_data" class="collapse {% if not run_data_collapse %}in{% endif %}">
+                                <table class="table table-striped" style="background-color: #fff; margin-top:10px; margin-bottom: 0">
+                                    {% for question_name, data in u.post_run_data_json.items %}
+                                        {% if not data.readonly %}
+                                            {% if data.type == 'group' %}
+                                                <tr>
+                                                    <td {% if forloop.first %}style="border-top:none;"{% endif %}>
+                                                        {{ data.title }}
+                                                        {% if data.title|slice:"-1:" != ":" %}:{% endif %}
+                                                    </td>
+                                                    <td style="padding: 0;{% if forloop.first %}border-top:none;{% endif %}">
+                                                        <table class="table table-striped" style="margin-bottom: 0;">
+                                                            {% res_question_tbody data %}
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                            {% else %}
+                                                <tr>
+                                                    <td {% if forloop.first %}style="border-top:none;"{% endif %}>
+                                                        {{ data.title }}
+                                                        {% if data.title|slice:"-1:" != ":" %}:{% endif %}
+                                                    </td>
+                                                    <td {% if forloop.first %}style="border-top:none;"{% endif %}>
+                                                        {{ data.user_input|linebreaksbr }}
+                                                        {% if data.user_input and data.suffix %}{{ data.suffix }}{% endif %}
+                                                    </td>
+                                                </tr>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </table>
+                            </div>
                         {% endif %}
                     </div>
                 {% endfor %}

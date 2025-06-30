@@ -43,18 +43,22 @@
                 <option value="60">60 days</option>
                 <option value="90">90 days</option>
                 <option value="-1">Indefinitely</option>
-                {% if user.is_any_part_of_staff %}<option value="0">Not visible</option>{% endif %}
+                {% if customer.is_any_part_of_staff %}<option value="0">Not visible</option>{% endif %}
             </select>
         </label>
     </div>
     <div class="form-group">
         <label for="content-area">What would you like to say?</label>
-        <textarea name="content" id="content-area" class="form-control" rows="6" required>{{form.content.value}}</textarea>
+        <textarea name="content" id="content-area" class="form-control" rows="6" required>{{ form.content.value }}</textarea>
     </div>
-    {% if user.is_staff %}
+    {% if customer|is_staff_on_tool:tool %}
         <div class="form-group">
             <input type="checkbox" id="staff_only" name="staff_only" {% if form.staff_only.value %}checked{% endif %} />
             <label for="staff_only">Make this comment only visible to staff users</label>
+        </div>
+        <div class="form-group">
+            <input type="checkbox" id="pinned" name="pinned" />
+            <label for="pinned">Pin and highlight this comment at the top the list</label>
         </div>
     {% endif %}
     <div class="form-group text-center" style="margin-top:40px">
@@ -63,7 +67,7 @@
 </form>
 <script>
 	$('#content-area').keyboard();
-	$('#expiration option[value="{{form.expiration.value}}"]').prop('selected', true);
+	$('#expiration option[value="{{ form.expiration.value }}"]').prop('selected', true);
 
 	revert(90);
 </script>

@@ -13,10 +13,12 @@ from requests import get
 from NEMO.decorators import accounting_or_user_office_or_manager_required, any_staff_required
 from NEMO.models import (
     Account,
+    AccountType,
     AdjustmentRequest,
     AreaAccessRecord,
     ConsumableWithdraw,
     Project,
+    ProjectType,
     Reservation,
     StaffCharge,
     TrainingSession,
@@ -25,6 +27,7 @@ from NEMO.models import (
 )
 from NEMO.utilities import (
     BasicDisplayTable,
+    ProjectApplication,
     export_format_datetime,
     extract_optional_beginning_and_end_dates,
     get_day_timeframe,
@@ -45,16 +48,6 @@ from NEMO.views.customization import AdjustmentRequestsCustomization, ProjectsAc
 logger = getLogger(__name__)
 
 
-# Class for Applications that can be used for autocomplete
-class Application(object):
-    def __init__(self, name):
-        self.name = name
-        self.id = name
-
-    def __str__(self):
-        return self.name
-
-
 def get_project_applications():
     applications = []
     projects = Project.objects.filter(
@@ -62,7 +55,7 @@ def get_project_applications():
     )
     for project in projects:
         if not any(list(filter(lambda app: app.name == project.application_identifier, applications))):
-            applications.append(Application(project.application_identifier))
+            applications.append(ProjectApplication(project.application_identifier))
     return applications
 
 
@@ -98,6 +91,7 @@ def date_parameters_dictionary(request, default_function: Callable = get_month_t
         "billing_service": get_billing_service().get("available", False),
         "adjustment_time_limit": AdjustmentRequestsCustomization.get_date_limit(),
         "existing_adjustments": existing_adjustments,
+        "run_data_collapse": set_run_data_collapse(request),
     }
     return dictionary, start_date, end_date, kind, identifier
 
@@ -273,6 +267,11 @@ def project_usage(request):
     projects = []
     user = None
     selection = ""
+
+    # Get selection as strings.
+    selected_account_type = request.GET.get("account_type")
+    selected_project_type = request.GET.get("project_type")
+
     try:
         if kind == "application":
             projects = Project.objects.filter(application_identifier=identifier)
@@ -309,6 +308,24 @@ def project_usage(request):
             staff_charges = staff_charges.filter(customer=user)
             training_sessions = training_sessions.filter(trainee=user)
             usage_events = usage_events.filter(user=user)
+        if selected_account_type:
+            # Get a subset of projects and filter the other records using that subset.
+            projects_by_account_type = Project.objects.filter(account__type__id=selected_account_type)
+            area_access = area_access.filter(project__in=projects_by_account_type)
+            consumables = consumables.filter(project__in=projects_by_account_type)
+            missed_reservations = missed_reservations.filter(project__in=projects_by_account_type)
+            staff_charges = staff_charges.filter(project__in=projects_by_account_type)
+            training_sessions = training_sessions.filter(project__in=projects_by_account_type)
+            usage_events = usage_events.filter(project__in=projects_by_account_type)
+        if selected_project_type:
+            # Get a subset of projects and filter the other records using that subset.
+            projects_by_type = Project.objects.filter(project_types__id=selected_project_type)
+            area_access = area_access.filter(project__in=projects_by_type)
+            consumables = consumables.filter(project__in=projects_by_type)
+            missed_reservations = missed_reservations.filter(project__in=projects_by_type)
+            staff_charges = staff_charges.filter(project__in=projects_by_type)
+            training_sessions = training_sessions.filter(project__in=projects_by_type)
+            usage_events = usage_events.filter(project__in=projects_by_type)
         if bool(request.GET.get("csv", False)):
             return csv_export_response(
                 request.user,
@@ -321,6 +338,13 @@ def project_usage(request):
             )
     except:
         pass
+
+    # Get a list of unique account types for the dropdown field.
+    account_types = AccountType.objects.filter(id__in=Account.objects.values_list("type__id", flat=True))
+
+    # Get a list of unique project types for the dropdown field.
+    project_types = ProjectType.objects.filter(id__in=Project.objects.values_list("project_types__id", flat=True))
+
     dictionary = {
         "search_items": set(Account.objects.all())
         | set(Project.objects.all())
@@ -334,6 +358,10 @@ def project_usage(request):
         "usage_events": usage_events,
         "project_autocomplete": True,
         "selection": selection,
+        "account_types": account_types,
+        "selected_account_type": selected_account_type,
+        "project_types": project_types,
+        "selected_project_type": selected_project_type,
     }
     dictionary["no_charges"] = not (
         dictionary["area_access"]
@@ -558,6 +586,15 @@ def get_managed_projects(user: User) -> Set[Project]:
         except Exception:
             logger.exception("error loading project leads from billing service")
     return managed_projects
+
+
+def set_run_data_collapse(request):
+    if request.GET.get("run_data_collapse"):
+        request.session["run_data_collapse"] = request.GET.get("run_data_collapse") == "true"
+    run_data_collapse = False
+    if "run_data_collapse" in request.session:
+        run_data_collapse = request.session["run_data_collapse"]
+    return run_data_collapse
 
 
 def get_billing_service():

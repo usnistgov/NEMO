@@ -3,18 +3,22 @@ from datetime import timedelta
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
-from NEMO.decorators import staff_member_required
-from NEMO.models import Configuration, Reservation, Tool
+from NEMO.decorators import staff_member_or_tool_staff_required
+from NEMO.models import Configuration, Reservation, Tool, User
 from NEMO.utilities import distinct_qs_value_list, localize, naive_local_current_datetime
 from NEMO.views.customization import ToolCustomization
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_GET
 def configuration_agenda(request, time_period="today"):
+    user: User = request.user
     tool_ids = distinct_qs_value_list(
         Configuration.objects.filter(enabled=True, exclude_from_configuration_agenda=False), "tool_id"
     )
+    if not user.is_staff:
+        # restrict to tools that the user is staff for
+        tool_ids = [tool_id for tool_id in tool_ids if tool_id in user.staff_for_tools.values_list("id", flat=True)]
     start = None
     end = None
     if time_period == "today":
@@ -51,7 +55,7 @@ def configuration_agenda(request, time_period="today"):
     tools = Tool.objects.filter(id__in=reservations.values_list("tool", flat=True))
     configuration_widgets = {}
     for tool in tools:
-        configuration_widgets[tool.id] = tool.configuration_widget(request.user, filter_for_agenda=True)
+        configuration_widgets[tool.id] = tool.configuration_widget(user, filter_for_agenda=True)
     dictionary = {
         "time_period": time_period,
         "tools": tools,

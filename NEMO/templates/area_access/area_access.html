@@ -92,13 +92,12 @@
             {% if start or end %}
                 No access records exist
                 {% if start and end %}
-                    between {{ start }} and {{ end }}
+                    between {{ start }} and {{ end }}.
                 {% elif start %}
-                    after {{ start }}
+                    after {{ start }}.
                 {% else %}
-                    before {{ end }}
+                    before {{ end }}.
                 {% endif %}
-                .
             {% endif %}
         {% endif %}
     </div>

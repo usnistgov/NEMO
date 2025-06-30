@@ -16,7 +16,7 @@ from django.utils import formats, timezone
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.decorators import staff_member_required, synchronized
+from NEMO.decorators import staff_member_or_tool_staff_required, synchronized
 from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
 from NEMO.forms import CommentForm, nice_errors
 from NEMO.models import (
@@ -83,7 +83,6 @@ def tool_control(request, item_type="tool", tool_id=None):
     # The tool-choice sidebar only needs to be rendered for desktop devices, not mobile devices.
     if request.device == "desktop":
         dictionary["rendered_item_tree_html"] = ItemTree().render(None, {"tools": tools, "user": user})
-    dictionary["calendar_qualified_tools"] = CalendarCustomization.get("calendar_qualified_tools")
     return render(request, "tool_control/tool_control.html", dictionary)
 
 
@@ -112,7 +111,9 @@ def tool_status(request, tool_id):
         else 0
     )
     tool_credentials = []
-    if ToolCustomization.get_bool("tool_control_show_tool_credentials") and (user.is_staff or user.is_facility_manager):
+    if ToolCustomization.get_bool("tool_control_show_tool_credentials") and (
+        user.is_staff_on_tool(tool) or user.is_facility_manager
+    ):
         if user.is_facility_manager:
             tool_credentials = tool.toolcredentials_set.all()
         else:
@@ -151,21 +152,25 @@ def tool_status(request, tool_id):
             )
         ),
     }
+    if tool.get_current_usage_event() and ToolCustomization.get_bool(
+        "tool_control_prefill_post_usage_with_pre_usage_answers"
+    ):
+        pre_run_data = tool.get_current_usage_event().pre_run_data_json()
+        dictionary["post_usage_questions"] = DynamicForm(
+            tool.post_usage_questions, initial_data=pre_run_data or None
+        ).render(tool, "post_usage_questions")
 
-    try:
-        current_reservation = Reservation.objects.get(
-            start__lt=timezone.now(),
-            end__gt=timezone.now(),
-            cancelled=False,
-            missed=False,
-            shortened=False,
-            user=user,
-            tool=tool,
-        )
-        if user == current_reservation.user:
-            dictionary["time_left"] = current_reservation.end
-    except Reservation.DoesNotExist:
-        pass
+    current_reservation = Reservation.objects.filter(
+        start__lt=timezone.now(),
+        end__gt=timezone.now(),
+        cancelled=False,
+        missed=False,
+        shortened=False,
+        user=user,
+        tool=tool,
+    ).last()
+    if current_reservation:
+        dictionary["time_left"] = current_reservation.end
 
     dictionary["next_reservation"] = (
         Reservation.objects.filter(
@@ -180,13 +185,13 @@ def tool_status(request, tool_id):
     )
 
     # Staff need the user list to be able to qualify users for the tool.
-    if user.is_staff:
+    if user.is_staff_on_tool(tool):
         dictionary["users"] = User.objects.filter(is_active=True)
 
     return render(request, "tool_control/tool_status.html", dictionary)
 
 
-@staff_member_required
+@staff_member_or_tool_staff_required
 @require_GET
 def use_tool_for_other(request):
     dictionary = {"users": User.objects.filter(is_active=True).exclude(id=request.user.id)}
@@ -245,12 +250,13 @@ def usage_data_history(request, tool_id):
     pre_usage_events = usage_events.order_by("-start")
     post_usage_events = usage_events.filter(end__isnull=False).order_by("-end")
     if last:
-        try:
-            last = int(last)
-        except ValueError:
-            last = 25
-        pre_usage_events = pre_usage_events[:last]
-        post_usage_events = post_usage_events[:last]
+        if last != "all":
+            try:
+                last = int(last)
+            except ValueError:
+                last = 25
+            pre_usage_events = pre_usage_events[:last]
+            post_usage_events = post_usage_events[:last]
 
     table_pre_run_data = BasicDisplayTable()
     table_pre_run_data.add_header(("user", "User"))
@@ -269,12 +275,19 @@ def usage_data_history(request, tool_id):
     for usage_event in pre_usage_events:
         if usage_event.pre_run_data:
             format_usage_data(
-                table_pre_run_data, usage_event, usage_event.pre_run_data, usage_event.start, show_project_info
+                table_pre_run_data,
+                usage_event,
+                usage_event.pre_run_data,
+                usage_event.start,
+                show_project_info,
+                csv_export,
             )
 
     for usage_event in post_usage_events:
         if usage_event.run_data:
-            format_usage_data(table_run_data, usage_event, usage_event.run_data, usage_event.end, show_project_info)
+            format_usage_data(
+                table_run_data, usage_event, usage_event.run_data, usage_event.end, show_project_info, csv_export
+            )
 
     if csv_export:
         response = table_run_data.to_csv() if csv_export == "run" else table_pre_run_data.to_csv()
@@ -347,7 +360,7 @@ def create_comment(request):
 @require_POST
 def hide_comment(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
-    if comment.author_id != request.user.id and not request.user.is_staff:
+    if comment.author_id != request.user.id and not request.user.is_staff_on_tool(comment.tool):
         return HttpResponseBadRequest("You may only hide a comment if you are its author or a staff member.")
     comment.visible = False
     comment.hidden_by = request.user
@@ -398,9 +411,9 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
     # Figure out if the tool usage is part of remote work
     # 1: Staff charge means it's always remote work
     # 2: Never remote if customization is set to never be remote
-    # 3: Always remote if operator is different from the user
+    # 3: Always remote if the operator is different from the user
     # 4: Unless customization is set to ask explicitly
-    remote_work = user != operator and operator.is_staff
+    remote_work = user != operator and operator.is_staff_on_tool(tool)
     if RemoteWorkCustomization.get("remote_work_on_behalf_of_user") == "ask":
         remote_work = remote_work and bool(request.POST.get("remote_work", False))
     elif RemoteWorkCustomization.get("remote_work_on_behalf_of_user") == "never":
@@ -432,10 +445,10 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 
     # All policy checks passed so enable the tool for the user.
     if tool.interlock and not tool.interlock.unlock():
-        if bypass_interlock and interlock_bypass_allowed(user):
+        if bypass_interlock and interlock_bypass_allowed(user, tool):
             pass
         else:
-            return interlock_error("Enable", user)
+            return interlock_error("Enable", user, tool)
 
     # Start staff charge before tool usage
     if staff_charge:
@@ -468,7 +481,7 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 
     # Now we can safely save the usage event
     new_usage_event.remote_work = remote_work
-    if (user.is_staff or user in tool.superusers.all()) and not remote_work and is_training:
+    if (user.is_staff_on_tool(tool) or user in tool.superusers.all()) and not remote_work and is_training:
         new_usage_event.training = True
     new_usage_event.save()
 
@@ -504,10 +517,10 @@ def disable_tool(request, tool_id):
 
     # All policy checks passed so disable the tool for the user.
     if tool.interlock and not tool.interlock.lock():
-        if bypass_interlock and interlock_bypass_allowed(user):
+        if bypass_interlock and interlock_bypass_allowed(user, tool):
             pass
         else:
-            return interlock_error("Disable", user)
+            return interlock_error("Disable", user, tool)
 
     # Shorten the user's tool reservation since we are now done using the tool
     current_usage_event = tool.get_current_usage_event()
@@ -579,7 +592,7 @@ def enter_wait_list(request):
 
     # The user must be qualified to use the tool itself, or the parent tool in case of alternate tool.
     tool_to_check_qualifications = tool.parent_tool if tool.is_child_tool() else tool
-    if tool_to_check_qualifications not in user.qualifications.all() and not user.is_staff:
+    if tool_to_check_qualifications not in user.qualifications.all() and not user.is_staff_on_tool(tool):
         return HttpResponseBadRequest("You are not qualified to use this tool.")
 
     entry = ToolWaitList()
@@ -616,9 +629,10 @@ def past_comments_and_tasks(request):
         if not start and not end and not search:
             return HttpResponseBadRequest("Please enter a search keyword, start date or end date.")
         tool_id = request.GET.get("tool_id")
+        tool = get_object_or_404(Tool, pk=tool_id)
         tasks = Task.objects.filter(tool_id=tool_id)
         comments = Comment.objects.filter(tool_id=tool_id)
-        if not user.is_staff:
+        if not user.is_staff_on_tool(tool):
             comments = comments.filter(staff_only=False)
         if start:
             tasks = tasks.filter(creation_time__gt=start)
@@ -636,16 +650,17 @@ def past_comments_and_tasks(request):
     past.reverse()
     if request.GET.get("export"):
         return export_comments_and_tasks_to_text(past)
-    return render(request, "tool_control/past_tasks_and_comments.html", {"past": past})
+    return render(request, "tool_control/past_tasks_and_comments.html", {"past": past, "tool": tool})
 
 
 @login_required
 @require_GET
 def ten_most_recent_past_comments_and_tasks(request, tool_id):
     user: User = request.user
+    tool = get_object_or_404(Tool, pk=tool_id)
     tasks = Task.objects.filter(tool_id=tool_id).order_by("-creation_time")[:10]
     comments = Comment.objects.filter(tool_id=tool_id).order_by("-creation_date")
-    if not user.is_staff:
+    if not user.is_staff_on_tool(tool):
         comments = comments.filter(staff_only=False)
     comments = comments[:10]
     past = list(chain(tasks, comments))
@@ -654,7 +669,7 @@ def ten_most_recent_past_comments_and_tasks(request, tool_id):
     past = past[0:10]
     if request.GET.get("export"):
         return export_comments_and_tasks_to_text(past)
-    return render(request, "tool_control/past_tasks_and_comments.html", {"past": past})
+    return render(request, "tool_control/past_tasks_and_comments.html", {"past": past, "tool": tool})
 
 
 def export_comments_and_tasks_to_text(comments_and_tasks: List):
@@ -734,15 +749,15 @@ def reset_tool_counter(request, counter_id):
     return redirect("tool_control")
 
 
-def interlock_bypass_allowed(user: User):
-    return user.is_staff or InterlockCustomization.get_bool("allow_bypass_interlock_on_failure")
+def interlock_bypass_allowed(user: User, item):
+    return user.is_staff_on_tool(item) or InterlockCustomization.get_bool("allow_bypass_interlock_on_failure")
 
 
-def interlock_error(action: str, user: User):
+def interlock_error(action: str, user: User, item=None):
     error_message = InterlockCustomization.get("tool_interlock_failure_message")
     dictionary = {
         "message": linebreaksbr(error_message),
-        "bypass_allowed": interlock_bypass_allowed(user),
+        "bypass_allowed": interlock_bypass_allowed(user, item),
         "action": action,
     }
     return JsonResponse(dictionary, status=501)
@@ -798,6 +813,7 @@ def format_usage_data(
     usage_run_data: str,
     date_field: datetime,
     show_project_info: str,
+    csv_export: str,
 ):
     usage_data = {}
     date_data = format_datetime(date_field, "SHORT_DATETIME_FORMAT")
@@ -809,18 +825,31 @@ def format_usage_data(
         for question_key, question in run_data.items():
             if "user_input" in question and not question.get("readonly", False):
                 if question["type"] == "group":
-                    for sub_question in question["questions"]:
+                    sub_questions = {q["name"]: q for q in question.get("questions", [])}
+                    for sub_question in sub_questions.values():
                         table_result.add_header((sub_question["name"], sub_question["title"]))
                     for index, user_inputs in question["user_input"].items():
                         if index == "0":
                             # Special case here the "initial" group of user inputs will go along with the rest of the non-group user inputs
                             for name, user_input in user_inputs.items():
-                                usage_data[name] = user_input
+                                question_for_input = sub_questions.get(name)
+                                suffix = (
+                                    f" {question_for_input.get('suffix')}"
+                                    if not csv_export and question_for_input and "suffix" in question_for_input
+                                    else ""
+                                )
+                                usage_data[name] = user_input + suffix if user_input else ""
                         else:
                             # For the other groups of user inputs, we have to add a whole new row
                             group_usage_data = {}
                             for name, user_input in user_inputs.items():
-                                group_usage_data[name] = user_input
+                                question_for_input = sub_questions.get(name)
+                                suffix = (
+                                    f" {question_for_input.get('suffix')}"
+                                    if not csv_export and question_for_input and "suffix" in question_for_input
+                                    else ""
+                                )
+                                group_usage_data[name] = user_input + suffix if user_input else ""
                             if group_usage_data:
                                 group_usage_data["user"] = user_data
                                 group_usage_data["operator"] = operator_data
@@ -830,7 +859,8 @@ def format_usage_data(
                                 table_result.add_row(group_usage_data)
                 else:
                     table_result.add_header((question_key, question["title"]))
-                    usage_data[question_key] = question["user_input"]
+                    suffix = f" {question.get('suffix')}" if not csv_export and "suffix" in question else ""
+                    usage_data[question_key] = question["user_input"] + suffix if question["user_input"] else ""
         if usage_data:
             usage_data["user"] = user_data
             usage_data["operator"] = operator_data

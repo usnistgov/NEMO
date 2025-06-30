@@ -151,6 +151,41 @@
                     </div>
                 </div>
             </div>
+            {% if "NEMO.apps.kiosk"|app_installed and "NEMO.apps.area_access"|app_installed %}
+                <div class="form-group">
+                    <div class="control-label col-md-3">Kiosk button shortcut</div>
+                    <div class="col-md-9 checkbox">
+                        <label>
+                            <input type="checkbox"
+                                   name="area_access_kiosk_option_login_success"
+                                   id="area_access_kiosk_option_login_success"
+                                   value="enabled"
+                                   {% if area_access_kiosk_option_login_success %}checked{% endif %}>
+                            On successful area access login
+                        </label>
+                        <br>
+                        <label>
+                            <input type="checkbox"
+                                   name="area_access_kiosk_option_logout_warning"
+                                   id="area_access_kiosk_option_logout_warning"
+                                   value="enabled"
+                                   {% if area_access_kiosk_option_logout_warning %}checked{% endif %}>
+                            On logout when tools are still in use
+                        </label>
+                    </div>
+                    <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                        This option displays a Kiosk button shortcut on the area access tablet upon successful login and/or on logout when the user is still using tools.
+                    </div>
+                </div>
+            {% endif %}
+            {% if "NEMO.apps.kiosk"|app_installed %}
+                <div class="form-group">
+                    <label class="control-label col-md-3" for="kiosk_message">Kiosk message</label>
+                    <div class="col-md-9">
+                        <textarea oninput="auto_size_textarea(this);" id="kiosk_message" name="kiosk_message" class="form-control">{{ kiosk_message }}</textarea>
+                    </div>
+                </div>
+            {% endif %}
         {% endif %}
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Page title settings</h3>
@@ -223,3 +258,11 @@
         <div class="text-center">{% button type="save" value="Save settings" %}</div>
     </form>
 </div>
+<script type="text/javascript">
+    $("#application-tab-link").click(function() {setTimeout(on_application_tab_show, 50)});
+    function on_application_tab_show()
+    {
+        auto_size_textarea(document.getElementById('kiosk_message'));
+    }
+    on_application_tab_show();
+</script>

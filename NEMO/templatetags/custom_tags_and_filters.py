@@ -17,7 +17,7 @@ from django.utils.safestring import mark_safe
 
 from NEMO.constants import NEXT_PARAMETER_NAME
 from NEMO.mixins import BillableItemMixin
-from NEMO.models import User
+from NEMO.models import Tool, User
 from NEMO.utilities import get_full_url
 from NEMO.views.customization import CustomizationBase, ProjectsAccountsCustomization
 
@@ -105,24 +105,33 @@ def navigation_url(url_name, description, *conditions):
 
 
 @register.simple_tag
-def res_question_tbody(dictionary):
+def res_question_tbody(data):
+    if not data:
+        return ""
+    dictionary = data.get("user_input", data)
     if not dictionary:
         return ""
-    input_dict = dictionary[list(dictionary.keys())[0]]
+
+    input_dict = dictionary[next(iter(dictionary.keys()))]
     headers = list(input_dict.keys())
     header_cells = "".join([format_html("<th>{}</th>", h) for h in headers])
     head_html = format_html("<thead><tr><th>#</th>{}</tr></thead>", mark_safe(header_cells))
 
+    questions = {q["name"]: q for q in data.get("questions", [])}
     rows = []
-    for i, (index, d) in enumerate(dictionary.items()):
-        data_cells_html = "".join(
-            [
-                format_html("<td>{}</td>", ", ".join(d[h]) if isinstance(d.get(h), list) else d.get(h, ""))
-                for h in headers
-            ]
-        )
-        row_html = format_html("<tr><th>{}</th>{}</tr>", i + 1, mark_safe(data_cells_html))
-        rows.append(row_html)
+
+    for i, (_, d) in enumerate(dictionary.items(), start=1):
+        data_cells_html = ""
+        for h in headers:
+            question = questions.get(h)
+            suffix = f" {question.get('suffix')}" if question and "suffix" in question else ""
+            user_input = d.get(h)
+            cell_data = user_input + suffix if user_input else ""
+            if isinstance(user_input, list):
+                cell_data = ", ".join([u + suffix for u in user_input if u])
+            data_cells_html += format_html("<td>{}</td>", cell_data)
+        rows.append(format_html("<tr><th>{}</th>{}</tr>", i, mark_safe(data_cells_html)))
+
     body_html = format_html("<tbody>{}</tbody>", mark_safe("".join(rows)))
     return head_html + body_html
 
@@ -172,6 +181,7 @@ def concat(value, arg):
     return str(value) + str(arg)
 
 
+# deprecated, use `customizations|get_item:'item_key'`
 @register.filter
 def customization(customization_key, key):
     return CustomizationBase.get_instance(customization_key).get(key)
@@ -301,3 +311,47 @@ def can_be_adjusted(value, arg) -> bool:
         return False
     else:
         return value.can_be_adjusted(arg)
+
+
+@register.filter(name="is_staff_on_tool")
+def is_staff_on_tool(user: User, tool: Tool) -> bool:
+    if not user:
+        return False
+    elif user.is_staff:
+        # Regular staff is staff regardless of tool
+        return True
+    else:
+        if not tool or not isinstance(tool, Tool):
+            return False
+        else:
+            return user in tool.staff.all()
+
+
+@register.simple_tag
+def render_tool_properties(tool_properties):
+    """
+    Recursively renders a tool's properties, including nested dictionaries.
+    The key format for nested values will be `parent key - child key`.
+    """
+    html_output = ""
+
+    def render_nested_properties(props, parent_key):
+        nonlocal html_output
+        for key, value in props.items():
+            # Format the key with `parent key - child key`
+            property_key = f"{parent_key.capitalize()} - {key.capitalize()}" if parent_key else key.capitalize()
+
+            if isinstance(value, dict):  # Handle nested dictionaries
+                render_nested_properties(value, property_key)
+            else:  # Handle simple key-value properties
+                if value:  # Only render non-empty values
+                    if isinstance(value, list):
+                        value = ", ".join([str(val) for val in value])
+                    html_output += f"""
+                    <div class="tool-property">
+                        <strong>{property_key}:</strong> {value}
+                    </div>
+                    """
+
+    render_nested_properties(tool_properties, "")
+    return mark_safe(html_output)

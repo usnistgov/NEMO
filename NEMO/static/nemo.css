@@ -144,10 +144,36 @@ body.impersonating .application-sidebar, body.impersonating .application-content
 	opacity: .4;
 }
 
-#calendar-selected-tool
+#calendar-selected-element
 {
-	padding-bottom: 2px;
+	margin-top: -10px;
+}
+
+#calendar-selected-element .label
+{
 	font-size: 13px;
+	display: inline-block;
+	vertical-align: bottom;
+	padding: 5px 10px;
+	margin-top: 10px;
+}
+
+#calendar-selected-element .label .glyphicon
+{
+	padding-right: 3px;
+	font-size: 11px;
+}
+
+#calendar-selected-element .label:not(:last-of-type)
+{
+	margin-right: 10px;
+}
+
+#calendar-selected-element .label.label-danger, #calendar-selected-element .label.label-warning
+{
+	white-space: nowrap;
+  	overflow: hidden;
+  	text-overflow: ellipsis;
 }
 
 .status-icon
@@ -278,6 +304,7 @@ table > thead > tr.no-border > td, table > thead > tr.no-border > th
 	bottom: 0;
 	width: 50%;
 	overflow-y: scroll;
+	min-width: 375px;
 }
 
 .split-screen-right-panel
@@ -729,6 +756,11 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
         -webkit-transform: rotate(359deg);
         transform: rotate(359deg);
     }
+}
+
+.glyphicon-reverse
+{
+	transform: scaleX(-1);
 }
 
 ul.area-tree-list
@@ -1191,12 +1223,6 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	text-decoration: line-through;
 }
 
-.strikethrough-double
-{
-	text-decoration: line-through;
-	text-decoration-style: double;
-}
-
 #safety-tabs, #knowledge-base-tabs
 {
 	margin-top: 0;
@@ -1238,4 +1264,20 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
  	background-color: initial;
  	background-image: initial;
 	color: gray;
+}
+
+.tool-properties-container
+{
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.tool-property
+{
+	background-color: #f0f0f0;
+	border: 1px solid #ccc;
+	border-radius: 5px;
+	padding: 5px 10px;
+	font-size: 14px;
 }

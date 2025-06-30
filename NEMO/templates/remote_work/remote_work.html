@@ -30,7 +30,9 @@
             <label class="control-label col-md-2" for="operator">View charges for</label>
             <div class="col-md-4">
                 <select id="operator" name="operator" class="form-control">
-                    <option {% if selected_staff == "all staff" %}selected{% endif %}>all staff</option>
+                    {% if user.is_staff %}
+                        <option {% if selected_staff == "all staff" %}selected{% endif %}>all staff</option>
+                    {% endif %}
                     {% for s in staff_list %}
                         <option value="{{ s.id }}" {% if s.id == selected_staff %}selected{% endif %}>{{ s }}</option>
                     {% endfor %}
@@ -161,13 +163,12 @@
                         {% if start_date or end_date %}
                             No staff charges exist
                             {% if start_date and end_date %}
-                                between {{ start_date }} and {{ end_date }}
+                                between {{ start_date }} and {{ end_date }}.
                             {% elif start_date %}
-                                after {{ start_date }}
+                                after {{ start_date }}.
                             {% else %}
-                                before {{ end_date }}
+                                before {{ end_date }}.
                             {% endif %}
-                            .
                         {% endif %}
                     </td>
                 </tr>
@@ -222,13 +223,12 @@
                         {% if start_date or end_date %}
                             No tool usage exist
                             {% if start_date and end_date %}
-                                between {{ start_date }} and {{ end_date }}
+                                between {{ start_date }} and {{ end_date }}.
                             {% elif start_date %}
-                                after {{ start_date }}
+                                after {{ start_date }}.
                             {% else %}
-                                before {{ end_date }}
+                                before {{ end_date }}.
                             {% endif %}
-                            .
                         {% endif %}
                     </td>
                 </tr>

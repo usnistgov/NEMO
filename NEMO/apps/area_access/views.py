@@ -237,10 +237,10 @@ def login_to_area(request, door_id):
         # All policy checks passed so open the door for the user.
         if door.interlock:
             if not door.interlock.unlock():
-                if bypass_interlock and interlock_bypass_allowed(user):
+                if bypass_interlock and interlock_bypass_allowed(user, area):
                     pass
                 else:
-                    return interlock_error("Login", user)
+                    return interlock_error("Login", user, area)
 
             delay_lock_door(door.id)
 
@@ -252,7 +252,7 @@ def login_to_area(request, door_id):
         dictionary = {
             "door": door,
             "area": area,
-            "name": user.first_name,
+            "customer": user,
             "project": project,
             "previous_area": previous_area,
         }
@@ -285,7 +285,7 @@ def logout_of_area(request, door_id):
         if ApplicationCustomization.get_bool("area_access_open_door_on_logout"):
             if door.interlock:
                 if not door.interlock.unlock():
-                    return interlock_error(bypass_allowed=True)
+                    return interlock_error(bypass_allowed=True, area=record.area)
                 delay_lock_door(door.id)
         busy_tools = UsageEvent.objects.filter(end=None, user=user)
         staff_charge = user.get_staff_charge()
@@ -339,15 +339,15 @@ def open_door(request, door_id):
         # or exit since there is nothing else to do (user is already logged in).
         if door.interlock:
             if not door.interlock.unlock():
-                return interlock_error(bypass_allowed=False)
+                return interlock_error(bypass_allowed=False, area=area)
             delay_lock_door(door.id)
         return render(request, "area_access/door_is_open.html")
     return render(request, "area_access/not_logged_in.html")
 
 
-def interlock_error(action: str = None, user: User = None, bypass_allowed: bool = None):
+def interlock_error(action: str = None, user: User = None, bypass_allowed: bool = None, area: Area = None):
     error_message = InterlockCustomization.get("door_interlock_failure_message")
-    bypass_allowed = interlock_bypass_allowed(user) if bypass_allowed is None else bypass_allowed
+    bypass_allowed = interlock_bypass_allowed(user, area) if bypass_allowed is None else bypass_allowed
     dictionary = {"message": linebreaksbr(error_message), "bypass_allowed": bypass_allowed, "action": action}
     return JsonResponse(dictionary, status=501)
 

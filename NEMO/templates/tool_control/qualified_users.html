@@ -25,27 +25,37 @@
             <input type="hidden" name="chosen_tool[]" value="{{ tool.id }}">
             <input type="hidden" name="action" value="qualify">
         </form>
-        {% with tool.user_set.all as qualified_users %}
-            {% if qualified_users %}
+        {% with tool.qualification_set.all as qualifications %}
+            {% if qualifications %}
                 <p>
                     You can email <a href="{% url 'compose_email' %}?audience=tool&selection={{ tool.id }}"><span class="glyphicon glyphicon-send"></span> all qualified users</a>.
                 </p>
                 <p>
-                    Current qualified users are listed below. Inactive qualified users are <span class="strikethrough light-grey">crossed out</span>.
+                    Current qualified users are listed below. Inactive qualified users are <span class="danger-highlight">red</span>.
                     <br>
-                    {% for u in qualified_users %}
-                        {% if u.is_active %}
-                            <a href="javascript:remove_qualified_user('{{ u.id }}', '{{ tool.id }}')"
-                               class="grey hover-black"
-                               title="Disqualify {{ u.first_name }}"><span class="glyphicon glyphicon-remove-circle"></span></a> {{ u }}
-                        {% else %}
-                            <a href="javascript:remove_qualified_user('{{ u.id }}', '{{ tool.id }}')"
-                               class="grey hover-black"
-                               title="Disqualify {{ u.first_name }}"><span class="glyphicon glyphicon-remove-circle"></span></a> <span class="strikethrough light-grey">{{ u }}</span>
-                        {% endif %}
+                    {% for qualification in qualifications %}
+                        {% with user=qualification.user %}
+                            {% if user.is_active %}
+                                <a href="javascript:remove_qualified_user('{{ user.id }}', '{{ tool.id }}')"
+                                   class="grey hover-black"
+                                   title="Disqualify {{ user.first_name }}"><span class="glyphicon glyphicon-remove-circle"></span></a>
+                                {{ user }} - {{ qualification.qualified_on|date:"SHORT_DATE_FORMAT" }}
+                            {% else %}
+                                <a href="javascript:remove_qualified_user('{{ user.id }}', '{{ tool.id }}')"
+                                   class="grey hover-black"
+                                   title="Disqualify {{ user.first_name }}"><span class="glyphicon glyphicon-remove-circle"></span></a>
+                                <span class="danger-highlight">{{ user }} - {{ qualification.qualified_on|date:"SHORT_DATE_FORMAT" }} [INACTIVE]</span>
+                            {% endif %}
+                            <a style="text-decoration: none;
+                                      color: inherit"
+                               title="Go to user's page"
+                               href="{% url "create_or_modify_user" user.id %}"><i style="font-size: small;" class="glyphicon glyphicon-link"></i></a>
+                        {% endwith %}
                         <br>
                     {% endfor %}
                 </p>
+            {% else %}
+                No qualified users found.
             {% endif %}
         {% endwith %}
     </div>

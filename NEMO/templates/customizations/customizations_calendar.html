@@ -169,6 +169,42 @@
                 </div>
             </div>
         </div>
+        <div class="form-group">
+            <span class="control-label col-md-3">Calendar status bar</span>
+            <div class="col-md-9">
+                <input type="hidden" name="calendar_status_bar_show_tool_pinned_comments" value="off" />
+                <input type="hidden" name="calendar_status_bar_show_tool_latest_problem" value="off" />
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="calendar_status_bar_show_tool_pinned_comments"
+                               {% if calendar_status_bar_show_tool_pinned_comments == "enabled" %}checked{% endif %}
+                               value="enabled">
+                        Show tool pinned comments in the calendar status bar
+                    </label>
+                    <br />
+                    <label>
+                        <input type="checkbox"
+                               name="calendar_status_bar_show_tool_latest_problem"
+                               {% if calendar_status_bar_show_tool_latest_problem == "enabled" %}checked{% endif %}
+                               value="enabled">
+                        Show last tool problem in the calendar status bar
+                    </label>
+                    <br />
+                </div>
+            </div>
+            <div class="col-md-offset-3 col-md-9 form-inline">
+                <label class="control-label" for="calendar_status_bar_tool_max_width">Max width</label>
+                <div class="input-group">
+                    <input type="number"
+                           id="calendar_status_bar_tool_max_width"
+                           name="calendar_status_bar_tool_max_width"
+                           class="form-control"
+                           value="{{ calendar_status_bar_tool_max_width }}">
+                    <span class="input-group-addon">px</span>
+                </div>
+            </div>
+        </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Calendar format</h3>
         <div class="form-group">

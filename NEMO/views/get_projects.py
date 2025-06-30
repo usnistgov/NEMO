@@ -1,14 +1,14 @@
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET
 
-from NEMO.decorators import any_staff_required, staff_member_or_tool_superuser_required
+from NEMO.decorators import any_staff_required, staff_member_or_tool_superuser_or_tool_staff_required
 from NEMO.models import User
 
 
-@staff_member_or_tool_superuser_required
+@staff_member_or_tool_superuser_or_tool_staff_required
 @require_GET
 def get_projects_for_training(request):
     return get_projects(request)
@@ -32,9 +32,11 @@ def get_projects(request, project_filter=Q()):
     return JsonResponse(dict(projects=list(projects.values("id", "name"))))
 
 
-@any_staff_required
+@login_required
 @require_GET
 def get_projects_for_tool_control(request):
+    if not request.user.is_any_part_of_staff and not request.user.is_tool_staff:
+        return redirect("landing")
     user_id = request.GET.get("user_id")
     user = get_object_or_404(User, id=user_id)
     return render(

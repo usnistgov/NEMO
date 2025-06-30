@@ -16,9 +16,13 @@
         {{ title }} <small class="light-grey">between {{ start_date|date }} and {{ end_date|date }}</small>
     </h1>
     <p>
-        This page presents a monthly report of your {{ facility_name }} use
-        {% if billing_service %}and billing information{% endif %}
-        . Approved adjustments are
+        This page presents a monthly report of your {{ facility_name }}
+        {% if billing_service %}
+            use and billing information.
+        {% else %}
+            use.
+        {% endif %}
+        Approved adjustments are
         {% if not billing_service %}not{% endif %}
         reflected
         {% if billing_service %}in the billing information data but not{% endif %}
@@ -138,6 +142,46 @@
                 </div>
             {% endif %}
         </div>
+        {% if project_autocomplete and account_types %}
+            <div class="form-group">
+                <label for="account_type_select" class="control-label col-sm-2">Account Type:</label>
+                <div class="col-sm-3 col-md-3 col-lg-2">
+                    <select name="account_type"
+                            id="account_type_select"
+                            class="form-control"
+                            style="margin-right: 5px;
+                                   text-align-last:center">
+                        <option value="">- Any -</option>
+                        {# Option to clear filter #}
+                        {% for type in account_types %}
+                            <option value="{{ type.id }}" {% if type.id == selected_account_type|to_int %}selected{% endif %}>
+                                {{ type.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        {% endif %}
+        {% if project_autocomplete and project_types %}
+            <div class="form-group">
+                <label for="project_type_select" class="control-label col-sm-2">Project Type</label>
+                <div class="col-sm-3 col-md-3 col-lg-2">
+                    <select name="project_type"
+                            id="project_type_select"
+                            class="form-control"
+                            style="margin-right: 5px;
+                                   text-align-last:center">
+                        <option value="">- Any -</option>
+                        {# Option to clear filter #}
+                        {% for type in project_types %}
+                            <option value="{{ type.id }}" {% if type.id == selected_project_type|to_int %}selected{% endif %}>
+                                {{ type.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        {% endif %}
         <input id="type" name="type" type="hidden" value="{{ kind|default:'' }}" />
         <input id="id" name="id" type="hidden" value="{{ identifier|default:'' }}" />
         <script>

@@ -224,6 +224,9 @@ class ApplicationCustomization(CustomizationBase):
         "status_dashboard_page_title": "Status dashboard",
         "requests_page_title": "Requests",
         "safety_page_title": "Safety",
+        "kiosk_message": "<h1>Scan your badge to control tools</h1>",
+        "area_access_kiosk_option_login_success": "",
+        "area_access_kiosk_option_logout_warning": "",
     }
 
     def context(self) -> Dict:
@@ -271,6 +274,8 @@ class UserCustomization(CustomizationBase):
         "user_access_expiration_buffer_days": "",
         "user_access_expiration_no_type": "",
         "user_access_expiration_types": "-1",
+        "user_access_expiration_banner_warning": "",
+        "user_access_expiration_banner_danger": "",
         "user_allow_document_upload": "",
         "user_allow_profile_view": "",
     }
@@ -340,6 +345,9 @@ class CalendarCustomization(CustomizationBase):
         "calendar_outage_recurrence_limit": "90",
         "calendar_qualified_tools": "",
         "calendar_configuration_in_reservations": "",
+        "calendar_status_bar_show_tool_pinned_comments": "enabled",
+        "calendar_status_bar_show_tool_latest_problem": "enabled",
+        "calendar_status_bar_tool_max_width": "400",
         "create_reservation_confirmation": "",
         "change_reservation_confirmation": "",
         "reservation_confirmation_date_format": "MMMM D, yyyy",
@@ -542,6 +550,7 @@ class ToolCustomization(CustomizationBase):
         "tool_control_show_documents_only_qualified_users": "",
         "tool_control_show_tool_credentials": "enabled",
         "tool_control_show_next_reservation_user": "",
+        "tool_control_prefill_post_usage_with_pre_usage_answers": "",
         "tool_qualification_reminder_days": "",
         "tool_qualification_expiration_days": "",
         "tool_qualification_expiration_never_used_days": "",
@@ -763,6 +772,8 @@ def set_customization(name, value):
 @require_GET
 def customization(request, key: str = "application"):
     customization_instance: CustomizationBase = CustomizationBase.get_instance(key)
+    if not customization_instance:
+        return HttpResponseNotFound(f"Customizations with key: '{key}' not found")
     return render(request, "customizations/customizations.html", customization_instance.context())
 
 

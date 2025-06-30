@@ -42,7 +42,7 @@
 {% block content %}
     {% if not popup_view %}<h1>Scheduled outage details</h1>{% endif %}
     <table class="table table-striped" style="margin-bottom: 0">
-        {% if user.is_staff %}
+        {% if user.is_staff or user|is_staff_on_tool:outage.tool %}
             <tr>
                 <td>
                     <label for="outage_title" style="margin-bottom: 0">Title:</label>
@@ -98,7 +98,7 @@
     </tr>
 {% endif %}
 <tr>
-    {% if user.is_staff and outage.has_not_ended and outage.has_not_started %}
+    {% if user|is_staff_on_tool:outage.tool and outage.has_not_ended and outage.has_not_started %}
         <td style="vertical-align: middle">
             <label for="outage_start" style="margin-bottom: 0">Start:</label>
         </td>
@@ -128,7 +128,7 @@
 {% endif %}
 </tr>
 <tr>
-    {% if user.is_staff and outage.has_not_ended and outage.has_not_started %}
+    {% if user|is_staff_on_tool:outage.tool and outage.has_not_ended and outage.has_not_started %}
         <td style="vertical-align: middle">
             <label for="outage_end" style="margin-bottom: 0">End:</label>
         </td>
@@ -171,8 +171,8 @@
     <td>Identifier:</td>
     <td>{{ outage.id }}</td>
 </tr>
-{% if outage.details or user.is_staff %}
-    {% if user.is_staff %}
+{% if outage.details or user.is_staff or user|is_staff_on_tool:outage.tool %}
+    {% if user.is_staff or user|is_staff_on_tool:outage.tool %}
         <tr>
             <td>
                 <label for="outage_details" style="margin-bottom: 0">Details:</label>
@@ -202,7 +202,7 @@
 {% endif %}
 </table>
 {# Allow the user to cancel the outage if they have that privilege. only in popup view #}
-{% if user.is_staff %}
+{% if user.is_staff or user|is_staff_on_tool:outage.tool %}
     <div class="modal-footer" style="padding: 15px 0 0 0;">
         <button type="button" class="btn btn-danger" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() {
         {% endif %}
