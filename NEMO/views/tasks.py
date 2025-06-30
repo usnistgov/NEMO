@@ -97,7 +97,10 @@ def save_task(request, task: Task, user: User, task_images: List[TaskImages] = N
         task.tool.operational = False
         task.tool.save()
         # End any usage events in progress for the tool or the tool's children.
-        UsageEvent.objects.filter(tool_id__in=task.tool.get_family_tool_ids(), end=None).update(end=timezone.now())
+        # IMPORTANT: use save method here to make sure the has_ended flag is set correctly
+        for usage_event in UsageEvent.objects.filter(tool_id__in=task.tool.get_family_tool_ids(), end=None):
+            usage_event.end = timezone.now()
+            usage_event.save()
         # Lock the interlock for this tool.
         try:
             tool_interlock = Interlock.objects.get(tool__id=task.tool.id)

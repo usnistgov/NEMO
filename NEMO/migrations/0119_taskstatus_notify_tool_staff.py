@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("NEMO", "0118_areaaccessrecord_end_timestamp_and_more"),
+        ("NEMO", "0118_areaaccessrecord_has_ended"),
     ]
 
     operations = [

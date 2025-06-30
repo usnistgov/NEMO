@@ -2632,7 +2632,7 @@ class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     project = models.ForeignKey("Project", on_delete=models.CASCADE)
     start = models.DateTimeField(default=timezone.now)
     end = models.DateTimeField(null=True, blank=True)
-    end_timestamp = models.PositiveBigIntegerField(default=0)
+    has_ended = models.PositiveBigIntegerField(default=0)
     staff_charge = models.ForeignKey(StaffCharge, blank=True, null=True, on_delete=models.CASCADE)
     validated = models.BooleanField(default=False)
     validated_by = models.ForeignKey(
@@ -2655,15 +2655,20 @@ class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):
         ]
         # This constraint is to get around db limitations with null values for end date being sometimes unique, sometimes not
         constraints = [
-            models.UniqueConstraint(fields=["customer", "area", "end_timestamp"], name="unique_area_user_end_timestamp")
+            models.UniqueConstraint(fields=["customer", "area", "has_ended"], name="unique_area_user_has_ended")
         ]
 
     def __str__(self):
         return str(self.id)
 
     def save(self, *args, **kwargs):
-        # Set end_timestamp to 0 if the end is NULL, otherwise set it to the unique timestamp
-        self.end_timestamp = 0 if self.end is None else int(self.end.timestamp() * 1000)
+        # Set has_ended to 0 if the end is NULL (always), otherwise set it to a unique number (max +1)
+        if self.end is None:
+            self.has_ended = 0
+        elif not self.has_ended:
+            # Covers cases where has_ended was not set (None) or previously set to 0 but now has an end.
+            last_custom = AreaAccessRecord.objects.aggregate(models.Max("has_ended"))["has_ended__max"] or 0
+            self.has_ended = last_custom + 1
         super().save(*args, **kwargs)
 
 
@@ -3005,7 +3010,7 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     )  # The related_name='+' disallows reverse lookups. Helper functions of other models should be used instead.
     start = models.DateTimeField(default=timezone.now)
     end = models.DateTimeField(null=True, blank=True)
-    end_timestamp = models.PositiveBigIntegerField(default=0)
+    has_ended = models.PositiveBigIntegerField(default=0)
     validated = models.BooleanField(default=False)
     validated_by = models.ForeignKey(
         User, null=True, blank=True, related_name="usage_event_validated_set", on_delete=models.CASCADE
@@ -3043,14 +3048,19 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     class Meta:
         ordering = ["-start"]
         # This constraint is to get around db limitations with null values for end date being sometimes unique, sometimes not
-        constraints = [models.UniqueConstraint(fields=["tool", "end_timestamp"], name="unique_tool_end_timestamp")]
+        constraints = [models.UniqueConstraint(fields=["tool", "has_ended"], name="unique_tool_has_ended")]
 
     def __str__(self):
         return str(self.id)
 
     def save(self, *args, **kwargs):
-        # Set end_timestamp to 0 if the end is NULL, otherwise set it to the unique timestamp
-        self.end_timestamp = 0 if self.end is None else int(self.end.timestamp() * 1000)
+        # Set has_ended to 0 if the end is NULL (always), otherwise set it to a unique number (max +1)
+        if self.end is None:
+            self.has_ended = 0
+        elif not self.has_ended:
+            # Covers cases where has_ended was not set (None) or previously set to 0 but now has an end.
+            last_custom = UsageEvent.objects.aggregate(models.Max("has_ended"))["has_ended__max"] or 0
+            self.has_ended = last_custom + 1
         super().save(*args, **kwargs)
 
 
