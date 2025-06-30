@@ -5,3 +5,5 @@ documentation
 conf
 build
 __pycache__
+resources/fixtures/*
+!resources/fixtures/splash_pad.json
