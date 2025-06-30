@@ -182,7 +182,7 @@ def concat(value, arg):
 
 
 # deprecated, use `customizations|get_item:'item_key'`
-@register.filter()
+@register.filter
 def customization(customization_key, key):
     return CustomizationBase.get_instance(customization_key).get(key)
 
