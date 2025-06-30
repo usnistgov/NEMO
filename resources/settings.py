@@ -404,4 +404,13 @@ IGNORABLE_404_URLS = [
     re.compile(r"^/robots.txt$"),
     re.compile(r"^/apple-touch-icon.*\.png$"),
     re.compile(r"^/favicon\.ico$"),
+    re.compile(r"^/event_details/reservation/[0-9]+/\?popup_view=true"),
 ]
+
+# This is where the JSON schema for tool properties can be defined.
+# See https://django-jsonform.readthedocs.io/en/latest/schema.html
+TOOL_PROPERTIES_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": True,
+}
