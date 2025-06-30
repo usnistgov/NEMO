@@ -3,18 +3,18 @@
 from django.db import migrations, models
 
 
+def set_area_access_has_ended(apps, schema_editor):
+    AreaAccessRecord = apps.get_model("NEMO", "AreaAccessRecord")
+    for index, area_access in enumerate(AreaAccessRecord.objects.order_by("id"), start=1):
+        area_access.has_ended = 0 if area_access.end is None else index
+        area_access.save(update_fields=["has_ended"])
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
         ("NEMO", "0117_usageevent_has_ended"),
     ]
-
-    @staticmethod
-    def set_area_access_has_ended(apps, schema_editor):
-        AreaAccessRecord = apps.get_model("NEMO", "AreaAccessRecord")
-        for index, area_access in enumerate(AreaAccessRecord.objects.order_by("id"), start=1):
-            area_access.has_ended = 0 if area_access.end is None else index
-            area_access.save(update_fields=["has_ended"])
 
     operations = [
         migrations.AddField(

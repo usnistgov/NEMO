@@ -49,9 +49,9 @@ def create_news_for_version(apps, version, extra_content=None):
             notification.save()
 
 
-def news_for_version_forward(version):
+def news_for_version_forward(version, extra_content=""):
     def new_version_news(apps, schema_editor):
-        create_news_for_version(apps, version, "")
+        create_news_for_version(apps, version, extra_content)
 
     return new_version_news
 

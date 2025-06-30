@@ -3,18 +3,18 @@
 from django.db import migrations, models
 
 
+def set_usage_event_has_ended(apps, schema_editor):
+    UsageEvent = apps.get_model("NEMO", "UsageEvent")
+    for index, usage_event in enumerate(UsageEvent.objects.order_by("id"), start=1):
+        usage_event.has_ended = 0 if usage_event.end is None else index
+        usage_event.save(update_fields=["has_ended"])
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
         ("NEMO", "0116_comment_pinned"),
     ]
-
-    @staticmethod
-    def set_usage_event_has_ended(apps, schema_editor):
-        UsageEvent = apps.get_model("NEMO", "UsageEvent")
-        for index, usage_event in enumerate(UsageEvent.objects.order_by("id"), start=1):
-            usage_event.has_ended = 0 if usage_event.end is None else index
-            usage_event.save(update_fields=["has_ended"])
 
     operations = [
         migrations.AddField(

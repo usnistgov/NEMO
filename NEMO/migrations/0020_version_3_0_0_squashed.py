@@ -12,6 +12,59 @@ import NEMO.utilities
 from NEMO.migrations_utils import news_for_version_forward, news_for_version_reverse
 
 
+def rebuild_area_tree(apps, schema_editor):
+    manager = mptt.managers.TreeManager()
+    Area = apps.get_model("NEMO", "Area")
+    manager.model = Area
+    mptt.register(Area, parent_attr="parent_area")
+    manager.contribute_to_class(Area, "objects")
+    manager.rebuild()
+
+
+def copy_badge_number_data(apps, schema_editor):
+    User = apps.get_model(settings.AUTH_USER_MODEL)
+    for user in User.objects.all():
+        user.badge_number = user.badge_number_tmp
+        user.save()
+
+
+def rename_buddy_board_customization(apps, schema_editor):
+    Customization = apps.get_model("NEMO", "Customization")
+    try:
+        buddy_board_desc_old = Customization.objects.get(name="buddy_board_disclaimer")
+        Customization.objects.create(name="buddy_board_description", value=buddy_board_desc_old.value)
+        buddy_board_desc_old.delete()
+    except:
+        pass
+
+
+def migrate_exceptions_to_closures(apps, schema_editor):
+    Closure = apps.get_model("NEMO", "Closure")
+    ClosureTime = apps.get_model("NEMO", "ClosureTime")
+    try:
+        for closure in Closure.objects.all():
+            ClosureTime.objects.create(closure=closure, start_time=closure.start_time, end_time=closure.end_time)
+    except:
+        pass
+
+
+def migrate_staff_availability_categories(apps, schema_editor):
+    # We are creating new staff availability categories based on the previous char fields and setting them
+    StaffAvailability = apps.get_model("NEMO", "StaffAvailability")
+    StaffAvailabilityCategory = apps.get_model("NEMO", "StaffAvailabilityCategory")
+    categories = list(
+        set(list(StaffAvailability.objects.filter(category__isnull=False).values_list("category", flat=True)))
+    )
+    categories.sort()
+    for staff_availability in StaffAvailability.objects.all():
+        if staff_availability.category:
+            category, created = StaffAvailabilityCategory.objects.get_or_create(
+                name=staff_availability.category, display_order=categories.index(staff_availability.category)
+            )
+            staff_availability.category_link = category
+            staff_availability.save()
+
+
 class Migration(migrations.Migration):
 
     replaces = [
@@ -37,59 +90,6 @@ class Migration(migrations.Migration):
     dependencies = [
         ("NEMO", "0012_version_2_0_0_squashed"),
     ]
-
-    @staticmethod
-    def rebuild_area_tree(apps, schema_editor):
-        manager = mptt.managers.TreeManager()
-        Area = apps.get_model("NEMO", "Area")
-        manager.model = Area
-        mptt.register(Area, parent_attr="parent_area")
-        manager.contribute_to_class(Area, "objects")
-        manager.rebuild()
-
-    @staticmethod
-    def copy_badge_number_data(apps, schema_editor):
-        User = apps.get_model(settings.AUTH_USER_MODEL)
-        for user in User.objects.all():
-            user.badge_number = user.badge_number_tmp
-            user.save()
-
-    @staticmethod
-    def rename_buddy_board_customization(apps, schema_editor):
-        Customization = apps.get_model("NEMO", "Customization")
-        try:
-            buddy_board_desc_old = Customization.objects.get(name="buddy_board_disclaimer")
-            Customization.objects.create(name="buddy_board_description", value=buddy_board_desc_old.value)
-            buddy_board_desc_old.delete()
-        except:
-            pass
-
-    @staticmethod
-    def migrate_exceptions_to_closures(apps, schema_editor):
-        Closure = apps.get_model("NEMO", "Closure")
-        ClosureTime = apps.get_model("NEMO", "ClosureTime")
-        try:
-            for closure in Closure.objects.all():
-                ClosureTime.objects.create(closure=closure, start_time=closure.start_time, end_time=closure.end_time)
-        except:
-            pass
-
-    @staticmethod
-    def migrate_staff_availability_categories(apps, schema_editor):
-        # We are creating new staff availability categories based on the previous char fields and setting them
-        StaffAvailability = apps.get_model("NEMO", "StaffAvailability")
-        StaffAvailabilityCategory = apps.get_model("NEMO", "StaffAvailabilityCategory")
-        categories = list(
-            set(list(StaffAvailability.objects.filter(category__isnull=False).values_list("category", flat=True)))
-        )
-        categories.sort()
-        for staff_availability in StaffAvailability.objects.all():
-            if staff_availability.category:
-                category, created = StaffAvailabilityCategory.objects.get_or_create(
-                    name=staff_availability.category, display_order=categories.index(staff_availability.category)
-                )
-                staff_availability.category_link = category
-                staff_availability.save()
 
     operations = [
         migrations.AlterModelOptions(
