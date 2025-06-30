@@ -371,20 +371,8 @@ INTERLOCKS_ENABLED = False
 # Audit log. Update this list based on your audit needs. See supported fields at
 # https://django-auditlog.readthedocs.io/en/latest/usage.html#settings
 AUDITLOG_INCLUDE_TRACKING_MODELS = (
-    # Track changes to user access expiration, roles and managed projects
-    {
-        "model": "NEMO.User",
-        "include_fields": [
-            "access_expiration",
-            "is_staff",
-            "is_service_personnel",
-            "is_technician",
-            "is_facility_manager",
-            "is_superuser",
-        ],
-        "m2m_fields": ["managed_projects"],
-    },
-    # Track all project, account and Customization changes
+    # Track all user, project, account and Customization changes
+    "NEMO.User",
     "NEMO.Project",
     "NEMO.Account",
     "NEMO.Customization",
