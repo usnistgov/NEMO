@@ -978,7 +978,7 @@ def proxy_reservation(request):
 def get_selected_tool_calendar_info(request, tool_id):
     tool = get_object_or_404(Tool.objects.prefetch_related("comment_set"), pk=tool_id)
     other_problems = tool.problems().count() - 1
-    last_problem = tool.problems().latest("creation_time")
+    last_problem = tool.problems().latest("creation_time") if other_problems != -1 else None
     return render(
         request,
         "snippets/tool_calendar_info.html",
