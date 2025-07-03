@@ -3197,14 +3197,17 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
             if self.customer.has_access_expired():
                 errors["customer"] = f"This user's access expired on {format_datetime(self.customer.access_expiration)}"
         if self.project_id:
-            if not self.project.active:
-                errors["project"] = (
-                    "A consumable may only be billed to an active project. The user's project is inactive."
-                )
-            if not self.project.account.active:
-                errors["project"] = (
-                    "A consumable may only be billed to a project that belongs to an active account. The user's account is inactive."
-                )
+            # skip checking when it's part of the tool usage, let the tool usage policy deal with it
+            # we actually want that in case it's a disable and the project just got deactivated
+            if not self.tool_usage:
+                if not self.project.active:
+                    errors["project"] = (
+                        "A consumable may only be billed to an active project. The user's project is inactive."
+                    )
+                if not self.project.account.active:
+                    errors["project"] = (
+                        "A consumable may only be billed to a project that belongs to an active account. The user's account is inactive."
+                    )
         if self.quantity is not None and self.quantity < 1:
             errors["quantity"] = "Please specify a valid quantity of items to withdraw."
         if self.consumable_id:
