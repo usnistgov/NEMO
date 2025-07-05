@@ -4,6 +4,7 @@ from typing import List
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.http import HttpResponseBadRequest, HttpResponseForbidden, QueryDict
@@ -29,7 +30,7 @@ from NEMO.models import (
     UsageEvent,
     User,
 )
-from NEMO.utilities import date_input_format, queryset_search_filter
+from NEMO.utilities import date_input_format, get_content_types_for_billable_item_subclasses, queryset_search_filter
 from NEMO.views.api_billing import BillableItem, BillingFilterForm, get_billing_charges
 from NEMO.views.customization import ProjectsAccountsCustomization
 from NEMO.views.pagination import SortedPaginator
@@ -40,6 +41,13 @@ class ProjectTransferForm(BillingFilterForm):
     project_id = forms.IntegerField(required=True)
     new_project_id = forms.IntegerField(required=False)
     user_id = forms.IntegerField(required=False)
+    charge_types = forms.ModelMultipleChoiceField(queryset=ContentType.objects.none(), required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["charge_types"].queryset = ContentType.objects.filter(
+            id__in=[ct.id for ct in get_content_types_for_billable_item_subclasses()]
+        )
 
     def clean(self):
         errors = {}
@@ -272,7 +280,9 @@ def is_user_allowed(user: User, project):
 def transfer_charges(request):
     if not ProjectsAccountsCustomization.get_bool("project_allow_transferring_charges"):
         return redirect("landing")
-    form = ProjectTransferForm(request.POST or None)
+    form = ProjectTransferForm(
+        request.POST or None, initial={"charge_types": get_content_types_for_billable_item_subclasses()}
+    )
     project = None
     new_project = None
     customer = None
@@ -287,12 +297,15 @@ def transfer_charges(request):
                 new_project = Project.objects.filter(pk=new_project_id).first()
             if user_id:
                 customer = User.objects.filter(id=user_id).first()
-            charges = get_charges_for_project_and_user(request.POST, customer.username if customer else None)
+            charges = get_charges_for_project_and_user(form, request.POST, customer.username if customer else None)
             confirm = "confirm" in request.POST
             if confirm:
                 if not new_project_id:
-                    dictionary["charges"] = charges
                     form.add_error("new_project_id", _("This field is required"))
+                    # Reload all charges to use when showing next
+                    dictionary["charges"] = get_charges_for_project_and_user(
+                        form, request.POST, customer.username if customer else None, filter_selected=False
+                    )
                 else:
                     do_transfer_charges(charges, new_project.id)
                     messages.success(
@@ -300,18 +313,41 @@ def transfer_charges(request):
                         f"{len(charges)} charges were transferred from {project} to {new_project}",
                         extra_tags="data-speed=25000",
                     )
+                    # Reload all charges to use when showing next
+                    dictionary["charges"] = get_charges_for_project_and_user(
+                        form, request.POST, customer.username if customer else None, filter_selected=False
+                    )
             else:
                 dictionary["charges"] = charges
-    dictionary.update({"form": form, "project": project, "new_project": new_project, "customer": customer})
+
+    dictionary.update(
+        {
+            "form": form,
+            "project": project,
+            "new_project": new_project,
+            "customer": customer,
+            "selected_charges": (request.POST.getlist("selected_charges") if form.errors else []),
+        }
+    )
+
     return render(request, "accounts_and_projects/transfer_charges.html", dictionary)
 
 
-def get_charges_for_project_and_user(params: QueryDict, username: str = None) -> List[BillableItem]:
+def get_charges_for_project_and_user(
+    form: ProjectTransferForm, params: QueryDict, username: str = None, filter_selected=True
+) -> List[BillableItem]:
     dictionary = params.copy()
     dictionary["username"] = username
     if not dictionary.get("end"):
         dictionary["end"] = datetime.now().strftime(date_input_format)
-    return get_billing_charges(dictionary)
+    charges = get_billing_charges(dictionary)
+    charge_classes = [ct.model_class() for ct in form.cleaned_data.get("charge_types", [])]
+    # filter charges by type
+    charges = [charge for charge in charges if isinstance(charge.item, tuple(charge_classes))]
+    # filter charges by checked ones
+    if filter_selected and "confirm" in params:
+        charges = [c for c in charges if f"{c.item_content_type_id}_{c.item_id}" in params.getlist("selected_charges")]
+    return charges
 
 
 @transaction.atomic

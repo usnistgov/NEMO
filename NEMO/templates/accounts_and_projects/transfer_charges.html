@@ -18,10 +18,7 @@
                         Oops! Something went wrong. Please correct the errors highlighted below:
                         {% if form.non_field_errors %}
                             <br>
-                            <br>
-                            <ul>
-                                <li>{{ form.non_field_errors }}</li>
-                            </ul>
+                            {{ form.non_field_errors }}
                         {% endif %}
                     </div>
                 </div>
@@ -104,6 +101,25 @@
             {% endif %}
         </div>
         <div class="form-group">
+            <label class="col-sm-1 control-label">Activities:</label>
+            <div class="col-sm-9">
+                <div class="checkbox">
+                    {% for charge_type in form.fields.charge_types.queryset %}
+                        <div class="row col-lg-3 col-md-4 col-sm-5">
+                            <label for="content_type_{{ charge_type.id }}">
+                                <input type="checkbox"
+                                       id="content_type_{{ charge_type.id }}"
+                                       value="{{ charge_type.id }}"
+                                       name="charge_types"
+                                       {% if charge_type.id|stringformat:'i' in form.charge_types.value or charge_type.id in form.charge_types.value %}checked{% endif %}>
+                                {{ charge_type.name|capfirst }}
+                            </label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
             <div class="col-sm-offset-1 col-sm-11">
                 {% button type="export" submit=True value="Search" icon="glyphicon-search" %}
             </div>
@@ -134,14 +150,18 @@
             {% with number_of_charges=charges|length %}
                 <div class="form-group">
                     <div class="col-sm-offset-1 col-sm-11">
-                        {% button type="save" submit=False value="Confirm" name="confirm" onclick="if (this.form.reportValidity()){ if(window.confirm('Are you sure you want to transfer these "|concat:number_of_charges|concat:" charges?')){submit_and_disable(this)}}" %}
+                        {% button type="save" submit=False value="Confirm" name="confirm" onclick="submit_charges(this)" %}
                     </div>
                 </div>
                 <div class="danger-highlight" style="margin-top: 25px;">{{ number_of_charges }} charges were found:</div>
             {% endwith %}
-            <table class="table table-striped">
+            <table class="table table-striped" id="selected-charges">
                 <thead>
                     <tr>
+                        <th class="button-column-minimum">
+                            <input type="checkbox"
+                                   onchange="$('#selected-charges :checkbox').prop('checked', $(this).prop('checked'));">
+                        </th>
                         <th>Date</th>
                         <th>Type</th>
                         <th>Item</th>
@@ -153,6 +173,13 @@
                 </thead>
                 {% for charge in charges %}
                     <tr>
+                        <td class="text-center">
+                            <input type="checkbox"
+                                   id="charge_{{ charge.item_content_type_id }}_{{ charge.item_id }}"
+                                   name="selected_charges"
+                                   aria-label="charge #{{ forloop.counter }}"
+                                   value="{{ charge.item_content_type_id }}_{{ charge.item_id }}" />
+                        </td>
                         <td>{{ charge.end|date:"SHORT_DATETIME_FORMAT" }}</td>
                         <td>{{ charge.type }}</td>
                         <td>{{ charge.name }}</td>
@@ -218,6 +245,26 @@
                     'name': '{{ customer }}',
                     'id': '{{ customer.id }}'
                 });
+                $('#selected-charges :checkbox').prop("checked", true);
+                if ({{ selected_charges|yesno:"true,false" }})
+                {
+                    $('#selected-charges :checkbox').prop("checked", false);
+                }
+                {% for selected_charge in selected_charges %}
+                    $('#charge_{{ selected_charge }}').prop("checked", true);
+                {% endfor %}
+            }
+
+            function submit_charges(button)
+            {
+                const charges_count = $('#selected-charges tbody :checkbox:checked').length;
+                if (button.form.reportValidity())
+                {
+                    if(window.confirm("Are you sure you want to transfer these " + charges_count + " charges from " + $("#selected_project").val() + " to " + $("#selected_new_project").val() + "?"))
+                    {
+                        submit_and_disable(button);
+                    }
+                }
             }
 
             $(on_load);

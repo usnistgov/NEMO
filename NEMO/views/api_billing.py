@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Dict, List, Optional
 
 from django import forms
+from django.contrib.contenttypes.models import ContentType
 
 from NEMO.models import (
     AreaAccessRecord,
@@ -54,11 +55,15 @@ class BillingFilterForm(forms.Form):
 
 
 class BillableItem(object):
-    def __init__(self, item_type: str, project: Project, user: User):
+    def __init__(self, item_type: str, project: Project, user: User, item=None):
+        self.item = item
         self.type: Optional[str] = item_type
         self.name: Optional[str] = None
         self.details: Optional[str] = ""
-        self.item_id: Optional[int] = None
+        self.item_id: Optional[int] = item.id if item else None
+        self.item_content_type_id: Optional[int] = (
+            ContentType.objects.get_for_model(item, for_concrete_model=False).id if item else None
+        )
         self.validated: bool = False
         self.validated_by: Optional[User] = None
         self.waived: bool = False
@@ -95,7 +100,7 @@ def get_billing_charges(request_params: Dict) -> List[BillableItem]:
 
 
 def get_usage_events_for_billing(billing_form: BillingFilterForm) -> List[BillableItem]:
-    queryset = UsageEvent.objects.filter()
+    queryset = UsageEvent.objects.filter().prefetch_related("project", "project__account", "user", "operator", "tool")
     start, end = billing_form.get_start_date(), billing_form.get_end_date()
     queryset = queryset.filter(end__gte=start, end__lte=end)
     if billing_form.get_account_id():
@@ -114,7 +119,7 @@ def get_usage_events_for_billing(billing_form: BillingFilterForm) -> List[Billab
 
 
 def get_area_access_for_billing(billing_form: BillingFilterForm) -> List[BillableItem]:
-    queryset = AreaAccessRecord.objects.filter()
+    queryset = AreaAccessRecord.objects.filter().prefetch_related("project", "project__account", "customer", "area")
     start, end = billing_form.get_start_date(), billing_form.get_end_date()
     queryset = queryset.filter(end__gte=start, end__lte=end)
     if billing_form.get_account_id():
@@ -133,7 +138,9 @@ def get_area_access_for_billing(billing_form: BillingFilterForm) -> List[Billabl
 
 
 def get_missed_reservations_for_billing(billing_form: BillingFilterForm) -> List[BillableItem]:
-    queryset = Reservation.objects.filter(missed=True)
+    queryset = Reservation.objects.filter(missed=True).prefetch_related(
+        "project", "project__account", "user", "area", "tool"
+    )
     start, end = billing_form.get_start_date(), billing_form.get_end_date()
     queryset = queryset.filter(end__gte=start, end__lte=end)
     if billing_form.get_account_id():
@@ -152,7 +159,7 @@ def get_missed_reservations_for_billing(billing_form: BillingFilterForm) -> List
 
 
 def get_staff_charges_for_billing(billing_form: BillingFilterForm) -> List[BillableItem]:
-    queryset = StaffCharge.objects.filter()
+    queryset = StaffCharge.objects.filter().prefetch_related("project", "project__account", "customer", "staff_member")
     start, end = billing_form.get_start_date(), billing_form.get_end_date()
     queryset = queryset.filter(end__gte=start, end__lte=end)
     if billing_form.get_account_id():
@@ -171,7 +178,9 @@ def get_staff_charges_for_billing(billing_form: BillingFilterForm) -> List[Billa
 
 
 def get_consumables_for_billing(billing_form: BillingFilterForm) -> List[BillableItem]:
-    queryset = ConsumableWithdraw.objects.filter()
+    queryset = ConsumableWithdraw.objects.filter().prefetch_related(
+        "project", "project__account", "customer", "merchant", "consumable"
+    )
     start, end = billing_form.get_start_date(), billing_form.get_end_date()
     queryset = queryset.filter(date__gte=start, date__lte=end)
     if billing_form.get_account_id():
@@ -190,7 +199,9 @@ def get_consumables_for_billing(billing_form: BillingFilterForm) -> List[Billabl
 
 
 def get_training_sessions_for_billing(billing_form: BillingFilterForm) -> List[BillableItem]:
-    queryset = TrainingSession.objects.filter()
+    queryset = TrainingSession.objects.filter().prefetch_related(
+        "project", "project__account", "trainer", "trainee", "tool"
+    )
     start, end = billing_form.get_start_date(), billing_form.get_end_date()
     queryset = queryset.filter(date__gte=start, date__lte=end)
     if billing_form.get_account_id():
@@ -211,9 +222,8 @@ def get_training_sessions_for_billing(billing_form: BillingFilterForm) -> List[B
 def billable_items_usage_events(usage_events: QuerySetType[UsageEvent]) -> List[BillableItem]:
     billable_items: List[BillableItem] = []
     for usage_event in usage_events:
-        item = BillableItem("tool_usage", usage_event.project, usage_event.user)
+        item = BillableItem("tool_usage", usage_event.project, usage_event.user, usage_event)
         item.name = usage_event.tool.name
-        item.item_id = usage_event.id
         item.details = (
             f"Work performed by {usage_event.operator} on user's behalf"
             if usage_event.operator != usage_event.user
@@ -234,9 +244,8 @@ def billable_items_usage_events(usage_events: QuerySetType[UsageEvent]) -> List[
 def billable_items_area_access_records(area_access_records: QuerySetType[AreaAccessRecord]) -> List[BillableItem]:
     billable_items: List[BillableItem] = []
     for area_access_record in area_access_records:
-        item = BillableItem("area_access", area_access_record.project, area_access_record.customer)
+        item = BillableItem("area_access", area_access_record.project, area_access_record.customer, area_access_record)
         item.name = area_access_record.area.name
-        item.item_id = area_access_record.id
         item.details = (
             f"Area accessed by {area_access_record.staff_charge.staff_member} on user's behalf"
             if area_access_record.staff_charge
@@ -257,9 +266,10 @@ def billable_items_area_access_records(area_access_records: QuerySetType[AreaAcc
 def billable_items_consumable_withdrawals(withdrawals: QuerySetType[ConsumableWithdraw]) -> List[BillableItem]:
     billable_items: List[BillableItem] = []
     for consumable_withdrawal in withdrawals:
-        item = BillableItem("consumable", consumable_withdrawal.project, consumable_withdrawal.customer)
+        item = BillableItem(
+            "consumable", consumable_withdrawal.project, consumable_withdrawal.customer, consumable_withdrawal
+        )
         item.name = consumable_withdrawal.consumable.name
-        item.item_id = consumable_withdrawal.id
         item.start = consumable_withdrawal.date
         item.end = consumable_withdrawal.date
         item.quantity = consumable_withdrawal.quantity
@@ -275,9 +285,10 @@ def billable_items_consumable_withdrawals(withdrawals: QuerySetType[ConsumableWi
 def billable_items_missed_reservations(missed_reservations: QuerySetType[Reservation]) -> List[BillableItem]:
     billable_items: List[BillableItem] = []
     for missed_reservation in missed_reservations:
-        item = BillableItem("missed_reservation", missed_reservation.project, missed_reservation.user)
+        item = BillableItem(
+            "missed_reservation", missed_reservation.project, missed_reservation.user, missed_reservation
+        )
         item.name = missed_reservation.reservation_item.name
-        item.item_id = missed_reservation.id
         item.start = missed_reservation.start
         item.end = missed_reservation.end
         item.quantity = 1
@@ -293,8 +304,7 @@ def billable_items_missed_reservations(missed_reservations: QuerySetType[Reserva
 def billable_items_staff_charges(staff_charges: QuerySetType[StaffCharge]) -> List[BillableItem]:
     billable_items: List[BillableItem] = []
     for staff_charge in staff_charges:
-        item = BillableItem("staff_charge", staff_charge.project, staff_charge.customer)
-        item.item_id = staff_charge.id
+        item = BillableItem("staff_charge", staff_charge.project, staff_charge.customer, staff_charge)
         item.details = staff_charge.note
         item.name = f"Work performed by {staff_charge.staff_member}"
         item.start = staff_charge.start
@@ -312,9 +322,8 @@ def billable_items_staff_charges(staff_charges: QuerySetType[StaffCharge]) -> Li
 def billable_items_training_sessions(training_sessions: QuerySetType[TrainingSession]) -> List[BillableItem]:
     billable_items: List[BillableItem] = []
     for training_session in training_sessions:
-        item = BillableItem("training_session", training_session.project, training_session.trainee)
+        item = BillableItem("training_session", training_session.project, training_session.trainee, training_session)
         item.name = training_session.tool.name
-        item.item_id = training_session.id
         item.details = f"{training_session.get_type_display()} training provided by {training_session.trainer}"
         item.start = training_session.date
         item.end = training_session.date
