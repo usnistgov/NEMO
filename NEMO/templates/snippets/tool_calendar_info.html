@@ -1,6 +1,15 @@
 {# This snippet is displayed at the top of the calendar on desktop to show important tool information #}
 {% load custom_tags_and_filters %}
 <div class="label label-primary" id="calendar-selected-element-name">{{ tool.name }}</div>
+{% if tool.has_reservation_rules or tool.has_reservation_usage_rules %}
+    {% if customizations|get_item:"calendar_status_bar_show_tool_reservation_policy" == "enabled" %}
+        <div class="label label-info info-tooltip-container"
+             data-toggle="tooltip"
+             title="{{ tool.get_tool_reservation_info_html|safe }}">
+            <i class="glyphicon glyphicon-info-sign"></i> Reservation policy
+        </div>
+    {% endif %}
+{% endif %}
 {% if customizations|get_item:"calendar_status_bar_show_tool_pinned_comments" == "enabled" %}
     {% for pinned_comment in tool.pinned_comments.all %}
         <div class="label label-danger"
@@ -25,7 +34,7 @@
     {% if other_problems > 0 %}
         <div style="display: inline-block;">
             {# djlint:off #}
-            <a class="btn btn-xs btn-success label"
+            <a class="btn btn-xs btn-warning label"
                style="text-decoration: none;
                       padding: 4px 10px"
                href="{% url 'tool_control' tool.id %}">see {{ other_problems }} more problem{% if other_problems > 1 %}s{% endif %}

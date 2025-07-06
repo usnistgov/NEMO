@@ -2020,6 +2020,25 @@ class Tool(SerializationByNameModel):
         content = escape(loader.render_to_string("snippets/tool_info.html", {"tool": self}))
         return f'<a href="javascript:;" data-title="{content}" data-tooltip-id="tooltip-tool-{self.id}" data-placement="bottom" class="tool-info-tooltip info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.name_or_child_in_use_name()}</a>'
 
+    def get_tool_reservation_info_html(self):
+        content = escape(loader.render_to_string("snippets/tool_reservation_info.html", {"tool": self}))
+        return content
+
+    def has_reservation_rules(self):
+        return any([self.reservation_horizon, self.missed_reservation_threshold])
+
+    def has_reservation_usage_rules(self):
+        return any(
+            [
+                self.minimum_usage_block_time,
+                self.maximum_usage_block_time,
+                self.maximum_reservations_per_day,
+                self.maximum_future_reservations,
+                self.minimum_time_between_reservations,
+                self.maximum_future_reservation_time,
+            ]
+        )
+
     def clean(self):
         errors = {}
         if self.parent_tool_id:

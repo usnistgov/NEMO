@@ -1,0 +1,69 @@
+{% if tool.has_reservation_rules %}
+    <ul style="padding-left: 15px;margin-bottom: 0">
+        {% if tool.reservation_horizon %}
+            <li>
+                <b><u>Horizon</u></b>: Reservations can only be created up to <b>{{ tool.reservation_horizon }} days</b> in advance
+            </li>
+        {% endif %}
+        {% if tool.missed_reservation_threshold %}
+            <li>
+                <b><u>Missed threshold</u></b>: Reservations will be marked as missed <b>{{ tool.missed_reservation_threshold }} minutes</b> after the start if there is no usage (any usage)
+            </li>
+        {% endif %}
+    </ul>
+    {% if tool.has_reservation_usage_rules %}<br>{% endif %}
+{% endif %}
+{% if tool.has_reservation_usage_rules %}
+    The following rules are enforced every day
+    {% if tool.policy_off_start_time < tool.policy_off_end_time %}
+        from <b>00:00 to {{ tool.policy_off_start_time }}</b> and from <b>{{ tool.policy_off_end_time }} to midnight</b>
+    {% else %}
+        from <b>{{ tool.policy_off_end_time }}</b> to <b>{{ tool.policy_off_start_time }}</b>
+    {% endif %}
+    {% if tool.policy_off_weekend %}(except weekends){% endif %}
+    :
+    <ul style="padding-left: 15px;margin-bottom: 0">
+        {% if tool.minimum_usage_block_time or tool.maximum_usage_block_time %}
+            <li>
+                <b><u>Block time</u></b>: reservations must last
+                {% if tool.minimum_usage_block_time %}a minimum of <b>{{ tool.minimum_usage_block_time }} minutes</b>{% endif %}
+                {% if tool.minimum_usage_block_time and tool.maximum_usage_block_time %}and{% endif %}
+                {% if tool.maximum_usage_block_time %}a maximum of <b>{{ tool.maximum_usage_block_time }} minutes</b>{% endif %}
+            </li>
+        {% endif %}
+        {% if tool.minimum_time_between_reservations %}
+            <li>
+                <b><u>Time between reservations</u></b>: there needs to be a minimum of <b>{{ tool.minimum_time_between_reservations }} minutes</b> between reservations
+            </li>
+        {% endif %}
+        {% if tool.maximum_reservations_per_day or tool.maximum_future_reservations %}
+            <li>
+                <b><u># of reservations</u></b>:
+                {% if tool.maximum_reservations_per_day %}
+                    <b>{{ tool.maximum_reservations_per_day }}</b>
+                    {% if tool.maximum_reservations_per_day == 1 %}
+                        reservation
+                    {% else %}
+                        reservations
+                    {% endif %}
+                    maximum per day
+                {% endif %}
+                {% if tool.maximum_reservations_per_day and tool.maximum_future_reservations %}and{% endif %}
+                {% if tool.maximum_future_reservations %}
+                    <b>{{ tool.maximum_future_reservations }}</b>
+                    {% if tool.maximum_future_reservations == 1 %}
+                        reservation
+                    {% else %}
+                        reservations
+                    {% endif %}
+                    maximum in the future
+                {% endif %}
+            </li>
+        {% endif %}
+        {% if tool.maximum_future_reservation_time %}
+            <li>
+                <b><u>Total reservation time</u></b>: Reservations in the future cannot total more than <b>{{ tool.maximum_future_reservation_time }} minutes</b>
+            </li>
+        {% endif %}
+    </ul>
+{% endif %}

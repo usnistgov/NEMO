@@ -690,70 +690,89 @@
             {% endif %}
         {% endif %}
         <div class="media">
-            <span class="glyphicon glyphicon-info-sign pull-left notification-icon primary-highlight"></span>
+            <a onclick="toggle_details(this)" data-toggle="collapse" data-target="#tool_details" class="pointer">
+                <span class="glyphicon glyphicon-info-sign pull-left notification-icon primary-highlight"></span><span class="glyphicon glyphicon-chevron-down pull-left chevron"></span>
+            </a>
             <div class="media-body">
-                <p>
-                    {{ tool.primary_owner.get_contact_info_html|safe }} is primarily responsible for this tool and can be contacted with any questions or concerns about the tool.
-                </p>
-                {% if tool.backup_owners.all.count == 1 %}
-                    {% with tool.backup_owners.all|first as backup %}
-                        <p>
-                            If you are unable to reach {{ tool.primary_owner.get_name }} then please contact the backup tool owner, {{ backup.get_contact_info_html|safe }}.
-                        </p>
-                    {% endwith %}
-                {% elif tool.backup_owners.all.count > 1 %}
+                <h4 class="media-heading">Tool information</h4>
+                <div id="tool_details" class="collapse in">
                     <p>
-                        If you are unable to reach {{ tool.primary_owner.get_name }} then please contact
-                        {% for x in tool.backup_owners.all %}
-                            {% if not forloop.last %}
-                                {{ x.get_contact_info_html|safe }},
-                            {% else %}
-                                or {{ x.get_contact_info_html|safe }}.
-                            {% endif %}
-                        {% endfor %}
+                        {{ tool.primary_owner.get_contact_info_html|safe }} is primarily responsible for this tool and can be contacted with any questions or concerns about the tool.
                     </p>
-                {% endif %}
-                {% if tool.superusers.all.count == 1 %}
-                    {% with tool.superusers.all|first as superuser %}
+                    {% if tool.backup_owners.all.count == 1 %}
+                        {% with tool.backup_owners.all|first as backup %}
+                            <p>
+                                If you are unable to reach {{ tool.primary_owner.get_name }} then please contact the backup tool owner, {{ backup.get_contact_info_html|safe }}.
+                            </p>
+                        {% endwith %}
+                    {% elif tool.backup_owners.all.count > 1 %}
                         <p>
-                            For equipment training, you can contact the primary, backup or the superuser, {{ superuser.get_contact_info_html|safe }}.
+                            If you are unable to reach {{ tool.primary_owner.get_name }} then please contact
+                            {% for x in tool.backup_owners.all %}
+                                {% if not forloop.last %}
+                                    {{ x.get_contact_info_html|safe }},
+                                {% else %}
+                                    or {{ x.get_contact_info_html|safe }}.
+                                {% endif %}
+                            {% endfor %}
                         </p>
-                    {% endwith %}
-                {% elif tool.superusers.all.count > 1 %}
-                    <p>
-                        For equipment training, you can contact the primary, backup or one of the superusers
-                        {% for x in tool.superusers.all %}
-                            {% if not forloop.last %}
-                                {{ x.get_contact_info_html|safe }},
-                            {% else %}
-                                or {{ x.get_contact_info_html|safe }}.
-                            {% endif %}
-                        {% endfor %}
-                    </p>
-                {% endif %}
-                {% if tool.notification_email_address %}
-                    <p>
-                        Problem reports for the {{ tool.name_or_child_in_use_name }} are automatically emailed to <a href="{% url 'get_email_form' %}?recipient={{ tool.notification_email_address }}"
+                    {% endif %}
+                    {% if tool.superusers.all.count == 1 %}
+                        {% with tool.superusers.all|first as superuser %}
+                            <p>
+                                For equipment training, you can contact the primary, backup or the superuser, {{ superuser.get_contact_info_html|safe }}.
+                            </p>
+                        {% endwith %}
+                    {% elif tool.superusers.all.count > 1 %}
+                        <p>
+                            For equipment training, you can contact the primary, backup or one of the superusers
+                            {% for x in tool.superusers.all %}
+                                {% if not forloop.last %}
+                                    {{ x.get_contact_info_html|safe }},
+                                {% else %}
+                                    or {{ x.get_contact_info_html|safe }}.
+                                {% endif %}
+                            {% endfor %}
+                        </p>
+                    {% endif %}
+                    {% if tool.notification_email_address %}
+                        <p>
+                            Problem reports for the {{ tool.name_or_child_in_use_name }} are automatically emailed to <a href="{% url 'get_email_form' %}?recipient={{ tool.notification_email_address }}"
     title="Email {{ tool.notification_email_address }}"><span class="glyphicon glyphicon-send small-icon"></span>{{ tool.notification_email_address }}</a>.
-                    </p>
-                {% endif %}
-                {% if tool.location %}
-                    <p>
-                        The {{ tool.name_or_child_in_use_name }} is located in room <span class="glyphicon glyphicon-map-marker small-icon"></span>{{ tool.location }}.
-                    </p>
-                {% endif %}
-                {% if tool.phone_number %}
-                    <p>
-                        You may dial the phone that is closest to the {{ tool.name_or_child_in_use_name }} at extension <span class="glyphicon glyphicon-phone small-icon"></span>{{ tool.phone_number }}.
-                    </p>
-                {% endif %}
-                {% if show_broadcast_upcoming_reservation %}
-                    <p>
-                        You can email <a href="{% url 'compose_email' %}?audience=tool-reservation&selection={{ tool.id }}"><span class="glyphicon glyphicon-send"></span> all users with an upcoming reservation</a>.
-                    </p>
-                {% endif %}
+                        </p>
+                    {% endif %}
+                    {% if tool.location %}
+                        <p>
+                            The {{ tool.name_or_child_in_use_name }} is located in room <span class="glyphicon glyphicon-map-marker small-icon"></span>{{ tool.location }}.
+                        </p>
+                    {% endif %}
+                    {% if tool.phone_number %}
+                        <p>
+                            You may dial the phone that is closest to the {{ tool.name_or_child_in_use_name }} at extension <span class="glyphicon glyphicon-phone small-icon"></span>{{ tool.phone_number }}.
+                        </p>
+                    {% endif %}
+                    {% if show_broadcast_upcoming_reservation %}
+                        <p>
+                            You can email <a href="{% url 'compose_email' %}?audience=tool-reservation&selection={{ tool.id }}"><span class="glyphicon glyphicon-send"></span> all users with an upcoming reservation</a>.
+                        </p>
+                    {% endif %}
+                </div>
             </div>
         </div>
+        {% if tool.has_reservation_rules or tool.has_reservation_usage_rules %}
+            <div class="media">
+                <a onclick="toggle_details(this)"
+                   data-toggle="collapse"
+                   data-target="#tool_reservation_policy"
+                   class="pointer">
+                    <span class="glyphicon glyphicon-calendar pull-left notification-icon primary-highlight"></span><span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+                </a>
+                <div class="media-body">
+                    <h4 class="media-heading">Reservation policy</h4>
+                    <div id="tool_reservation_policy" class="collapse">{% include "snippets/tool_reservation_info.html" %}</div>
+                </div>
+            </div>
+        {% endif %}
         {% if user|is_staff_on_tool:tool and tool_credentials %}
             <div class="media">
                 <a onclick="toggle_details(this)"

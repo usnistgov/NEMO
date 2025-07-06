@@ -172,9 +172,18 @@
         <div class="form-group">
             <span class="control-label col-md-3">Calendar status bar</span>
             <div class="col-md-9">
-                <input type="hidden" name="calendar_status_bar_show_tool_pinned_comments" value="off" />
+                <input type="hidden" name="calendar_status_bar_show_tool_reservation_policy" value="off" />
+                <input type="hidden" name="calendar_status_bar_show_tool_latest_problem" value="off" />
                 <input type="hidden" name="calendar_status_bar_show_tool_latest_problem" value="off" />
                 <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="calendar_status_bar_show_tool_reservation_policy"
+                               {% if calendar_status_bar_show_tool_reservation_policy == "enabled" %}checked{% endif %}
+                               value="enabled">
+                        Show tool reservation policy in the calendar status bar
+                    </label>
+                    <br>
                     <label>
                         <input type="checkbox"
                                name="calendar_status_bar_show_tool_pinned_comments"
