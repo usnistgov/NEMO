@@ -293,6 +293,7 @@ function set_selected_item(element, save_state)
 	}
 	else
 	{
+		// for everything that is not a tool
 		const element_name = $(element).data("item-name") || $(element).text()
 		const element_name_div = '<div class="label label-primary" id="calendar-selected-element-name">{{ element }}</div>'
 		$("#calendar-selected-element").html(element_name_div.replace('{{ element }}', element_name));

@@ -1037,7 +1037,11 @@ class NEMOPolicy:
         charge: Union[UsageEvent, AreaAccessRecord, ConsumableWithdraw, StaffCharge, Reservation] = None,
     ):
         if project:
-            if project not in user.active_projects():
+            # Don't validate active projects for tool question consumables, it is done by the usage validation
+            consumable_within_usage = (
+                isinstance(item, Consumable) and isinstance(charge, ConsumableWithdraw) and charge.tool_usage
+            )
+            if not consumable_within_usage and project not in user.active_projects():
                 raise NotAllowedToChargeProjectException(project=project, user=user)
 
             if item:

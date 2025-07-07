@@ -2020,6 +2020,25 @@ class Tool(SerializationByNameModel):
         content = escape(loader.render_to_string("snippets/tool_info.html", {"tool": self}))
         return f'<a href="javascript:;" data-title="{content}" data-tooltip-id="tooltip-tool-{self.id}" data-placement="bottom" class="tool-info-tooltip info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.name_or_child_in_use_name()}</a>'
 
+    def get_tool_reservation_info_html(self):
+        content = escape(loader.render_to_string("snippets/tool_reservation_info.html", {"tool": self}))
+        return content
+
+    def has_reservation_rules(self):
+        return any([self.reservation_horizon, self.missed_reservation_threshold])
+
+    def has_reservation_usage_rules(self):
+        return any(
+            [
+                self.minimum_usage_block_time,
+                self.maximum_usage_block_time,
+                self.maximum_reservations_per_day,
+                self.maximum_future_reservations,
+                self.minimum_time_between_reservations,
+                self.maximum_future_reservation_time,
+            ]
+        )
+
     def clean(self):
         errors = {}
         if self.parent_tool_id:
@@ -3197,14 +3216,17 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
             if self.customer.has_access_expired():
                 errors["customer"] = f"This user's access expired on {format_datetime(self.customer.access_expiration)}"
         if self.project_id:
-            if not self.project.active:
-                errors["project"] = (
-                    "A consumable may only be billed to an active project. The user's project is inactive."
-                )
-            if not self.project.account.active:
-                errors["project"] = (
-                    "A consumable may only be billed to a project that belongs to an active account. The user's account is inactive."
-                )
+            # skip checking when it's part of the tool usage, let the tool usage policy deal with it
+            # we actually want that in case it's a disable and the project just got deactivated
+            if not self.tool_usage:
+                if not self.project.active:
+                    errors["project"] = (
+                        "A consumable may only be billed to an active project. The user's project is inactive."
+                    )
+                if not self.project.account.active:
+                    errors["project"] = (
+                        "A consumable may only be billed to a project that belongs to an active account. The user's account is inactive."
+                    )
         if self.quantity is not None and self.quantity < 1:
             errors["quantity"] = "Please specify a valid quantity of items to withdraw."
         if self.consumable_id:

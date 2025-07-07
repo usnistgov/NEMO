@@ -147,6 +147,7 @@ body.impersonating .application-sidebar, body.impersonating .application-content
 #calendar-selected-element
 {
 	margin-top: -10px;
+	margin-bottom: 15px;
 }
 
 #calendar-selected-element .label

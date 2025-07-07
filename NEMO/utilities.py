@@ -28,7 +28,7 @@ from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
 from django.db import OperationalError
-from django.db.models import FileField, IntegerChoices, QuerySet
+from django.db.models import FileField, IntegerChoices, Model, QuerySet
 from django.http import HttpRequest, HttpResponse, QueryDict
 from django.shortcuts import resolve_url
 from django.template import Template
@@ -1162,3 +1162,19 @@ def load_properties_schemas(model_name: str) -> dict:
         return combined_schemas
 
     return get_schemas()
+
+
+def get_content_types_for_billable_item_subclasses() -> List[ContentType]:
+    # Collect all subclasses of BillableItemMixin
+    from NEMO.mixins import BillableItemMixin
+
+    subclasses = BillableItemMixin.__subclasses__()
+
+    # Retrieve the ContentType for each Charge type (if it's a subclass of Model)
+    billable_item_content_types = [
+        ContentType.objects.get_for_model(subclass, for_concrete_model=False)
+        for subclass in subclasses
+        if issubclass(subclass, Model)
+    ]
+
+    return sorted(billable_item_content_types, key=lambda x: x.name)

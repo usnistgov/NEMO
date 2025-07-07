@@ -73,8 +73,6 @@ def tool_control(request, item_type="tool", tool_id=None):
     # item_type is needed for compatibility with 'view_calendar' view on mobile
     """Presents the tool control view to the user, allowing them to begin/end using a tool or see who else is using it."""
     user: User = request.user
-    if user.active_project_count() == 0:
-        return render(request, "no_project.html")
     # The tool-choice sidebar is not available for mobile devices, so redirect the user to choose a tool to view.
     if request.device == "mobile" and tool_id is None:
         return redirect("choose_item", next_page="tool_control")
