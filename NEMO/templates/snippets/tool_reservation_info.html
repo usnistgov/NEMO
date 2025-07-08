@@ -15,10 +15,12 @@
 {% endif %}
 {% if tool.has_reservation_usage_rules %}
     The following rules are enforced every day
-    {% if tool.policy_off_start_time < tool.policy_off_end_time %}
-        from <b>00:00 to {{ tool.policy_off_start_time }}</b> and from <b>{{ tool.policy_off_end_time }} to midnight</b>
-    {% else %}
-        from <b>{{ tool.policy_off_end_time }}</b> to <b>{{ tool.policy_off_start_time }}</b>
+    {% if tool.policy_off_between_times %}
+        {% if tool.policy_off_start_time < tool.policy_off_end_time %}
+            from <b>00:00 to {{ tool.policy_off_start_time }}</b> and from <b>{{ tool.policy_off_end_time }} to midnight</b>
+        {% else %}
+            from <b>{{ tool.policy_off_end_time }}</b> to <b>{{ tool.policy_off_start_time }}</b>
+        {% endif %}
     {% endif %}
     {% if tool.policy_off_weekend %}(except weekends){% endif %}
     :
