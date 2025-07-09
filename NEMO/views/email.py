@@ -195,15 +195,15 @@ def export_email_addresses(request):
         audience = request.GET["audience"]
         selection = request.GET.getlist("selection")
         no_type = request.GET.get("no_type") == "on"
-        only_active_users = request.GET.get("active") == "on"
-        only_active_access_users = request.GET.get("active_access") == "on"
+        send_to_inactive_users = request.GET.get("send_to_inactive") == "on"
+        send_to_expired_access_users = request.GET.get("send_to_expired_access") == "on"
         users, topic = get_users_for_email(audience, selection, no_type)
         response = HttpResponse(content_type="text/csv")
         writer = csv.writer(response)
         writer.writerow(["First", "Last", "Username", "Email"])
-        if only_active_users:
+        if not send_to_inactive_users:
             users = [user for user in users if user.is_active]
-        if only_active_access_users:
+        if not send_to_expired_access_users:
             users = [user for user in users if not user.has_access_expired()]
         for user in users:
             user: User = user
@@ -238,16 +238,16 @@ def send_broadcast_email(request):
         "template_color": form.cleaned_data["color"],
     }
     content = render_email_template(content, dictionary, request)
-    active_choice = form.cleaned_data["only_active_users"]
-    active_access_choice = form.cleaned_data["only_active_access_users"]
+    send_to_inactive_users = form.cleaned_data["send_to_inactive_users"]
+    send_to_expired_access_users = form.cleaned_data["send_to_expired_access_users"]
     try:
         audience = form.cleaned_data["audience"]
         selection = form.cleaned_data["selection"]
         no_type = form.cleaned_data["no_type"]
         users, topic = get_users_for_email(audience, selection, no_type)
-        if active_choice:
+        if not send_to_inactive_users:
             users = users.filter(is_active=True)
-        if active_access_choice:
+        if not send_to_expired_access_users:
             users = users.filter(Q(access_expiration__isnull=True) | Q(access_expiration__gte=datetime.date.today()))
     except Exception as error:
         warning_message = "Your email was not sent. There was a problem finding the users to send the email to."
