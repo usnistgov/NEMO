@@ -233,6 +233,7 @@ class UserViewSet(ModelViewSet):
         "last_login": datetime_filters,
         "access_expiration": date_filters,
         "physical_access_levels": manykey_filters,
+        "projects": manykey_filters,
     }
 
 
