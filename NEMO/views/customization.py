@@ -225,6 +225,7 @@ class ApplicationCustomization(CustomizationBase):
         "requests_page_title": "Requests",
         "safety_page_title": "Safety",
         "kiosk_message": "<h1>Scan your badge to control tools</h1>",
+        "kiosk_numpad_size": "large",
         "area_access_kiosk_option_login_success": "",
         "area_access_kiosk_option_logout_warning": "",
         "area_access_kiosk_option_already_logged_out": "",
