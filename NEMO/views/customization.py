@@ -227,6 +227,7 @@ class ApplicationCustomization(CustomizationBase):
         "kiosk_message": "<h1>Scan your badge to control tools</h1>",
         "area_access_kiosk_option_login_success": "",
         "area_access_kiosk_option_logout_warning": "",
+        "area_access_kiosk_option_already_logged_out": "",
     }
 
     def context(self) -> Dict:

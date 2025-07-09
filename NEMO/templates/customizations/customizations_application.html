@@ -170,7 +170,16 @@
                                    id="area_access_kiosk_option_logout_warning"
                                    value="enabled"
                                    {% if area_access_kiosk_option_logout_warning %}checked{% endif %}>
-                            On logout when tools are still in use
+                            On successful logout when tools are still in use
+                        </label>
+                        <br>
+                        <label>
+                            <input type="checkbox"
+                                   name="area_access_kiosk_option_already_logged_out"
+                                   id="area_access_kiosk_option_already_logged_out"
+                                   value="enabled"
+                                   {% if area_access_kiosk_option_already_logged_out %}checked{% endif %}>
+                            On logout when the user is already logged out but tools are still in use
                         </label>
                     </div>
                     <div class="col-md-offset-3 col-md-9 help-block light-grey">

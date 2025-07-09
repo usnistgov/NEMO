@@ -309,7 +309,11 @@ def logout_of_area(request, door_id):
                 {"area": record.area, "door": door, "badge_user": user, "badge_number": user.badge_number},
             )
     else:
-        return render(request, "area_access/not_logged_in.html")
+        return render(
+            request,
+            "area_access/not_logged_in.html",
+            {"badge_user": user, "tools_in_use": UsageEvent.objects.filter(end=None, user=user)},
+        )
 
 
 @login_required
@@ -342,7 +346,11 @@ def open_door(request, door_id):
                 return interlock_error(bypass_allowed=False, area=area)
             delay_lock_door(door.id)
         return render(request, "area_access/door_is_open.html")
-    return render(request, "area_access/not_logged_in.html")
+    return render(
+        request,
+        "area_access/not_logged_in.html",
+        {"badge_user": user, "tools_in_use": UsageEvent.objects.filter(end=None, user=user)},
+    )
 
 
 def interlock_error(action: str = None, user: User = None, bypass_allowed: bool = None, area: Area = None):
