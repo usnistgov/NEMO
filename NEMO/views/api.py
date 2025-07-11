@@ -57,6 +57,7 @@ from NEMO.models import (
     UsageEvent,
     User,
     UserDocuments,
+    UserPreferences,
 )
 from NEMO.rest_pagination import NEMOPageNumberPagination
 from NEMO.serializers import (
@@ -101,6 +102,7 @@ from NEMO.serializers import (
     TrainingSessionSerializer,
     UsageEventSerializer,
     UserDocumentSerializer,
+    UserPreferenceSerializer,
     UserSerializer,
 )
 from NEMO.templatetags.custom_tags_and_filters import app_version
@@ -249,6 +251,66 @@ class UserDocumentsViewSet(ModelViewSet):
         "display_order": number_filters,
         "uploaded_at": datetime_filters,
     }
+
+
+class UserPreferencesViewSet(ModelViewSet):
+    filename = "user_preferences"
+    queryset = UserPreferences.objects.all()
+    serializer_class = UserPreferenceSerializer
+    filterset_fields = {
+        "id": key_filters,
+        "user": key_filters,
+        "attach_created_reservation": boolean_filters,
+        "attach_cancelled_reservation": boolean_filters,
+        "display_new_buddy_request_notification": boolean_filters,
+        "email_new_buddy_request_reply": boolean_filters,
+        "email_new_adjustment_request_reply": boolean_filters,
+        "staff_status_view": string_filters,
+        "email_alternate": string_filters,
+        "email_send_reservation_emails": number_filters,
+        "email_send_buddy_request_replies": number_filters,
+        "email_send_staff_assistance_request_replies": number_filters,
+        "email_send_access_request_updates": number_filters,
+        "email_send_adjustment_request_updates": number_filters,
+        "email_send_broadcast_emails": number_filters,
+        "email_send_task_updates": number_filters,
+        "email_send_access_expiration_emails": number_filters,
+        "email_send_tool_qualification_expiration_emails": number_filters,
+        "email_send_wait_list_notification_emails": number_filters,
+        "email_send_usage_reminders": number_filters,
+        "email_send_reservation_reminders": number_filters,
+        "email_send_reservation_ending_reminders": number_filters,
+        "recurring_charges_reminder_days": string_filters,
+        "create_reservation_confirmation_override": boolean_filters,
+        "change_reservation_confirmation_override": boolean_filters,
+        "email_send_recurring_charges_reminder_emails": number_filters,
+        "tool_freed_time_notifications": manykey_filters,
+        "tool_freed_time_notifications_min_time": number_filters,
+        "tool_freed_time_notifications_max_future_days": number_filters,
+        "tool_task_notifications": manykey_filters,
+    }
+
+    def create(self, request, *args, **kwargs):
+        many = isinstance(request.data, list)
+        serializer = self.get_serializer(data=request.data, many=many)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data.get("user")
+        if UserPreferences.objects.filter(user=user).exists():
+            raise ValidationError({"user": "This user already has preferences"})
+        return super().create(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        prefs = serializer.save()
+        user = serializer.validated_data.get("user")
+        user.preferences_id = prefs.id
+        user.save(update_fields=["preferences_id"])
+
+    def perform_update(self, serializer):
+        user = serializer.validated_data.get("user")
+        current_user = self.get_object().user
+        if user and user != current_user:
+            raise ValidationError({"user": "Cannot change the user associated with these preferences"})
+        return super().perform_update(serializer)
 
 
 class ProjectDisciplineViewSet(ModelViewSet):
