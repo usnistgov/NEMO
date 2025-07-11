@@ -170,7 +170,16 @@
                                    id="area_access_kiosk_option_logout_warning"
                                    value="enabled"
                                    {% if area_access_kiosk_option_logout_warning %}checked{% endif %}>
-                            On logout when tools are still in use
+                            On successful logout when tools are still in use
+                        </label>
+                        <br>
+                        <label>
+                            <input type="checkbox"
+                                   name="area_access_kiosk_option_already_logged_out"
+                                   id="area_access_kiosk_option_already_logged_out"
+                                   value="enabled"
+                                   {% if area_access_kiosk_option_already_logged_out %}checked{% endif %}>
+                            On logout when the user is already logged out but tools are still in use
                         </label>
                     </div>
                     <div class="col-md-offset-3 col-md-9 help-block light-grey">
@@ -179,6 +188,27 @@
                 </div>
             {% endif %}
             {% if "NEMO.apps.kiosk"|app_installed %}
+                <div class="form-group">
+                    <span class="control-label col-md-3">Kiosk numpad size</span>
+                    <div class="col-md-9">
+                        <div class="radio">
+                            <label>
+                                <input type="radio"
+                                       name="kiosk_numpad_size"
+                                       value="small"
+                                       {% if kiosk_numpad_size == "small" %}checked{% endif %} />
+                                Small
+                            </label>
+                            <label>
+                                <input type="radio"
+                                       name="kiosk_numpad_size"
+                                       value="large"
+                                       {% if kiosk_numpad_size == "large" %}checked{% endif %} />
+                                Large
+                            </label>
+                        </div>
+                    </div>
+                </div>
                 <div class="form-group">
                     <label class="control-label col-md-3" for="kiosk_message">Kiosk message</label>
                     <div class="col-md-9">

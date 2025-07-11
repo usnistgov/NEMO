@@ -372,8 +372,8 @@ class EmailBroadcastForm(Form):
     )
     selection = CharField(required=False)
     no_type = BooleanField(initial=False, required=False)
-    only_active_users = BooleanField(required=False, initial=True)
-    only_active_access_users = BooleanField(required=False, initial=True)
+    send_to_inactive_users = BooleanField(required=False, initial=False)
+    send_to_expired_access_users = BooleanField(required=False, initial=False)
 
     def clean_title(self):
         return self.cleaned_data["title"].upper()

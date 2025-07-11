@@ -297,32 +297,29 @@ class RequestStatus(object):
 
 class UserPreferences(BaseModel):
     attach_created_reservation = models.BooleanField(
-        "created_reservation_invite",
+        "Created reservation invite",
         default=False,
         help_text="Whether or not to send a calendar invitation when creating a new reservation",
     )
     attach_cancelled_reservation = models.BooleanField(
-        "cancelled_reservation_invite",
+        "Cancelled reservation invite",
         default=False,
         help_text="Whether or not to send a calendar invitation when cancelling a reservation",
     )
     display_new_buddy_request_notification = models.BooleanField(
-        "new_buddy_request_notification",
+        "New buddy request notification",
         default=True,
         help_text="Whether or not to notify the user of new buddy requests (via unread badges)",
     )
     email_new_buddy_request_reply = models.BooleanField(
-        "email_new_buddy_request_reply",
         default=True,
         help_text="Whether or not to email the user of replies on buddy request he commented on",
     )
     email_new_adjustment_request_reply = models.BooleanField(
-        "email_new_adjustment_request_reply",
         default=True,
         help_text="Whether or not to email the user of replies on adjustment request he commented on",
     )
     staff_status_view = models.CharField(
-        "staff_status_view",
         max_length=CHAR_FIELD_SMALL_LENGTH,
         default="day",
         choices=[("day", "Day"), ("week", "Week"), ("month", "Month")],
@@ -440,6 +437,7 @@ class UserPreferences(BaseModel):
     class Meta:
         verbose_name = "User preferences"
         verbose_name_plural = "User preferences"
+        ordering = ["user"]
 
 
 class UserType(BaseCategory):

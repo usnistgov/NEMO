@@ -54,5 +54,5 @@
 {% endif %}
 <script>
     revert(75);
-    set_logged_in_user("{{ customer.first_name }}");
+    set_logged_in_user("{{ customer.get_name }}");
 </script>

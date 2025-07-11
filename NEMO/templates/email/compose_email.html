@@ -31,13 +31,13 @@
                         </div>
                         <div class="checkbox">
                             <label>
-                                <input type="checkbox" name="only_active_users" onclick="updated_email_link()">
+                                <input type="checkbox" name="send_to_inactive_users" onclick="updated_email_link()">
                                 Send this email to users with an inactive account
                             </label>
                         </div>
                         <div class="checkbox">
                             <label>
-                                <input type="checkbox" name="only_active_access_users" onclick="updated_email_link()">
+                                <input type="checkbox" name="send_to_expired_access_users" onclick="updated_email_link()">
                                 Send this email to users with expired access
                             </label>
                         </div>
@@ -48,13 +48,11 @@
                             </label>
                         </div>
                         {% for u in users %}
-                            <div {% if not u.is_active %}class="danger-highlight" style="display: none" {% elif u.has_access_expired %}class="warning-highlight" style="display: none"{% endif %}>
+                            <div class="{% if u.has_access_expired %}warning-highlight {% endif %}{% if not u.is_active %}danger-highlight {% endif %}"
+                                 {% if not u.is_active or u.has_access_expired %}style="display: none"{% endif %}>
                                 {{ u }} - {{ u.email }}
-                                {% if not u.is_active %}
-                                    [INACTIVE]
-                                {% elif u.has_access_expired %}
-                                    [EXPIRED ACCESS]
-                                {% endif %}
+                                {% if not u.is_active %}[INACTIVE]{% endif %}
+                                {% if u.has_access_expired %}[EXPIRED ACCESS]{% endif %}
                             </div>
                         {% endfor %}
                     </div>
@@ -174,10 +172,10 @@
         function export_user_emails()
         {
             let export_url = "{% url 'export_email_addresses' %}?"
-            let active_users_only = $('input[name=only_active_users]').is(':checked') ? '' : 'on';
-            let access_active_users_only = $('input[name=only_active_access_users]').is(':checked') ? '' : 'on';
-            export_url += "&active=" + active_users_only;
-            export_url += "&active_access=" + access_active_users_only;
+            let send_to_inactive_users = $('input[name=send_to_inactive_users]').is(':checked') ? 'on' : '';
+            let send_to_expired_access_users = $('input[name=send_to_expired_access_users]').is(':checked') ? 'on' : '';
+            export_url += "&send_to_inactive=" + send_to_inactive_users;
+            export_url += "&send_to_expired_access=" + send_to_expired_access_users;
             export_url += "&audience=" + "{{ audience }}";
             export_url += "&no_type=" + "{{ no_type|yesno:'on,' }}";
             {% for selection_item in selection %}
@@ -208,8 +206,8 @@
         {
             let inactive_users = $("div.danger-highlight, div.inactive-label");
             let access_expired_users = $("div.warning-highlight, div.access-expired-label");
-            let only_active = !$('input[name=only_active_users]')[0].checked;
-            let only_active_access = !$('input[name=only_active_access_users]')[0].checked;
+            let send_to_inactive_users = $('input[name=send_to_inactive_users]')[0].checked;
+            let send_to_expired_access_users = $('input[name=send_to_expired_access_users]')[0].checked;
             let copy_me = $('input[name=copy_me]')[0].checked;
             let subject = $('input[name=subject]').val();
             let title = $('input[name=title]').val();
@@ -220,19 +218,19 @@
             {
                 mailto = mailto + user_email + ';';
             }
-            if (only_active && only_active_access)
+            if (send_to_inactive_users && send_to_expired_access_users)
             {
-                mailto = mailto + active_active_access_user_emails;
-                inactive_users.hide();
-                access_expired_users.hide();
-            }
-            else if (only_active)
-            {
-                mailto = mailto + active_user_emails;
-                inactive_users.hide();
+                mailto = mailto + user_emails;
+                inactive_users.show();
                 access_expired_users.show();
             }
-            else if (only_active_access)
+            else if (send_to_expired_access_users)
+            {
+                mailto = mailto + active_user_emails;
+                access_expired_users.show();
+                inactive_users.hide();
+            }
+            else if (send_to_inactive_users)
             {
                 inactive_users.show();
                 access_expired_users.hide();
@@ -240,9 +238,9 @@
             }
             else
             {
-                mailto = mailto + user_emails;
-                inactive_users.show();
-                access_expired_users.show();
+                mailto = mailto + active_active_access_user_emails;
+                inactive_users.hide();
+                access_expired_users.hide();
             }
             if (subject)
             {

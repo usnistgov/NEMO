@@ -23,11 +23,11 @@
 {% endif %}
 {% if customizations|get_item:"calendar_status_bar_show_tool_latest_problem" == "enabled" %}
     {% if last_problem %}
-        <div class="label label-warning"
+        <div class="label {% if last_problem.force_shutdown %}label-danger{% else %}label-warning{% endif %}"
              style="max-width: {{ customizations|get_item:"calendar_status_bar_tool_max_width" }}px"
              data-toggle="tooltip"
              title="{{ last_problem.problem_description|linebreaksbr|escape }}">
-            <i class="glyphicon glyphicon-wrench"></i>
+            <i class="glyphicon {% if last_problem.force_shutdown %}glyphicon-fire{% else %}glyphicon-wrench{% endif %}"></i>
             {{ last_problem.problem_description }}
         </div>
     {% endif %}

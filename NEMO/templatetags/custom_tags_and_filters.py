@@ -126,9 +126,10 @@ def res_question_tbody(data):
             question = questions.get(h)
             suffix = f" {question.get('suffix')}" if question and "suffix" in question else ""
             user_input = d.get(h)
-            cell_data = user_input + suffix if user_input else ""
             if isinstance(user_input, list):
                 cell_data = ", ".join([u + suffix for u in user_input if u])
+            else:
+                cell_data = user_input + suffix if user_input else ""
             data_cells_html += format_html("<td>{}</td>", cell_data)
         rows.append(format_html("<tr><th>{}</th>{}</tr>", i, mark_safe(data_cells_html)))
 

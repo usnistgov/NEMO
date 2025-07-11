@@ -1,5 +1,23 @@
+{% load custom_tags_and_filters %}
 <script>$('body').removeClass().addClass('logout-warning')</script>
 <h1>According to our records, you're not logged in to any access controlled areas.</h1>
 <h2>Please contact {{ facility_name }} staff if you believe this is an error.</h2>
 <audio src="{% url 'media' 'warning.mp3' %}" autoplay></audio>
+{% if tools_in_use %}
+    <br>
+    <div class="h2">
+        <p>You are currently still logged in to the following tools:</p>
+        <ul>
+            {% for usage_event in tools_in_use %}<li>{{ usage_event.tool.name }}</li>{% endfor %}
+        </ul>
+    </div>
+    {% if "NEMO.apps.kiosk"|app_installed and customizations|get_item:"area_access_kiosk_option_already_logged_out" == "enabled" %}
+        <p>
+            <a href="javascript:void(0)"
+               role="button"
+               class="btn btn-success btn-lg btn-block btn-extra-large"
+               onclick="go_to_kiosk('{{ badge_user.badge_number }}')">Open the kiosk</a>
+        </p>
+    {% endif %}
+{% endif %}
 <script>revert(15);</script>

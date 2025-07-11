@@ -3,3 +3,20 @@
 .nmpd-grid {position:absolute; left:50px; top:50px; z-index:5000; -khtml-user-select: none; padding:10px; width: initial;}
 .nmpd-overlay {z-index:4999;}
 input.nmpd-display {text-align: right;}
+
+/* Options to display bigger numpad */
+.kiosk-numpad-large .nmpd-wrapper .btn
+{
+    height: 80px;
+    width: 80px;
+    font-size: 24px;
+}
+.kiosk-numpad-large .nmpd-wrapper input
+{
+    height: 80px;
+    font-size: 32px;
+}
+.kiosk-numpad-large .nmpd-grid
+{
+    padding: 10px;
+}
