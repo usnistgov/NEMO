@@ -295,6 +295,8 @@ class UserPreferencesViewSet(ModelViewSet):
         serializer = self.get_serializer(data=request.data, many=many)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data.get("user")
+        if not user:
+            raise ValidationError({"user": "This field is required"})
         if UserPreferences.objects.filter(user=user).exists():
             raise ValidationError({"user": "This user already has preferences"})
         return super().create(request, *args, **kwargs)
