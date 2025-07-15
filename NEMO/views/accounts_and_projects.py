@@ -302,21 +302,22 @@ def transfer_charges(request):
             if confirm:
                 if not new_project_id:
                     form.add_error("new_project_id", _("This field is required"))
-                    # Reload all charges to use when showing next
-                    dictionary["charges"] = get_charges_for_project_and_user(
-                        form, request.POST, customer.username if customer else None, filter_selected=False
-                    )
                 else:
-                    do_transfer_charges(charges, new_project.id)
-                    messages.success(
-                        request,
-                        f"{len(charges)} charges were transferred from {project} to {new_project}",
-                        extra_tags="data-speed=25000",
-                    )
-                    # Reload all charges to use when showing next
-                    dictionary["charges"] = get_charges_for_project_and_user(
-                        form, request.POST, customer.username if customer else None, filter_selected=False
-                    )
+                    try:
+                        do_transfer_charges(charges, new_project.id)
+                        messages.success(
+                            request,
+                            f"{len(charges)} charges were transferred from {project} to {new_project}",
+                            extra_tags="data-speed=25000",
+                        )
+                    except ValidationError as e:
+                        form.add_error(None, e)
+                    except Exception as e:
+                        form.add_error(None, str(e))
+                # Reload all charges to use when showing next
+                dictionary["charges"] = get_charges_for_project_and_user(
+                    form, request.POST, customer.username if customer else None, filter_selected=False
+                )
             else:
                 dictionary["charges"] = charges
 
