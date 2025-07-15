@@ -1114,12 +1114,25 @@ def safe_lazy_queryset_evaluation(qs: QuerySet, default=UNSET, raise_exception=F
     Raises:
         OperationalError: If `raise_exception` is True and an OperationalError occurs.
     """
+    # This isn't great but have no other option at the moment
+    try:
+        from psycopg2.errors import UndefinedTable
+
+        HAS_UNDEFINED_TABLE = True
+    except ImportError:
+        HAS_UNDEFINED_TABLE = False
+
     if default is UNSET:
         default = []
     try:
         # force evaluation of queryset
         _ = list(qs)
         return qs, False
+    except UndefinedTable if HAS_UNDEFINED_TABLE else OperationalError:
+        if raise_exception:
+            raise
+        utilities_logger.warning("Could not fetch queryset", exc_info=True)
+        return default, True
     except OperationalError:
         if raise_exception:
             raise
