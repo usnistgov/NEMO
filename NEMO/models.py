@@ -1973,7 +1973,7 @@ class Tool(SerializationByNameModel):
             results["sufficient_notice"] = start - timedelta(hours=notice_limit) >= timezone.now()
         return results
 
-    def configuration_widget(self, user, render_as_form=None, filter_for_agenda=False):
+    def configuration_widget(self, user, render_as_form=None, filter_for_agenda=False, url=None):
         configurations = self.current_ordered_configurations()
         if filter_for_agenda:
             configurations = configurations.exclude(exclude_from_configuration_agenda=True)
@@ -1982,7 +1982,7 @@ class Tool(SerializationByNameModel):
             "user": user,
             "render_as_form": render_as_form,
         }
-        configurations_editor = ConfigurationEditor()
+        configurations_editor = ConfigurationEditor(url=url)
         return configurations_editor.render(None, config_input)
 
     def current_ordered_configurations(self):

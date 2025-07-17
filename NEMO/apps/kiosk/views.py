@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from django.utils.html import format_html
@@ -44,6 +45,7 @@ from NEMO.views.tool_control import (
     interlock_bypass_allowed,
     interlock_error,
     save_comment,
+    tool_configuration,
 )
 from NEMO.widgets.dynamic_form import DynamicForm
 
@@ -351,6 +353,15 @@ def cancel_reservation(request, reservation_id):
 @login_required
 @permission_required("NEMO.kiosk")
 @require_POST
+def kiosk_tool_configuration(request):
+    # Use the badged-in user as the user making the request and call the configuration directly
+    request.user = User.objects.get(badge_number=request.GET["badge_number"])
+    return tool_configuration(request)
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_POST
 def tool_reservation(request, tool_id, user_id, back):
     tool = Tool.objects.get(id=tool_id, visible=True)
     customer = User.objects.get(id=user_id)
@@ -479,7 +490,9 @@ def tool_information(request, tool_id, user_id, back):
         "customer": customer,
         "tool": tool,
         "tool_credentials": tool_credentials,
-        "rendered_configuration_html": tool.configuration_widget(customer),
+        "rendered_configuration_html": tool.configuration_widget(
+            customer, url=reverse("kiosk_tool_configuration") + "?badge_number=" + str(customer.badge_number)
+        ),
         "pre_usage_questions": DynamicForm(tool.pre_usage_questions).render(
             tool, "pre_usage_questions", virtual_inputs=True
         ),
