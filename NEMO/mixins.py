@@ -129,12 +129,12 @@ class BillableItemMixin:
         from NEMO.views.customization import AdjustmentRequestsCustomization
         from NEMO.views.usage import get_managed_projects
 
-        pi_projects = get_managed_projects(user)
+        managed_projects = get_managed_projects(user)
 
         tool: Optional[Tool] = getattr(self, "tool", None)
         time_limit = AdjustmentRequestsCustomization.get_date_limit()
         time_limit_condition = not time_limit or time_limit <= self.get_end()
-        user_project_condition = self.get_customer() == user or self.project in pi_projects
+        user_project_condition = self.get_customer() == user or self.project in managed_projects
         operator_is_staff = self.get_operator() == user and user.is_staff_on_tool(tool)
         if self.get_real_type() == BillableItemMixin.AREA_ACCESS:
             access_enabled = AdjustmentRequestsCustomization.get_bool("adjustment_requests_area_access_enabled")

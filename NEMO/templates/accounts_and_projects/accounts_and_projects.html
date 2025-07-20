@@ -27,6 +27,7 @@
                 <th>{% include 'pagination/pagination_column.html' with order_by='name' name='Name' %}</th>
                 {% if project_types or account_types %}<th>Type(s)</th>{% endif %}
                 <th>{{ customizations|get_item:"project_application_identifier_name" }}</th>
+                <th>Managers/PIs</th>
                 <th class="button-column-minimum">
                     {% include 'pagination/pagination_column.html' with order_by='active' name='Active' %}
                 </th>
@@ -54,6 +55,14 @@
                     <td data-toggle="collapse"
                         data-target=".projects_{{ account.id }}"
                         onclick="toggle_details($('#chevron_{{ account.id }}'))"></td>
+                    <td data-toggle="collapse"
+                        data-target=".projects_{{ account.id }}"
+                        onclick="toggle_details($('#chevron_{{ account.id }}'))">
+                        {% for manager in account.manager_set.all %}
+                            <span class="text-nowrap">{{ manager.get_name }}</span>
+                            {% if not forloop.last %}<br>{% endif %}
+                        {% endfor %}
+                    </td>
                     <td class="text-center">
                         <form method="post" action="{% url 'toggle_active' 'account' account.id %}">
                             {% csrf_token %}
@@ -84,6 +93,12 @@
                                 <td style="padding-left: 28px">{{ project.name }}</td>
                                 {% if account_types or project_types %}<td>{{ project.project_types.all|join:", " }}</td>{% endif %}
                                 <td>{{ project.application_identifier }}</td>
+                                <td>
+                                    {% for manager in project.manager_set.all %}
+                                        <span class="text-nowrap">{{ manager.get_name }}</span>
+                                        {% if not forloop.last %}<br>{% endif %}
+                                    {% endfor %}
+                                </td>
                                 <td class="text-center">
                                     <form style="display:inline" method="post" action="{% url 'toggle_active' 'project' project.id %}">
                                         {% csrf_token %}

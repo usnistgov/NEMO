@@ -76,6 +76,7 @@ class UserForm(ModelForm):
             "date_joined",
             "last_login",
             "managed_projects",
+            "managed_accounts",
             "preferences",
         ]
 
@@ -85,7 +86,7 @@ class ProjectForm(ModelForm):
         model = Project
         exclude = ["only_allow_tools", "allow_consumable_withdrawals", "allow_staff_charges"]
 
-    principal_investigators = ModelMultipleChoiceField(
+    managers = ModelMultipleChoiceField(
         queryset=User.objects.all(),
         required=False,
         widget=FilteredSelectMultiple(verbose_name="Principal investigators", is_stacked=False),
@@ -94,23 +95,44 @@ class ProjectForm(ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance.pk:
-            self.fields["principal_investigators"].initial = self.instance.manager_set.all()
+            self.fields["managers"].initial = self.instance.manager_set.all()
 
     def _save_m2m(self):
         super()._save_m2m()
         exclude = self._meta.exclude
         fields = self._meta.fields
         # Check for fields and exclude
-        if fields and "principal_investigators" not in fields or exclude and "principal_investigators" in exclude:
+        if fields and "managers" not in fields or exclude and "managers" in exclude:
             return
-        if "principal_investigators" in self.cleaned_data:
-            self.instance.manager_set.set(self.cleaned_data["principal_investigators"])
+        if "managers" in self.cleaned_data:
+            self.instance.manager_set.set(self.cleaned_data["managers"])
 
 
 class AccountForm(ModelForm):
+    managers = ModelMultipleChoiceField(
+        queryset=User.objects.all(),
+        required=False,
+        widget=FilteredSelectMultiple(verbose_name="Managers", is_stacked=False),
+    )
+
     class Meta:
         model = Account
         fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields["managers"].initial = self.instance.manager_set.all()
+
+    def _save_m2m(self):
+        super()._save_m2m()
+        exclude = self._meta.exclude
+        fields = self._meta.fields
+        # Check for fields and exclude
+        if fields and "managers" not in fields or exclude and "managers" in exclude:
+            return
+        if "managers" in self.cleaned_data:
+            self.instance.manager_set.set(self.cleaned_data["managers"])
 
 
 class TaskForm(ModelForm):
@@ -365,6 +387,7 @@ class EmailBroadcastForm(Form):
             ("tool-reservation", "tool-reservation"),
             ("project", "project"),
             ("project-pis", "project-pis"),
+            ("account-managers", "account-managers"),
             ("account", "account"),
             ("area", "area"),
             ("user", "user"),

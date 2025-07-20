@@ -831,6 +831,12 @@ class User(BaseModel, PermissionsMixin):
     managed_projects = models.ManyToManyField(
         "Project", related_name="manager_set", blank=True, help_text="Select the projects that this user is a PI for."
     )
+    managed_accounts = models.ManyToManyField(
+        "Account",
+        related_name="manager_set",
+        blank=True,
+        help_text="Select the accounts that this user is a manager for.",
+    )
 
     # Preferences
     preferences: UserPreferences = models.OneToOneField(UserPreferences, null=True, on_delete=models.SET_NULL)
@@ -2722,10 +2728,10 @@ class Account(SerializationByNameModel):
         ordering = ["name"]
 
     def sorted_active_projects(self):
-        return self.sorted_projects().filter(active=True)
+        return self.sorted_projects().filter(active=True).prefetch_related("project_types", "manager_set")
 
     def sorted_projects(self):
-        return self.project_set.all().order_by("-active", "name")
+        return self.project_set.prefetch_related("project_types", "manager_set").order_by("-active", "name")
 
     def display_with_status(self):
         return f"{'[INACTIVE] ' if not self.active else ''}{self.name}"
@@ -2765,9 +2771,9 @@ class Project(SerializationByNameModel):
     def display_with_pis(self):
         from NEMO.templatetags.custom_tags_and_filters import project_selection_display
 
-        pis = ", ".join([pi.get_name() for pi in self.manager_set.all()])
-        pis = f" (PI{'s' if self.manager_set.count() > 1 else ''}: {pis})" if pis else ""
-        return f"{project_selection_display(self)}{pis}"
+        managers = ", ".join([manager.get_name() for manager in self.manager_set.all()])
+        managers = f" (PI{'s' if self.manager_set.count() > 1 else ''}: {managers})" if managers else ""
+        return f"{project_selection_display(self)}{managers}"
 
     def display_with_status(self):
         return f"{'[INACTIVE] ' if not self.active else ''}{self.name}"

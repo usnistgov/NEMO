@@ -107,8 +107,8 @@ def email_broadcast(request, audience=""):
     elif audience == "project" or audience == "project-pis":
         dictionary["display_str"] = "display_with_status"
         dictionary["search_base"] = Project.objects.filter(account__active=True).order_by("-active", "name")
-    elif audience == "account":
-        dictionary["search_base"] = Account.objects.filter(active=True)
+    elif audience == "account" or audience == "account-managers":
+        dictionary["search_base"] = Account.objects.all().order_by("-active", "name")
     elif audience == "user":
         user_types = UserType.objects.all()
         dictionary["user_types"] = user_types
@@ -367,6 +367,16 @@ def get_users_for_email(audience: str, selection: List, no_type: bool) -> (Query
         users = User.objects.filter(managed_projects__in=projects).distinct()
         if len(selection) == 1:
             topic = Project.objects.filter(pk=selection[0]).first().name
+    elif audience == "account-managers":
+        accounts = Account.objects.all()
+        if no_type:
+            # reusing no_type field as active project flag
+            accounts = accounts.filter(active=True)
+        if selection:
+            accounts = accounts.filter(id__in=selection)
+        users = User.objects.filter(managed_accounts__in=accounts).distinct()
+        if len(selection) == 1:
+            topic = Account.objects.filter(pk=selection[0]).first().name
     elif audience == "account":
         users = User.objects.filter(projects__account__id__in=selection).distinct()
         if len(selection) == 1:

@@ -576,16 +576,40 @@ class ConfigurationHistoryAdmin(admin.ModelAdmin):
     autocomplete_fields = ["user"]
 
 
+class AccountAdminForm(forms.ModelForm):
+    class Meta:
+        model = Account
+        fields = "__all__"
+
+    managers = forms.ModelMultipleChoiceField(
+        queryset=User.objects.all(),
+        required=False,
+        widget=FilteredSelectMultiple(verbose_name="Managers", is_stacked=False),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields["managers"].initial = self.instance.manager_set.all()
+
+
 @register(Account)
 class AccountAdmin(admin.ModelAdmin):
-    list_display = ("name", "id", "active", "type", "start_date")
+    list_display = ("name", "id", "active", "type", "start_date", "get_managers")
     search_fields = ("name",)
     list_filter = ("active", ("type", admin.RelatedOnlyFieldListFilter), "start_date")
+    form = AccountAdminForm
+
+    @display(description="Managers", ordering="manager_set")
+    def get_managers(self, account: Account):
+        return mark_safe("<br>".join([manager.get_name() for manager in account.manager_set.all()]))
 
     def save_model(self, request, obj, form, change):
         """Audit account and project active status."""
         super(AccountAdmin, self).save_model(request, obj, form, change)
         record_active_state(request, obj, form, "active", not change)
+        if "managers" in form.changed_data:
+            obj.manager_set.set(form.cleaned_data["managers"])
 
 
 class ProjectAdminForm(forms.ModelForm):
@@ -599,7 +623,7 @@ class ProjectAdminForm(forms.ModelForm):
         widget=FilteredSelectMultiple(verbose_name="Users", is_stacked=False),
     )
 
-    principal_investigators = forms.ModelMultipleChoiceField(
+    managers = forms.ModelMultipleChoiceField(
         queryset=User.objects.all(),
         required=False,
         widget=FilteredSelectMultiple(verbose_name="Principal investigators", is_stacked=False),
@@ -613,7 +637,7 @@ class ProjectAdminForm(forms.ModelForm):
             )
         if self.instance.pk:
             self.fields["members"].initial = self.instance.user_set.all()
-            self.fields["principal_investigators"].initial = self.instance.manager_set.all()
+            self.fields["managers"].initial = self.instance.manager_set.all()
 
     def clean_project_types(self):
         data = self.cleaned_data["project_types"]
@@ -659,7 +683,7 @@ class ProjectAdmin(admin.ModelAdmin):
 
     @display(description="PIs", ordering="manager_set")
     def get_managers(self, project: Project):
-        return mark_safe("<br>".join([pi.get_name() for pi in project.manager_set.all()]))
+        return mark_safe("<br>".join([manager.get_name() for manager in project.manager_set.all()]))
 
     @display(description="Project type(s)", ordering="project_types")
     def get_project_types(self, project: Project):
@@ -695,8 +719,8 @@ class ProjectAdmin(admin.ModelAdmin):
         # Record whether the project is active or not.
         record_active_state(request, obj, form, "active", not change)
 
-        if "principal_investigators" in form.changed_data:
-            obj.manager_set.set(form.cleaned_data["principal_investigators"])
+        if "managers" in form.changed_data:
+            obj.manager_set.set(form.cleaned_data["managers"])
 
 
 class ConfigurationOptionInline(admin.TabularInline):
@@ -1161,6 +1185,7 @@ class UserAdmin(admin.ModelAdmin):
         "user_permissions",
         "projects",
         "managed_projects",
+        "managed_accounts",
         "physical_access_levels",
         "onboarding_phases",
         "safety_trainings",
@@ -1200,6 +1225,7 @@ class UserAdmin(admin.ModelAdmin):
                     "superuser_on_tools",
                     "projects",
                     "managed_projects",
+                    "managed_accounts",
                 )
             },
         ),

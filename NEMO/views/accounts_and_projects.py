@@ -69,7 +69,11 @@ class ProjectTransferForm(BillingFilterForm):
 @require_GET
 def accounts_and_projects(request):
     active_only = ProjectsAccountsCustomization.get_bool("account_list_active_only")
-    all_accounts = Account.objects.all().order_by("name").prefetch_related("project_set")
+    all_accounts = (
+        Account.objects.all()
+        .order_by("name")
+        .prefetch_related("project_set", "project_set__manager_set", "manager_set", "type")
+    )
     if active_only:
         all_accounts = all_accounts.filter(active=True)
 
@@ -140,7 +144,6 @@ def create_project(request):
     form = ProjectForm(request.POST or None)
     dictionary = {
         "account_list": Account.objects.all(),
-        "user_list": User.objects.filter(is_active=True),
         "allow_document_upload": ProjectsAccountsCustomization.get_bool("project_allow_document_upload"),
         "form": form,
     }
