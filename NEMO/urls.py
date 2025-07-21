@@ -719,6 +719,11 @@ if settings.ALLOW_CONDITIONAL_URLS:
             "remove_user_from_project/", accounts_and_projects.remove_user_from_project, name="remove_user_from_project"
         ),
         path("add_user_to_project/", accounts_and_projects.add_user_to_project, name="add_user_to_project"),
+        re_path(
+            r"^add_or_remove_manager_from_account_project/(?P<action>add|remove|)/(?P<kind>account|project|)/(?P<identifier>\d+)/$",
+            accounts_and_projects.add_or_remove_manager_from_account_project,
+            name="add_or_remove_manager_from_account_project",
+        ),
         path(
             "projects/<int:project_id>/remove_document/<int:document_id>/",
             accounts_and_projects.remove_document_from_project,

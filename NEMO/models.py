@@ -2727,6 +2727,13 @@ class Account(SerializationByNameModel):
     class Meta:
         ordering = ["name"]
 
+    def project_manager_ids_not_account_managers(self):
+        account_manager_ids = distinct_qs_value_list(self.manager_set, "id")
+        project_manager_ids = distinct_qs_value_list(self.project_set, "manager_set__id")
+        return [
+            manager_id for manager_id in project_manager_ids if manager_id and manager_id not in account_manager_ids
+        ]
+
     def sorted_active_projects(self):
         return self.sorted_projects().filter(active=True).prefetch_related("project_types", "manager_set")
 
