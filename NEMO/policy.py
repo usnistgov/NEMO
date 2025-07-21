@@ -766,6 +766,8 @@ class NEMOPolicy:
                     future_reservations = future_reservations.exclude(
                         start_end_before_midnight | start_end_after_midnight | start_end_overlap
                     )
+            if item.policy_off_weekend:
+                future_reservations = future_reservations.exclude(start__iso_week_day__gte=6, end__iso_week_day__gte=6)
             future_reservations = future_reservations.filter(**new_reservation.reservation_item_filter)
             # Exclude any reservation that is being cancelled.
             if cancelled_reservation and cancelled_reservation.id:
