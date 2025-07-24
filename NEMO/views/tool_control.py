@@ -539,7 +539,7 @@ def disable_tool(request, tool_id):
         if user != current_usage_event.operator and current_usage_event.user != user:
             # if someone else is forcing somebody off the tool and there are required questions, send an email and proceed
             current_usage_event.run_data = e.run_data
-            email_managers_required_questions_disable_tool(current_usage_event.operator, user, tool, e.questions)
+            email_managers_required_questions_disable_tool(current_usage_event, user, e.questions)
         else:
             return HttpResponseBadRequest(str(e))
 
@@ -762,8 +762,10 @@ def interlock_error(action: str, user: User, item=None):
 
 
 def email_managers_required_questions_disable_tool(
-    tool_user: User, staff_member: User, tool: Tool, questions: List[PostUsageQuestion]
+    usage_event: UsageEvent, staff_member: User, questions: List[PostUsageQuestion]
 ):
+    tool = usage_event.tool
+    tool_user = usage_event.operator
     user_office_email = EmailsCustomization.get("user_office_email_address")
     abuse_email_address = EmailsCustomization.get("abuse_email_address")
     message = get_media_file_contents("tool_required_unanswered_questions_email.html")
@@ -778,7 +780,9 @@ def email_managers_required_questions_disable_tool(
         )
         ccs = [email for user in cc_users for email in user.get_emails(EmailNotificationType.BOTH_EMAILS)]
         ccs.append(abuse_email_address)
-        rendered_message = render_email_template(message, {"user": tool_user, "tool": tool, "questions": questions})
+        rendered_message = render_email_template(
+            message, {"user": tool_user, "tool": tool, "questions": questions, "usage_event": usage_event}
+        )
         tos = tool_user.get_emails(EmailNotificationType.BOTH_EMAILS)
         send_mail(
             subject=f"Unanswered post‑usage questions after logoff from the {tool.name}",
