@@ -864,12 +864,13 @@ class User(BaseModel, PermissionsMixin):
             if username_taken.exists():
                 raise ValidationError({"username": _("This username has already been taken")})
         if self.is_staff and self.is_service_personnel:
+            # Do not add "is_staff" error code here since this can be displayed in regular admin user page
+            # and that page does not have the is_staff field (it's only for detailed admin)
             raise ValidationError(
                 {
-                    "is_staff": _("A user cannot be both staff and service personnel. Please choose one or the other."),
                     "is_service_personnel": _(
                         "A user cannot be both staff and service personnel. Please choose one or the other."
-                    ),
+                    )
                 }
             )
 
