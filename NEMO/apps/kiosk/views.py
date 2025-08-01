@@ -164,7 +164,7 @@ def do_disable_tool(request, tool_id):
         if customer != current_usage_event.operator and current_usage_event.user != customer:
             # if someone else is forcing somebody off the tool and there are required questions, send an email and proceed
             current_usage_event.run_data = e.run_data
-            email_managers_required_questions_disable_tool(current_usage_event.operator, customer, tool, e.questions)
+            email_managers_required_questions_disable_tool(current_usage_event, customer, e.questions)
         else:
             dictionary = {"message": str(e), "delay": 10}
             return render(request, "kiosk/acknowledgement.html", dictionary)

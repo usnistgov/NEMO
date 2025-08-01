@@ -451,7 +451,7 @@ class ProXrInterlock(Interlock):
                 bank = interlock.unit_id if interlock.unit_id is not None else 1
                 # Try to read the state
                 try:
-                    self._get_state(relay_socket, interlock.channel, bank)
+                    self._get_state(relay_socket, interlock.card, interlock.channel, bank)
                 except Exception as error:
                     return INTERLOCK_STATUS_ERROR + f": {str(error)}"
         except:
