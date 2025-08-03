@@ -2718,6 +2718,7 @@ class AccountType(BaseCategory):
 
 class Account(SerializationByNameModel):
     name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, unique=True)
+    note = models.TextField(null=True, blank=True)
     type = models.ForeignKey(AccountType, null=True, blank=True, on_delete=models.SET_NULL)
     start_date = models.DateField(null=True, blank=True)
     active = models.BooleanField(

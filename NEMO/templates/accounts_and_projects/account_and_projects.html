@@ -40,8 +40,14 @@
                             </a>
                         </form>
                     </h2>
-                    {% if account.manager_set.all %}
+                    {% if account.note %}
                         <div>
+                            <span class="control-label">Note:</span>
+                            <span>{{ account.note|linebreaksbr }}</span>
+                        </div>
+                    {% endif %}
+                    {% if account.manager_set.all %}
+                        <div {% if account.note %}style="margin-top: 10px"{% endif %}>
                             <span class="control-label">Managers:</span>
                             <span>{{ account.manager_set.all|join:", " }}</span>
                         </div>

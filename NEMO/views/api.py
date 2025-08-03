@@ -354,7 +354,14 @@ class AccountViewSet(ModelViewSet):
     filename = "accounts"
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
-    filterset_fields = {"id": key_filters, "name": string_filters, "active": boolean_filters}
+    filterset_fields = {
+        "id": key_filters,
+        "type": key_filters,
+        "name": string_filters,
+        "note": string_filters,
+        "start_date": date_filters,
+        "active": boolean_filters,
+    }
 
 
 class ToolViewSet(ModelViewSet):
