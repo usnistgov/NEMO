@@ -589,6 +589,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
         if self.initial_data:
             for index, data in enumerate(self.initial_data):
                 self.load_sub_questions(index, data)
+                self.index = index
                 result += self.render_group_question(virtual_inputs, item, dynamic_field_name)
                 result += "</div>"
         else:
