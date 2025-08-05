@@ -7,6 +7,63 @@
         {% csrf_token %}
         <div class="panel panel-default">
             <div class="panel-body">
+                <h3 id="landing_label">Landing page</h3>
+                <div class="form-group" role="group" aria-labelledby="landing_label">
+                    <div class="radio col-lg-5 col-md-6 col-sm-8">
+                        <label>
+                            <input name="login_redirect_url"
+                                   type="radio"
+                                   value=""
+                                   {% if not form.login_redirect_url.value %}checked{% endif %}>
+                            Dashboard
+                        </label>
+                        <label>
+                            <input name="login_redirect_url"
+                                   type="radio"
+                                   value="calendar"
+                                   {% if form.login_redirect_url.value == "calendar" %}checked{% endif %}>
+                            Calendar
+                        </label>
+                        <label>
+                            <input name="login_redirect_url"
+                                   type="radio"
+                                   value="tool_control"
+                                   {% if form.login_redirect_url.value == "tool_control" %}checked{% endif %}>
+                            Tool control
+                        </label>
+                        <label>
+                            <input name="login_redirect_url"
+                                   type="radio"
+                                   value="usage"
+                                   {% if form.login_redirect_url.value == "usage" %}checked{% endif %}>
+                            My usage
+                        </label>
+                        <label>
+                            <input name="login_redirect_url"
+                                   id="other"
+                                   type="radio"
+                                   {% if form.login_redirect_url.value and form.login_redirect_url.value != "usage" and form.login_redirect_url.value != "tool_control" and form.login_redirect_url.value != "calendar" %}checked{% endif %}>
+                            Other
+                        </label>
+                    </div>
+                    <div class="col-lg-7 col-md-6 col-sm-12">
+                        <input type="text"
+                               list="login_redirect_datalist"
+                               class="form-control"
+                               id="other_input"
+                               name="login_redirect_url"
+                               value="{% if form.login_redirect_url.value and form.login_redirect_url.value != "usage" and form.login_redirect_url.value != "tool_control" and form.login_redirect_url.value != "calendar" %}{{ form.login_redirect_url.value|default_if_none:'' }}{% endif %}"
+                               maxlength="254"
+                               style="{% if not form.login_redirect_url.value or form.login_redirect_url.value == "usage" or form.login_redirect_url.value == "tool_control" or form.login_redirect_url.value == "calendar" %}display: none{% endif %}">
+                    </div>
+                    {% if form.login_redirect_url.errors %}
+                        <div class="col-sm-5 form-control-static danger-highlight">{{ form.login_redirect_url.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-body">
                 <h3 id="reservations_label">Reservations</h3>
                 <div class="form-group col-sm-12" role="group" aria-labelledby="reservations_label">
                     <div class="checkbox">
@@ -353,6 +410,18 @@
                         {% endfor %}
                     {% endfor %}
                 {% endif %}
+                $('input[name="login_redirect_url"]').change(function()
+                {
+                    // Show or hide the "Other" text field based on 'Other' radio selection
+                    if ($('#other').is(':checked'))
+                    {
+                        $('#other_input').prop("disabled", false).show(); // Show the input field
+                    }
+                    else
+                    {
+                        $('#other_input').val('').prop("disabled", true).hide();
+                    }
+                });
             }
             $(on_load);
     </script>

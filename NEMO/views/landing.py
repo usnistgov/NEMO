@@ -5,7 +5,7 @@ import requests
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.urls import Resolver404, resolve
 from django.utils import timezone
 from django.views.decorators.http import require_GET
@@ -23,6 +23,8 @@ def landing(request):
     user: User = request.user
     mark_alerts_as_expired()
     delete_expired_notifications()
+    if not request.META.get("HTTP_REFERER") and user.get_preferences().login_redirect_url:
+        return redirect(user.get_preferences().login_redirect_url)
     usage_events = UsageEvent.objects.filter(operator=user.id, end=None).prefetch_related("tool", "project")
     tools_in_use = [u.tool.tool_or_parent_id() for u in usage_events]
     fifteen_minutes_from_now = timezone.now() + timedelta(minutes=15)

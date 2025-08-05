@@ -423,6 +423,7 @@ class UserPreferences(BaseModel):
         blank=True,
         help_text="Tools to see maintenance records and receive task notifications for. If empty all notifications will be received.",
     )
+    login_redirect_url = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MEDIUM_LENGTH)
 
     def get_recurring_charges_days(self) -> List[int]:
         return [
