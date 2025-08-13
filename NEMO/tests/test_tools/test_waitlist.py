@@ -14,7 +14,7 @@ class ToolWaitListTestCase(TestCase):
     def setUp(self) -> None:
         EmailsCustomization.set("user_office_email_address", "user_office_email_address@wait_list_test.com")
         store_media_file(
-            open("resources/emails/wait_list_notification_email.html", "r"), "wait_list_notification_email.html"
+            open("resources/emails/tool_wait_list_notification_email.html", "r"), "wait_list_notification_email.html"
         )
 
     def test_user_enter_wait_list_regular_mode_fail(self):
