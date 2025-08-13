@@ -154,6 +154,7 @@ url_kwargs_get_post = {
 urls_to_skip = [
     "api-root",
     "kiosk_tool_reservation",
+    "kiosk_tool_configuration",
     "cancel_reservation_from_kiosk",
     "create_reservation",
     "resize_reservation",
@@ -176,6 +177,7 @@ urls_to_skip = [
     "enter_wait_list",
     "exit_wait_list",
     "check_and_update_wait_list",
+    "add_or_remove_manager_from_account_project",
 ]
 
 
