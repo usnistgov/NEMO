@@ -253,10 +253,7 @@ def send_broadcast_email(request):
         warning_message = "Your email was not sent. There was a problem finding the users to send the email to."
         dictionary = {"error": warning_message}
         logger.warning(
-            warning_message
-            + " audience: {}, only_active: {}. The error message that was received is: {}".format(
-                audience, active_choice, str(error)
-            )
+            warning_message + " audience: {}. The error message that was received is: {}".format(audience, str(error))
         )
         return render(request, "email/compose_email.html", dictionary)
     if not users:
