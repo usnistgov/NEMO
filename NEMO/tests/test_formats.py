@@ -55,8 +55,8 @@ class FormatTestCase(TestCase):
         end_date = date(2022, 2, 11)
         self.assertEqual(format_daterange(start_date, end_date, d_format=d_format), f"from 02/11/2022 to 02/11/2022")
 
-        tz = zoneinfo.ZoneInfo("US/Pacific")
-        self.assertEqual(settings.TIME_ZONE, "US/Eastern")
+        tz = zoneinfo.ZoneInfo("America/Los_Angeles")
+        self.assertEqual(settings.TIME_ZONE, "America/New_York")
         start_tz = make_aware(datetime(2022, 2, 11, 5, 0, 0), tz)  # 5AM Pacific => 8AM Eastern
         end_tz = start_tz + timedelta(days=2)
         self.assertNotEqual(
