@@ -275,7 +275,7 @@ def project_usage(request):
     selected_project_type = request.GET.get("project_type")
 
     try:
-        if kind == "application":
+        if kind == "projectapplication":
             projects = Project.objects.filter(application_identifier=identifier)
             selection = identifier
         elif kind == "project":
@@ -396,7 +396,7 @@ def project_billing(request):
     formatted_applications = None
     selection = ""
     try:
-        if kind == "application":
+        if kind == "projectapplication":
             formatted_applications = identifier
             selection = identifier
         elif kind == "project":

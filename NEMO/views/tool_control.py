@@ -53,7 +53,6 @@ from NEMO.utilities import (
 from NEMO.views.area_access import able_to_self_log_out_of_area
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import (
-    CalendarCustomization,
     EmailsCustomization,
     InterlockCustomization,
     RemoteWorkCustomization,
