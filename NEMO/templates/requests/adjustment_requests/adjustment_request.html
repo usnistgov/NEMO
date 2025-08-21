@@ -43,14 +43,23 @@
             {% endif %}
             <div class="form-group">
                 <div class="row">
-                    <div class="col-sm-12">
+                    <div class="{% if instance_id %}col-sm-12{% else %}col-sm-9{% endif %}">
                         <input type="hidden" name="item_type" value="{{ form.item_type.value|default_if_none:"" }}">
                         <input type="hidden" name="item_id" value="{{ form.item_id.value|default_if_none:"" }}">
                         <label for="billable_item" class="control-label">Charge</label>
-                        <select class="form-control" id="billable_item" name="item" {% if instance_id %}readonly{% endif %}>
+                        <select class="form-control"
+                                id="billable_item"
+                                name="item"
+                                {% if instance_id %}readonly{% endif %}
+                                {% if not instance_id and not select_not_required %}required{% endif %}>
+                            {% if not instance_id and not select_not_required %}
+                                <option value="" selected disabled>Select a charge to adjust</option>
+                            {% endif %}
                             <option url="{% if instance_id %}{% url 'edit_adjustment_request' instance_id %}{% else %}{% url 'create_adjustment_request' %}{% endif %}"
-                                    selected
-                                    value="">General adjustment request</option>
+                                    value=""
+                                    {% if not form.instance.item and select_not_required %}selected{% endif %}>
+                                General adjustment request
+                            </option>
                             {% if form.instance.item %}
                                 <option url="{% if instance_id %}{% url 'edit_adjustment_request' instance_id form.item_type.value form.item_id.value %}{% else %}{% url 'create_adjustment_request' form.item_type.value form.item_id.value %}{% endif %}"
                                         value="{{ form.item_type.value }}|{{ form.item_id.value }}"
@@ -67,9 +76,18 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-sm-12 help-block">
-                        Only the {{ customizations|get_item:"adjustment_requests_charges_display_number" }} most recent charges are displayed. To find earlier charges, go to your <a href='{% url "user_usage" %}'>Usage</a> page and create an adjustment request from there.
-                    </div>
+                    {% if not instance_id %}
+                        <div class="col-sm-3">
+                            <span class="control-label" style="display: inline-block;margin-bottom: 5px;">Find a charge</span>
+                            <a href="{% url 'user_usage' %}" class="btn btn-info form-control" type="button">
+                                <i class="glyphicon glyphicon-floppy-save"></i>
+                                Go to my usage
+                            </a>
+                        </div>
+                        <div class="col-sm-12 help-block">
+                            Only the {{ customizations|get_item:"adjustment_requests_charges_display_number" }} most recent charges are displayed. To find earlier charges, go to your Usage page and create an adjustment request from there.
+                        </div>
+                    {% endif %}
                 </div>
             </div>
             {% if item.can_times_be_changed and form.item_id.value and form.item_type.value %}

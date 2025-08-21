@@ -13,7 +13,7 @@ from io import BytesIO, StringIO
 from logging import getLogger
 from smtplib import SMTPAuthenticationError, SMTPConnectError, SMTPServerDisconnected
 from typing import Any, Dict, Iterator, List, Optional, Sequence, Set, TYPE_CHECKING, Tuple, Union
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 from PIL import Image
 from dateutil import rrule
@@ -33,7 +33,7 @@ from django.http import HttpRequest, HttpResponse, QueryDict
 from django.shortcuts import resolve_url
 from django.template import Template
 from django.template.context import make_context
-from django.urls import NoReverseMatch, reverse
+from django.urls import NoReverseMatch, resolve, reverse
 from django.utils import timezone as django_timezone
 from django.utils.formats import date_format, get_format, time_format
 from django.utils.html import format_html
@@ -1191,3 +1191,25 @@ def get_content_types_for_billable_item_subclasses() -> List[ContentType]:
     ]
 
     return sorted(billable_item_content_types, key=lambda x: x.name)
+
+
+def get_django_view_name_from_url(url: str) -> str:
+    """
+    Retrieve the Django view name from a given URL.
+
+    This function attempts to resolve the URL path into a Django view name
+    using the `resolve` function. If the resolution fails, an empty string
+    is returned instead of raising an error. The provided URL must be in
+    a valid format.
+
+    :param url: The URL string from which the Django view name is resolved.
+    :type url: str
+    :return: The Django view name if successfully resolved, otherwise an
+        empty string.
+    :rtype: str
+    """
+    try:
+        return resolve(urlparse(url).path).view_name
+    except:
+        pass
+    return ""
