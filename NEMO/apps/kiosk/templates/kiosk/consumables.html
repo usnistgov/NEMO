@@ -1,0 +1,346 @@
+{% load custom_tags_and_filters %}
+<div class="row" style="margin-top:30px">
+    <div class="col-xs-offset-3 col-xs-6" onclick="load_choices('{{ customer.badge_number }}')">
+        <div class="alert alert-warning" style="text-align:center; margin-bottom:0; font-size:x-large">Go back</div>
+    </div>
+</div>
+<div id="dialog" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content" style="font-size: large;"></div>
+    </div>
+</div>
+<h1>Withdraw consumables</h1>
+<div style="height: 15px"></div>
+<div class="col-md-6" style="font-size: medium;">
+    <p>
+        Use this form to
+        {% if self_checkout %}
+            checkout
+        {% else %}
+            charge users for
+        {% endif %}
+        consumable items & supplies.
+    </p>
+    <form id="withdrawal_form_order"
+          action="{% url 'kiosk_checkout' customer.id %}"
+          class="form-horizontal"
+          method="post">
+        {% csrf_token %}
+        {% if not self_checkout %}
+            <div class="row">
+                <div class="col-md-12 form-group">
+                    <label for="customer_search"
+                           class="control-label col-md-6"
+                           style="text-align: left;
+                                  font-size: x-large;
+                                  font-weight: bold">Select a customer</label>
+                </div>
+                <div class="col-md-12" style="margin-bottom: 15px;" id="customer_search_container">
+                    <input type="text"
+                           autocomplete="off"
+                           class="form-control"
+                           id="customer_search"
+                           placeholder="Search for a customer"
+                           required>
+                </div>
+                <div class="col-md-12" style="margin-bottom: 15px; display:none;" id="chosen_customer_container">
+                    <a href="javascript:void(0)"
+                       id="chosen_customer"
+                       class="list-group-item active"
+                       style="width: 100%"
+                       onclick="clear_selected_customer()"
+                       aria-label="Selected customer"></a>
+                    <input type="hidden" id="customer" name="customer" value="">
+                </div>
+                <div class="col-md-12" id="search_results_container">
+                    <div style="max-height: 500px; overflow: scroll;">
+                        <ul id="search_results_list" class="list-group">
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        <div id="projects-section" style="display: none;">
+            <div class="form-group">
+                <span class="col-md-12" style="text-align: left; font-size: x-large;">Choose a project to bill</span>
+            </div>
+            <div class="form-group">
+                <div class="col-md-12">
+                    <div id="project-list" class="list-group" style="display:table; width: 100%;">
+                        {% for project in projects %}
+                            <a href="javascript:void(0)"
+                               class="list-group-item project-choice"
+                               id="project_{{ project.id }}"
+                               onclick="withdrawal_select_project(this, {{ project.id }})"
+                               style="font-size:large">{% project_selection_display project %}</a>
+                        {% endfor %}
+                    </div>
+                    <input type="hidden" name="project" id="project" value="">
+                </div>
+            </div>
+        </div>
+        <div id="consumables-section" style="display: none;">
+            <div class="form-group">
+                <span class="col-md-12" style="text-align: left; font-size: x-large;">Consumables</span>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-12">
+                    <table class="table">
+                        {% with category_collapse=customizations|get_item:"consumable_category_collapse" %}
+                            {% regroup consumables by category as categories %}
+                            {% for category in categories %}
+                                {% if categories|length > 1 or category.grouper %}
+                                    <tr onclick="toggle_details('#chevron_{{ category.grouper.id }}')"
+                                        data-toggle="collapse"
+                                        data-target="#category_{{ category.grouper.id }}_details">
+                                        <th id="chevron_{{ category.grouper.id }}">
+                                            <span class="glyphicon glyphicon-chevron-{% if category_collapse %}right{% else %}down{% endif %} pull-left chevron"></span>{{ category.grouper|default_if_none:"Uncategorized" }}
+                                        </th>
+                                    </tr>
+                                {% endif %}
+                                <tbody id="category_{{ category.grouper.id }}_details"
+                                       class="collapse {% if not category_collapse %}in{% endif %}">
+                                    {% for item in category.list %}
+                                        <tr>
+                                            <td {% if categories|length > 1 or category.grouper %}style="padding-left: 45px;"{% endif %}>
+                                                <div class="consumable-row"
+                                                     style="display: flex;
+                                                            flex-wrap: wrap;
+                                                            align-items: center;
+                                                            justify-content: space-between">
+                                                    <div style="display: flex; flex-wrap: wrap; align-items: center;">
+                                                        {% if item.notes %}
+                                                            <div data-toggle="notes-tooltip"
+                                                                 class="btn btn-primary"
+                                                                 style="margin-right: 8px"
+                                                                 title="{{ item.notes|linebreaksbr }}">
+                                                                <i class="glyphicon glyphicon-info-sign"></i>
+                                                            </div>
+                                                        {% endif %}
+                                                        <span class="consumable_trigger" data-item-id="{{ item.id }}">{{ item.name }}
+                                                            {% if rates and rates|get_item:item.name %}({{ rates|get_item:item.name|safe }}){% endif %}
+                                                            {% if not item.reusable %}
+                                                                {% if item.quantity > 0 %}
+                                                                    <span>({{ item.quantity }} left)</span>
+                                                                {% else %}
+                                                                    <span class="danger-highlight">(sold-out)</span>
+                                                                {% endif %}
+                                                            {% endif %}
+                                                        </span>
+                                                    </div>
+                                                    {% if item.reusable or item.quantity > 0 %}
+                                                        <button id="{{ item.id }}_quantity"
+                                                                class="btn btn-success float-right consumable-add"
+                                                                type="button"
+                                                                disabled>
+                                                            <i class="glyphicon glyphicon-plus-sign"></i>
+                                                            Add to cart
+                                                        </button>
+                                                        <input type="hidden" id="{{ item.id }}_quantity_value" value="0" disabled>
+                                                        <script>
+                                                            $(`#{{ item.id }}_quantity`).numpad({
+                                                                'readonly': false,
+                                                                'target': $('#{{ item.id }}_quantity_value'),
+                                                                'hidePlusMinusButton': true,
+                                                                'hideDecimalButton': true,
+                                                                'textDone': "Add",
+                                                                'appendKeypadTo': $("#status"),
+                                                                'displayTpl': '<div style="font-size: large; text-align: center; width: 100%; margin-bottom: 5px;">{{ item.name }} quantity</div><input type="text" class="form-control" />',
+                                                                'onKeypadClose': function() {
+                                                                  const selection = parseInt($('#{{ item.id }}_quantity_value').val());
+                                                                  if(selection !== 0 && !isNaN(selection)) {
+                                                                    const form = $('#withdrawal_form_order');
+                                                                    form.append('<input type="hidden" id="consumable" name="consumable" value="{{ item.id }}">');
+                                                                    form.append('<input type="hidden" id="quantity" name="quantity" value="' + selection + '">');
+                                                                    form.submit();
+                                                                    form.find('#consumable').remove();
+                                                                    form.find('#quantity').remove();
+                                                                  }
+                                                                  $('#{{ item.id }}_quantity_value').val(0);
+                                                                }
+                                                            });
+                                                        </script>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            {% endfor %}
+                        {% endwith %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+<div class="col-md-6" style="font-size: medium;">
+    <div id="consumables_order" class="affix">{% include 'kiosk/consumables_order.html' %}</div>
+</div>
+<script type="text/javascript">
+    const $search_results_list = $("#search_results_list");
+    const $search_results_container = $("#search_results_container");
+    const $customer_search_container = $("#customer_search_container");
+    const $customer_search_input = $("#customer_search");
+    const $chosen_customer_container = $("#chosen_customer_container");
+    const $chosen_customer = $("#chosen_customer");
+    const $customer = $("#customer");
+    const $projects_section = $("#projects-section");
+    const $consumables_section = $("#consumables-section");
+    const $projects_list = $("#project-list");
+    const $consumable_add_buttons = $(".consumable-add");
+    const $withdrawal_order_form = $('#withdrawal_form_order');
+    const $consumables_order = $('#consumables_order')
+
+    $('[data-toggle="notes-tooltip"]').tooltip({"html": true});
+
+    {# Initialize customer search #}
+    {% if not self_checkout %}
+        show_customer_search();
+        $customer_search_input.keyboard();
+    {% else %}
+        hide_customer_search();
+        show_projects_and_consumables();
+    {% endif %}
+
+    // Customer search
+    function show_customer_search()
+    {
+        clear_projects();
+        $customer_search_container.show();
+        $customer_search_input.val('');
+        $customer_search_input.change(function()
+        {
+            const users = {{ users|json_search_base }}
+            const search_value = $(this).val();
+            if(search_value && search_value.length > 0)
+            {
+                const lower_search_value = search_value.toLowerCase();
+                const search_results = users.filter(user => user.name.toLowerCase().includes(lower_search_value));
+                if(search_results.length > 0)
+                {
+                    set_search_result(search_results);
+                } else
+                {
+                    clear_search_results();
+                }
+            } else
+            {
+                clear_search_results();
+            }
+        });
+    }
+
+    function hide_customer_search()
+    {
+        $customer_search_container.hide();
+        $customer_search_input.val('');
+        clear_search_results();
+    }
+
+    // Search results
+    function set_search_result(users)
+    {
+        $search_results_list.empty();
+        $.each(users, function(index, user) {
+            const result = $('<li class="list-group-item"></li>')
+                .text(user.name)
+                .click(function() {
+                    select_customer({id: user.id, name: user.name});
+                });
+            $search_results_list.append(result);
+        });
+        $search_results_container.show();
+    }
+
+    function clear_search_results()
+    {
+        $search_results_list.empty();
+        $search_results_container.hide();
+    }
+
+    // Customer selection
+    function select_customer(user)
+    {
+        hide_customer_search();
+        set_projects(user);
+        $chosen_customer.text(user.name);
+        $customer.val(user.id);
+        $chosen_customer_container.show();
+    }
+
+    function clear_selected_customer()
+    {
+        $chosen_customer_container.hide();
+        $chosen_customer.text('');
+        $customer.val('');
+        show_customer_search();
+    }
+
+    // Projects
+    function set_projects(user)
+    {
+        ajax_get("{% url 'get_projects_for_consumables' %}", {'user_id': user.id}, function (response) {
+            $projects_list.empty();
+            const projects = response['projects'];
+            if(projects.length === 0)
+            {
+                $projects_list.append($('<a href="javascript:void(0)" class="list-group-item disabled" style="font-size:large;">No active projects</a>'));
+            }
+            else
+            {
+                $.each(projects, function(count, project)
+                {
+                    const project_element = $('<a href="javascript:void(0)" class="list-group-item project-choice" style="font-size:large;"></a>')
+                        .text(project.name)
+                        .click(function() {withdrawal_select_project(this, project.id);});
+                    $projects_list.append(project_element);
+                });
+            }
+            show_projects_and_consumables();
+        });
+    }
+    function withdrawal_select_project(element, project_id)
+    {
+        $(".project-choice").removeClass('active');
+        $consumable_add_buttons.prop('disabled', false);
+        $(element).addClass('active');
+        $("#project").val(project_id);
+    }
+    function clear_projects()
+    {
+        $("#project").val('');
+        $projects_section.hide();
+        $consumables_section.hide();
+        $consumable_add_buttons.prop('disabled', true);
+        $projects_list.empty();
+    }
+    function show_projects_and_consumables()
+    {
+        $projects_section.show();
+        $consumables_section.show();
+    }
+
+    {# Form will be submitted with ajax #}
+    $withdrawal_order_form.submit(function(e)
+    {
+        e.preventDefault();
+        const data = serialize($(this));
+        const failure = ajax_failure_callback('Withdrawal Error');
+        ajax_post('{% url 'kiosk_checkout' customer.id %}', data, function(response) {$consumables_order.html(response)}, failure);
+        return false;
+    });
+
+    $(window).scroll(function(e)
+    {
+      const consumables_order = $consumables_order;
+      if ($(this).scrollTop() > 50) consumables_order.css({'top': '30px'});
+      else consumables_order.css({'top': 'inherit'});
+    });
+
+    {# Prevent refresh resubmit #}
+    if (window.history.replaceState)
+    {
+        window.history.replaceState(null, null, window.location.href);
+    }
+</script>

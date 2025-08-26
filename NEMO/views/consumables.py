@@ -313,12 +313,18 @@ def make_withdrawal(
     withdraw.consumable.save()
     # Only add notification message if request is present
     if request:
-        if request.user.id == customer_id:
-            message = f"Your withdrawal of {withdraw.quantity} of {withdraw.consumable}"
-        else:
-            message = f"The withdrawal of {withdraw.quantity} of {withdraw.consumable} for {withdraw.customer}"
-        message += f" was successfully logged and will be billed to project {withdraw.project}."
+        message = make_withdrawal_success_message(withdraw, request.user)
         messages.success(request, message, extra_tags="data-speed=9000")
+    return withdraw
+
+
+def make_withdrawal_success_message(withdraw, request_user: User):
+    if request_user.id == withdraw.customer_id:
+        message = f"Your withdrawal of {withdraw.quantity} of {withdraw.consumable}"
+    else:
+        message = f"The withdrawal of {withdraw.quantity} of {withdraw.consumable} for {withdraw.customer}"
+    message += f" was successfully logged and will be billed to project {withdraw.project}."
+    return message
 
 
 def send_reorder_supply_reminder_email(consumable: Consumable):

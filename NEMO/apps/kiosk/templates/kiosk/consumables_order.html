@@ -1,0 +1,75 @@
+{% load custom_tags_and_filters %}
+{% with customer.id|stringformat:"d" as customer_id %}
+    {% if success_messages %}
+        {% for message in success_messages %}<div class="alert alert-success">{{ message }}</div>{% endfor %}
+    {% endif %}
+    {% if request.session.kiosk_withdrawals and customer_id in request.session.kiosk_withdrawals %}
+        <p>Current order:</p>
+        <table class="table table-striped thead-light">
+            <thead>
+                <tr>
+                    <th>Customer</th>
+                    <th>Project</th>
+                    <th>Consumable</th>
+                    <th>Quantity</th>
+                    <th aria-label="Action"></th>
+                </tr>
+            </thead>
+            {% for withdraw in request.session.kiosk_withdrawals|get_item:customer_id %}
+                <tr>
+                    <td>{{ withdraw.customer }}</td>
+                    <td>{{ withdraw.project }}</td>
+                    <td>{{ withdraw.consumable }}</td>
+                    <td>{{ withdraw.quantity }}</td>
+                    <td style="vertical-align: middle">
+                        <form class="remove_withdrawal">
+                            {% csrf_token %}
+                            <input type="hidden" name="customer_id" value="{{ customer_id }}">
+                            <input type="hidden" name="index" value="{{ forloop.counter0 }}">
+                            <button type="button"
+                                    class="btn btn btn-danger"
+                                    onclick="submit_and_disable(this);"
+                                    title="Remove this withdrawal">
+                                <span class="glyphicon glyphicon-remove"></span>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+        <form id="clear" class="pull-left">
+            {% csrf_token %}
+            <input type="hidden" name="customer_id" value="{{ customer_id }}">
+            {% button type="delete" value="Clear" title="Remove all items in current order" onclick="submit_and_disable(this)" %}
+        </form>
+        <form id="checkout" class="pull-right">
+            {% csrf_token %}
+            <input type="hidden" name="customer_id" value="{{ customer_id }}">
+            {% button type="save" value="Confirm" %}
+        </form>
+        <script type="text/javascript">
+            const $consumables_order = $('#consumables_order')
+            $('.remove_withdrawal').submit(function(e) {
+                const data = serialize($(this));
+                e.preventDefault();
+                const failure = ajax_failure_callback('Remove Consumable Error');
+                ajax_post('{% url 'kiosk_remove_consumable' %}', data, function(response) {$consumables_order.html(response)}, failure);
+                return false;
+            });
+            $('#clear').submit(function(e) {
+                const data = serialize($(this));
+                e.preventDefault();
+                const failure = ajax_failure_callback('Clear Cart Error');
+                ajax_post('{% url 'kiosk_clear_withdrawals' %}', data, function(response) {$consumables_order.html(response)}, failure);
+                return false;
+            });
+            $('#checkout').submit(function(e) {
+                const data = serialize($(this));
+                e.preventDefault();
+                const failure = ajax_failure_callback('Withdrawal Error');
+                ajax_post('{% url 'kiosk_withdraw_consumables' %}', data, function(response) {$consumables_order.html(response)}, failure);
+                return false;
+            });
+        </script>
+    {% endif %}
+{% endwith %}

@@ -1,20 +1,22 @@
 from datetime import datetime, timedelta, time
 from http import HTTPStatus
-from typing import Dict
+from typing import Dict, List
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.db.models import Q
+from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from django.utils.html import format_html
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from NEMO.decorators import synchronized
-from NEMO.exceptions import RequiredUnansweredQuestionsException
-from NEMO.forms import CommentForm, TaskForm, nice_errors
+from NEMO.exceptions import RequiredUnansweredQuestionsException, ProjectChargeException
+from NEMO.forms import CommentForm, TaskForm, nice_errors, ConsumableWithdrawForm
 from NEMO.models import (
     BadgeReader,
     Project,
@@ -26,6 +28,8 @@ from NEMO.models import (
     ToolWaitList,
     UsageEvent,
     User,
+    Consumable,
+    ConsumableWithdraw,
 )
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import localize, quiet_int, remove_duplicates
@@ -36,6 +40,12 @@ from NEMO.views.calendar import (
     render_reservation_questions,
     set_reservation_configuration,
     shorten_reservation,
+)
+from NEMO.views.consumables import (
+    self_checkout,
+    make_withdrawal,
+    make_withdrawal_success_message,
+    consumable_permissions,
 )
 from NEMO.views.customization import ApplicationCustomization, ToolCustomization, UserCustomization
 from NEMO.views.tasks import save_task
@@ -422,6 +432,7 @@ def choices(request):
         "customer": customer,
         "usage_events": list(usage_events),
         "upcoming_reservations": tool_reservations,
+        "show_consumable_self_checkout": consumable_permissions(customer),
         **get_categories_and_tools_dictionary(customer, category),
     }
     return render(request, "kiosk/choices.html", dictionary)
@@ -700,3 +711,176 @@ def get_categories_and_tools_dictionary(customer: User, category=None) -> Dict:
             if not customer.is_staff and tool.id not in tool_ids_user_is_qualified
         ],
     }
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_http_methods(["GET", "POST"])
+def checkout(request, customer_id):
+    user: User = User.objects.get(pk=customer_id)
+    if not consumable_permissions(user):
+        return HttpResponseForbidden("You do not have permission to access consumables.")
+
+    is_self_checkout = self_checkout(user)
+    if request.method == "GET":
+        from NEMO.rates import rate_class
+
+        rate_dict = rate_class.get_consumable_rates(Consumable.objects.all())
+        consumable_list = Consumable.objects.filter(visible=True).order_by("category", "name")
+        if is_self_checkout:
+            consumable_list = consumable_list.filter(allow_self_checkout=True).filter(
+                Q(self_checkout_only_users__isnull=True) | Q(self_checkout_only_users__in=[user])
+            )
+
+        dictionary = {
+            "customer": user,
+            "users": User.objects.filter(is_active=True),
+            "consumables": consumable_list,
+            "rates": rate_dict,
+            "self_checkout": is_self_checkout,
+        }
+        if is_self_checkout:
+            dictionary["projects"] = user.active_projects().filter(allow_consumable_withdrawals=True)
+
+        return render(request, "kiosk/consumables.html", dictionary)
+    elif request.method == "POST":
+        updated_post_data = request.POST.copy()
+        if is_self_checkout:
+            updated_post_data.update({"customer": user.id})
+        form = ConsumableWithdrawForm(updated_post_data)
+        if form.is_valid():
+            withdraw = form.save(commit=False)
+            customer_allowed = (
+                not withdraw.consumable.self_checkout_only_users.exists()
+                or withdraw.customer in withdraw.consumable.self_checkout_only_users.all()
+            )
+            if is_self_checkout and (not withdraw.consumable.allow_self_checkout or not customer_allowed):
+                return HttpResponseBadRequest("You can not self checkout this consumable")
+            try:
+                policy.check_billing_to_project(withdraw.project, withdraw.customer, withdraw.consumable, withdraw)
+            except ProjectChargeException as e:
+                return HttpResponseBadRequest(e.msg)
+            add_withdraw_to_session(request, user.id, withdraw)
+        else:
+            return HttpResponseBadRequest(nice_errors(form).as_ul())
+        return render(
+            request,
+            "kiosk/consumables_order.html",
+            {
+                "customer": user,
+            },
+        )
+    else:
+        return HttpResponseBadRequest("Invalid Request")
+
+
+def add_withdraw_to_session(request, customer_id, withdrawal: ConsumableWithdraw):
+    request.session.setdefault("kiosk_withdrawals", {})
+    customer_id_key = str(customer_id)
+    withdrawals: dict = request.session.get("kiosk_withdrawals")
+    if withdrawals is not None:
+        if customer_id_key not in withdrawals:
+            withdrawals[customer_id_key] = []
+        withdrawal_dict = {
+            "customer": str(withdrawal.customer),
+            "customer_id": withdrawal.customer_id,
+            "consumable": str(withdrawal.consumable),
+            "consumable_id": withdrawal.consumable_id,
+            "project": str(withdrawal.project),
+            "project_id": withdrawal.project_id,
+            "quantity": withdrawal.quantity,
+        }
+        withdrawals[customer_id_key].append(withdrawal_dict)
+    request.session["kiosk_withdrawals"] = withdrawals
+
+
+def get_customer_cart(request, customer_id: str) -> List:
+    withdrawals: List = request.session.get("kiosk_withdrawals", {}).get(str(customer_id), [])
+    return withdrawals
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_POST
+def remove_withdraw_at_index(request):
+    try:
+        customer_id = request.POST["customer_id"]
+        user: User = User.objects.get(pk=customer_id)
+        if not consumable_permissions(user):
+            return HttpResponseForbidden("You do not have permission to access consumables.")
+
+        index = int(request.POST["index"])
+        withdrawals: List = get_customer_cart(request, customer_id)
+        if withdrawals:
+            del withdrawals[index]
+            request.session["kiosk_withdrawals"][customer_id] = withdrawals
+        return render(
+            request,
+            "kiosk/consumables_order.html",
+            {
+                "customer": user,
+            },
+        )
+    except Exception:
+        return HttpResponseBadRequest("Invalid Request")
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_POST
+def clear_withdrawals(request):
+    try:
+        customer_id = request.POST["customer_id"]
+        user: User = User.objects.get(pk=customer_id)
+        if not consumable_permissions(user):
+            return HttpResponseForbidden("You do not have permission to access consumables.")
+
+        if "kiosk_withdrawals" in request.session and customer_id in request.session["kiosk_withdrawals"]:
+            del request.session["kiosk_withdrawals"][customer_id]
+        return render(
+            request,
+            "kiosk/consumables_order.html",
+            {
+                "customer": user,
+            },
+        )
+    except Exception:
+        return HttpResponseBadRequest("Invalid Request")
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_POST
+def make_withdrawals(request):
+    customer_id = request.POST["customer_id"]
+    user: User = User.objects.get(pk=customer_id)
+    if not consumable_permissions(user):
+        return HttpResponseForbidden("You do not have permission to access consumables.")
+
+    withdrawals: List = get_customer_cart(request, customer_id)
+    force_customer = user.id if self_checkout(user) else None
+    try:
+        with transaction.atomic():
+            success_messages = []
+            for withdraw in withdrawals:
+                withdrawal = make_withdrawal(
+                    consumable_id=withdraw["consumable_id"],
+                    merchant=user,
+                    customer_id=force_customer or withdraw["customer_id"],
+                    quantity=withdraw["quantity"],
+                    project_id=withdraw["project_id"],
+                )
+                success_messages.append(make_withdrawal_success_message(withdrawal, user))
+            del request.session["kiosk_withdrawals"][customer_id]
+            return render(
+                request,
+                "kiosk/consumables_order.html",
+                {
+                    "customer": user,
+                    "success_messages": success_messages,
+                },
+            )
+    except ValidationError as e:
+        return HttpResponseBadRequest(nice_errors(e).as_ul())
+    except Exception:
+        return HttpResponseBadRequest("An error occurred while processing the withdrawals.")

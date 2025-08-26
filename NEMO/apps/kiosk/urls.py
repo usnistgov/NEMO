@@ -39,6 +39,10 @@ urlpatterns = [
                 path("enter_wait_list/", views.enter_wait_list, name="enter_wait_list_from_kiosk"),
                 path("exit_wait_list/", views.exit_wait_list, name="exit_wait_list_from_kiosk"),
                 path("logout_user/<int:tool_id>", views.logout_user, name="kiosk_logout_user"),
+                path("checkout/<int:customer_id>", views.checkout, name="kiosk_checkout"),
+                path("clear_withrawals", views.clear_withdrawals, name="kiosk_clear_withdrawals"),
+                path("withdraw_consumables", views.make_withdrawals, name="kiosk_withdraw_consumables"),
+                path("remove_consumable", views.remove_withdraw_at_index, name="kiosk_remove_consumable"),
                 re_path(
                     r"^tool_report_problem/(?P<tool_id>\d+)/(?P<user_id>\d+)/(?P<back>back_to_start|back_to_category)/$",
                     views.tool_report_problem,
