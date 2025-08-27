@@ -165,6 +165,8 @@ def usage(
 ):
     user: User = request.user
     base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request, get_month_timeframe)
+    # Preloading user's managed projects'
+    base_dictionary["user"] = User.objects.filter(id=user.id).prefetch_related("managed_projects").first()
     project_id = request.GET.get("project") or request.GET.get("pi_project")
     if user_managed_projects:
         base_dictionary["selected_project"] = "all"
@@ -256,6 +258,8 @@ def billing(request):
 @require_GET
 def project_usage(request):
     base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request, get_day_timeframe)
+    # Preloading user's managed projects'
+    base_dictionary["user"] = User.objects.filter(id=request.user.id).prefetch_related("managed_projects").first()
 
     area_access, consumables, missed_reservations, staff_charges, training_sessions, usage_events = (
         None,
