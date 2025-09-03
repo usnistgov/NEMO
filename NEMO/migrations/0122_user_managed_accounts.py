@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("NEMO", "0120_alter_userpreferences_options_and_more"),
+        ("NEMO", "0121_version_7_3_0"),
     ]
 
     operations = [
