@@ -670,6 +670,7 @@ class ConsumableViewSet(ModelViewSet):
     serializer_class = ConsumableSerializer
     filterset_fields = {
         "id": key_filters,
+        "name": string_filters,
         "category_id": key_filters,
         "category": key_filters,
         "quantity": number_filters,
