@@ -4,10 +4,11 @@ from django.conf import settings
 from django.test import TestCase
 from PIL import Image
 
+from NEMO.tests.test_utilities import NEMOTestCaseMixin
 from NEMO.utilities import capitalize, get_email_from_settings, resize_image
 
 
-class MiscTests(TestCase):
+class MiscTests(NEMOTestCaseMixin, TestCase):
     def test_capitalize(self):
         self.assertEqual(capitalize(None), None)
         self.assertEqual(capitalize(""), "")

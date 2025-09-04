@@ -8,12 +8,12 @@ from typing import List
 
 from django.conf import settings
 from django.test.client import RequestFactory
-from django.test.testcases import TestCase, TransactionTestCase
+from django.test.testcases import TransactionTestCase
 from django.urls import reverse
 from django.urls.resolvers import RegexPattern
 
 from NEMO.models import User
-from NEMO.tests.test_utilities import login_as, login_as_staff, login_as_user, login_as_user_with_permissions
+from NEMO.tests.test_utilities import NEMOTestCaseMixin
 from NEMO.utilities import get_full_url
 from NEMO.views.customization import (
     AdjustmentRequestsCustomization,
@@ -181,7 +181,7 @@ urls_to_skip = [
 ]
 
 
-class URLsTestCase(TransactionTestCase):
+class URLsTestCase(NEMOTestCaseMixin, TransactionTestCase):
     reset_sequences = True
     fixtures = ["resources/fixtures/splash_pad.json"]
 
@@ -356,7 +356,7 @@ def test_urls(test_case, url_patterns, url_params, url_skip, prefix=""):
                     annotations = get_annotations(function_def)
                     # Login depending on annotation
                     if user:
-                        login_as(test_case.client, user)
+                        test_case.login_as(user)
                     else:
                         login_as_relevant_user(test_case, annotations)
                     if "require_GET" in annotations:
@@ -397,45 +397,45 @@ def get_annotations(function_def: FunctionDef) -> List[str]:
     return annotations
 
 
-def login_as_relevant_user(test_case: TestCase, annotations: List[str]):
+def login_as_relevant_user(test_case: NEMOTestCaseMixin, annotations: List[str]):
     if "time_services_required" in annotations:
-        login_as_user_with_permissions(test_case.client, ["trigger_timed_services"])
+        test_case.login_as_user_with_permissions(["trigger_timed_services"])
     elif "kiosk_required" in annotations:
-        login_as_user_with_permissions(test_case.client, ["kiosk"])
+        test_case.login_as_user_with_permissions(["kiosk"])
     elif "area_access_required" in annotations:
-        login_as_user_with_permissions(test_case.client, ["add_areaaccessrecord", "change_areaaccessrecord"])
+        test_case.login_as_user_with_permissions(["add_areaaccessrecord", "change_areaaccessrecord"])
     elif "login_required" in annotations:
-        login_as_user(test_case.client)
+        test_case.login_as_user()
     elif (
         "staff_member_required" in annotations
         or "staff_member_or_tool_superuser_or_tool_staff_required" in annotations
         or "staff_member_or_user_office_required" in annotations
     ):
-        login_as_staff(test_case.client)
+        test_case.login_as_staff()
     elif "administrator_required" in annotations:
-        staff = login_as_staff(test_case.client)
+        staff = test_case.login_as_staff()
         staff.is_superuser = True
         staff.save()
-        login_as(test_case.client, staff)
+        test_case.login_as(staff)
     elif "user_office_required" in annotations or "user_office_or_facility_manager_required" in annotations:
-        staff = login_as_staff(test_case.client)
+        staff = test_case.login_as_staff()
         staff.is_user_office = True
         staff.save()
-        login_as(test_case.client, staff)
+        test_case.login_as(staff)
     elif (
         "accounting_required" in annotations
         or "accounting_or_user_office_required" in annotations
         or "accounting_or_user_office_or_manager_required" in annotations
     ):
-        staff = login_as_staff(test_case.client)
+        staff = test_case.login_as_staff()
         staff.is_accounting_officer = True
         staff.save()
-        login_as(test_case.client, staff)
+        test_case.login_as(staff)
     elif "facility_manager_required" in annotations or "any_staff_required" in annotations:
-        staff = login_as_staff(test_case.client)
+        staff = test_case.login_as_staff()
         staff.is_facility_manager = True
         staff.save()
-        login_as(test_case.client, staff)
+        test_case.login_as(staff)
 
 
 def get_all_params(url: str, url_parameters: dict, pattern: RegexPattern) -> (dict, dict, dict):

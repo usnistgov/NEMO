@@ -1,5 +1,7 @@
 from datetime import date, datetime, time, timedelta
 
+from NEMO.tests.test_utilities import NEMOTestCaseMixin
+
 try:
     import zoneinfo
 except ImportError:
@@ -14,7 +16,7 @@ from django.utils.timezone import make_aware
 from NEMO.utilities import format_daterange, format_datetime, get_duration_with_off_schedule
 
 
-class FormatTestCase(TestCase):
+class FormatTestCase(NEMOTestCaseMixin, TestCase):
     def test_format_daterange(self):
         self.assertTrue(format_datetime())
         today = datetime.today()

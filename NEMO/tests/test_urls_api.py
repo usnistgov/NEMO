@@ -7,15 +7,15 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from NEMO.models import User
-from NEMO.tests.test_utilities import login_as
+from NEMO.tests.test_utilities import NEMOTestCaseMixin
 from NEMO.urls import router
 
 
-class TestAPIUrls(TestCase):
+class TestAPIUrls(NEMOTestCaseMixin, TestCase):
     def setUp(self):
         user = User.objects.create(username="test", is_superuser=True)
         self.client = APIClient()
-        login_as(self.client, user)
+        self.login_as(user)
 
     def test_all_api_urls(self):
         # Iterate through all registered URLs in the DRF router

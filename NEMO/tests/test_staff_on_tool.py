@@ -2,9 +2,10 @@ from django.test import TestCase
 
 from NEMO.models import Tool, User
 from NEMO.templatetags.custom_tags_and_filters import is_staff_on_tool
+from NEMO.tests.test_utilities import NEMOTestCaseMixin
 
 
-class TestStaffOnToolFilter(TestCase):
+class TestStaffOnToolFilter(NEMOTestCaseMixin, TestCase):
     def setUp(self):
         self.user = User.objects.create(username="test_user", is_superuser=False, is_staff=False)
         self.staff_user = User.objects.create(username="staff_user", is_staff=True)
