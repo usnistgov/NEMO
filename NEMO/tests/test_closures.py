@@ -4,15 +4,16 @@ from django.test import TestCase
 from django.utils import timezone
 
 from NEMO.admin import ClosureAdminForm
-from NEMO.models import Alert, Closure, ClosureTime, Customization, EmailLog, User
+from NEMO.models import Alert, Closure, ClosureTime, EmailLog, User
 from NEMO.utilities import EmailCategory
+from NEMO.views.customization import EmailsCustomization
 from NEMO.views.timed_services import do_create_closure_alerts
 
 
 class ClosuresTestCase(TestCase):
     def setUp(self):
         # We need user office email and at least one facility manager for the email to be sent
-        Customization.objects.create(name="user_office_email_address", value="test@test.com")
+        EmailsCustomization.set(name="user_office_email_address", value="test@test.com")
         User.objects.create(
             first_name="Testy", last_name="McTester", email="testy@tester.com", is_active=True, is_facility_manager=True
         )

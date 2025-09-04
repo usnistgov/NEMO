@@ -11,7 +11,6 @@ from NEMO.models import (
     Account,
     Area,
     AreaAccessRecord,
-    Customization,
     Door,
     Interlock,
     InterlockCard,
@@ -28,6 +27,7 @@ from NEMO.tests.test_utilities import (
     test_response_is_failed_login,
     test_response_is_landing_page,
 )
+from NEMO.views.customization import ApplicationCustomization
 
 
 class AreaAccessGetTestCase(TestCase):
@@ -298,7 +298,7 @@ class SelfLoginAreaAccessTestCase(TestCase):
         user = login_as_user(self.client)
         self.client.post(reverse("self_log_in"), data={"area": area.id}, follow=True)
         self.assertFalse(AreaAccessRecord.objects.filter(area=area, end__isnull=True).exists())
-        Customization.objects.update_or_create(name="self_log_in", defaults={"value": "enabled"})
+        ApplicationCustomization.set(name="self_log_in", value="enabled")
         self.assertFalse(AreaAccessRecord.objects.filter(area=area, end__isnull=True).exists())
         project = Project.objects.create(name="Project1", account=Account.objects.create(name="Account1"))
         user.projects.add(project)
@@ -326,7 +326,7 @@ class SelfLoginAreaAccessTestCase(TestCase):
         staff.save()
         self.client.post(reverse("self_log_in"), data={"area": area.id, "project": project.id}, follow=True)
         self.assertFalse(AreaAccessRecord.objects.filter(area=area, end__isnull=True).exists())
-        Customization.objects.update_or_create(name="self_log_in", defaults={"value": "enabled"})
+        ApplicationCustomization.set(name="self_log_in", value="enabled")
         self.client.post(reverse("self_log_in"), data={"area": area.id, "project": project.id}, follow=True)
         self.assertFalse(AreaAccessRecord.objects.filter(area=area, end__isnull=True).exists())
         # create an area an allow staff access without granting it to them
@@ -343,7 +343,7 @@ class SelfLoginAreaAccessTestCase(TestCase):
         self.assertEqual(AreaAccessRecord.objects.filter(area=area, customer=staff, end__isnull=True)[0], record[0])
         self.assertTrue(record[0].end is None)
         # logout
-        Customization.objects.update_or_create(name="self_log_out", defaults={"value": "enabled"})
+        ApplicationCustomization.set(name="self_log_out", value="enabled")
         self.client.get(reverse("self_log_out", kwargs={"user_id": staff.id}), follow=True)
         self.assertTrue(record[0].end is not None)
         # now undo access and try explicitly

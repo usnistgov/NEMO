@@ -1,10 +1,13 @@
+import time
 from abc import ABC
 from datetime import date, datetime
 from logging import getLogger
+from threading import Lock
 from typing import Dict, Iterable, List, Optional
 
 from dateutil.relativedelta import relativedelta
 from django.apps import apps
+from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
@@ -42,6 +45,13 @@ customization_logger = getLogger(__name__)
 
 class CustomizationBase(ABC):
     _instances = {}
+    # Static cache variables
+    _variables_cache = None
+    _cache_expiry = 0
+    _cache_lock = Lock()
+    # Cache expiry time (in seconds, default 30 seconds)
+    CACHE_TTL = quiet_int(getattr(settings, "CUSTOMIZATIONS_CACHE_SECONDS", 30), 30)
+
     # Here we can place variables that we need in NEMO but don't need to be set in UI
     variables = {"weekend_access_notification_last_sent": ""}
     files = []
@@ -49,6 +59,33 @@ class CustomizationBase(ABC):
     def __init__(self, key, title):
         self.key = key
         self.title = title
+
+    @staticmethod
+    def _load_cache():
+        """
+        Private method to load all variables into the cache from the database.
+        Called when the cache is empty or expired.
+        """
+        with CustomizationBase._cache_lock:
+            # Reload from the database only if the cache is empty or expired
+            if CustomizationBase._variables_cache is None or time.time() > CustomizationBase._cache_expiry:
+                # Load default values
+                CustomizationBase._variables_cache = CustomizationBase._all_variables()
+                # Then override with db values
+                CustomizationBase._variables_cache.update(
+                    {cust.name: cust.value for cust in Customization.objects.all()}
+                )
+                # Set the new cache expiration time
+                CustomizationBase._cache_expiry = time.time() + CustomizationBase.CACHE_TTL
+
+    @staticmethod
+    def invalidate_cache():
+        """
+        Invalidate the cache immediately by clearing it.
+        """
+        with CustomizationBase._cache_lock:
+            CustomizationBase._variables_cache = None
+            CustomizationBase._cache_expiry = 0
 
     def template(self) -> Optional[str]:
         # We want to check if there is a customization template file in the app template dir
@@ -116,46 +153,66 @@ class CustomizationBase(ABC):
         except ValueError as e:
             raise ValidationError(str(e))
 
-    @classmethod
-    def add_instance(cls, inst):
-        cls._instances[inst.key] = inst
+    @staticmethod
+    def add_instance(inst):
+        CustomizationBase._instances[inst.key] = inst
 
-    @classmethod
-    def instances(cls) -> Iterable:
-        return cls._instances.values()
+    @staticmethod
+    def instances() -> Iterable:
+        return CustomizationBase._instances.values()
 
-    @classmethod
-    def get_instance(cls, key):
-        return cls._instances.get(key)
+    @staticmethod
+    def get_instance(key):
+        return CustomizationBase._instances.get(key)
 
-    @classmethod
-    def all_variables(cls) -> Dict:
+    @staticmethod
+    def _all_variables() -> Dict:
         all_variables = CustomizationBase.variables
-        for instance in cls.instances():
+        for instance in CustomizationBase.instances():
             all_variables.update(instance.variables)
         return all_variables
 
     @classmethod
-    def get(cls, name: str, raise_exception=True) -> str:
+    def get(cls, name: str, raise_exception=True, use_cache=True) -> str:
         if name not in cls.variables:
             raise InvalidCustomizationException(name)
         default_value = cls.variables[name]
-        try:
-            return Customization.objects.get(name=name).value
-        except Customization.DoesNotExist:
-            # return default value
-            return default_value
-        except Exception:
-            if raise_exception:
-                raise
-            else:
+        if use_cache:
+            # We are using the cache (default behavior)
+            try:
+                CustomizationBase._load_cache()  # Ensure cache is valid
+                with CustomizationBase._cache_lock:
+                    if name in CustomizationBase._variables_cache:
+                        # Return the cached value
+                        return CustomizationBase._variables_cache[name]
+                    else:
+                        # Return default value
+                        return default_value
+            except Exception:
+                if raise_exception:
+                    raise
+                else:
+                    return default_value
+        else:
+            # We are not using the cache, so we need to load the value from the database
+            try:
+                return Customization.objects.get(name=name).value
+            except Customization.DoesNotExist:
                 return default_value
+            except Exception:
+                if raise_exception:
+                    raise
+                else:
+                    return default_value
 
-    @classmethod
-    def get_all(cls) -> Dict:
-        customization_values = cls.all_variables()
-        customization_values.update({cust.name: cust.value for cust in Customization.objects.all() if cust.value})
-        return customization_values
+    @staticmethod
+    def get_all() -> Dict:
+        """
+        Retrieve all variables. Always reloading the cache.
+        """
+        CustomizationBase.invalidate_cache()  # Invalidate the cache
+        CustomizationBase._load_cache()  # Ensure cache is valid
+        return dict(CustomizationBase._variables_cache.copy().items())
 
     @classmethod
     def get_int(cls, name: str, default=None, raise_exception=True) -> int:
@@ -195,13 +252,16 @@ class CustomizationBase(ABC):
     def set(cls, name: str, value):
         if name not in cls.variables:
             raise InvalidCustomizationException(name, value)
-        if value:
-            Customization.objects.update_or_create(name=name, defaults={"value": value})
-        else:
-            try:
-                Customization.objects.get(name=name).delete()
-            except Customization.DoesNotExist:
-                pass
+        with CustomizationBase._cache_lock:
+            if value:
+                Customization.objects.update_or_create(name=name, defaults={"value": value})
+            else:
+                try:
+                    Customization.objects.get(name=name).delete()
+                except Customization.DoesNotExist:
+                    pass
+        # Invalidate the cache
+        CustomizationBase.invalidate_cache()
 
 
 @customization(key="application", title="Application")
@@ -524,7 +584,7 @@ class RecurringChargesCustomization(CustomizationBase):
         return dictionary
 
     def update_title(self):
-        self.title = self.get("recurring_charges_name", raise_exception=False)
+        self.title = self.get("recurring_charges_name", raise_exception=False, use_cache=False)
         meta_class = RecurringConsumableCharge._meta
         meta_class.verbose_name = self.title
         meta_class.verbose_name_plural = self.title if self.title.endswith("s") else self.title + "s"
@@ -741,7 +801,7 @@ def store_media_file(content, file_name):
 
 # This method should not be used anymore. Instead, use XCustomization.get(name)
 def get_customization(name, raise_exception=True):
-    customizable_key_values = CustomizationBase.all_variables()
+    customizable_key_values = CustomizationBase._all_variables()
     if name not in customizable_key_values.keys():
         raise InvalidCustomizationException(name)
     default_value = customizable_key_values[name]
@@ -759,7 +819,7 @@ def get_customization(name, raise_exception=True):
 
 # This method should not be used anymore. Instead, use XCustomization.set(name, value)
 def set_customization(name, value):
-    customizable_key_values = CustomizationBase.all_variables()
+    customizable_key_values = CustomizationBase._all_variables()
     if name not in customizable_key_values:
         raise InvalidCustomizationException(name, value)
     if value:
