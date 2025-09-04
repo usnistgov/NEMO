@@ -3,15 +3,15 @@ from django.test import TestCase
 from django.urls import reverse
 
 from NEMO.models import User
-from NEMO.tests.test_utilities import login_as_user
+from NEMO.tests.test_utilities import NEMOTestCaseMixin
 
 request_content_type = "application/json"
 
 
-class RestCRUDTestCase(TestCase):
+class RestCRUDTestCase(NEMOTestCaseMixin, TestCase):
     def test_user_list(self):
         list_url = reverse("user-list")
-        user = login_as_user(self.client)
+        user = self.login_as_user()
         response = self.client.get(list_url, follow=True)
         self.assertEqual(response.status_code, 403)
         user.user_permissions.add(Permission.objects.get(codename="view_user"))
@@ -21,7 +21,7 @@ class RestCRUDTestCase(TestCase):
         self.assertContains(response, '"username":')
 
     def test_user_view(self):
-        user = login_as_user(self.client)
+        user = self.login_as_user()
         retrieve_url = reverse("user-detail", args=[user.id])
         response = self.client.get(retrieve_url, follow=True)
         self.assertEqual(response.status_code, 403)
@@ -35,7 +35,7 @@ class RestCRUDTestCase(TestCase):
     def test_save_user(self):
         save_url = reverse("user-list")
         data = {"first_name": "John"}
-        user = login_as_user(self.client)
+        user = self.login_as_user()
         response = self.client.post(save_url, data, follow=True)
         self.assertEqual(response.status_code, 403)
         user.user_permissions.add(Permission.objects.get(codename="add_user"))
@@ -55,7 +55,7 @@ class RestCRUDTestCase(TestCase):
         self.assertEqual(response.data["email"], "jdoe@doe.com")
 
     def test_update_user(self):
-        user = login_as_user(self.client)
+        user = self.login_as_user()
         user.user_permissions.add(Permission.objects.get(codename="view_user"))
         user.user_permissions.add(Permission.objects.get(codename="add_user"))
         user_data = {"first_name": "John", "last_name": "Doe", "username": "jdoe", "email": "jdoe@doe.com"}
@@ -80,7 +80,7 @@ class RestCRUDTestCase(TestCase):
                 self.assertEqual(response.data[key], data[key])
 
     def test_partial_update_user(self):
-        user = login_as_user(self.client)
+        user = self.login_as_user()
         user.user_permissions.add(Permission.objects.get(codename="add_user"))
         user_data = {"first_name": "John", "last_name": "Doe", "username": "jdoe", "email": "jdoe@doe.com"}
         data = self.client.post(reverse("user-list"), user_data).data
@@ -98,7 +98,7 @@ class RestCRUDTestCase(TestCase):
                 self.assertEqual(response.data[key], data[key])
 
     def test_delete_user(self):
-        user = login_as_user(self.client)
+        user = self.login_as_user()
         user.user_permissions.add(Permission.objects.get(codename="add_user"))
         user_data = {"first_name": "John", "last_name": "Doe", "username": "jdoe", "email": "jdoe@doe.com"}
         data = self.client.post(reverse("user-list"), user_data).data

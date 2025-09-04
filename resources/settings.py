@@ -324,6 +324,8 @@ LOGGING = {
 
 # -------------------- Organization specific settings (NEMO specific; NOT supported by Django) --------------------
 # Customize these to suit your needs
+# Cache timeout for customizations. This is used to avoid re-fetching the same customizations every time.
+CUSTOMIZATIONS_CACHE_SECONDS = 30
 
 # When true, all available URLs and NEMO functionality is enabled.
 # When false, conditional URLs are removed to reduce the attack surface of NEMO.

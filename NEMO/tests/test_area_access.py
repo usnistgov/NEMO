@@ -11,7 +11,6 @@ from NEMO.models import (
     Account,
     Area,
     AreaAccessRecord,
-    Customization,
     Door,
     Interlock,
     InterlockCard,
@@ -20,19 +19,13 @@ from NEMO.models import (
     Project,
     User,
 )
-from NEMO.tests.test_utilities import (
-    create_user_and_project,
-    login_as_staff,
-    login_as_user,
-    login_as_user_with_permissions,
-    test_response_is_failed_login,
-    test_response_is_landing_page,
-)
+from NEMO.tests.test_utilities import NEMOTestCaseMixin, create_user_and_project
+from NEMO.views.customization import ApplicationCustomization
 
 
-class AreaAccessGetTestCase(TestCase):
+class AreaAccessGetTestCase(NEMOTestCaseMixin, TestCase):
     def test_area_access_page_by_staff(self):
-        login_as_staff(self.client)
+        self.login_as_staff()
         response = self.client.post(reverse("area_access"), {}, follow=True)
         self.assertEqual(response.status_code, 405)  # POST isn't accepted, only GET
         response = self.client.get(reverse("area_access"), {}, follow=True)
@@ -40,16 +33,16 @@ class AreaAccessGetTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_area_access_page_by_user(self):
-        login_as_user(self.client)
+        self.login_as_user()
         response = self.client.get(reverse("area_access"), {}, follow=True)
-        test_response_is_landing_page(self, response)  # since user is not staff, it should redirect to landing
+        self.assert_response_is_landing_page(response)  # since user is not staff, it should redirect to landing
 
     def test_area_access_page_by_anonymous(self):
         response = self.client.get(reverse("area_access"), {}, follow=True)
-        test_response_is_failed_login(self, response)
+        self.assert_response_is_failed_login(response)
 
 
-class KioskAreaAccess(TestCase):
+class KioskAreaAccess(NEMOTestCaseMixin, TestCase):
     door: Door = None
 
     def setUp(self):
@@ -65,11 +58,11 @@ class KioskAreaAccess(TestCase):
 
     def test_welcome_screen_fails(self):
         response = self.client.post(reverse("welcome_screen", kwargs={"door_id": door.id}), follow=True)
-        test_response_is_failed_login(self, response)
-        login_as_user(self.client)
+        self.assert_response_is_failed_login(response)
+        self.login_as_user()
         response = self.client.post(reverse("welcome_screen", kwargs={"door_id": door.id}), follow=True)
-        test_response_is_landing_page(self, response)  # landing since we don't have the right credentials
-        login_as_user_with_permissions(self.client, ["add_areaaccessrecord"])
+        self.assert_response_is_landing_page(response)  # landing since we don't have the right credentials
+        self.login_as_user_with_permissions(["add_areaaccessrecord"])
         response = self.client.post(reverse("welcome_screen", kwargs={"door_id": door.id}), follow=True)
         self.assertEqual(response.status_code, 405)  # POST isn't accepted, only GET
         response = self.client.get(reverse("welcome_screen", kwargs={"door_id": 999}), follow=True)
@@ -81,11 +74,11 @@ class KioskAreaAccess(TestCase):
 
     def test_farewell_screen_fails(self):
         response = self.client.post(reverse("farewell_screen", kwargs={"door_id": door.id}), follow=True)
-        test_response_is_failed_login(self, response)
-        login_as_user(self.client)
+        self.assert_response_is_failed_login(response)
+        self.login_as_user()
         response = self.client.post(reverse("farewell_screen", kwargs={"door_id": door.id}), follow=True)
-        test_response_is_landing_page(self, response)  # landing since we don't have the right credentials
-        login_as_user_with_permissions(self.client, ["change_areaaccessrecord"])
+        self.assert_response_is_landing_page(response)  # landing since we don't have the right credentials
+        self.login_as_user_with_permissions(["change_areaaccessrecord"])
         response = self.client.post(reverse("farewell_screen", kwargs={"door_id": door.id}), follow=True)
         self.assertEqual(response.status_code, 405)  # POST isn't accepted, only GET
         response = self.client.get(reverse("farewell_screen", kwargs={"door_id": 999}), follow=True)
@@ -97,11 +90,11 @@ class KioskAreaAccess(TestCase):
 
     def test_login_to_area(self):
         response = self.client.post(reverse("login_to_area", kwargs={"door_id": door.id}), follow=True)
-        test_response_is_failed_login(self, response)
-        login_as_user(self.client)
+        self.assert_response_is_failed_login(response)
+        self.login_as_user()
         response = self.client.post(reverse("login_to_area", kwargs={"door_id": door.id}), follow=True)
-        test_response_is_landing_page(self, response)  # landing since we don't have the right credentials
-        user = login_as_user_with_permissions(self.client, ["add_areaaccessrecord"])
+        self.assert_response_is_landing_page(response)  # landing since we don't have the right credentials
+        user = self.login_as_user_with_permissions(["add_areaaccessrecord"])
         response = self.client.get(
             reverse("login_to_area", kwargs={"door_id": door.id}), data={"badge_number": user.badge_number}, follow=True
         )
@@ -192,8 +185,8 @@ class KioskAreaAccess(TestCase):
         )
 
     def test_staff_login_to_area(self):
-        staff = login_as_staff(self.client)
-        tablet_user = login_as_user_with_permissions(self.client, ["add_areaaccessrecord"])
+        staff = self.login_as_staff()
+        tablet_user = self.login_as_user_with_permissions(["add_areaaccessrecord"])
         response = self.client.post(
             reverse("login_to_area", kwargs={"door_id": door.id}),
             data={"badge_number": staff.badge_number},
@@ -242,7 +235,7 @@ class KioskAreaAccess(TestCase):
             follow=True,
         )
         self.assertEqual(response.status_code, 200)
-        test_response_is_landing_page(self, response)  # tablet user does not have permission to logout
+        self.assert_response_is_landing_page(response)  # tablet user does not have permission to logout
         tablet_user.user_permissions.add(Permission.objects.get(codename="change_areaaccessrecord"))
         tablet_user.save()
         response = self.client.post(
@@ -278,7 +271,7 @@ class KioskAreaAccess(TestCase):
         )
 
 
-class SelfLoginAreaAccessTestCase(TestCase):
+class SelfLoginAreaAccessTestCase(NEMOTestCaseMixin, TestCase):
     area: Area = None
 
     def setUp(self):
@@ -295,10 +288,10 @@ class SelfLoginAreaAccessTestCase(TestCase):
     def test_login_to_area(self):
         self.client.post(reverse("self_log_in"), data={"area": area.id}, follow=True)
         self.assertFalse(AreaAccessRecord.objects.filter(area=area, end__isnull=True).exists())
-        user = login_as_user(self.client)
+        user = self.login_as_user()
         self.client.post(reverse("self_log_in"), data={"area": area.id}, follow=True)
         self.assertFalse(AreaAccessRecord.objects.filter(area=area, end__isnull=True).exists())
-        Customization.objects.update_or_create(name="self_log_in", defaults={"value": "enabled"})
+        ApplicationCustomization.set(name="self_log_in", value="enabled")
         self.assertFalse(AreaAccessRecord.objects.filter(area=area, end__isnull=True).exists())
         project = Project.objects.create(name="Project1", account=Account.objects.create(name="Account1"))
         user.projects.add(project)
@@ -317,7 +310,7 @@ class SelfLoginAreaAccessTestCase(TestCase):
         self.assertTrue(AreaAccessRecord.objects.filter(area=area, customer=user, end__isnull=True).exists())
 
     def test_staff_login_to_area(self):
-        staff = login_as_staff(self.client)
+        staff = self.login_as_staff()
         self.client.post(reverse("self_log_in"), data={"area": area.id}, follow=True)
         self.assertFalse(AreaAccessRecord.objects.filter(area=area, end__isnull=True).exists())
         # user does not have active projects
@@ -326,7 +319,7 @@ class SelfLoginAreaAccessTestCase(TestCase):
         staff.save()
         self.client.post(reverse("self_log_in"), data={"area": area.id, "project": project.id}, follow=True)
         self.assertFalse(AreaAccessRecord.objects.filter(area=area, end__isnull=True).exists())
-        Customization.objects.update_or_create(name="self_log_in", defaults={"value": "enabled"})
+        ApplicationCustomization.set(name="self_log_in", value="enabled")
         self.client.post(reverse("self_log_in"), data={"area": area.id, "project": project.id}, follow=True)
         self.assertFalse(AreaAccessRecord.objects.filter(area=area, end__isnull=True).exists())
         # create an area an allow staff access without granting it to them
@@ -343,7 +336,7 @@ class SelfLoginAreaAccessTestCase(TestCase):
         self.assertEqual(AreaAccessRecord.objects.filter(area=area, customer=staff, end__isnull=True)[0], record[0])
         self.assertTrue(record[0].end is None)
         # logout
-        Customization.objects.update_or_create(name="self_log_out", defaults={"value": "enabled"})
+        ApplicationCustomization.set(name="self_log_out", value="enabled")
         self.client.get(reverse("self_log_out", kwargs={"user_id": staff.id}), follow=True)
         self.assertTrue(record[0].end is not None)
         # now undo access and try explicitly
@@ -358,7 +351,7 @@ class SelfLoginAreaAccessTestCase(TestCase):
         self.assertTrue(AreaAccessRecord.objects.filter(area=area, customer=staff, end__isnull=True).exists())
 
 
-class NewAreaAccessTestCase(TestCase):
+class NewAreaAccessTestCase(NEMOTestCaseMixin, TestCase):
     area: Area = None
     door: Door = None
 
@@ -374,10 +367,10 @@ class NewAreaAccessTestCase(TestCase):
         door.areas.set([area])
 
     def test_new_area_record_get(self):
-        user = login_as_user(self.client)
+        user = self.login_as_user()
         response = self.client.get(reverse("new_area_access_record"), data={"customer": user.id}, follow=True)
-        test_response_is_landing_page(self, response)
-        staff = login_as_staff(self.client)
+        self.assert_response_is_landing_page(response)
+        staff = self.login_as_staff()
         user.is_active = False
         user.save()
         response = self.client.get(reverse("new_area_access_record"), data={"customer": user.id}, follow=True)
@@ -412,14 +405,14 @@ class NewAreaAccessTestCase(TestCase):
 
     def test_new_area_record_post(self):
         project = Project.objects.create(name="Project1", account=Account.objects.create(name="Account1"))
-        user = login_as_user(self.client)
+        user = self.login_as_user()
         response = self.client.post(
             reverse("new_area_access_record"),
             data={"customer": user.id, "area": area.id, "project": project.id},
             follow=True,
         )
-        test_response_is_landing_page(self, response)
-        staff = login_as_staff(self.client)
+        self.assert_response_is_landing_page(response)
+        staff = self.login_as_staff()
         user.is_active = False
         user.save()
         response = self.client.post(
@@ -470,8 +463,8 @@ class NewAreaAccessTestCase(TestCase):
         self.assertTrue(AreaAccessRecord.objects.filter(area=area, customer=user, end__isnull=True).exists())
 
     def test_staff_login_to_area(self):
-        staff = login_as_staff(self.client)
-        tablet_user = login_as_user_with_permissions(self.client, ["add_areaaccessrecord"])
+        staff = self.login_as_staff()
+        tablet_user = self.login_as_user_with_permissions(["add_areaaccessrecord"])
         response = self.client.post(
             reverse("login_to_area", kwargs={"door_id": door.id}),
             data={"badge_number": staff.badge_number},
@@ -519,7 +512,7 @@ class NewAreaAccessTestCase(TestCase):
             follow=True,
         )
         self.assertEqual(response.status_code, 200)
-        test_response_is_landing_page(self, response)  # tablet user does not have permission to logout
+        self.assert_response_is_landing_page(response)  # tablet user does not have permission to logout
         tablet_user.user_permissions.add(Permission.objects.get(codename="change_areaaccessrecord"))
         tablet_user.save()
         response = self.client.post(
@@ -562,7 +555,7 @@ class NewAreaAccessTestCase(TestCase):
         self.assertRaises(ValidationError, record_2.full_clean)
 
 
-class DoorInterlockTestCase(TestCase):
+class DoorInterlockTestCase(NEMOTestCaseMixin, TestCase):
     door: Door = None
     interlock: Interlock = None
 
@@ -582,9 +575,9 @@ class DoorInterlockTestCase(TestCase):
         # unlocking door is an async action and creates problems when testing with SQLite (Database Table locked)
 
 
-class AreaAutoLogoutTestCase(TestCase):
+class AreaAutoLogoutTestCase(NEMOTestCaseMixin, TestCase):
     def testAutoLogout(self):
-        user = login_as_user(self.client)
+        user = self.login_as_user()
         area = Area.objects.create(name="Cleanroom")
         project = Project.objects.create(name="Project1", account=Account.objects.create(name="Account1"))
         start = timezone.now() - datetime.timedelta(minutes=5)

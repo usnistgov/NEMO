@@ -6,12 +6,12 @@ from django.urls import reverse
 from django.utils import timezone
 
 from NEMO.models import Account, Area, EmailLog, Project, Reservation, Tool, UsageEvent, User, UserPreferences
-from NEMO.tests.test_utilities import login_as
+from NEMO.tests.test_utilities import NEMOTestCaseMixin
 from NEMO.utilities import format_datetime
 from NEMO.views.customization import ToolCustomization
 
 
-class ReservationTestCase(TransactionTestCase):
+class ReservationTestCase(NEMOTestCaseMixin, TransactionTestCase):
     def setUp(self):
         self.staff = User.objects.create(username="mctest", first_name="Testy", last_name="McTester", is_staff=True)
         self.area = Area.objects.create(name="test_area", category="Imaging", reservation_warning=2)
@@ -50,7 +50,7 @@ class ReservationTestCase(TransactionTestCase):
             project=self.project,
             short_notice=False,
         )
-        login_as(self.client, self.staff)
+        self.login_as(self.staff)
         self.client.post(reverse("cancel_reservation", args=[reservation.id]), follow=True)
         # Wait a second since the freed time notification is asynchronous
         sleep(0.5)
@@ -79,7 +79,7 @@ class ReservationTestCase(TransactionTestCase):
             project=self.project,
             short_notice=False,
         )
-        login_as(self.client, self.consumer)
+        self.login_as(self.consumer)
         self.client.post(reverse("cancel_reservation", args=[reservation.id]), follow=True)
         # Wait a second since the freed time notification is asynchronous
         sleep(0.5)
@@ -107,7 +107,7 @@ class ReservationTestCase(TransactionTestCase):
             project=self.project,
             short_notice=False,
         )
-        login_as(self.client, self.consumer)
+        self.login_as(self.consumer)
         self.client.post(reverse("cancel_reservation", args=[reservation.id]), follow=True)
         # Wait a second since the freed time notification is asynchronous
         sleep(0.5)
@@ -136,7 +136,7 @@ class ReservationTestCase(TransactionTestCase):
             project=self.project,
             short_notice=False,
         )
-        login_as(self.client, self.staff)
+        self.login_as(self.staff)
         self.client.post(reverse("cancel_reservation", args=[reservation.id]), follow=True)
         # Wait a second since the freed time notification is asynchronous
         sleep(0.5)
@@ -163,7 +163,7 @@ class ReservationTestCase(TransactionTestCase):
             short_notice=False,
         )
         minutes = 130
-        login_as(self.client, self.staff)
+        self.login_as(self.staff)
         self.client.post(reverse("resize_reservation"), {"delta": -minutes, "id": reservation.id}, follow=True)
         # Wait a second since the freed time notification is asynchronous
         sleep(0.5)
@@ -192,7 +192,7 @@ class ReservationTestCase(TransactionTestCase):
             short_notice=False,
         )
         minutes = 130
-        login_as(self.client, self.staff)
+        self.login_as(self.staff)
         self.client.post(reverse("resize_reservation"), {"delta": minutes, "id": reservation.id}, follow=True)
         # Wait a second since the freed time notification is asynchronous
         sleep(0.5)
@@ -219,7 +219,7 @@ class ReservationTestCase(TransactionTestCase):
             short_notice=False,
         )
         minutes = 130
-        login_as(self.client, self.staff)
+        self.login_as(self.staff)
         self.client.post(reverse("move_reservation"), {"delta": minutes, "id": reservation.id}, follow=True)
         # Wait a second since the freed time notification is asynchronous
         sleep(0.5)
@@ -247,7 +247,7 @@ class ReservationTestCase(TransactionTestCase):
             short_notice=False,
         )
         minutes = -130
-        login_as(self.client, self.staff)
+        self.login_as(self.staff)
         self.client.post(reverse("move_reservation"), {"delta": minutes, "id": reservation.id}, follow=True)
         # Wait a second since the freed time notification is asynchronous
         sleep(0.5)
@@ -286,7 +286,7 @@ class ReservationTestCase(TransactionTestCase):
             tool=self.tool,
             project=self.project,
         )
-        login_as(self.client, consumer_2)
+        self.login_as(consumer_2)
         self.client.post(reverse("disable_tool", args=[self.tool.id]), follow=True)
         # Wait a second since the freed time notification is asynchronous
         sleep(0.5)
@@ -331,7 +331,7 @@ class ReservationTestCase(TransactionTestCase):
             tool=self.tool,
             project=self.project,
         )
-        login_as(self.client, consumer_2)
+        self.login_as(consumer_2)
         self.client.post(reverse("disable_tool", args=[self.tool.id]), follow=True)
         # Wait a second since the freed time notification is asynchronous
         sleep(0.5)
@@ -376,7 +376,7 @@ class ReservationTestCase(TransactionTestCase):
             tool=self.tool,
             project=self.project,
         )
-        login_as(self.client, consumer_2)
+        self.login_as(consumer_2)
         self.client.post(reverse("disable_tool", args=[self.tool.id]), follow=True)
         # Wait a second since the freed time notification is asynchronous
         sleep(0.5)
@@ -422,7 +422,7 @@ class ReservationTestCase(TransactionTestCase):
             tool=self.tool,
             project=self.project,
         )
-        login_as(self.client, consumer_2)
+        self.login_as(consumer_2)
         self.client.post(reverse("disable_tool", args=[self.tool.id]), follow=True)
         # Wait a second since the freed time notification is asynchronous
         sleep(0.5)
@@ -489,7 +489,7 @@ class ReservationTestCase(TransactionTestCase):
             tool=self.tool,
             project=self.project,
         )
-        login_as(self.client, consumer_2)
+        self.login_as(consumer_2)
         self.client.post(reverse("disable_tool", args=[self.tool.id]), follow=True)
         # Wait a second since the freed time notification is asynchronous
         sleep(0.5)
@@ -541,7 +541,7 @@ class ReservationTestCase(TransactionTestCase):
             tool=self.tool,
             project=self.project,
         )
-        login_as(self.client, consumer_2)
+        self.login_as(consumer_2)
         self.client.post(reverse("disable_tool", args=[self.tool.id]), follow=True)
         # Wait a second since the freed time notification is asynchronous
         sleep(0.5)
@@ -588,7 +588,7 @@ class ReservationTestCase(TransactionTestCase):
             tool=self.tool,
             project=self.project,
         )
-        login_as(self.client, consumer_2)
+        self.login_as(consumer_2)
         self.client.post(reverse("disable_tool", args=[self.tool.id]), follow=True)
         # Wait a second since the freed time notification is asynchronous
         sleep(0.5)
@@ -635,7 +635,7 @@ class ReservationTestCase(TransactionTestCase):
             tool=self.tool,
             project=self.project,
         )
-        login_as(self.client, consumer_2)
+        self.login_as(consumer_2)
         self.client.post(reverse("disable_tool", args=[self.tool.id]), follow=True)
         # Wait a second since the freed time notification is asynchronous
         sleep(0.2)
