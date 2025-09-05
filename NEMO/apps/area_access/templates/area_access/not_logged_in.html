@@ -3,6 +3,15 @@
 <h1>According to our records, you're not logged in to any access controlled areas.</h1>
 <h2>Please contact {{ facility_name }} staff if you believe this is an error.</h2>
 <audio src="{% url 'media' 'warning.mp3' %}" autoplay></audio>
+{# Don't offer to open the door if there is no interlock #}
+{% if door.interlock %}
+    <p>
+        <a href="javascript:void(0)"
+           role="button"
+           class="btn btn-success btn-lg btn-block btn-extra-large"
+           onclick="just_open_the_door('{{ user.badge_number }}', '')">Open the door</a>
+    </p>
+{% endif %}
 {% if tools_in_use %}
     <br>
     <div class="h2">
