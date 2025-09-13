@@ -76,7 +76,7 @@ def create_or_modify_user(request, user_id):
 
     readonly = readonly_users(request)
     dictionary = {
-        "projects": Project.objects.filter(active=True, account__active=True),
+        "projects": Project.objects.filter(active=True, account__active=True).prefetch_related("manager_set"),
         "tools": Tool.objects.filter(visible=True),
         "area_access_dict": dict_area,
         "area_access_levels": area_access_levels,
@@ -86,10 +86,12 @@ def create_or_modify_user(request, user_id):
         "allow_document_upload": UserCustomization.get_bool("user_allow_document_upload"),
         "readonly": readonly,
     }
-    try:
-        user = User.objects.get(id=user_id)
-    except:
-        user = None
+
+    user = None
+    if user_id != "new":
+        user = (
+            User.objects.filter(id=user_id).prefetch_related("projects__manager_set", "physical_access_levels").first()
+        )
 
     last_access = AreaAccessRecord.objects.filter(customer=user).values("area_id").annotate(max_date=Max("start"))
     dictionary["last_access"] = {item["area_id"]: item["max_date"] for item in last_access}
