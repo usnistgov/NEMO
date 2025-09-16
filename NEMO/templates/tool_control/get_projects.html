@@ -7,9 +7,8 @@
     <h4>Tool usage will be billed to the project named &quot;{{ active_projects.0 }}&quot;.</h4>
     <input type="hidden" id="project_id" value="{{ active_projects.0.id }}">
     <script>
-        $("#pre_usage_questions").show();
+        load_pre_usage_questions("{{ tool_id }}", "{{ active_projects.0.id }}");
         $("#start").show();
-	
     </script>
 {% else %}
     <h4>Charge tool usage to which project?</h4>
@@ -17,7 +16,7 @@
         {% for p in active_projects %}
             <a href="javascript:void(0)"
                class="list-group-item project-choice"
-               onclick="select_project(this, {{ p.id }})">{% project_selection_display p %}</a>
+               onclick="select_project(this, '{{ p.id }}', '{{ tool_id }}')">{% project_selection_display p %}</a>
         {% endfor %}
     </div>
     <input type="hidden" id="project_id">

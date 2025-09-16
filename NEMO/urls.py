@@ -17,7 +17,7 @@ from rest_framework import routers
 
 from NEMO.constants import MEDIA_PROTECTED
 from NEMO.decorators import any_staff_required
-from NEMO.models import ReservationItemType
+from NEMO.models import ReservationItemType, ToolUsageQuestionType
 from NEMO.views import (
     abuse,
     access_requests,
@@ -104,6 +104,7 @@ router.register(r"qualifications", api.QualificationViewSet)
 router.register(r"recurring_consumable_charges", api.RecurringConsumableChargesViewSet)
 router.register(r"reservations", api.ReservationViewSet)
 router.register(r"reservation_configuration_options", api.ConfigurationOptionViewSet)
+router.register(r"reservation_questions", api.ReservationQuestionsViewSet)
 router.register(r"resources", api.ResourceViewSet)
 router.register(r"scheduled_outages", api.ScheduledOutageViewSet)
 router.register(r"staff_assistance_requests", api.StaffAssistanceRequestViewSet)
@@ -113,6 +114,8 @@ router.register(r"tools", api.ToolViewSet)
 router.register(r"tool_comments", api.ToolCommentViewSet)
 router.register(r"tool_credentials", api.ToolCredentialsViewSet)
 router.register(r"tool_status", api.ToolStatusViewSet, basename="tool_status")
+router.register(r"tool_usage_counters", api.ToolUsageCounterViewSet)
+router.register(r"tool_usage_questions", api.ToolUsageQuestionsViewSet)
 router.register(r"training_sessions", api.TrainingSessionViewSet)
 router.register(r"usage_events", api.UsageEventViewSet)
 router.register(r"users", api.UserViewSet)
@@ -122,6 +125,7 @@ router.register(r"metadata", api.MetadataViewSet, basename="metadata")
 router.registry.sort(key=sort_urls)
 
 reservation_item_types = f'(?P<item_type>{"|".join(ReservationItemType.values())})'
+tool_usage_question_types = f'(?P<question_type>{"|".join(ToolUsageQuestionType.values)})'
 
 urlpatterns = []
 
@@ -179,6 +183,13 @@ urlpatterns += [
     re_path(r"^tool_control/(?P<item_type>(tool))/(?P<tool_id>\d+)/$", tool_control.tool_control, name="tool_control"),
     path("tool_control/<int:tool_id>/", tool_control.tool_control, name="tool_control"),
     path("tool_control/", tool_control.tool_control, name="tool_control"),
+    re_path(
+        r"^tool_usage_questions/(?P<tool_id>\d+)/"
+        + tool_usage_question_types
+        + "/(?P<project_id>\d+)/(?P<virtual_inputs>(true|false))/$",
+        tool_control.tool_usage_questions,
+        name="tool_usage_questions",
+    ),
     path("tool_status/<int:tool_id>/", tool_control.tool_status, name="tool_status"),
     path("use_tool_for_other/", tool_control.use_tool_for_other, name="use_tool_for_other"),
     path("tool_configuration/", tool_control.tool_configuration, name="tool_configuration"),

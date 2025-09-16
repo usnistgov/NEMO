@@ -7,12 +7,13 @@ from logging import getLogger
 from typing import List
 
 from django.conf import settings
+from django.contrib.admin.options import get_content_type_for_model
 from django.test.client import RequestFactory
 from django.test.testcases import TransactionTestCase
 from django.urls import reverse
 from django.urls.resolvers import RegexPattern
 
-from NEMO.models import User
+from NEMO.models import ToolUsageQuestionType, ToolUsageQuestions, User
 from NEMO.tests.test_utilities import NEMOTestCaseMixin
 from NEMO.utilities import get_full_url
 from NEMO.views.customization import (
@@ -44,7 +45,8 @@ url_kwargs_get_post = {
     "open_door": {"kwargs": {"door_id": 1}, "post": {"badge_number": 1}},
     "get_projects": {"get": {"user_id": 1}},
     "get_projects_for_consumables": {"get": {"user_id": 1}},
-    "get_projects_for_tool_control": {"get": {"user_id": 1}},
+    "get_projects_for_tool_control": {"get": {"user_id": 1, "tool_id": 1}},
+    "get_projects_for_self": {"get": {"user_id": 1, "tool_id": 1}},
     "get_projects_for_training": {"get": {"user_id": 1}},
     "tool_control": {"kwargs": {"tool_id": 1}},
     "tool_configuration": {"login_id": 1, "post": {"configuration_id": 1, "slot": 0, "choice": 1}},
@@ -149,6 +151,9 @@ url_kwargs_get_post = {
     "knowledge_base_all_in_one": {"kwargs": {"kind": "user"}},
     "view_user": {"login_id": 1},
     "enable_tool": {"login_id": 1, "kwargs": {"tool_id": 3, "user_id": 1, "project_id": 1, "staff_charge": "false"}},
+    "tool_usage_questions": {
+        "kwargs": {"tool_id": 3, "project_id": 1, "question_type": "pre", "virtual_inputs": "false"}
+    },
 }
 
 urls_to_skip = [
@@ -178,6 +183,8 @@ urls_to_skip = [
     "exit_wait_list",
     "check_and_update_wait_list",
     "add_or_remove_manager_from_account_project",
+    "formula_preview",
+    "render_group_question",
 ]
 
 
@@ -231,6 +238,47 @@ class URLsTestCase(NEMOTestCaseMixin, TransactionTestCase):
     def test_urls(self):
         module = importlib.import_module(settings.ROOT_URLCONF)
         test_urls(self, module.urlpatterns, url_kwargs_get_post, urls_to_skip)
+
+    def test_tool_usage_questions(self):
+        tool_id_pre = ToolUsageQuestions.objects.filter(questions_type=ToolUsageQuestionType.PRE).first().tool_id
+        test_url(
+            self,
+            "tool_usage_questions",
+            {
+                "kwargs": {
+                    "tool_id": tool_id_pre,
+                    "project_id": 1,
+                    "question_type": "pre",
+                    "virtual_inputs": "false",
+                }
+            },
+        )
+        tool_question_post = ToolUsageQuestions.objects.filter(questions_type=ToolUsageQuestionType.POST).first()
+        test_url(
+            self,
+            "tool_usage_questions",
+            {
+                "kwargs": {
+                    "tool_id": tool_question_post.tool_id,
+                    "project_id": 1,
+                    "question_type": "post",
+                    "virtual_inputs": "false",
+                }
+            },
+        )
+        test_url(
+            self,
+            "render_group_question",
+            {
+                "kwargs": {
+                    "content_type_id": get_content_type_for_model(tool_question_post.tool).id,
+                    "item_id": tool_question_post.tool_id,
+                    "field_name": "questions",
+                    "group_name": "group1",
+                },
+                "get": {"index": 1, "virtual_inputs": "false"},
+            },
+        )
 
     def test_more_calendar_urls(self):
         facility_name = ApplicationCustomization.get("facility_name")

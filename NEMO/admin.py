@@ -1,6 +1,5 @@
 import datetime
 import json
-from typing import Optional
 
 from django import forms
 from django.contrib import admin, messages
@@ -27,6 +26,7 @@ from NEMO.actions import (
     disable_selected_cards,
     duplicate_configuration,
     duplicate_tool_configuration,
+    duplicate_tool_usage_questions,
     enable_selected_cards,
     lock_selected_interlocks,
     rebuild_area_tree,
@@ -111,6 +111,7 @@ from NEMO.models import (
     ToolDocuments,
     ToolQualificationGroup,
     ToolUsageCounter,
+    ToolUsageQuestions,
     ToolWaitList,
     TrainingSession,
     UsageEvent,
@@ -127,13 +128,7 @@ from NEMO.models import (
 )
 from NEMO.utilities import admin_get_item, format_daterange
 from NEMO.views.customization import ProjectsAccountsCustomization
-from NEMO.widgets.dynamic_form import (
-    DynamicForm,
-    PostUsageFloatFieldQuestion,
-    PostUsageNumberFieldQuestion,
-    admin_render_dynamic_form_preview,
-    validate_dynamic_form_model,
-)
+from NEMO.widgets.dynamic_form import admin_render_dynamic_form_preview
 
 
 # Formset to require at least one inline form
@@ -156,8 +151,7 @@ class ToolAdminForm(forms.ModelForm):
         fields = "__all__"
 
     class Media:
-        js = ("admin/tool/tool.js", "admin/dynamic_form_preview/dynamic_form_preview.js")
-        css = {"": ("admin/dynamic_form_preview/dynamic_form_preview.css",)}
+        js = ["admin/tool/tool.js"]
 
     qualified_users = forms.ModelMultipleChoiceField(
         queryset=User.objects.all(),
@@ -193,22 +187,6 @@ class ToolAdminForm(forms.ModelForm):
             self.fields["required_resources"].initial = self.instance.required_resource_set.all()
             self.fields["nonrequired_resources"].initial = self.instance.nonrequired_resource_set.all()
 
-    def clean__pre_usage_questions(self):
-        questions = self.cleaned_data["_pre_usage_questions"]
-        try:
-            return json.dumps(json.loads(questions), indent=4)
-        except:
-            pass
-        return questions
-
-    def clean__post_usage_questions(self):
-        questions = self.cleaned_data["_post_usage_questions"]
-        try:
-            return json.dumps(json.loads(questions), indent=4)
-        except:
-            pass
-        return questions
-
     def clean(self):
         cleaned_data = super().clean()
         image = cleaned_data.get("_image")
@@ -238,8 +216,6 @@ class ToolAdmin(admin.ModelAdmin):
         "_operation_mode",
         "problematic",
         "is_configurable",
-        "has_pre_usage_questions",
-        "has_post_usage_questions",
         "id",
     )
     filter_horizontal = ("_backup_owners", "_staff", "_superusers", "_adjustment_request_reviewers")
@@ -252,7 +228,6 @@ class ToolAdmin(admin.ModelAdmin):
         "_location",
         ("_requires_area_access", admin.RelatedOnlyFieldListFilter),
     )
-    readonly_fields = ("_post_usage_preview", "_pre_usage_preview")
     autocomplete_fields = [
         "_primary_owner",
         "parent_tool",
@@ -271,10 +246,6 @@ class ToolAdmin(admin.ModelAdmin):
                     "_operation_mode",
                     "qualified_users",
                     "_qualifications_never_expire",
-                    "_pre_usage_questions",
-                    "_pre_usage_preview",
-                    "_post_usage_questions",
-                    "_post_usage_preview",
                 )
             },
         ),
@@ -332,26 +303,6 @@ class ToolAdmin(admin.ModelAdmin):
         ("Dependencies", {"fields": ("required_resources", "nonrequired_resources")}),
     )
 
-    @admin.display(description="Pre Questions", ordering="_pre_usage_questions", boolean=True)
-    def has_pre_usage_questions(self, obj: Tool):
-        return True if obj.pre_usage_questions else False
-
-    @admin.display(description="Post Questions", ordering="_post_usage_questions", boolean=True)
-    def has_post_usage_questions(self, obj: Tool):
-        return True if obj.post_usage_questions else False
-
-    def _pre_usage_preview(self, obj: Tool):
-        return admin_render_dynamic_form_preview(obj, "pre_usage_questions")
-
-    def _post_usage_preview(self, obj: Tool):
-        return admin_render_dynamic_form_preview(obj, "post_usage_questions")
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        """We only want non children tool to be eligible as parents"""
-        if db_field.name == "parent_tool":
-            kwargs["queryset"] = Tool.objects.filter(parent_tool__isnull=True)
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
-
     def save_model(self, request, obj, form, change):
         """
         Explicitly record any project membership changes on non-child tools.
@@ -373,6 +324,59 @@ class ToolAdmin(admin.ModelAdmin):
                 obj.required_resource_set.set(form.cleaned_data["required_resources"])
             if "nonrequired_resources" in form.changed_data:
                 obj.nonrequired_resource_set.set(form.cleaned_data["nonrequired_resources"])
+
+
+class ToolUsageQuestionsAdminForm(forms.ModelForm):
+    class Meta:
+        model = ToolUsageQuestions
+        fields = "__all__"
+
+    class Media:
+        js = ("admin/dynamic_form_preview/dynamic_form_preview.js",)
+        css = {"": ("admin/dynamic_form_preview/dynamic_form_preview.css",)}
+
+    def clean_questions(self):
+        questions = self.cleaned_data["questions"]
+        try:
+            return json.dumps(json.loads(questions), indent=4)
+        except:
+            pass
+        return questions
+
+
+@register(ToolUsageQuestions)
+class ToolUsageQuestionsAdmin(admin.ModelAdmin):
+    form = ToolUsageQuestionsAdminForm
+    list_display = ["id", "name", "enabled", "get_tool_visible", "tool", "display_order", "questions_type"]
+    list_filter = ["enabled", "questions_type", ("tool", admin.RelatedOnlyFieldListFilter)]
+    autocomplete_fields = ["tool"]
+    filter_horizontal = ["only_for_projects"]
+    readonly_fields = ["questions_preview"]
+    actions = [duplicate_tool_usage_questions]
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "enabled",
+                    "display_order",
+                    "name",
+                    "tool",
+                    "only_for_projects",
+                    "questions_type",
+                    "questions",
+                    "questions_preview",
+                )
+            },
+        ),
+    )
+
+    def questions_preview(self, obj):
+        return admin_render_dynamic_form_preview(obj, "questions")
+
+    @display(boolean=True, ordering="tool__visible", description="Tool visible")
+    def get_tool_visible(self, obj):
+        return obj.tool.visible
 
 
 @register(ToolWaitList)
@@ -780,7 +784,6 @@ class ReservationQuestionsForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        reservation_questions = cleaned_data.get("questions")
         tool_reservations = cleaned_data.get("tool_reservations")
         only_tools = cleaned_data.get("only_for_tools")
         area_reservations = cleaned_data.get("area_reservations")
@@ -796,11 +799,6 @@ class ReservationQuestionsForm(forms.ModelForm):
             self.add_error(
                 "area_reservations", "You cannot restrict areas these questions apply to without enabling it for areas"
             )
-        # Validate reservation_questions JSON format
-        if reservation_questions:
-            errors = validate_dynamic_form_model(reservation_questions, self.instance, "questions")
-            for error in errors:
-                self.add_error("questions", error)
         return cleaned_data
 
 
@@ -1750,49 +1748,6 @@ class BadgeReaderAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "send_key", "record_key")
 
 
-class ToolUsageCounterAdminForm(forms.ModelForm):
-    class Meta:
-        model = ToolUsageCounter
-        fields = "__all__"
-
-    def clean(self):
-        cleaned_data = super().clean()
-        tool = cleaned_data.get("tool")
-        if tool:
-            for question_type in ["pre", "post"]:
-                question_name = f"tool_{question_type}_usage_question"
-                question_data_name = cleaned_data.get(question_name)
-                tool_questions = getattr(tool, f"{question_type}_usage_questions")
-                error = self.clean_counter_question(tool_questions, question_data_name, question_type)
-                if error:
-                    self.add_error(question_name, error)
-        return cleaned_data
-
-    @staticmethod
-    def clean_counter_question(tool_questions: str, counter_question_name: str, pre_post: str) -> Optional[str]:
-        error = None
-        if counter_question_name:
-            if tool_questions:
-                candidate_questions = []
-                usage_form = DynamicForm(tool_questions)
-                candidate_questions.extend(
-                    usage_form.filter_questions(
-                        lambda x: isinstance(x, (PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion))
-                    )
-                )
-                matching_tool_question = any(
-                    question for question in candidate_questions if question.name == counter_question_name
-                )
-                if not matching_tool_question:
-                    candidates = {question.name for question in candidate_questions}
-                    error = f"The tool has no {pre_post} usage question of type Number or Float with this name."
-                    if candidates:
-                        error += f" Valid question names are: {', '.join(candidates)}"
-            else:
-                error = f"The tool does not have any {pre_post} usage questions."
-        return error
-
-
 @register(ToolUsageCounter)
 class ToolUsageCounterAdmin(admin.ModelAdmin):
     list_display = (
@@ -1820,7 +1775,6 @@ class ToolUsageCounterAdmin(admin.ModelAdmin):
         "last_reset",
     )
     readonly_fields = ("warning_threshold_reached",)
-    form = ToolUsageCounterAdminForm
     autocomplete_fields = ["tool", "last_reset_by"]
 
 

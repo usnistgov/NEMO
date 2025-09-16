@@ -991,3 +991,58 @@ function table_search(table_id, always_show_rows)
 		}
 	}
 }
+
+/**
+ * Creates a URL by replacing placeholder values in a Django URL template
+ * @param {string} urlTemplate - Django URL template with placeholders
+ * @param {Array} placeholders - Array of placeholder values used in the URL template
+ * @param {Array} actualValues - Array of actual values to replace the placeholders
+ * @return {string} The URL with placeholders replaced by actual values
+ */
+function build_django_url(urlTemplate, placeholders, actualValues)
+{
+    // Validate input
+    if (!urlTemplate || !placeholders || !actualValues)
+    {
+        console.error('Missing required parameters');
+        return undefined;
+    }
+
+    if (placeholders.length !== actualValues.length)
+    {
+        console.error('Mismatch between placeholders and actual values count');
+        return undefined;
+    }
+
+    // Split URL into segments
+    const segments = urlTemplate.split('/');
+
+    // Create a map of segment indices to their placeholder values
+    const placeholderIndices = {};
+
+    // Find all placeholders in the URL segments
+    placeholders.forEach(placeholder =>
+    {
+        const placeholderStr = String(placeholder);
+        const index = segments.indexOf(placeholderStr);
+        if (index !== -1)
+        {
+            placeholderIndices[index] = placeholderStr;
+        }
+    });
+
+    // Replace placeholders with actual values
+    Object.entries(placeholderIndices).forEach(([index, placeholder], i) =>
+    {
+        // Find which placeholder this is in the original array
+        const placeholderIndex = placeholders.indexOf(placeholder);
+        // Use the corresponding actual value
+        if (placeholderIndex !== -1)
+        {
+            segments[index] = actualValues[placeholderIndex];
+        }
+    });
+
+    // Rejoin URL segments
+    return segments.join('/');
+}

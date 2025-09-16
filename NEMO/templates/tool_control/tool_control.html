@@ -99,26 +99,28 @@
 			}
 		}
 
-		function use_tool_for_self(training)
+		function use_tool_for_self(tool_id, training)
 		{
             $("#training").val(training || "");
-			$("#project_choice").html("Fetching project list...").show().load("{% url 'get_projects_for_self' %}", undefined, load_projects_completion_callback);
+            $("#start").hide();
+            const data = "tool_id=" + tool_id;
+			$("#project_choice").html("Fetching project list...").show().load("{% url 'get_projects_for_self' %}", data, load_projects_completion_callback);
 		}
 
-		function select_project(element, project_id)
+		function select_project(element, project_id, tool_id)
 		{
 			$(".project-choice").removeClass('active');
 			$(element).addClass('active');
 			$("#project_id").val(project_id);
-            $("#pre_usage_questions").show();
+            load_pre_usage_questions(tool_id, project_id);
             $("#start").show();
 		}
 
-		function load_projects(jquery_event, search_selection, dataset_name)
+		function load_projects(jquery_event, search_selection, tool_id)
 		{
 			$("#user_search").typeahead('val', '').hide();
 			$("#customer").text(search_selection.name).show();
-			let data = "user_id=" + search_selection.id;
+			let data = "user_id=" + search_selection.id + "&tool_id=" + tool_id;
 			$("#customer_project").html("Fetching project list...").show().load("{% url 'get_projects_for_tool_control' %}", data, load_projects_completion_callback);
 		}
 
@@ -231,13 +233,14 @@
 
 			{# Only staff can perform the functions in this if-block. #}
 
-			function use_tool_for_other(remote_work, training)
+			function use_tool_for_other(tool_id, remote_work, training)
 			{
                 $("#remote_work").val(remote_work || "");
                 $("#training").val(training || "");
 				$("#start").hide();
-                $("#pre_usage_questions").hide();
-				$("#project_choice").html("Fetching user list...").show().load("{% url 'use_tool_for_other' %}", undefined, load_projects_completion_callback);
+                $("#pre_usage_questions").html("");
+                const data = "tool_id=" + tool_id;
+				$("#project_choice").html("Fetching user list...").show().load("{% url 'use_tool_for_other' %}", data, load_projects_completion_callback);
 			}
 
 			function clear_customer()
@@ -245,7 +248,7 @@
 				$("#customer").text("").hide();
 				$("#customer_project").html("").hide();
 				$("#start").hide();
-                $("#pre_usage_questions").hide();
+                $("#pre_usage_questions").html("");
 				$("#user_search").show().focus();
 			}
 
@@ -355,9 +358,17 @@
 			}
 		}
 
-        function load_config_history(tool_id) {
+        function load_config_history(tool_id)
+        {
             let failure_dialog = ajax_complete_callback("Unable to find the configuration history", "There was a problem looking up the configuration history.");
             $("#config").load("{% url 'tool_config_history' 999 %}".replace('999', tool_id), undefined, failure_dialog);
+        }
+
+        function load_pre_usage_questions(tool_id, project_id)
+        {
+            let failure_dialog = ajax_complete_callback("Unable to load pre usage questions", "There was a problem loading pre usage questions.");
+            const resolved_url = build_django_url("{% url 'tool_usage_questions' 999 'pre' 888 'false' %}", ['999', '888'], [tool_id, project_id]);
+            $("#pre_usage_questions").load(resolved_url, update_start_button, failure_dialog).show();
         }
 
 		function refresh_sidebar_tool_icons()

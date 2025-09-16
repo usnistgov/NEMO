@@ -22,7 +22,7 @@
         </h2>
         <input type="hidden" name="project_id" value="{{ active_projects.0.id }}">
         <script>
-        $("#pre_usage_questions").show();
+        load_pre_usage_questions("{{ tool.id }}", "{{ active_projects.0.id }}");
 		$("#start_reserve").show();
 	
         </script>
@@ -40,7 +40,7 @@
                 <a href="javascript:void(0)"
                    class="list-group-item project-choice"
                    style="font-size:large"
-                   onclick="select_project(this, {{ project.id }})">{% project_selection_display project %}</a>
+                   onclick="select_project(this, '{{ project.id }}', '{{ tool.id }}')">{% project_selection_display project %}</a>
             {% endfor %}
         </div>
         <input type="hidden" name="project_id" id="project_id">
