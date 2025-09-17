@@ -7,13 +7,14 @@ from logging import getLogger
 from typing import List
 
 from django.conf import settings
+from django.contrib.admin.options import get_content_type_for_model
 from django.test.client import RequestFactory
-from django.test.testcases import TestCase, TransactionTestCase
+from django.test.testcases import TransactionTestCase
 from django.urls import reverse
 from django.urls.resolvers import RegexPattern
 
-from NEMO.models import User
-from NEMO.tests.test_utilities import login_as, login_as_staff, login_as_user, login_as_user_with_permissions
+from NEMO.models import ToolUsageQuestionType, ToolUsageQuestions, User
+from NEMO.tests.test_utilities import NEMOTestCaseMixin
 from NEMO.utilities import get_full_url
 from NEMO.views.customization import (
     AdjustmentRequestsCustomization,
@@ -44,7 +45,8 @@ url_kwargs_get_post = {
     "open_door": {"kwargs": {"door_id": 1}, "post": {"badge_number": 1}},
     "get_projects": {"get": {"user_id": 1}},
     "get_projects_for_consumables": {"get": {"user_id": 1}},
-    "get_projects_for_tool_control": {"get": {"user_id": 1}},
+    "get_projects_for_tool_control": {"get": {"user_id": 1, "tool_id": 1}},
+    "get_projects_for_self": {"get": {"user_id": 1, "tool_id": 1}},
     "get_projects_for_training": {"get": {"user_id": 1}},
     "tool_control": {"kwargs": {"tool_id": 1}},
     "tool_configuration": {"login_id": 1, "post": {"configuration_id": 1, "slot": 0, "choice": 1}},
@@ -149,11 +151,15 @@ url_kwargs_get_post = {
     "knowledge_base_all_in_one": {"kwargs": {"kind": "user"}},
     "view_user": {"login_id": 1},
     "enable_tool": {"login_id": 1, "kwargs": {"tool_id": 3, "user_id": 1, "project_id": 1, "staff_charge": "false"}},
+    "tool_usage_questions": {
+        "kwargs": {"tool_id": 3, "project_id": 1, "question_type": "pre", "virtual_inputs": "false"}
+    },
 }
 
 urls_to_skip = [
     "api-root",
     "kiosk_tool_reservation",
+    "kiosk_tool_configuration",
     "cancel_reservation_from_kiosk",
     "create_reservation",
     "resize_reservation",
@@ -176,10 +182,13 @@ urls_to_skip = [
     "enter_wait_list",
     "exit_wait_list",
     "check_and_update_wait_list",
+    "add_or_remove_manager_from_account_project",
+    "formula_preview",
+    "render_group_question",
 ]
 
 
-class URLsTestCase(TransactionTestCase):
+class URLsTestCase(NEMOTestCaseMixin, TransactionTestCase):
     reset_sequences = True
     fixtures = ["resources/fixtures/splash_pad.json"]
 
@@ -229,6 +238,47 @@ class URLsTestCase(TransactionTestCase):
     def test_urls(self):
         module = importlib.import_module(settings.ROOT_URLCONF)
         test_urls(self, module.urlpatterns, url_kwargs_get_post, urls_to_skip)
+
+    def test_tool_usage_questions(self):
+        tool_id_pre = ToolUsageQuestions.objects.filter(questions_type=ToolUsageQuestionType.PRE).first().tool_id
+        test_url(
+            self,
+            "tool_usage_questions",
+            {
+                "kwargs": {
+                    "tool_id": tool_id_pre,
+                    "project_id": 1,
+                    "question_type": "pre",
+                    "virtual_inputs": "false",
+                }
+            },
+        )
+        tool_question_post = ToolUsageQuestions.objects.filter(questions_type=ToolUsageQuestionType.POST).first()
+        test_url(
+            self,
+            "tool_usage_questions",
+            {
+                "kwargs": {
+                    "tool_id": tool_question_post.tool_id,
+                    "project_id": 1,
+                    "question_type": "post",
+                    "virtual_inputs": "false",
+                }
+            },
+        )
+        test_url(
+            self,
+            "render_group_question",
+            {
+                "kwargs": {
+                    "content_type_id": get_content_type_for_model(tool_question_post.tool).id,
+                    "item_id": tool_question_post.tool_id,
+                    "field_name": "questions",
+                    "group_name": "group1",
+                },
+                "get": {"index": 1, "virtual_inputs": "false"},
+            },
+        )
 
     def test_more_calendar_urls(self):
         facility_name = ApplicationCustomization.get("facility_name")
@@ -354,7 +404,7 @@ def test_urls(test_case, url_patterns, url_params, url_skip, prefix=""):
                     annotations = get_annotations(function_def)
                     # Login depending on annotation
                     if user:
-                        login_as(test_case.client, user)
+                        test_case.login_as(user)
                     else:
                         login_as_relevant_user(test_case, annotations)
                     if "require_GET" in annotations:
@@ -395,45 +445,45 @@ def get_annotations(function_def: FunctionDef) -> List[str]:
     return annotations
 
 
-def login_as_relevant_user(test_case: TestCase, annotations: List[str]):
+def login_as_relevant_user(test_case: NEMOTestCaseMixin, annotations: List[str]):
     if "time_services_required" in annotations:
-        login_as_user_with_permissions(test_case.client, ["trigger_timed_services"])
+        test_case.login_as_user_with_permissions(["trigger_timed_services"])
     elif "kiosk_required" in annotations:
-        login_as_user_with_permissions(test_case.client, ["kiosk"])
+        test_case.login_as_user_with_permissions(["kiosk"])
     elif "area_access_required" in annotations:
-        login_as_user_with_permissions(test_case.client, ["add_areaaccessrecord", "change_areaaccessrecord"])
+        test_case.login_as_user_with_permissions(["add_areaaccessrecord", "change_areaaccessrecord"])
     elif "login_required" in annotations:
-        login_as_user(test_case.client)
+        test_case.login_as_user()
     elif (
         "staff_member_required" in annotations
         or "staff_member_or_tool_superuser_or_tool_staff_required" in annotations
         or "staff_member_or_user_office_required" in annotations
     ):
-        login_as_staff(test_case.client)
+        test_case.login_as_staff()
     elif "administrator_required" in annotations:
-        staff = login_as_staff(test_case.client)
+        staff = test_case.login_as_staff()
         staff.is_superuser = True
         staff.save()
-        login_as(test_case.client, staff)
+        test_case.login_as(staff)
     elif "user_office_required" in annotations or "user_office_or_facility_manager_required" in annotations:
-        staff = login_as_staff(test_case.client)
+        staff = test_case.login_as_staff()
         staff.is_user_office = True
         staff.save()
-        login_as(test_case.client, staff)
+        test_case.login_as(staff)
     elif (
         "accounting_required" in annotations
         or "accounting_or_user_office_required" in annotations
         or "accounting_or_user_office_or_manager_required" in annotations
     ):
-        staff = login_as_staff(test_case.client)
+        staff = test_case.login_as_staff()
         staff.is_accounting_officer = True
         staff.save()
-        login_as(test_case.client, staff)
+        test_case.login_as(staff)
     elif "facility_manager_required" in annotations or "any_staff_required" in annotations:
-        staff = login_as_staff(test_case.client)
+        staff = test_case.login_as_staff()
         staff.is_facility_manager = True
         staff.save()
-        login_as(test_case.client, staff)
+        test_case.login_as(staff)
 
 
 def get_all_params(url: str, url_parameters: dict, pattern: RegexPattern) -> (dict, dict, dict):

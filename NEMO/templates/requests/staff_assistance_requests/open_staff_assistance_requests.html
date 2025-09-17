@@ -10,9 +10,13 @@
                         {% if staff_assistance_request.id in request_notifications and not staff_assistance_request.replies %}
                             <span class="label label-danger">Unread</span>
                         {% endif %}
-                        {% url 'create_or_modify_user' staff_assistance_request.user.id as user_edit_url %}
                         {% if user.is_staff %}
-                            <a href="{{ user_edit_url }}"><b>{{ staff_assistance_request.user.get_name }}</b></a>
+                            {% url 'create_or_modify_user' staff_assistance_request.user.id as user_edit_url %}
+                            {% if user_edit_url %}
+                                <a href="{{ user_edit_url }}"><b>{{ staff_assistance_request.user.get_name }}</b></a>
+                            {% else %}
+                                <b>{{ staff_assistance_request.user.get_name }}</b>
+                            {% endif %}
                         {% else %}
                             <b>You</b>
                         {% endif %}

@@ -4,7 +4,7 @@
 {% block title %}Extra information needed{% endblock %}
 {% block content %}
     <h3>Extra information needed</h3>
-    <form method="post" action="{% url 'make_reservation' %}">
+    <form id="reservation_form" method="post" action="{% url 'make_reservation' %}">
         {% csrf_token %}
         <input type="hidden" name="date" value="{{ request_date }}">
         <input type="hidden" name="start" value="{{ request_start }}">
@@ -30,9 +30,34 @@
             {% endif %}
             {% include 'calendar/configuration_helper.html' %}
         {% endif %}
+        <h4 id="answer_to_reserve" style="text-align:center">
+            Please answer the required questions (above) to reserve the {{ reservation.reservation_item }}
+        </h4>
         <div class="form-group text-center" style="margin-top:40px">
-            {% button type="save" value="Create the reservation" %}
+            {% button id="reserve_button" type="save" value="Create the reservation" %}
         </div>
     </form>
     <div style="height:350px"></div>
+    <script>
+        function update_reserve_button()
+        {
+            if(document.querySelector('#reservation_form'))
+            {
+
+                if(document.querySelector('#reservation_form').checkValidity())
+                {
+                    $("#answer_to_reserve").hide();
+                    $("#reserve_button").show();
+                }
+                else
+                {
+                    $("#answer_to_reserve").show();
+                    $("#reserve_button").hide();
+                }
+            }
+        }
+        update_reserve_button();
+
+        $('body').on('dynamic-form-group-changed dynamic-form-field-changed', update_reserve_button);
+    </script>
 {% endblock %}

@@ -34,6 +34,7 @@ from NEMO.utilities import (
     bootstrap_primary_color,
     export_format_datetime,
     get_full_url,
+    get_django_view_name_from_url,
     quiet_int,
     render_email_template,
     send_mail,
@@ -139,6 +140,8 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
     )
 
     dictionary = {"item": item, "form": form}
+    if get_django_view_name_from_url(request.META.get("HTTP_REFERER", "")) == "create_adjustment_request":
+        dictionary["select_not_required"] = True
     if not edit:
         dictionary["eligible_items"] = adjustment_eligible_items(user, current_item=item)
 
@@ -354,9 +357,9 @@ def email_interested_parties(reply: RequestMessage, reply_url):
     for user in reply.content_object.creator_and_reply_users():
         if user != reply.author and (user == creator or user.get_preferences().email_new_adjustment_request_reply):
             creator_display = f"{creator.get_name()}'s" if creator != user else "your"
-            creator_display_his = creator_display if creator != reply.author else "his"
+            creator_display_their = creator_display if creator != reply.author else "their"
             subject = f"New reply on {creator_display} adjustment request"
-            message = f"""{reply.author.get_name()} also replied to {creator_display_his} adjustment request:
+            message = f"""{reply.author.get_name()} also replied to {creator_display_their} adjustment request:
 <br><br>
 {linebreaksbr(reply.content)}
 <br><br>

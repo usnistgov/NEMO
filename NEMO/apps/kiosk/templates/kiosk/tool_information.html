@@ -376,12 +376,9 @@
         <div id="use-tool" class="{% if show_wait_list and not wait_list_position == 1 %}collapse{% endif %}">
             {% if customer|is_staff_on_tool:tool or customer.is_service_personnel and tool in customer.qualifications.all or tool.ready_to_use and tool in customer.qualifications.all %}
                 {% include 'kiosk/tool_project_selection_snippet.html' with active_projects=customer.active_projects tool=tool %}
-                {% if pre_usage_questions %}
-                    <div id="pre_usage_questions" style="display:none">
-                        <h2>Pre usage questions</h2>
-                        {{ pre_usage_questions }}
-                    </div>
-                {% endif %}
+                <div id="pre_usage_questions" style="display:none">
+                    <h2>Pre usage questions</h2>
+                </div>
                 <div id="start_reserve" style="display:none; margin-top:20px">
                     {% if tool.is_parent_tool %}
                         <h4>You have {{ tool.tool_children_set.all|length|add:1 }} options to use this tool:</h4>
@@ -544,30 +541,35 @@
 <script>
 	function update_stop_button()
 	{
-		if(document.querySelector('#tool_control').checkValidity())
-		{
-			$('#answer_to_proceed').hide();
-			$("#stop_button").show();
-		}
-		else
-		{
-			$('#answer_to_proceed').show();
-			$("#stop_button").hide();
-		}
+        if(document.querySelector('#tool_control'))
+        {
+            if(document.querySelector('#tool_control').checkValidity())
+            {
+                $('#answer_to_proceed').hide();
+                $("#stop_button").show();
+            }
+            else
+            {
+                $('#answer_to_proceed').show();
+                $("#stop_button").hide();
+            }
+        }
 	}
 
     function update_start_button()
 	{
 		$("#start_reserve").show();
-
-		if(document.querySelector('#tool_control').checkValidity())
-		{
-			$(".start_button").show();
-		}
-		else
-		{
-			$(".start_button").hide();
-		}
+        if(document.querySelector('#tool_control'))
+        {
+            if(document.querySelector('#tool_control').checkValidity())
+            {
+                $(".start_button").show();
+            }
+            else
+            {
+                $(".start_button").hide();
+            }
+        }
 	}
 
 	update_stop_button();

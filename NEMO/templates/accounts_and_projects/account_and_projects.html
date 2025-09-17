@@ -40,6 +40,18 @@
                             </a>
                         </form>
                     </h2>
+                    {% if account.note %}
+                        <div>
+                            <span class="control-label">Note:</span>
+                            <span>{{ account.note|linebreaksbr }}</span>
+                        </div>
+                    {% endif %}
+                    {% if account.manager_set.all %}
+                        <div {% if account.note %}style="margin-top: 10px"{% endif %}>
+                            <span class="control-label">Managers:</span>
+                            <span>{{ account.manager_set.all|join:", " }}</span>
+                        </div>
+                    {% endif %}
                 {% endif %}
                 {% regroup account_projects by active as grouped_projects %}
                 {% for group in grouped_projects %}

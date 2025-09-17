@@ -4,17 +4,17 @@ from django.urls import reverse
 from django.utils import timezone
 
 from NEMO.models import Reservation, Tool, ToolWaitList, UsageEvent, User
-from NEMO.tests.test_utilities import create_user_and_project, login_as
+from NEMO.tests.test_utilities import create_user_and_project, NEMOTestCaseMixin
 from NEMO.views.customization import EmailsCustomization, ToolCustomization, store_media_file
 from NEMO.views.timed_services import do_check_and_update_wait_list
 from NEMO.views.tool_control import do_exit_wait_list
 
 
-class ToolWaitListTestCase(TestCase):
+class ToolWaitListTestCase(NEMOTestCaseMixin, TestCase):
     def setUp(self) -> None:
         EmailsCustomization.set("user_office_email_address", "user_office_email_address@wait_list_test.com")
         store_media_file(
-            open("resources/emails/wait_list_notification_email.html", "r"), "wait_list_notification_email.html"
+            open("resources/emails/tool_wait_list_notification_email.html", "r"), "wait_list_notification_email.html"
         )
 
     def test_user_enter_wait_list_regular_mode_fail(self):
@@ -387,7 +387,7 @@ class ToolWaitListTestCase(TestCase):
             setup_configuration(time_to_expiration_saved, reservation_buffer_saved)
 
     def enter_wait_list(self, user, tool):
-        login_as(self.client, user)
+        self.login_as(user)
         response = self.client.post(
             reverse("enter_wait_list"),
             {"tool_id": tool.id},
@@ -706,7 +706,7 @@ class ToolWaitListTestCase(TestCase):
         user, project = create_user_and_project(True, True)
         tool = create_tool("WaitList Test Tool", mode)
         usage = create_usage(user, project, tool, timezone.now() - timezone.timedelta(minutes=10), None)
-        login_as(self.client, user)
+        self.login_as(user)
         response = self.client.post(
             url,
             {"tool_id": tool.id, "customer_id": user.id},
@@ -719,7 +719,7 @@ class ToolWaitListTestCase(TestCase):
         user, project = create_user_and_project(True, True)
         tool = create_tool("WaitList Test Tool", mode)
         usage = create_usage(user, project, tool, timezone.now() - timezone.timedelta(minutes=10), None)
-        login_as(self.client, user)
+        self.login_as(user)
         response = self.client.post(
             url,
             {"tool_id": tool.id, "customer_id": user.id},
@@ -733,7 +733,7 @@ class ToolWaitListTestCase(TestCase):
         user, project = create_user_and_project(True, True)
         tool = create_tool("WaitList Test Tool", Tool.OperationMode.WAIT_LIST)
         usage = create_usage(user, project, tool, timezone.now() - timezone.timedelta(minutes=10), None)
-        login_as(self.client, user)
+        self.login_as(user)
         response = self.client.post(
             url,
             {"tool_id": tool.id, "customer_id": user.id},
@@ -756,7 +756,7 @@ class ToolWaitListTestCase(TestCase):
         user, project = create_user_and_project(True, True)
         tool = create_tool("WaitList Test Tool", Tool.OperationMode.WAIT_LIST)
         usage = create_usage(user, project, tool, timezone.now() - timezone.timedelta(minutes=10), None)
-        login_as(self.client, user)
+        self.login_as(user)
         response = self.client.post(
             enter_url,
             {"tool_id": tool.id, "customer_id": user.id},
@@ -776,7 +776,7 @@ class ToolWaitListTestCase(TestCase):
     def exit_wait_list_not_in_wait_list(self, url, kiosk=False):
         user, project = create_user_and_project(True, True)
         tool = create_tool("WaitList Test Tool", Tool.OperationMode.WAIT_LIST)
-        login_as(self.client, user)
+        self.login_as(user)
         response = self.client.post(
             url,
             {"tool_id": tool.id, "customer_id": user.id},

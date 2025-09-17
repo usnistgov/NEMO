@@ -4,13 +4,14 @@ import datetime
 import json
 import os
 import sys
+from collections import Counter
 from datetime import timedelta
 from enum import Enum
 from html import escape
 from json import loads
 from logging import getLogger
 from re import match
-from typing import Dict, List, Optional, Set, Union
+from typing import Dict, List, Optional, Set, TYPE_CHECKING, Union
 
 from django.conf import settings
 from django.contrib.auth.models import BaseUserManager, Group, Permission, PermissionsMixin
@@ -29,7 +30,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
-from django_jsonform.models.fields import JSONField
+from django_jsonform.models.fields import JSONField as JSONFormField
 from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
 
@@ -69,6 +70,9 @@ from NEMO.utilities import (
 )
 from NEMO.validators import color_hex_list_validator, color_hex_validator
 from NEMO.widgets.configuration_editor import ConfigurationEditor
+
+if TYPE_CHECKING:
+    from NEMO.widgets.dynamic_form import DynamicForm, MultiDynamicForms
 
 models_logger = getLogger(__name__)
 
@@ -295,6 +299,11 @@ class RequestStatus(object):
         return [(choice[0], choice[1]) for choice in cls.Choices if choice[0] not in [cls.EXPIRED]]
 
 
+class ToolUsageQuestionType(models.TextChoices):
+    PRE = "pre", _("Pre")
+    POST = "post", _("Post")
+
+
 class UserPreferences(BaseModel):
     attach_created_reservation = models.BooleanField(
         "Created reservation invite",
@@ -423,6 +432,7 @@ class UserPreferences(BaseModel):
         blank=True,
         help_text="Tools to see maintenance records and receive task notifications for. If empty all notifications will be received.",
     )
+    login_redirect_url = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MEDIUM_LENGTH)
 
     def get_recurring_charges_days(self) -> List[int]:
         return [
@@ -831,6 +841,12 @@ class User(BaseModel, PermissionsMixin):
     managed_projects = models.ManyToManyField(
         "Project", related_name="manager_set", blank=True, help_text="Select the projects that this user is a PI for."
     )
+    managed_accounts = models.ManyToManyField(
+        "Account",
+        related_name="manager_set",
+        blank=True,
+        help_text="Select the accounts that this user is a manager for.",
+    )
 
     # Preferences
     preferences: UserPreferences = models.OneToOneField(UserPreferences, null=True, on_delete=models.SET_NULL)
@@ -858,12 +874,13 @@ class User(BaseModel, PermissionsMixin):
             if username_taken.exists():
                 raise ValidationError({"username": _("This username has already been taken")})
         if self.is_staff and self.is_service_personnel:
+            # Do not add "is_staff" error code here since this can be displayed in regular admin user page
+            # and that page does not have the is_staff field (it's only for detailed admin)
             raise ValidationError(
                 {
-                    "is_staff": _("A user cannot be both staff and service personnel. Please choose one or the other."),
                     "is_service_personnel": _(
                         "A user cannot be both staff and service personnel. Please choose one or the other."
-                    ),
+                    )
                 }
             )
 
@@ -1161,6 +1178,7 @@ class Tool(SerializationByNameModel):
         blank=True,
         help_text="Select a parent tool to allow alternate usage",
         on_delete=models.CASCADE,
+        limit_choices_to={"parent_tool__isnull": True},
     )
     visible = models.BooleanField(default=True, help_text="Specifies whether this tool is visible to users.")
     _description = models.TextField(
@@ -1194,7 +1212,7 @@ class Tool(SerializationByNameModel):
         default=False,
         help_text="Marking the tool non-operational will prevent users from using the tool.",
     )
-    _properties = JSONField(schema=load_properties_schemas("Tool"), db_column="properties", null=True, blank=True)
+    _properties = JSONFormField(schema=load_properties_schemas("Tool"), db_column="properties", null=True, blank=True)
     # Tool permissions
     _primary_owner = models.ForeignKey(
         User,
@@ -1335,18 +1353,6 @@ class Tool(SerializationByNameModel):
         blank=True,
         db_column="max_delayed_logoff",
         help_text='[Optional] Maximum delay in minutes that users may enter upon logging off before another user may use the tool. Some tools require "spin-down" or cleaning time after use. Leave blank to disable.',
-    )
-    _pre_usage_questions = models.TextField(
-        db_column="pre_usage_questions",
-        null=True,
-        blank=True,
-        help_text="Before using a tool, questions can be asked. This field will only accept JSON format",
-    )
-    _post_usage_questions = models.TextField(
-        db_column="post_usage_questions",
-        null=True,
-        blank=True,
-        help_text="Upon logging off a tool, questions can be asked such as how much consumables were used by the user. This field will only accept JSON format",
     )
     _policy_off_between_times = models.BooleanField(
         db_column="policy_off_between_times",
@@ -1677,24 +1683,6 @@ class Tool(SerializationByNameModel):
         self._max_delayed_logoff = value
 
     @property
-    def pre_usage_questions(self):
-        return self.parent_tool.pre_usage_questions if self.is_child_tool() else self._pre_usage_questions
-
-    @pre_usage_questions.setter
-    def pre_usage_questions(self, value):
-        self.raise_setter_error_if_child_tool("pre_usage_questions")
-        self._pre_usage_questions = value
-
-    @property
-    def post_usage_questions(self):
-        return self.parent_tool.post_usage_questions if self.is_child_tool() else self._post_usage_questions
-
-    @post_usage_questions.setter
-    def post_usage_questions(self, value):
-        self.raise_setter_error_if_child_tool("post_usage_questions")
-        self._post_usage_questions = value
-
-    @property
     def policy_off_between_times(self):
         return self.parent_tool.policy_off_between_times if self.is_child_tool() else self._policy_off_between_times
 
@@ -1778,7 +1766,7 @@ class Tool(SerializationByNameModel):
     def tool_or_parent_id(self):
         """This method returns the tool id or the parent tool id if tool is a child"""
         if self.is_child_tool():
-            return self.parent_tool.id
+            return self.parent_tool_id
         else:
             return self.id
 
@@ -1787,7 +1775,7 @@ class Tool(SerializationByNameModel):
         tool_ids = list(self.tool_children_set.values_list("id", flat=True))
         # parent tool
         if self.is_child_tool():
-            tool_ids.append(self.parent_tool.id)
+            tool_ids.append(self.parent_tool_id)
         # self
         tool_ids.append(self.id)
         return tool_ids
@@ -1973,7 +1961,7 @@ class Tool(SerializationByNameModel):
             results["sufficient_notice"] = start - timedelta(hours=notice_limit) >= timezone.now()
         return results
 
-    def configuration_widget(self, user, render_as_form=None, filter_for_agenda=False):
+    def configuration_widget(self, user, render_as_form=None, filter_for_agenda=False, url=None):
         configurations = self.current_ordered_configurations()
         if filter_for_agenda:
             configurations = configurations.exclude(exclude_from_configuration_agenda=True)
@@ -1982,7 +1970,7 @@ class Tool(SerializationByNameModel):
             "user": user,
             "render_as_form": render_as_form,
         }
-        configurations_editor = ConfigurationEditor()
+        configurations_editor = ConfigurationEditor(url=url)
         return configurations_editor.render(None, config_input)
 
     def current_ordered_configurations(self):
@@ -2037,6 +2025,51 @@ class Tool(SerializationByNameModel):
             ]
         )
 
+    def get_reservation_questions(self, project: Project = None) -> MultiDynamicForms:
+        from NEMO.widgets.dynamic_form import MultiDynamicForms
+
+        reservation_questions = ReservationQuestions.objects.filter(enabled=True)
+        reservation_questions = reservation_questions.filter(tool_reservations=True)
+        reservation_questions = reservation_questions.filter(
+            Q(only_for_tools=None) | Q(only_for_tools__in=[self.tool_or_parent_id()])
+        )
+        if project:
+            reservation_questions = reservation_questions.filter(
+                Q(only_for_projects=None) | Q(only_for_projects__in=[project.id])
+            )
+        else:
+            reservation_questions = reservation_questions.filter(only_for_projects=None)
+        return MultiDynamicForms(reservation_questions)
+
+    def _get_usage_questions(self, questions_type: str, project: Project = None) -> QuerySetType:
+        tool_questions = ToolUsageQuestions.objects.filter(
+            enabled=True, tool_id=self.tool_or_parent_id(), questions_type=questions_type
+        )
+        if project:
+            tool_questions = tool_questions.filter(Q(only_for_projects=None) | Q(only_for_projects__in=[project.id]))
+        else:
+            tool_questions = tool_questions.filter(only_for_projects=None)
+        return tool_questions
+
+    def get_usage_questions(self, questions_type: ToolUsageQuestionType, project: Project = None) -> MultiDynamicForms:
+        from NEMO.widgets.dynamic_form import MultiDynamicForms
+        from NEMO.views.customization import ToolCustomization
+
+        is_post_usage = questions_type == ToolUsageQuestionType.POST
+        initial_data = None
+        if is_post_usage:
+            current_usage = self.get_current_usage_event()
+            if current_usage:
+                if ToolCustomization.get_bool("tool_control_prefill_post_usage_with_pre_usage_answers"):
+                    initial_data = current_usage.pre_run_data_json()
+                project = current_usage.project
+            elif not project:
+                return None
+        if project:
+            return MultiDynamicForms(self._get_usage_questions(questions_type, project), initial_data=initial_data)
+        else:
+            raise ValueError("project must be provided for usage questions")
+
     def clean(self):
         errors = {}
         if self.parent_tool_id:
@@ -2044,7 +2077,6 @@ class Tool(SerializationByNameModel):
                 errors["parent_tool"] = "You cannot select the parent to be the tool itself."
         else:
             from NEMO.views.customization import ToolCustomization
-            from NEMO.widgets.dynamic_form import validate_dynamic_form_model
 
             if not self._category:
                 errors["_category"] = "This field is required."
@@ -2054,21 +2086,6 @@ class Tool(SerializationByNameModel):
                 errors["_phone_number"] = "This field is required."
             if not self._primary_owner_id:
                 errors["_primary_owner"] = "This field is required."
-
-            # Validate _pre_usage_questions JSON format
-            if self._pre_usage_questions:
-                dynamic_form_errors = validate_dynamic_form_model(
-                    self._pre_usage_questions, self, "_pre_usage_questions"
-                )
-                if dynamic_form_errors:
-                    errors["_pre_usage_questions"] = dynamic_form_errors
-            # Validate _post_usage_questions JSON format
-            if self._post_usage_questions:
-                dynamic_form_errors = validate_dynamic_form_model(
-                    self._post_usage_questions, self, "_post_usage_questions"
-                )
-                if dynamic_form_errors:
-                    errors["_post_usage_questions"] = dynamic_form_errors
 
             if self._policy_off_between_times and (not self._policy_off_start_time or not self._policy_off_end_time):
                 if not self._policy_off_start_time:
@@ -2084,6 +2101,66 @@ class Tool(SerializationByNameModel):
             fresh_tool = Tool(id=self.id, parent_tool=self.parent_tool, name=self.name, visible=False)
             self.__dict__.update(fresh_tool.__dict__)
         super().save(force_insert, force_update, using, update_fields)
+
+
+class ToolUsageQuestions(models.Model):
+    enabled = models.BooleanField(default=True)
+    display_order = models.PositiveIntegerField(
+        default=1,
+        help_text="The order in which these questions will be displayed. Can be any positive integer including 0. Lower values are displayed first.",
+    )
+    name = models.CharField(
+        null=True,
+        blank=True,
+        max_length=CHAR_FIELD_SMALL_LENGTH,
+        help_text=_("The optional name for these tool usage questions"),
+    )
+    tool = models.ForeignKey(Tool, on_delete=models.CASCADE, limit_choices_to={"parent_tool__isnull": True})
+    only_for_projects = models.ManyToManyField(
+        "Project",
+        blank=True,
+        help_text=_("Select the projects these questions only apply to. Leave blank for all projects"),
+    )
+    questions_type = models.CharField(
+        max_length=10,
+        choices=ToolUsageQuestionType.choices,
+        help_text=_("Should this question be asked before or after tool usage?"),
+    )
+    questions = models.TextField(help_text=_("This field will only accept JSON format"))
+
+    def clean(self):
+        from NEMO.widgets.dynamic_form import validate_dynamic_form_model, PostUsageGroupQuestion, DynamicForm
+
+        # Validate questions JSON format
+        if self.questions:
+            dynamic_form_errors = validate_dynamic_form_model(self.questions, self, "questions")
+            if dynamic_form_errors:
+                raise ValidationError({"questions": dynamic_form_errors})
+            if self.tool_id and self.questions_type:
+                usage_questions = list(self.tool._get_usage_questions(self.questions_type).exclude(id=self.id)) + [self]
+                names = []
+                for usage_question in usage_questions:
+                    for question in DynamicForm(usage_question.questions).questions:
+                        names.append(question.name)
+                        if isinstance(question, PostUsageGroupQuestion):
+                            for sub_question in question.sub_questions:
+                                names.append(sub_question.name)
+                duplicate_names = [k for k, v in Counter(names).items() if v > 1]
+                if duplicate_names:
+                    raise ValidationError(
+                        {
+                            "questions": f"Question names need to be unique. Duplicates were across tool usage questions found: {duplicate_names}"
+                        }
+                    )
+
+    def __str__(self):
+        return (
+            self.name or f"{self.tool.name} - {self.get_questions_type_display()} usage question #{self.display_order}"
+        )
+
+    class Meta:
+        verbose_name_plural = "Tool usage questions"
+        ordering = ["tool", "questions_type", "display_order"]
 
 
 class ToolWaitList(BaseModel):
@@ -2642,6 +2719,20 @@ class Area(MPTTModel):
             email for area in self.get_ancestors(ascending=True, include_self=True) for email in area.reservation_email
         ]
 
+    def get_reservation_questions(self, project: Project = None) -> MultiDynamicForms:
+        from NEMO.widgets.dynamic_form import MultiDynamicForms
+
+        reservation_questions = ReservationQuestions.objects.filter(enabled=True)
+        reservation_questions = reservation_questions.filter(area_reservations=True)
+        reservation_questions = reservation_questions.filter(Q(only_for_areas=None) | Q(only_for_areas__in=[self.id]))
+        if project:
+            reservation_questions = reservation_questions.filter(
+                Q(only_for_projects=None) | Q(only_for_projects__in=[project.id])
+            )
+        else:
+            reservation_questions = reservation_questions.filter(only_for_projects=None)
+        return MultiDynamicForms(reservation_questions)
+
 
 class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     area = TreeForeignKey(Area, on_delete=models.CASCADE)
@@ -2711,6 +2802,7 @@ class AccountType(BaseCategory):
 
 class Account(SerializationByNameModel):
     name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, unique=True)
+    note = models.TextField(null=True, blank=True)
     type = models.ForeignKey(AccountType, null=True, blank=True, on_delete=models.SET_NULL)
     start_date = models.DateField(null=True, blank=True)
     active = models.BooleanField(
@@ -2721,11 +2813,18 @@ class Account(SerializationByNameModel):
     class Meta:
         ordering = ["name"]
 
+    def project_manager_ids_not_account_managers(self):
+        account_manager_ids = distinct_qs_value_list(self.manager_set, "id")
+        project_manager_ids = distinct_qs_value_list(self.project_set, "manager_set__id")
+        return [
+            manager_id for manager_id in project_manager_ids if manager_id and manager_id not in account_manager_ids
+        ]
+
     def sorted_active_projects(self):
-        return self.sorted_projects().filter(active=True)
+        return self.sorted_projects().filter(active=True).prefetch_related("project_types", "manager_set")
 
     def sorted_projects(self):
-        return self.project_set.all().order_by("-active", "name")
+        return self.project_set.prefetch_related("project_types", "manager_set").order_by("-active", "name")
 
     def display_with_status(self):
         return f"{'[INACTIVE] ' if not self.active else ''}{self.name}"
@@ -2765,9 +2864,9 @@ class Project(SerializationByNameModel):
     def display_with_pis(self):
         from NEMO.templatetags.custom_tags_and_filters import project_selection_display
 
-        pis = ", ".join([pi.get_name() for pi in self.manager_set.all()])
-        pis = f" (PI{'s' if self.manager_set.count() > 1 else ''}: {pis})" if pis else ""
-        return f"{project_selection_display(self)}{pis}"
+        managers = ", ".join([manager.get_name() for manager in self.manager_set.all()])
+        managers = f" (PI{'s' if self.manager_set.count() > 1 else ''}: {managers})" if managers else ""
+        return f"{project_selection_display(self)}{managers}"
 
     def display_with_status(self):
         return f"{'[INACTIVE] ' if not self.active else ''}{self.name}"
@@ -2990,7 +3089,7 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
 class ReservationQuestions(BaseModel):
     enabled = models.BooleanField(default=True)
-    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, help_text="The name of this ")
+    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, help_text="The name of these reservation questions")
     questions = models.TextField(
         help_text="Upon making a reservation, the user will be asked these questions. This field will only accept JSON format"
     )
@@ -3009,6 +3108,15 @@ class ReservationQuestions(BaseModel):
     only_for_projects = models.ManyToManyField(
         Project, blank=True, help_text="Select the projects these questions only apply to. Leave blank for all projects"
     )
+
+    def clean(self):
+        from NEMO.widgets.dynamic_form import validate_dynamic_form_model
+
+        # Validate questions JSON format
+        if self.questions:
+            dynamic_form_errors = validate_dynamic_form_model(self.questions, self, "questions")
+            if dynamic_form_errors:
+                raise ValidationError({"questions": dynamic_form_errors})
 
     class Meta:
         ordering = ["name"]
@@ -4345,7 +4453,12 @@ class ToolUsageCounter(BaseModel):
     value = models.FloatField(help_text=_("The current value of this counter"))
     default_value = models.FloatField(help_text=_("The default value to reset this counter to"))
     counter_direction = models.IntegerField(default=CounterDirection.INCREMENT, choices=CounterDirection.Choices)
-    tool = models.ForeignKey(Tool, help_text=_("The tool this counter is for."), on_delete=models.CASCADE)
+    tool = models.ForeignKey(
+        Tool,
+        help_text=_("The tool this counter is for."),
+        on_delete=models.CASCADE,
+        limit_choices_to={"parent_tool__isnull": True},
+    )
     tool_pre_usage_question = models.CharField(
         null=True,
         blank=True,
@@ -4419,6 +4532,8 @@ class ToolUsageCounter(BaseModel):
         return User.objects.filter(Q(is_active=True) & user_filter).distinct()
 
     def clean(self):
+        from NEMO.widgets.dynamic_form import MultiDynamicForms
+
         errors = {}
         if self.warning_threshold:
             effective_warning_threshold = self.counter_direction * self.warning_threshold
@@ -4442,8 +4557,44 @@ class ToolUsageCounter(BaseModel):
                     ),
                 }
             )
+        if self.tool_id:
+            for question_type in ["pre", "post"]:
+                question_name = f"tool_{question_type}_usage_question"
+                question_data_name = getattr(self, question_name)
+                tool_questions = ToolUsageQuestions.objects.filter(
+                    enabled=True, tool_id=self.tool.tool_or_parent_id(), questions_type=question_type
+                )
+                dynamic_form = MultiDynamicForms(tool_questions).merged_dynamic_forms
+                error = self.clean_counter_question(dynamic_form, question_data_name, question_type)
+                if error:
+                    errors[question_name] = error
         if errors:
             raise ValidationError(errors)
+
+    @staticmethod
+    def clean_counter_question(dynamic_form: DynamicForm, counter_question_name: str, pre_post: str) -> Optional[str]:
+        from NEMO.widgets.dynamic_form import PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion
+
+        error = None
+        if counter_question_name:
+            if dynamic_form:
+                candidate_questions = []
+                candidate_questions.extend(
+                    dynamic_form.filter_questions(
+                        lambda x: isinstance(x, (PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion))
+                    )
+                )
+                matching_tool_question = any(
+                    question for question in candidate_questions if question.name == counter_question_name
+                )
+                if not matching_tool_question:
+                    candidates = {question.name for question in candidate_questions}
+                    error = f"The tool has no {pre_post} usage question of type Number or Float with this name."
+                    if candidates:
+                        error += f" Valid question names are: {', '.join(candidates)}"
+            else:
+                error = f"The tool does not have any {pre_post} usage questions."
+        return error
 
     def __str__(self):
         return str(self.name)

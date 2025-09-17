@@ -11,6 +11,7 @@ from NEMO.interlocks import StanfordInterlock
 # This method will be used by the mock to replace socket.send
 # In the stanford interlock case, it will return a list of byte
 from NEMO.models import Interlock, InterlockCard, InterlockCardCategory, Tool, User
+from NEMO.tests.test_utilities import NEMOTestCaseMixin
 
 server1 = "server1.nist.gov"
 server2 = "https://server2.nist.gov"
@@ -96,7 +97,7 @@ def mocked_socket_send(*args, **kwargs):
     return MockSocket()
 
 
-class StanfordInterlockTestCase(TestCase):
+class StanfordInterlockTestCase(NEMOTestCaseMixin, TestCase):
     def setUp(self):
         # enable interlock functionality
         settings.__setattr__("INTERLOCKS_ENABLED", True)

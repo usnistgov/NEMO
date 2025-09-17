@@ -17,7 +17,7 @@ from rest_framework import routers
 
 from NEMO.constants import MEDIA_PROTECTED
 from NEMO.decorators import any_staff_required
-from NEMO.models import ReservationItemType
+from NEMO.models import ReservationItemType, ToolUsageQuestionType
 from NEMO.views import (
     abuse,
     access_requests,
@@ -26,7 +26,6 @@ from NEMO.views import (
     admin_autocomplete,
     alerts,
     api,
-    api_file_import,
     area_access,
     authentication,
     buddy_requests,
@@ -105,6 +104,7 @@ router.register(r"qualifications", api.QualificationViewSet)
 router.register(r"recurring_consumable_charges", api.RecurringConsumableChargesViewSet)
 router.register(r"reservations", api.ReservationViewSet)
 router.register(r"reservation_configuration_options", api.ConfigurationOptionViewSet)
+router.register(r"reservation_questions", api.ReservationQuestionsViewSet)
 router.register(r"resources", api.ResourceViewSet)
 router.register(r"scheduled_outages", api.ScheduledOutageViewSet)
 router.register(r"staff_assistance_requests", api.StaffAssistanceRequestViewSet)
@@ -114,6 +114,8 @@ router.register(r"tools", api.ToolViewSet)
 router.register(r"tool_comments", api.ToolCommentViewSet)
 router.register(r"tool_credentials", api.ToolCredentialsViewSet)
 router.register(r"tool_status", api.ToolStatusViewSet, basename="tool_status")
+router.register(r"tool_usage_counters", api.ToolUsageCounterViewSet)
+router.register(r"tool_usage_questions", api.ToolUsageQuestionsViewSet)
 router.register(r"training_sessions", api.TrainingSessionViewSet)
 router.register(r"usage_events", api.UsageEventViewSet)
 router.register(r"users", api.UserViewSet)
@@ -123,6 +125,7 @@ router.register(r"metadata", api.MetadataViewSet, basename="metadata")
 router.registry.sort(key=sort_urls)
 
 reservation_item_types = f'(?P<item_type>{"|".join(ReservationItemType.values())})'
+tool_usage_question_types = f'(?P<question_type>{"|".join(ToolUsageQuestionType.values)})'
 
 urlpatterns = []
 
@@ -180,6 +183,13 @@ urlpatterns += [
     re_path(r"^tool_control/(?P<item_type>(tool))/(?P<tool_id>\d+)/$", tool_control.tool_control, name="tool_control"),
     path("tool_control/<int:tool_id>/", tool_control.tool_control, name="tool_control"),
     path("tool_control/", tool_control.tool_control, name="tool_control"),
+    re_path(
+        r"^tool_usage_questions/(?P<tool_id>\d+)/"
+        + tool_usage_question_types
+        + "/(?P<project_id>\d+)/(?P<virtual_inputs>(true|false))/$",
+        tool_control.tool_usage_questions,
+        name="tool_usage_questions",
+    ),
     path("tool_status/<int:tool_id>/", tool_control.tool_status, name="tool_status"),
     path("use_tool_for_other/", tool_control.use_tool_for_other, name="use_tool_for_other"),
     path("tool_configuration/", tool_control.tool_configuration, name="tool_configuration"),
@@ -413,7 +423,7 @@ urlpatterns += [
     path("send_email/", email.send_email, name="send_email"),
     path("email_broadcast/", email.email_broadcast, name="email_broadcast"),
     re_path(
-        r"^email_broadcast/(?P<audience>tool|area|account|project|project-pis|user|tool-reservation)/$",
+        r"^email_broadcast/(?P<audience>tool|area|account|project|project-pis|account-managers|user|tool-reservation)/$",
         email.email_broadcast,
         name="email_broadcast",
     ),
@@ -625,7 +635,6 @@ if settings.ALLOW_CONDITIONAL_URLS:
         # REST API
         path("api/", include(router.urls)),
         re_path(r"^api/media/(?P<path>.*)$", api.MediaAPIView.as_view(), name="api_media"),
-        path("api/file_import/", api_file_import.file_import, name="api_file_import"),
         # Area access
         path("area_access/", area_access.area_access, name="area_access"),
         path("new_area_access_record/", area_access.new_area_access_record, name="new_area_access_record"),
@@ -719,6 +728,11 @@ if settings.ALLOW_CONDITIONAL_URLS:
             "remove_user_from_project/", accounts_and_projects.remove_user_from_project, name="remove_user_from_project"
         ),
         path("add_user_to_project/", accounts_and_projects.add_user_to_project, name="add_user_to_project"),
+        re_path(
+            r"^add_or_remove_manager_from_account_project/(?P<action>add|remove|)/(?P<kind>account|project|)/(?P<identifier>\d+)/$",
+            accounts_and_projects.add_or_remove_manager_from_account_project,
+            name="add_or_remove_manager_from_account_project",
+        ),
         path(
             "projects/<int:project_id>/remove_document/<int:document_id>/",
             accounts_and_projects.remove_document_from_project,

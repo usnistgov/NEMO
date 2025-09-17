@@ -1,9 +1,10 @@
 from unittest import TestCase
 
 from NEMO.evaluators import evaluate_boolean_expression, evaluate_expression, get_expression_variables
+from NEMO.tests.test_utilities import NEMOTestCaseMixin
 
 
-class TestAstEval(TestCase):
+class TestAstEval(NEMOTestCaseMixin, TestCase):
     def test_basic_evaluation(self):
         variables = {"te": 5, "my_list": [1, 5, 10]}
         res_1 = evaluate_expression("5*2", **variables)

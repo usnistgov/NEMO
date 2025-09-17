@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, time
+from datetime import datetime, time, timedelta
 from http import HTTPStatus
 from typing import Dict, List
 
@@ -9,6 +9,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from django.utils.html import format_html
@@ -21,10 +22,10 @@ from NEMO.models import (
     BadgeReader,
     Project,
     Reservation,
-    ReservationItemType,
     TaskCategory,
     TaskStatus,
     Tool,
+    ToolUsageQuestionType,
     ToolWaitList,
     UsageEvent,
     User,
@@ -34,19 +35,7 @@ from NEMO.models import (
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import localize, quiet_int, remove_duplicates
 from NEMO.views.area_access import log_out_user
-from NEMO.views.calendar import (
-    cancel_the_reservation,
-    extract_reservation_questions,
-    render_reservation_questions,
-    set_reservation_configuration,
-    shorten_reservation,
-)
-from NEMO.views.consumables import (
-    self_checkout,
-    make_withdrawal,
-    make_withdrawal_success_message,
-    consumable_permissions,
-)
+from NEMO.views.calendar import cancel_the_reservation, set_reservation_configuration, shorten_reservation
 from NEMO.views.customization import ApplicationCustomization, ToolCustomization, UserCustomization
 from NEMO.views.tasks import save_task
 from NEMO.views.tool_control import (
@@ -54,8 +43,14 @@ from NEMO.views.tool_control import (
     interlock_bypass_allowed,
     interlock_error,
     save_comment,
+    tool_configuration,
 )
-from NEMO.widgets.dynamic_form import DynamicForm
+from NEMO.views.consumables import (
+    self_checkout,
+    make_withdrawal,
+    make_withdrawal_success_message,
+    consumable_permissions,
+)
 
 
 @login_required
@@ -96,11 +91,11 @@ def do_enable_tool(request, tool_id):
     new_usage_event.project = project
     new_usage_event.tool = tool
 
-    # Collect post-usage questions
-    dynamic_form = DynamicForm(tool.pre_usage_questions)
+    # Collect pre-usage questions
+    dynamic_forms = tool.get_usage_questions(ToolUsageQuestionType.PRE, project)
 
     try:
-        new_usage_event.pre_run_data = dynamic_form.extract(request)
+        new_usage_event.pre_run_data = dynamic_forms.extract(request)
     except RequiredUnansweredQuestionsException as e:
         dictionary = {"message": str(e), "delay": 10}
         return render(request, "kiosk/acknowledgement.html", dictionary)
@@ -119,7 +114,7 @@ def do_enable_tool(request, tool_id):
         wait_list_entry.update(deleted=True, date_exited=timezone.now())
 
     try:
-        dynamic_form.process_run_data(new_usage_event, new_usage_event.pre_run_data, request)
+        dynamic_forms.process_run_data(new_usage_event, new_usage_event.pre_run_data, request)
     except Exception as e:
         dictionary = {"message": str(e), "delay": 10}
         return render(request, "kiosk/acknowledgement.html", dictionary)
@@ -164,21 +159,21 @@ def do_disable_tool(request, tool_id):
     current_usage_event.end = timezone.now() + downtime
 
     # Collect post-usage questions
-    dynamic_form = DynamicForm(tool.post_usage_questions)
+    dynamic_forms = tool.get_usage_questions(ToolUsageQuestionType.POST)
 
     try:
-        current_usage_event.run_data = dynamic_form.extract(request)
+        current_usage_event.run_data = dynamic_forms.extract(request)
     except RequiredUnansweredQuestionsException as e:
         if customer != current_usage_event.operator and current_usage_event.user != customer:
             # if someone else is forcing somebody off the tool and there are required questions, send an email and proceed
             current_usage_event.run_data = e.run_data
-            email_managers_required_questions_disable_tool(current_usage_event.operator, customer, tool, e.questions)
+            email_managers_required_questions_disable_tool(current_usage_event, customer, e.questions)
         else:
             dictionary = {"message": str(e), "delay": 10}
             return render(request, "kiosk/acknowledgement.html", dictionary)
 
     try:
-        dynamic_form.process_run_data(current_usage_event, current_usage_event.run_data, request)
+        dynamic_forms.process_run_data(current_usage_event, current_usage_event.run_data, request)
     except Exception as e:
         dictionary = {"message": str(e), "delay": 10}
         return render(request, "kiosk/acknowledgement.html", dictionary)
@@ -307,9 +302,9 @@ def reserve_tool(request):
         dictionary["message"] = "You must specify a project for your reservation"
         return render(request, "kiosk/error.html", dictionary)
 
-    reservation_questions = render_reservation_questions(ReservationItemType.TOOL, tool.id, reservation.project, True)
+    dynamic_forms = tool.get_reservation_questions(reservation.project)
     tool_config = tool.is_configurable()
-    needs_extra_config = reservation_questions or tool_config
+    needs_extra_config = dynamic_forms or tool_config
     if needs_extra_config and not request.POST.get("configured") == "true":
         dictionary.update(tool.get_configuration_information(user=customer, start=reservation.start))
         dictionary.update(
@@ -319,7 +314,7 @@ def reserve_tool(request):
                 "request_start": request.POST["start"],
                 "request_end": request.POST["end"],
                 "reservation": reservation,
-                "reservation_questions": reservation_questions,
+                "reservation_questions": dynamic_forms.render(virtual_inputs=True),
             }
         )
         return render(request, "kiosk/tool_reservation_extra.html", dictionary)
@@ -331,9 +326,7 @@ def reserve_tool(request):
 
     # Reservation questions if applicable
     try:
-        reservation.question_data = extract_reservation_questions(
-            request, ReservationItemType.TOOL, tool.id, reservation.project
-        )
+        reservation.question_data = dynamic_forms.extract(request)
     except RequiredUnansweredQuestionsException as e:
         dictionary["message"] = str(e)
         return render(request, "kiosk/error.html", dictionary)
@@ -356,6 +349,15 @@ def cancel_reservation(request, reservation_id):
         return render(request, "kiosk/success.html", {"cancelled_reservation": reservation, "customer": customer})
     else:
         return render(request, "kiosk/error.html", {"message": response.content, "customer": customer})
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_POST
+def kiosk_tool_configuration(request):
+    # Use the badged-in user as the user making the request and call the configuration directly
+    request.user = User.objects.get(badge_number=request.GET["badge_number"])
+    return tool_configuration(request)
 
 
 @login_required
@@ -486,17 +488,15 @@ def tool_information(request, tool_id, user_id, back):
             tool_credentials = tool.toolcredentials_set.filter(
                 Q(authorized_staff__isnull=True) | Q(authorized_staff__in=[customer])
             )
+    post_usage_questions = tool.get_usage_questions(ToolUsageQuestionType.POST)
     dictionary = {
         "customer": customer,
         "tool": tool,
         "tool_credentials": tool_credentials,
-        "rendered_configuration_html": tool.configuration_widget(customer),
-        "pre_usage_questions": DynamicForm(tool.pre_usage_questions).render(
-            tool, "pre_usage_questions", virtual_inputs=True
+        "rendered_configuration_html": tool.configuration_widget(
+            customer, url=reverse("kiosk_tool_configuration") + "?badge_number=" + str(customer.badge_number)
         ),
-        "post_usage_questions": DynamicForm(tool.post_usage_questions).render(
-            tool, "post_usage_questions", virtual_inputs=True
-        ),
+        "post_usage_questions": post_usage_questions.render(virtual_inputs=True) if post_usage_questions else "",
         "back": back,
         "tool_control_show_task_details": ToolCustomization.get_bool("tool_control_show_task_details"),
         "wait_list_position": user_wait_list_position,  # 0 if not in wait list

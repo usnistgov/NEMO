@@ -6,8 +6,8 @@ from django.utils.safestring import mark_safe
 
 
 class ConfigurationEditor(Widget):
-    def __init__(self, attrs=None):
-        self.url = reverse("tool_configuration")
+    def __init__(self, attrs=None, url=None):
+        self.url = url or reverse("tool_configuration")
         super().__init__(attrs)
 
     def render(self, name, value, attrs=None, **kwargs):

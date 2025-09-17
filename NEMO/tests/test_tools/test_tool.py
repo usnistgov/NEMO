@@ -20,14 +20,14 @@ from NEMO.models import (
     UsageEvent,
     User,
 )
-from NEMO.tests.test_utilities import create_user_and_project, login_as
+from NEMO.tests.test_utilities import NEMOTestCaseMixin, create_user_and_project
 
 tool: Optional[Tool] = None
 alternate_tool: Optional[Tool] = None
 area_door: Optional[Door] = None
 
 
-class ToolTestCase(TestCase):
+class ToolTestCase(NEMOTestCaseMixin, TestCase):
     def setUp(self):
         # This also tests the admin forms for interlock card and tool
         global tool, alternate_tool, area_door
@@ -63,7 +63,6 @@ class ToolTestCase(TestCase):
             "_maximum_future_reservation_time": 20,
             "_missed_reservation_threshold": 30,
             "_max_delayed_logoff": 120,
-            "_post_usage_questions": '[{"type": "textbox", "name": "question_name", "title": "question_title", "max-width": "100%"}]',
             "_policy_off_between_times": True,
             "_policy_off_start_time": "5:00 PM",
             "_policy_off_end_time": "4:00 PM",
@@ -120,7 +119,6 @@ class ToolTestCase(TestCase):
         self.assertEqual(tool.maximum_future_reservation_time, alternate_tool.maximum_future_reservation_time)
         self.assertEqual(tool.missed_reservation_threshold, alternate_tool.missed_reservation_threshold)
         self.assertEqual(tool.max_delayed_logoff, alternate_tool.max_delayed_logoff)
-        self.assertEqual(tool.post_usage_questions, alternate_tool.post_usage_questions)
         self.assertEqual(tool.policy_off_between_times, alternate_tool.policy_off_between_times)
         self.assertEqual(tool.policy_off_start_time, alternate_tool.policy_off_start_time)
         self.assertEqual(tool.policy_off_end_time, alternate_tool.policy_off_end_time)
@@ -139,13 +137,13 @@ class ToolTestCase(TestCase):
         )
         project = Project.objects.create(name="test_prj", account=Account.objects.create(name="test_acct"))
 
-        login_as(self.client, user)
+        self.login_as(user)
 
         response = self.client.post(reverse("enable_tool", args=[tool.id, user.id, project.id, "false"]), follow=True)
         self.assertContains(response, "You are not qualified to use this tool.", status_code=400)
 
         user.qualifications.add(tool)
-        login_as(self.client, user)
+        self.login_as(user)
         response = self.client.post(reverse("enable_tool", args=[tool.id, user.id, project.id, "false"]), follow=True)
         self.assertContains(
             response,
@@ -156,12 +154,12 @@ class ToolTestCase(TestCase):
         AreaAccessRecord.objects.create(
             area=tool.requires_area_access, customer=user, project=project, start=timezone.now()
         )
-        login_as(self.client, user)
+        self.login_as(user)
         response = self.client.post(reverse("enable_tool", args=[tool.id, user.id, project.id, "false"]), follow=True)
         self.assertContains(response, f"Permission to bill project {project.name} was denied.", status_code=400)
 
         user.projects.add(project)
-        login_as(self.client, user)
+        self.login_as(user)
         response = self.client.post(reverse("enable_tool", args=[tool.id, user.id, project.id, "false"]), follow=True)
         self.assertContains(
             response,
@@ -171,13 +169,13 @@ class ToolTestCase(TestCase):
 
         user.training_required = False
         user.save()
-        login_as(self.client, user)
+        self.login_as(user)
         response = self.client.post(reverse("enable_tool", args=[tool.id, user.id, project.id, "false"]), follow=True)
         self.assertContains(response, "Your NEMO access has expired.", status_code=400)
 
         user.access_expiration = None
         user.save()
-        login_as(self.client, user)
+        self.login_as(user)
         response = self.client.post(reverse("enable_tool", args=[tool.id, user.id, project.id, "false"]), follow=True)
         self.assertEqual(response.status_code, 200)
 
@@ -193,12 +191,12 @@ class ToolTestCase(TestCase):
         user.training_required = False
         user.save()
         # log into the area
-        login_as(self.client, user)
+        self.login_as(user)
         response = self.client.post(
             reverse("login_to_area", kwargs={"door_id": area_door.id}), {"badge_number": user.badge_number}, follow=True
         )
         self.assertEqual(response.status_code, 200, response.content.decode())
-        login_as(self.client, user)
+        self.login_as(user)
         # start using tool
         response = self.client.post(
             reverse(

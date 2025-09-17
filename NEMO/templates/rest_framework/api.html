@@ -2,57 +2,60 @@
 {% block content %}
     {{ block.super }}
     {% if "POST" in allowed_methods and raw_data_post_form %}
-        <div style="display:none">
-            <li id="file-import-nav-tab">
-                <a id='file-import-tab' href="#file-import-form" data-toggle="tab">File import</a>
-            </li>
-            <div class="tab-pane" id="file-import-form">
-                <form action="{% url 'api_file_import' %}"
-                      enctype="multipart/form-data"
-                      class="form-horizontal"
-                      method="POST"
-                      novalidate>
-                    <fieldset>
-                        {% csrf_token %}
-                        <input type="hidden" name="request_url" value="{{ request.get_full_path }}" />
-                        <div class="form-group">
-                            <label for="file_formats" class="col-lg-2 col-sm-3 control-label">Accepted file formats</label>
-                            <div class="col-lg-10 col-sm-9">
-                                <div class="form-control-static">
-                                    {% for parser in api_settings.DEFAULT_PARSER_CLASSES %}
-                                        {% if parser.media_type != "multipart/form-data" %}
-                                            {{ parser.media_type }}
-                                            {% if not forloop.last %},{% endif %}
-                                        {% endif %}
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="import_file" class="col-lg-2 col-sm-3 control-label">File to import</label>
-                            <div class="col-lg-10 col-sm-9">
-                                <input type="file"
-                                       id="import_file"
-                                       name="import_file"
-                                       class="form-control-static"
-                                       style="border: none;
-                                              box-shadow: none;
-                                              background-color: transparent">
-                            </div>
-                        </div>
-                        <div class="form-actions">
-                            <button class="btn btn-primary js-tooltip" title="Make a POST request on the {{ name }} resource">POST</button>
-                        </div>
-                    </fieldset>
-                </form>
+        <div id="file_import_div" class="form-group" style="display:none">
+            <label for="id__content_type" class="col-sm-2 control-label">Or import file:</label>
+            <div class="col-sm-10">
+                <input type="file" id="fileInput" class="form-control-static">
             </div>
         </div>
+        <script>
+        // Function to move the file import div to the raw data tab
+        function moveFileImportDiv() {
+            const fileImportDiv = document.getElementById('file_import_div');
+            const formContainer = document.getElementById('post-generic-content-form');
+
+            if (fileImportDiv && formContainer)
+            {
+                const formActionDiv = formContainer.querySelector('.form-actions');
+
+                if (formActionDiv)
+                {
+                    // Get the parent element of the form-action div
+                    const parent = formActionDiv.parentNode;
+
+                    // Insert the file import div before the form-action div
+                    parent.insertBefore(fileImportDiv, formActionDiv);
+
+                    // Make the file import div visible if it was hidden
+                    fileImportDiv.style.display = 'block';
+                }
+            }
+        }
+
+        function readAndSetFileContent(event)
+        {
+            const file = event.target.files[0];
+            if (file)
+            {
+                const reader = new FileReader();
+
+                reader.onload = function(e)
+                {
+                    const contents = e.target.result;
+                    document.getElementById('id__content_type').value = file.type;
+                    document.getElementById('id__content').value = contents;
+                };
+
+                reader.readAsText(file);
+            }
+         }
+
+        // Execute when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', moveFileImportDiv);
+        // If the page might be already loaded, also try immediately
+        moveFileImportDiv();
+        // Add event listener for file input change
+        document.getElementById('fileInput').addEventListener('change',readAndSetFileContent);
+        </script>
     {% endif %}
-{% endblock %}
-{% block script %}
-    {{ block.super }}
-    <script>
-            $("ul.nav.nav-tabs.form-switcher").prepend($("#file-import-nav-tab"))
-            $("div.well.tab-content").append($("#file-import-form"))
-    </script>
 {% endblock %}

@@ -3,10 +3,11 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
+from NEMO.tests.test_utilities import NEMOTestCaseMixin
 from NEMO.utilities import send_mail
 
 
-class TestSendMailRetries(TestCase):
+class TestSendMailRetries(NEMOTestCaseMixin, TestCase):
     def setUp(self):
         self.subject = "Retry Test"
         self.content = "<p>Testing retry logic</p>"

@@ -165,6 +165,8 @@ def usage(
 ):
     user: User = request.user
     base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request, get_month_timeframe)
+    # Preloading user's managed projects'
+    base_dictionary["user"] = User.objects.filter(id=user.id).prefetch_related("managed_projects").first()
     project_id = request.GET.get("project") or request.GET.get("pi_project")
     if user_managed_projects:
         base_dictionary["selected_project"] = "all"
@@ -215,10 +217,10 @@ def usage(
                     + list(staff_charges.values_list("project", flat=True))
                     + list(training_sessions.values_list("project", flat=True))
                 )
-            ),
+            ).order_by("account__name"),
         }
         if user_managed_projects:
-            dictionary["pi_projects"] = user_managed_projects
+            dictionary["managed_projects"] = sorted(user_managed_projects, key=lambda x: x.account.name)
             dictionary["show_only_my_usage"] = show_only_my_usage
         dictionary["no_charges"] = not (
             dictionary["area_access"]
@@ -238,8 +240,10 @@ def billing(request):
     base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request, get_month_timeframe)
     if not base_dictionary["billing_service"]:
         return redirect("user_usage")
-    user_project_applications = list(user.active_projects().values_list("application_identifier", flat=True)) + list(
-        user.managed_projects.values_list("application_identifier", flat=True)
+    user_project_applications = (
+        list(user.active_projects().values_list("application_identifier", flat=True))
+        + list(user.managed_projects.values_list("application_identifier", flat=True))
+        + list(user.managed_accounts.values_list("project__application_identifier", flat=True))
     )
     formatted_applications = ",".join(map(str, set(user_project_applications)))
     try:
@@ -254,6 +258,8 @@ def billing(request):
 @require_GET
 def project_usage(request):
     base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request, get_day_timeframe)
+    # Preloading user's managed projects'
+    base_dictionary["user"] = User.objects.filter(id=request.user.id).prefetch_related("managed_projects").first()
 
     area_access, consumables, missed_reservations, staff_charges, training_sessions, usage_events = (
         None,
@@ -273,7 +279,7 @@ def project_usage(request):
     selected_project_type = request.GET.get("project_type")
 
     try:
-        if kind == "application":
+        if kind == "projectapplication":
             projects = Project.objects.filter(application_identifier=identifier)
             selection = identifier
         elif kind == "project":
@@ -394,7 +400,7 @@ def project_billing(request):
     formatted_applications = None
     selection = ""
     try:
-        if kind == "application":
+        if kind == "projectapplication":
             formatted_applications = identifier
             selection = identifier
         elif kind == "project":
@@ -452,7 +458,7 @@ def is_user_pi(user: User, latest_pis_data, activity, user_managed_applications:
 
 def billing_dict(start_date, end_date, user, formatted_applications, project_id=None, account_id=None, force_pi=False):
     # The parameter force_pi allows us to display information as if the user was the project pi
-    # This is useful on the admin project billing page tp display other project users for example
+    # This is useful on the admin project billing page to display other project users for example
     dictionary = {}
 
     billing_service = get_billing_service()
@@ -484,7 +490,15 @@ def billing_dict(start_date, end_date, user, formatted_applications, project_id=
     # Construct a tree of account, application, project, and member total spending
     cost_activities_tree = {}
     user_managed_applications = (
-        [project.application_identifier for project in user.managed_projects.all()] if not force_pi else []
+        [
+            project.application_identifier
+            for project in Project.objects.filter(
+                Q(id__in=user.managed_projects.values_list("id", flat=True))
+                | Q(account_id__in=user.managed_accounts.values_list("id", flat=True))
+            )
+        ]
+        if not force_pi
+        else []
     )
     for activity in cost_activity_data:
         if (project_id and activity["project_id"] != str(project_id)) or (
@@ -537,6 +551,7 @@ def csv_export_response(
     table_result.add_header(("user", "User"))
     table_result.add_header(("name", "Item"))
     table_result.add_header(("details", "Details"))
+    table_result.add_header(("account", "Account"))
     table_result.add_header(("project", "Project"))
     if user.is_any_part_of_staff:
         table_result.add_header(
@@ -562,7 +577,14 @@ def csv_export_response(
 
 def get_managed_projects(user: User) -> Set[Project]:
     # This function will get managed projects from NEMO and also attempt to get them from billing service
-    managed_projects = set(list(user.managed_projects.all()))
+    managed_projects = set(
+        list(
+            Project.objects.filter(
+                Q(id__in=user.managed_projects.values_list("id", flat=True))
+                | Q(account_id__in=user.managed_accounts.values_list("id", flat=True))
+            )
+        )
+    )
     billing_service = get_billing_service()
     if billing_service.get("available", False):
         # if we have a billing service, use it to determine project lead
