@@ -236,6 +236,67 @@
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Tool control</h3>
         <div class="form-group">
+            <span class="control-label col-md-3">Tool enable labels</span>
+            <div class="col-md-7">
+                <input type="text"
+                       id="tool_control_use_self"
+                       name="tool_control_use_self"
+                       class="form-control"
+                       value="{{ tool_control_use_self }}" />
+            </div>
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                <label for="tool_control_use_self">This label if used when a user is using a tool for himself</label>
+            </div>
+            <div class="col-md-offset-3 col-md-7">
+                <input type="text"
+                       id="tool_control_use_self_training"
+                       name="tool_control_use_self_training"
+                       class="form-control"
+                       value="{{ tool_control_use_self_training }}" />
+            </div>
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                <label for="tool_control_use_self_training">
+                    This label if used when a user is using a tool form himself for a training
+                </label>
+            </div>
+            <div class="col-md-offset-3 col-md-7">
+                <input type="text"
+                       id="tool_control_use_for_other"
+                       name="tool_control_use_for_other"
+                       class="form-control"
+                       value="{{ tool_control_use_for_other }}" />
+            </div>
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                <label for="tool_control_use_for_other">
+                    This label if used when a user is using a tool on behalf of someone else
+                </label>
+            </div>
+            <div class="col-md-offset-3 col-md-7">
+                <input type="text"
+                       id="tool_control_use_for_other_training"
+                       name="tool_control_use_for_other_training"
+                       class="form-control"
+                       value="{{ tool_control_use_for_other_training }}" />
+            </div>
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                <label for="tool_control_use_for_other_training">
+                    This label if used when a user is using a tool on behalf of someone else for training
+                </label>
+            </div>
+            <div class="col-md-offset-3 col-md-7">
+                <input type="text"
+                       id="tool_control_use_for_other_remote"
+                       name="tool_control_use_for_other_remote"
+                       class="form-control"
+                       value="{{ tool_control_use_for_other_remote }}" />
+            </div>
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                <label for="tool_control_use_for_other_remote">
+                    This label if used when a user is using a tool on behalf of someone else for a remote project
+                </label>
+            </div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-sm-4 col-md-3">Usage data history</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
