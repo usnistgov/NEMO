@@ -42,6 +42,7 @@ from django.utils.translation import gettext_lazy as _
 
 # For backwards compatibility
 import NEMO.plugins.utils
+from NEMO.typing import QuerySetType
 
 render_combine_responses = NEMO.plugins.utils.render_combine_responses
 
@@ -1213,3 +1214,16 @@ def get_django_view_name_from_url(url: str) -> str:
     except:
         pass
     return ""
+
+
+def get_tool_categories_for_filters(tool_qs: QuerySetType = None) -> List[ToolCategory]:
+    from NEMO.models import Tool
+
+    tool_qs = tool_qs or Tool.objects
+    categories = set()
+    for cat in tool_qs.filter(visible=True).order_by("_category").values_list("_category").distinct():
+        parts = cat[0].split("/")
+        prefixes = ["/".join(parts[: i + 1]) for i in range(len(parts))]
+        for category in prefixes:
+            categories.add(ToolCategory(category))
+    return sorted(categories, key=lambda x: str(x))
