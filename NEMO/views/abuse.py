@@ -41,12 +41,17 @@ def abuse(request):
                 elif item_type == ReservationItemType.TOOL:
                     reservations = reservations.filter(tool__id=item_id)
             for r in reservations:
+                weight = r.reservation_item.abuse_weight
                 cancellation_delta = (r.start - r.cancellation_time).total_seconds()
                 if 0 < cancellation_delta < form.cleaned_data["cancellation_horizon"]:
                     penalty = (
-                        (form.cleaned_data["cancellation_horizon"] - cancellation_delta)
-                        / form.cleaned_data["cancellation_horizon"]
-                    ) * form.cleaned_data["cancellation_penalty"]
+                        (
+                            (form.cleaned_data["cancellation_horizon"] - cancellation_delta)
+                            / form.cleaned_data["cancellation_horizon"]
+                        )
+                        * form.cleaned_data["cancellation_penalty"]
+                        * weight
+                    )
                     intermediate_results[r.user.id] += penalty
             final_results = {}
             for user_id, score in intermediate_results.items():
@@ -86,12 +91,17 @@ def user_drill_down(request):
                 reservations = reservations.filter(tool__id=item_id)
         abuses = []
         for r in reservations:
+            weight = r.reservation_item.abuse_weight
             cancellation_delta = (r.start - r.cancellation_time).total_seconds()
             if 0 < cancellation_delta < form.cleaned_data["cancellation_horizon"]:
                 penalty = (
-                    (form.cleaned_data["cancellation_horizon"] - cancellation_delta)
-                    / form.cleaned_data["cancellation_horizon"]
-                ) * form.cleaned_data["cancellation_penalty"]
+                    (
+                        (form.cleaned_data["cancellation_horizon"] - cancellation_delta)
+                        / form.cleaned_data["cancellation_horizon"]
+                    )
+                    * form.cleaned_data["cancellation_penalty"]
+                    * weight
+                )
                 delta = duration_string((r.start - r.cancellation_time).total_seconds())
                 abuses.append(
                     {

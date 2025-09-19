@@ -1381,6 +1381,12 @@ class Tool(SerializationByNameModel):
         default=OperationMode.REGULAR,
         help_text="The operation mode of the tool, which determines if reservations and wait list are allowed.",
     )
+    _abuse_weight = models.IntegerField(
+        default=1,
+        verbose_name="Reservation abuse weight",
+        db_column="abuse_weight",
+        help_text="The weight to give this tool in the reservation abuse calculations",
+    )
 
     class Meta:
         ordering = ["name"]
@@ -1735,6 +1741,15 @@ class Tool(SerializationByNameModel):
     def operation_mode(self, value):
         self.raise_setter_error_if_child_tool("operation_mode")
         self._operation_mode = value
+
+    @property
+    def abuse_weight(self):
+        return self.parent_tool.abuse_weight if self.is_child_tool() else self._abuse_weight
+
+    @abuse_weight.setter
+    def abuse_weight(self, value):
+        self.raise_setter_error_if_child_tool("abuse_weight")
+        self._abuse_weight = value
 
     def allow_wait_list(self):
         return self.operation_mode in [self.OperationMode.WAIT_LIST, self.OperationMode.HYBRID]
@@ -2609,6 +2624,12 @@ class Area(MPTTModel):
         db_column="policy_off_weekend",
         default=False,
         help_text="Whether or not policy rules should be enforced on weekends",
+    )
+
+    abuse_weight = models.IntegerField(
+        default=1,
+        verbose_name="Reservation abuse weight",
+        help_text="The weight to give this area in the reservation abuse calculations",
     )
 
     class MPTTMeta:

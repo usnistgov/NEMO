@@ -269,7 +269,7 @@ class ToolAdmin(admin.ModelAdmin):
             },
         ),
         ("Approval", {"fields": ("_adjustment_request_reviewers",)}),
-        ("Reservation", {"fields": ("_reservation_horizon", "_missed_reservation_threshold")}),
+        ("Reservation", {"fields": ("_reservation_horizon", "_missed_reservation_threshold", "_abuse_weight")}),
         (
             "Usage policy",
             {
@@ -446,7 +446,7 @@ class AreaAdmin(DraggableMPTTAdmin):
             },
         ),
         ("Approval", {"fields": ("adjustment_request_reviewers", "access_request_reviewers")}),
-        ("Reservation", {"fields": ("reservation_horizon", "missed_reservation_threshold")}),
+        ("Reservation", {"fields": ("reservation_horizon", "missed_reservation_threshold", "abuse_weight")}),
         (
             "Policy",
             {
