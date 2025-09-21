@@ -50,6 +50,7 @@
         <script type="text/javascript">
             const $consumables_order = $('#consumables_order')
             $('.remove_withdrawal').submit(function(e) {
+                revert(75);
                 const data = serialize($(this));
                 e.preventDefault();
                 const failure = ajax_failure_callback('Remove Consumable Error');
@@ -57,6 +58,7 @@
                 return false;
             });
             $('#clear').submit(function(e) {
+                revert(75);
                 const data = serialize($(this));
                 e.preventDefault();
                 const failure = ajax_failure_callback('Clear Cart Error');
@@ -67,7 +69,9 @@
                 const data = serialize($(this));
                 e.preventDefault();
                 const failure = ajax_failure_callback('Withdrawal Error');
-                ajax_post('{% url 'kiosk_withdraw_consumables' %}', data, function(response) {$consumables_order.html(response)}, failure);
+                ajax_post('{% url 'kiosk_withdraw_consumables' %}', data, function(response) {
+                    status_element.html(response).show();
+                }, failure);
                 return false;
             });
         </script>

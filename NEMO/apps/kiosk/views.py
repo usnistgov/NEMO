@@ -37,6 +37,7 @@ from NEMO.utilities import localize, quiet_int, remove_duplicates
 from NEMO.views.area_access import log_out_user
 from NEMO.views.calendar import cancel_the_reservation, set_reservation_configuration, shorten_reservation
 from NEMO.views.customization import ApplicationCustomization, ToolCustomization, UserCustomization
+from NEMO.views.get_projects import get_projects
 from NEMO.views.tasks import save_task
 from NEMO.views.tool_control import (
     email_managers_required_questions_disable_tool,
@@ -715,6 +716,14 @@ def get_categories_and_tools_dictionary(customer: User, category=None) -> Dict:
 
 @login_required
 @permission_required("NEMO.kiosk")
+@require_GET
+def get_projects_for_consumables(request):
+    # Only return project for which consumable withdrawals are allowed
+    return get_projects(request, Q(allow_consumable_withdrawals=True))
+
+
+@login_required
+@permission_required("NEMO.kiosk")
 @require_http_methods(["GET", "POST"])
 def checkout(request, customer_id):
     user: User = User.objects.get(pk=customer_id)
@@ -872,13 +881,9 @@ def make_withdrawals(request):
                 )
                 success_messages.append(make_withdrawal_success_message(withdrawal, user))
             del request.session["kiosk_withdrawals"][customer_id]
+            message = "\n".join(success_messages)
             return render(
-                request,
-                "kiosk/consumables_order.html",
-                {
-                    "customer": user,
-                    "success_messages": success_messages,
-                },
+                request, "kiosk/acknowledgement.html", {"message": message, "delay": 10, "badge_number": customer_id}
             )
     except ValidationError as e:
         return HttpResponseBadRequest(nice_errors(e).as_ul())

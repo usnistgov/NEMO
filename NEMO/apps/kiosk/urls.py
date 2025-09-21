@@ -44,6 +44,11 @@ urlpatterns = [
                 path("clear_withrawals", views.clear_withdrawals, name="kiosk_clear_withdrawals"),
                 path("withdraw_consumables", views.make_withdrawals, name="kiosk_withdraw_consumables"),
                 path("remove_consumable", views.remove_withdraw_at_index, name="kiosk_remove_consumable"),
+                path(
+                    "get_projects_for_consumables",
+                    views.get_projects_for_consumables,
+                    name="get_projects_for_consumables_kiosk",
+                ),
                 re_path(
                     r"^tool_report_problem/(?P<tool_id>\d+)/(?P<user_id>\d+)/(?P<back>back_to_start|back_to_category)/$",
                     views.tool_report_problem,

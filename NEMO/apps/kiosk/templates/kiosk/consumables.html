@@ -153,6 +153,7 @@
                                                                     form.append('<input type="hidden" id="consumable" name="consumable" value="{{ item.id }}">');
                                                                     form.append('<input type="hidden" id="quantity" name="quantity" value="' + selection + '">');
                                                                     form.submit();
+                                                                    revert(75);
                                                                     form.find('#consumable').remove();
                                                                     form.find('#quantity').remove();
                                                                   }
@@ -201,6 +202,10 @@
     {% else %}
         hide_customer_search();
         show_projects_and_consumables();
+        {% if projects|length == 1 %}
+            const element = $projects_list.children().first();
+            withdrawal_select_project(element, {{ projects.0.id }});
+        {% endif %}
     {% endif %}
 
     // Customer search
@@ -262,6 +267,7 @@
     // Customer selection
     function select_customer(user)
     {
+        revert(75);
         hide_customer_search();
         set_projects(user);
         $chosen_customer.text(user.name);
@@ -280,7 +286,7 @@
     // Projects
     function set_projects(user)
     {
-        ajax_get("{% url 'get_projects_for_consumables' %}", {'user_id': user.id}, function (response) {
+        ajax_get("{% url 'get_projects_for_consumables_kiosk' %}", {'user_id': user.id}, function (response) {
             $projects_list.empty();
             const projects = response['projects'];
             if(projects.length === 0)
@@ -298,10 +304,16 @@
                 });
             }
             show_projects_and_consumables();
+            if(projects.length === 1)
+            {
+                const element = $projects_list.children().first();
+                withdrawal_select_project(element, projects[0].id);
+            }
         });
     }
     function withdrawal_select_project(element, project_id)
     {
+        revert(75);
         $(".project-choice").removeClass('active');
         $consumable_add_buttons.prop('disabled', false);
         $(element).addClass('active');
