@@ -154,6 +154,11 @@ url_kwargs_get_post = {
     "tool_usage_questions": {
         "kwargs": {"tool_id": 3, "project_id": 1, "question_type": "pre", "virtual_inputs": "false"}
     },
+    "kiosk_clear_withdrawals": {"post": {"customer_id": 1}},
+    "kiosk_withdraw_consumables": {"post": {"customer_id": 1}},
+    "kiosk_remove_consumable": {"post": {"customer_id": 1, "index": 1}},
+    "get_projects_for_consumables_kiosk": {"get": {"user_id": 1}},
+    "tool_calendar_save_user_tool_list": {"post": {"tools[]": 1}},
 }
 
 urls_to_skip = [

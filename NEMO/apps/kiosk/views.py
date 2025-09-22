@@ -879,7 +879,9 @@ def make_withdrawals(request):
                     project_id=withdraw["project_id"],
                 )
                 success_messages.append(make_withdrawal_success_message(withdrawal, user))
-            del request.session["kiosk_withdrawals"][customer_id]
+
+            if "kiosk_withdrawals" in request.session and customer_id in request.session["kiosk_withdrawals"]:
+                del request.session["kiosk_withdrawals"][customer_id]
             message = "<br>".join(success_messages)
             return render(
                 request,

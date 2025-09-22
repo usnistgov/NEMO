@@ -42,6 +42,7 @@ class ToolTestCase(NEMOTestCaseMixin, TestCase):
         cleanroom = Area.objects.create(name="cleanroom")
         tool_data = {
             "name": "test_tool",
+            "_abuse_weight": 1,
             "_category": "test",
             "_location": "office",
             "_phone_number": "1234567890",
@@ -82,6 +83,7 @@ class ToolTestCase(NEMOTestCaseMixin, TestCase):
             "visible": True,
             "_operation_mode": Tool.OperationMode.REGULAR,
             "_properties": "{}",
+            "_abuse_weight": 1,
         }
         alternate_tool_form = ToolAdminForm(alternate_tool_data)
         self.assertTrue(alternate_tool_form.is_valid(), alternate_tool_form.errors.as_text())
