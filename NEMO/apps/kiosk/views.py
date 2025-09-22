@@ -191,7 +191,6 @@ def do_disable_tool(request, tool_id):
         dictionary["area"] = record.area
         dictionary["delay"] = 10
         dictionary["ask_logout"] = True
-        return render(request, "kiosk/acknowledgement.html", dictionary)
     return render(request, "kiosk/acknowledgement.html", dictionary)
 
 
@@ -881,9 +880,11 @@ def make_withdrawals(request):
                 )
                 success_messages.append(make_withdrawal_success_message(withdrawal, user))
             del request.session["kiosk_withdrawals"][customer_id]
-            message = "\n".join(success_messages)
+            message = "<br>".join(success_messages)
             return render(
-                request, "kiosk/acknowledgement.html", {"message": message, "delay": 10, "badge_number": customer_id}
+                request,
+                "kiosk/acknowledgement.html",
+                {"message": message, "delay": 10, "badge_number": user.badge_number},
             )
     except ValidationError as e:
         return HttpResponseBadRequest(nice_errors(e).as_ul())
