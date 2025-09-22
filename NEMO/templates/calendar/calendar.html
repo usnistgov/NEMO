@@ -116,7 +116,8 @@
                        class="selected personal_schedule"
                        data-item-id="personal_schedule"
                        data-item-type="personal-schedule"
-                       onclick="set_selected_item(this, true)">Personal schedule</a>
+                       onclick="set_selected_item(this, true)"
+                       style="width: 100%">Personal schedule</a>
                 </li>
                 {% if calendar_all_tools %}
                     <li>
@@ -145,11 +146,15 @@
                            onclick="on_extra_link_click(this)">All areas and tools</a>
                     </li>
                 {% endif %}
+                {% include 'calendar/user_tool_lists.html' with user_tool_lists=calendar_user_tool_lists %}
             </ul>
             <button style="width: 100%"
                     id="clear-selection-btn"
                     class="btn btn-default"
                     onclick="on_clear_selection_click();">Clear Selection</button>
+            <button style="width: 100%" id="save-selection-btn" class="btn btn-default" onclick="user_tool_list_save()">
+                Save tool selection
+            </button>
             {# The item tree has the HTML class tag "item_tree". See the widgets/item_tree.py file for more information. #}
             {{ rendered_item_tree_html }}
             <div style="height:50px"></div>
@@ -228,7 +233,8 @@ function update_event_sources()
             checked_items.forEach(function(checked_item)
             {
                 {# If the checked item is not already selected #}
-                if(!selected_tree_item || selected_tree_item.id !== checked_item.id || selected_tree_item.type !== checked_item.type) {
+                if(!selected_tree_item || selected_tree_item.id !== checked_item.id || selected_tree_item.type !== checked_item.type)
+                {
                     let feed_data = {
                         item_id: checked_item.id,
                         item_type: checked_item.type,
@@ -278,7 +284,7 @@ function event_creation_success_callback(response, status, xml_http_request, aja
 	if(response === "")
 	{
 		refresh_calendar_and_sidebar();
-		if (success_callback) success_callback()
+		if (success_callback) success_callback();
 	}
 	else if (xml_http_request.status === 201)
 	{
@@ -286,7 +292,7 @@ function event_creation_success_callback(response, status, xml_http_request, aja
 		$("#dialog .modal-content").html(response);
 		$("#dialog").modal('show');
 		refresh_calendar_and_sidebar();
-		if (success_callback) success_callback()
+		if (success_callback) success_callback();
 	}
 	else {# the response was non-empty so the tool requires configuration details before the reservation is created. #}
 	{
@@ -321,7 +327,7 @@ function submit_event_with_more_information(ajax_post, success_callback)
 		.fail(ajax_failure_callback("Oops, something went wrong!"))
 		.done(function(response, status, xml_http_request)
 		{
-			return event_creation_success_callback(response, status, xml_http_request, ajax_post, success_callback)
+			return event_creation_success_callback(response, status, xml_http_request, ajax_post, success_callback);
 		});
 }
 
@@ -414,7 +420,7 @@ function create(start, end, jsEvent, view)
 
     if(confirm_reservation_create(item.data('item-name'), start, end, is_outage))
     {
-	    ajax_post(url, event_properties, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data) }, [unselect_and_refresh, ajax_failure_callback("Oops! Something went wrong")])
+	    ajax_post(url, event_properties, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data) }, [unselect_and_refresh, ajax_failure_callback("Oops! Something went wrong")]);
     }
     else
     {
@@ -444,11 +450,15 @@ function resize(event, delta, revertFunc, jsEvent, ui, view)
 			"type": "POST",
 			"dataType": "html"
 		};
-        if (confirm_reservation_resize(delta)) {
-            ajax_post(url, event_changes, function (response, status, xml_http_request) {
-                return event_creation_success_callback(response, status, xml_http_request, post_data)
+        if (confirm_reservation_resize(delta))
+        {
+            ajax_post(url, event_changes, function (response, status, xml_http_request)
+            {
+                return event_creation_success_callback(response, status, xml_http_request, post_data);
             }, [revertFunc, ajax_failure_callback("Reservation resize failed")], refresh_calendar_and_sidebar);
-        } else {
+        }
+        else
+        {
             refresh_calendar_and_sidebar();
         }
 	}
@@ -482,7 +492,7 @@ function move(event, delta, revertFunc, jsEvent, ui, view)
 		};
         if (confirm_reservation_move(delta)) 
         {
-            ajax_post(url, event_changes, function (response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data) }, [revertFunc, ajax_failure_callback("Reservation move failed")], refresh_calendar_and_sidebar)
+            ajax_post(url, event_changes, function (response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data) }, [revertFunc, ajax_failure_callback("Reservation move failed")], refresh_calendar_and_sidebar);
         }
         else
         {
@@ -556,7 +566,7 @@ function change_reservation_date(url, reservation_id, param, value)
         "type": "POST",
         "dataType": "html"
     };
-    ajax_post(url, data, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data) }, [ajax_failure_callback("Reservation date changed failed")], refresh_calendar_and_sidebar)
+    ajax_post(url, data, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data) }, [ajax_failure_callback("Reservation date changed failed")], refresh_calendar_and_sidebar);
 }
 
 function change_outage_date(url, outage_id, param, value)
@@ -570,7 +580,7 @@ function change_outage_date(url, outage_id, param, value)
         "type": "POST",
         "dataType": "html"
     };
-    ajax_post(url, data, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data) }, [ajax_failure_callback("Outage date changed failed")], refresh_calendar_and_sidebar)
+    ajax_post(url, data, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data) }, [ajax_failure_callback("Outage date changed failed")], refresh_calendar_and_sidebar);
 }
 
 function change_reservation_project(url, project_id)
@@ -689,7 +699,7 @@ function reserve_for_someone_else_callback(response, status, xml_http_request)
 function login_to_area()
 {
 	let item = get_selected_item();
-	if (item && item !== "personal_schedule" && item !== "all_tools" && item !== "all_areas" && item !== "all_areastools")
+	if (item && !is_selected_item_a_link(item))
 	{
 		item = JSON.parse(item);
 		let event_changes =
@@ -700,7 +710,7 @@ function login_to_area()
 		{% endif %}
 			"csrfmiddlewaretoken": "{{ csrf_token }}"
 		};
-		let url = "{% url 'calendar_self_log_in' %}"
+		let url = "{% url 'calendar_self_log_in' %}";
 		let post_data =
 		{
 			"url": url,
@@ -708,20 +718,22 @@ function login_to_area()
 			"type": "POST",
 			"dataType": "html"
 		};
-		let callback = function() {
+		let callback = function()
+        {
 			logged_in = item.element_name;
 			refresh_calendar_login();
 		}
-		ajax_post(url, event_changes, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data, callback) }, [ajax_failure_callback("Login to area failed")], refresh_sidebar_area_icons)
+		ajax_post(url, event_changes, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data, callback) }, [ajax_failure_callback("Login to area failed")], refresh_sidebar_area_icons);
 	}
 }
 
 function logout_of_area()
 {
-	ajax_get("{% url 'self_log_out' user.id %}", null, function () {
+	ajax_get("{% url 'self_log_out' user.id %}", null, function ()
+    {
 		logged_in = false;
 		refresh_calendar_login();
-	}, ajax_failure_callback("Logout of area failed"), refresh_calendar_and_sidebar_area_icons)
+	}, ajax_failure_callback("Logout of area failed"), refresh_calendar_and_sidebar_area_icons);
 }
 
 function scheduled_outage()
@@ -765,7 +777,7 @@ function refresh_calendar_login()
 	{# Login and logout are only available on reservations events and when personal_schedule isn't selected #}
 	let item = get_selected_item();
 	let event_type = get_event_type();
-	if (event_type === 'reservations' && item !== 'personal_schedule' && item !== 'all_tools' && item !== "all_areas" && item !== "all_areastools")
+	if (event_type === 'reservations' && !is_selected_item_a_link(item))
 	{
 		if (logged_in)
 		{
@@ -825,7 +837,9 @@ function change_calendar_event_type(calling_element)
 		$(proxy_reservation_button).show();
 		$(scheduled_outage_button).show();
 		update_event_sources();
-    } else if (event_type === "configuration agenda") {
+    }
+    else if (event_type === "configuration agenda")
+    {
         user_search.hide();
         chosen_user_button.hide();
         extra_links_personal_schedule.hide();
@@ -910,13 +924,96 @@ function on_item_checkbox_click()
 {
     {# When the current selected item is not a tool or area, change selection to the checked item #}
     let selected_item = get_selected_item();
-    if (selected_item === "personal_schedule" || selected_item === "all_tools" || selected_item === "all_areas" || selected_item === "all_areastools") {
+    if (is_selected_item_a_link(selected_item))
+    {
         set_selected_item_by_id($(this).data('item-id'), $(this).data('item-type'));
     }
 
     update_event_sources();
     save_sidebar_state();
     update_clear_selection_btn_display();
+}
+
+function load_user_tool_lists(success_callback)
+{
+    const failure = ajax_failure_callback("Oops, something went wrong!");
+    ajax_get('{% url "tool_calendar_load_user_tool_lists" %}', undefined, function(response, status, xml_http_request)
+    {
+        $("li.user-tool-list").remove();
+        $("#extra-links").append(response);
+        if (success_callback) success_callback();
+    }, failure);
+}
+
+function select_user_tool_list(element, tool_id_list)
+{
+    set_selected_item(element);
+    clear_checked_items();
+    for (let tool_id of tool_id_list)
+    {
+        set_checked_item_by_id(tool_id, 'tool');
+    }
+    update_event_sources();
+    save_sidebar_state();
+    update_clear_selection_btn_display();
+}
+
+function delete_user_tool_list(list_id, list_name)
+{
+    if (confirm("Are you sure you want to delete the '"+list_name+"' tool list"))
+    {
+        ajax_post(build_django_url('{% url "tool_calendar_delete_user_tool_list" '999' %}',['999'], [list_id]), undefined, function()
+        {
+            {# If we are deleting the list that was selected, auto-select the first checked element (which should exists) #}
+            if (get_selected_item() === "user-list-"+list_id)
+            {
+                const checked_items = get_checked_items();
+                if (checked_items)
+                {
+                    const first_checked_item = get_checked_items()[0];
+                    set_selected_item_by_id(first_checked_item.id, first_checked_item.type);
+                    save_sidebar_state();
+                }
+            }
+        }, undefined, load_user_tool_lists);
+    }
+}
+
+function user_tool_list_save()
+{
+    const list_name = prompt("What should this selection be named?", "");
+    if (list_name != null)
+    {
+        const failure = ajax_failure_callback("Oops, something went wrong!");
+        let checked_items = get_checked_items();
+        let checked_tool_ids = checked_items.filter(item => item.type === 'tool').map(item => item.id);
+        if (checked_tool_ids.length > 0)
+        {
+            let add_update_list = true;
+            const lists_with_same_name = $(".user-tool-list a").filter(function() { return $(this).text().trim() === list_name;});
+            if (lists_with_same_name.length > 0)
+            {
+                if (!confirm("There is already a '"+list_name+"' list, this will override it, do you want to continue?"))
+                {
+                    add_update_list = false;
+                }
+            }
+            if (add_update_list)
+            {
+                ajax_post(build_django_url('{% url "tool_calendar_save_user_tool_list" 'aaa' %}', ['aaa'], [list_name]), {"tools": checked_tool_ids}, function()
+                {
+                    load_user_tool_lists(function ()
+                    {
+                        select_user_tool_list($(".user-tool-list a").filter(function() { return $(this).text().trim() === list_name;})[0], checked_tool_ids);
+                    });
+                }, failure);
+            }
+        }
+        else
+        {
+            alert("Please select some tools first!");
+        }
+    }
 }
 
 {# Extra Link - on click handler #}
@@ -934,10 +1031,23 @@ function on_extra_link_click(extra_link)
 function update_clear_selection_btn_display()
 {
     const event_type = get_event_type();
-    if(get_checked_items().length > 0 && event_type !== "specific user") {
+    const checked_items = get_checked_items();
+    if(checked_items.length > 0 && event_type !== "specific user")
+    {
         $('#clear-selection-btn').show();
-    } else {
+    }
+    else
+    {
         $('#clear-selection-btn').hide();
+    }
+    const tools_checked = checked_items.filter(item => item.type === 'tool').map(item => item.id);
+    if(tools_checked.length > 0)
+    {
+        $('#save-selection-btn').show();
+    }
+    else
+    {
+        $('#save-selection-btn').hide();
     }
 }
 
@@ -998,13 +1108,16 @@ function format_duration(duration)
     let hours_formatted = hours + " hour" + (hours > 1 ? "s" : "");
     let minutes_formatted = minutes + " minute" + (minutes > 1 ? "s" : "");
 
-    if (days >= 1) {
+    if (days >= 1)
+    {
         return days_formatted;
     }
 
-    if (hours >= 1) {
+    if (hours >= 1)
+    {
         let formatted = hours_formatted;
-        if (minutes > 0) {
+        if (minutes > 0)
+        {
             formatted += " and " + minutes_formatted;
         }
         return formatted;

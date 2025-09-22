@@ -31,6 +31,7 @@ from NEMO.models import (
     Tool,
     UsageEvent,
     User,
+    UserCalendarToolList,
     UserPreferences,
 )
 from NEMO.policy import policy_class as policy
@@ -132,6 +133,7 @@ def calendar(request, item_type=None, item_id=None):
         "calendar_all_tools": calendar_all_tools,
         "calendar_all_areas": calendar_all_areas,
         "calendar_all_areastools": calendar_all_areastools,
+        "calendar_user_tool_lists": UserCalendarToolList.objects.filter(user=user),
         "create_reservation_confirmation": create_reservation_confirmation,
         "change_reservation_confirmation": change_reservation_confirmation,
         "reservation_confirmation_date_format": reservation_confirmation_date_format,
@@ -1115,6 +1117,37 @@ def send_user_cancelled_reservation_notification(reservation: Reservation):
             calendar_logger.error(
                 "User cancelled reservation notification could not be send because user_office_email_address is not defined"
             )
+
+
+@login_required
+@require_POST
+def delete_tool_list(request, tool_list_id):
+    user_list = get_object_or_404(UserCalendarToolList, id=tool_list_id)
+    if user_list.user == request.user:
+        user_list.delete()
+    else:
+        return HttpResponseBadRequest("You are not authorized to delete this list.")
+    return HttpResponse()
+
+
+@login_required
+@require_POST
+def save_tool_list(request, tool_list_name):
+    user: User = request.user
+    tool_list = request.POST.getlist("tools[]")
+    if not tool_list:
+        return HttpResponseBadRequest("no tool list provided")
+    user_tool_list, created = UserCalendarToolList.objects.get_or_create(user=user, name=tool_list_name)
+    user_tool_list.tools.set(tool_list)
+    return HttpResponse()
+
+
+@login_required
+@require_GET
+def load_tool_lists(request):
+    user: User = request.user
+    user_tool_lists = UserCalendarToolList.objects.filter(user=user)
+    return render(request, "calendar/user_tool_lists.html", {"user_tool_lists": user_tool_lists})
 
 
 @postpone

@@ -1117,7 +1117,6 @@
 
 	function update_stop_button()
 	{
-        console.log("Updating stop button");
 		if(document.querySelector('#tool_control').checkValidity())
 		{
 			$('#stop_wrapper').tooltip('disable');
@@ -1132,7 +1131,6 @@
 
     function update_start_button()
 	{
-        console.log("Updating start button");
         if(document.querySelector('#tool_control').checkValidity())
         {
             $("#start button").prop("disabled", false);

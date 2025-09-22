@@ -1163,6 +1163,23 @@ class UserDocuments(BaseDocumentModel):
         verbose_name_plural = "User documents"
 
 
+class UserCalendarToolList(SerializationByNameModel):
+    name = models.CharField(
+        max_length=CHAR_FIELD_MEDIUM_LENGTH, unique=True, help_text=_("The name of the list of calendar tools")
+    )
+    user = models.ForeignKey(User, help_text=_("The user this list is for"), on_delete=models.CASCADE)
+    tools = models.ManyToManyField("Tool", blank=False, help_text=_("The comma-separated list of tool ids"))
+
+    def get_tool_ids(self) -> List[int]:
+        return list(self.tools.values_list("id", flat=True))
+
+    def __str__(self):
+        return f"{self.name} ({self.user.username})"
+
+    class Meta:
+        ordering = ["user", "name"]
+
+
 class Tool(SerializationByNameModel):
     class OperationMode(object):
         REGULAR = 0

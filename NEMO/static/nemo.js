@@ -10,8 +10,8 @@ jQuery.expr[':'].icontains = function(a, i, m)
 };
 
 // This function allows making regular interval calls to a function only when the tab/window is visible.
-// It also gets called when the tab/window becomes visible (changing tabs, minimizing window etc.)
-// This function is safe in the sense that is can be called multiple times with the same function.
+// It also gets called when the tab/window becomes visible (changing tabs, minimizing the window, etc.)
+// This function is safe in the sense that it can be called multiple times with the same function.
 // It will clear any previously set events and replace them with the new ones.
 let function_handlers = {};
 function set_interval_when_visible(doc, function_to_repeat, time)
@@ -21,7 +21,8 @@ function set_interval_when_visible(doc, function_to_repeat, time)
 	{
 		console.error("You can only call 'set_interval_when_visible' with a named function");
 	}
-	let call_function_when_visible = function () {
+	let call_function_when_visible = function ()
+    {
 		if (!doc.hidden) function_to_repeat();
 	}
 	if (function_handlers[function_name])
@@ -73,7 +74,7 @@ function enable_item_tree_toggling()
 	$('label.tree-toggler').click(toggle_branch);
 }
 
-// This function toggles a tool category branch for the sidebar in the calendar & tool control pages.
+// This function toggles a tool category branch for the sidebar in the calendar and tool control pages.
 function toggle_branch()
 {
 	$(this).parent().children('ul.tree').toggle(300, save_sidebar_state);
@@ -99,7 +100,7 @@ function toggle_categories()
 	sidebar_expanded === "true" ? collapse_all_categories(): expand_all_categories();
 }
 
-// This function expands all tool category branches for the sidebar in the calendar & tool control pages.
+// This function expands all tool category branches for the sidebar in the calendar and tool control pages.
 function expand_all_categories()
 {
 	$(".item_tree ul.tree.area-list").show();
@@ -110,7 +111,7 @@ function expand_all_categories()
 	save_sidebar_state();
 }
 
-// This function collapses all tool category branches for the sidebar in the calendar & tool control pages.
+// This function collapses all tool category branches for the sidebar in the calendar and tool control pages.
 function collapse_all_categories()
 {
 	$(".item_tree ul.tree.tool-list").hide();
@@ -252,25 +253,12 @@ function get_selected_item()
 	{
 	return undefined;
 	}
-	let jq_selected_item = $(selected_item[0])
-	// Check if the selected item is a special link. Otherwise, get its item ID.
-	if(jq_selected_item.hasClass('personal_schedule'))
-	{
-		return 'personal_schedule';
-	}
-
-	if(jq_selected_item.hasClass('all_tools'))
-	{
-		return 'all_tools';
-	}
-	if(jq_selected_item.hasClass('all_areas'))
-	{
-		return 'all_areas';
-	}
-	if(jq_selected_item.hasClass('all_areastools'))
-	{
-		return 'all_areastools';
-	}
+	let jq_selected_item = $(selected_item[0]);
+	// Check if the selected item is a special link and return its item-id. Otherwise, get all the info.
+    if(jq_selected_item.closest("ul#extra-links").length > 0)
+    {
+        return jq_selected_item.data("item-id");
+    }
 
 	return JSON.stringify({'id': jq_selected_item.data('item-id'), 'type': jq_selected_item.data('item-type'), 'element_name': jq_selected_item.data('item-name')});
 }
@@ -294,8 +282,8 @@ function set_selected_item(element, save_state)
 	else
 	{
 		// for everything that is not a tool
-		const element_name = $(element).data("item-name") || $(element).text()
-		const element_name_div = '<div class="label label-primary" id="calendar-selected-element-name">{{ element }}</div>'
+		const element_name = $(element).data("item-name") || $(element).text();
+		const element_name_div = '<div class="label label-primary" id="calendar-selected-element-name">{{ element }}</div>';
 		$("#calendar-selected-element").html(element_name_div.replace('{{ element }}', element_name));
 	}
 }
@@ -318,6 +306,19 @@ function set_selected_item_by_class(item_class)
 	}
 }
 
+function is_selected_item_a_link(item)
+{
+    try
+    {
+        JSON.parse(item);
+        return false;
+    }
+    catch (err)
+    {
+        return true;
+    }
+}
+
 function save_sidebar_state()
 {
 	let showMyTools = localStorage.getItem("showMyTools");
@@ -338,16 +339,18 @@ function save_sidebar_state()
 	}
 
 	let checked_items = get_checked_items();
-	if(checked_items && checked_items.length > 0) {
+	if(checked_items && checked_items.length > 0)
+    {
 		localStorage['Checked Items'] = JSON.stringify(checked_items);
 	}
 
-	if(showMyTools !== null) {
-		localStorage.setItem("showMyTools", showMyTools)
+	if(showMyTools !== null)
+    {
+		localStorage.setItem("showMyTools", showMyTools);
 	}
 	if (calendarToolInfoUrl !== null)
 	{
-		localStorage.setItem("calendarToolInfoUrl", calendarToolInfoUrl)
+		localStorage.setItem("calendarToolInfoUrl", calendarToolInfoUrl);
 	}
 }
 
@@ -379,18 +382,21 @@ function load_sidebar_state()
 		}
 	}
 	let selected = localStorage['Selected item ID'];
-	if (selected === 'personal_schedule' || selected === 'all_tools' || selected === 'all_areas' || selected === 'all_areastools' )
+	if (is_selected_item_a_link(selected))
 	{
 		set_selected_item_by_class(selected);
-	} else if (selected)
+	}
+    else if (selected)
 	{
-		let selected_item = JSON.parse(selected)
+		let selected_item = JSON.parse(selected);
 		set_selected_item_by_id(selected_item.id, selected_item.type);
 	}
 
 	let checked_items = localStorage['Checked Items'];
-	if(checked_items) {
-		JSON.parse(checked_items).forEach(function (item) {
+	if(checked_items)
+    {
+		JSON.parse(checked_items).forEach(function (item)
+        {
 			set_checked_item_by_id(item.id, item.type);
 		});
 	}
@@ -610,7 +616,7 @@ function add_to_list(list_selector, on_click, id, text, removal_title, input_nam
 	let addition = '<div id="' + div_id + '">';
 	if (!readonly)
 	{
-		// use parsehtml to make sure there are no html tags in the title
+		// use parsehtml to make sure there are no HTML tags in the title
 		addition += '<a href="javascript:' + on_click + '(\'' + id + '\')" class="grey hover-black" title="' + $($.parseHTML(removal_title)).text() + '">' +
 		'<span class="glyphicon glyphicon-remove-circle"></span>' +
 		'</a> ';
@@ -622,7 +628,7 @@ function add_to_list(list_selector, on_click, id, text, removal_title, input_nam
 	{
     	return $(this).val().trim() !== '';
 	});
-	if(non_empty_inputs.length === 0) // If the list is empty then replace the empty message with the list item.
+	if(non_empty_inputs.length === 0) // If the list is empty, then replace the empty message with the list item.
 	{
 		$(list_selector).html(addition);
 	}
@@ -635,7 +641,7 @@ function add_to_list(list_selector, on_click, id, text, removal_title, input_nam
 function remove_from_list(list_selector, div_id_selector, emptyMessage)
 {
 	$(list_selector + " > " + div_id_selector).remove();
-	if($(list_selector).find('input').length === 0) // If the list is empty then replace it with the empty message.
+	if($(list_selector).find('input').length === 0) // If the list is empty, then replace it with the empty message.
 	{
 		$(list_selector).html(emptyMessage);
 	}
@@ -700,7 +706,7 @@ function matcher(items, search_fields)
 		});
 		return self;
 	}
-	// This jQuery plugin integrates Twitter Typeahead directly with default parameters & search function.
+	// This jQuery plugin integrates Twitter Typeahead directly with default parameters and search function.
 	//
 	// Example usage:
 	// function on_select(jquery_event, search_selection, dataset_name)
@@ -786,7 +792,7 @@ function matcher(items, search_fields)
 // has timed out and the web page makes an AJAX request. This 403 response
 // is generated by the custom Django middleware called SessionTimeout.
 // This function is registered as a global callback for AJAX completions
-// in /templates/base.html so that when error 403 is returned the browser
+// in /templates/base.html so that when error 403 is returned, the browser
 // is redirected to the logout page, and then further redirected to the login
 // page. This design is useful because some of NEMO's pages (such as the
 // Calendar, Tool Control, and Status Dashboard) make regular polling AJAX requests.
@@ -798,15 +804,15 @@ function navigate_to_login_on_session_expiration(logout_url, event, xhr, status,
 	}
 }
 
-// This function as its name indicate will submit a form and disable the button
+// This function, as its name indicates, will submit a form and disable the button
 // Use it on an input submit onclick attribute: onclick="submit_and_disable(this)"
 // Note: Depending on how validation is handled, this might not work if the form is invalid
-// Note: this doesn't trigger "onsubmit" on form itself.
+// Note: this doesn't trigger "onsubmit" on the form itself.
 function submit_and_disable(input_submit)
 {
 	if (input_submit.form.checkValidity())
 	{
-		// Add input name & value since js submit skips it
+		// Add input name and value since js submit skips it
 		if (input_submit.name)
 		{
 			$(input_submit.form).append($('<input>', {
@@ -923,21 +929,29 @@ function wait_for_element(selector)
     });
 }
 
-function set_multiple_colors(element, colors) {
+function set_multiple_colors(element, colors)
+{
 	// Create a vertical gradient with every color given, evenly distributed
-	if (Array.isArray(colors)) {
-		if (colors.length === 1) {
+	if (Array.isArray(colors))
+    {
+		if (colors.length === 1)
+        {
 			element.css({"background-color": colors[0]});
-		} else {
+		}
+        else
+        {
 			const interval = 100 / colors.length;
 			let percentage = interval;
 			let css_background = "linear-gradient(90deg, ";
-			colors.forEach(function (color, index) {
+			colors.forEach(function (color, index)
+            {
 				css_background += color + " " + percentage + "%";
-				if (index !== colors.length - 1) {
+				if (index !== colors.length - 1)
+                {
 					css_background += ", ";
 				}
-				if (index !== 0 && index !== colors.length - 1) {
+				if (index !== 0 && index !== colors.length - 1)
+                {
 					percentage += interval
 					css_background += color + " " + percentage + "%, ";
 				}
@@ -977,7 +991,7 @@ function table_search(table_id, always_show_rows)
 				{
 				   let $row = $(row);
 				   if (always_show_rows.includes(i)) {$row.show();return true;}
-				   // Only look in td within the row that don't have display:none, so we don't only look at visible cells
+				   // Only look at tds within the row that don't have "display:none", so we don't only look at visible cells
 				   if ($row.find("td").filter(function() { return $(this).css('display') !== 'none'; }).filter(":icontains('" + v + "')").length !== 0)
 				   {
 					   $row.show();

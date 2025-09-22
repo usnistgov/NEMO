@@ -1,0 +1,17 @@
+{% for user_tool_list in user_tool_lists %}
+    <li class="user-tool-list">
+        <a href="javascript:void(0)"
+           onclick="select_user_tool_list(this, {{ user_tool_list.get_tool_ids }})"
+           class="user-list-{{ user_tool_list.id }}"
+           data-item-id="user-list-{{ user_tool_list.id }}"
+           style="position: relative">{{ user_tool_list.name }}</a>
+        <a href="javascript:delete_user_tool_list('{{ user_tool_list.id }}', '{{ user_tool_list.name }}')"
+           class="grey hover-black"
+           title="Delete tool list"
+           style="position: absolute;
+                  top: 0;
+                  right: 0">
+            <span class="glyphicon glyphicon-remove-circle"></span>
+        </a>
+    </li>
+{% endfor %}

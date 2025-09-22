@@ -338,6 +338,17 @@ urlpatterns += [
     ),
     path("proxy_reservation/", calendar.proxy_reservation, name="proxy_reservation"),
     path("tool_calendar_info/<int:tool_id>/", calendar.get_selected_tool_calendar_info, name="tool_calendar_info"),
+    path(
+        "tool_calendar_save_user_tool_list/<str:tool_list_name>/",
+        calendar.save_tool_list,
+        name="tool_calendar_save_user_tool_list",
+    ),
+    path(
+        "tool_calendar_delete_user_tool_list/<int:tool_list_id>/",
+        calendar.delete_tool_list,
+        name="tool_calendar_delete_user_tool_list",
+    ),
+    path("tool_calendar_load_user_tool_lists/", calendar.load_tool_lists, name="tool_calendar_load_user_tool_lists"),
     # Event Details:
     path(
         "event_details/reservation/<int:reservation_id>/", event_details.reservation_details, name="reservation_details"
