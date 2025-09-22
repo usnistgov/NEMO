@@ -248,6 +248,14 @@
 			status_element.html("<h1>Loading tool information...</h1>").show();
             ajax_get(url, undefined, load_complete);
 		}
+        function open_checkout(url)
+        {
+            default_content_element.hide();
+            error_element.hide();
+            error_interlock_element.hide();
+            status_element.html("<h1>Loading supplies/consumables...</h1>").show();
+            ajax_get(url, undefined, load_complete);
+        }
 		function tool_report_problem(url)
         {
             default_content_element.hide();
