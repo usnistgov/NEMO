@@ -21,17 +21,19 @@
     </div>
 {% endblock %}
 {% block pagination_content %}
-    {% if user.is_superuser or user.is_user_office or user.is_accounting_officer or user.is_facility_manager %}
-        <div class="btn-group" role="group" aria-label="Toggle edit managers mode">
-            <button id="normal_mode_button"
-                    type="button"
-                    class="btn btn-default active"
-                    onclick="toggle_manager_edit(this)">View mode</button>
-            <button id="edit_managers_mode_button"
-                    type="button"
-                    class="btn btn-default"
-                    onclick="toggle_manager_edit(this)">Managers edit mode</button>
-        </div>
+    {% if customizations|get_item:"account_enable_manager_edit_mode" == "enabled" %}
+        {% if user.is_superuser or user.is_user_office or user.is_accounting_officer or user.is_facility_manager %}
+            <div class="btn-group" role="group" aria-label="Toggle edit managers mode">
+                <button id="normal_mode_button"
+                        type="button"
+                        class="btn btn-default active"
+                        onclick="toggle_manager_edit(this)">View mode</button>
+                <button id="edit_managers_mode_button"
+                        type="button"
+                        class="btn btn-default"
+                        onclick="toggle_manager_edit(this)">Managers edit mode</button>
+            </div>
+        {% endif %}
     {% endif %}
     <table class="table table-bordered table-condensed table-hover table-align-middle thead-light">
         <thead>
