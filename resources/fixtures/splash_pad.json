@@ -1133,6 +1133,13 @@
   },
   {
     "model": "NEMO.customization",
+    "pk": "account_enable_manager_edit_mode",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
     "pk": "project_allow_transferring_charges",
     "fields": {
       "value": "enabled"
@@ -1176,6 +1183,13 @@
   {
     "model": "NEMO.customization",
     "pk": "consumable_user_self_checkout",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "kiosk_consumable_checkout",
     "fields": {
       "value": "enabled"
     }
