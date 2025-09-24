@@ -100,6 +100,22 @@
                 {% endif %}
                 with url <b>/consumables/</b> so users can have a way to get to the page.
             </div>
+            {% if "NEMO.apps.kiosk"|app_installed %}
+                <div class="col-md-offset-3 col-md-9">
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox"
+                                   name="kiosk_consumable_checkout"
+                                   {% if kiosk_consumable_checkout %}checked{% endif %}
+                                   value="enabled">
+                            Enable consumable checkout from the kiosk
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                    Check this box to allow staff (and users if self-checkout is enabled) to check out consumables/supplies from the kiosk.
+                </div>
+            {% endif %}
             <div class="col-md-offset-3 col-md-9">
                 <div class="checkbox">
                     <label>

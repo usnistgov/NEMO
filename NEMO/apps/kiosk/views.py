@@ -434,7 +434,8 @@ def choices(request):
         "customer": customer,
         "usage_events": list(usage_events),
         "upcoming_reservations": tool_reservations,
-        "show_consumable_self_checkout": consumable_permissions(customer),
+        "show_consumable_self_checkout": ApplicationCustomization.get_bool("kiosk_consumable_checkout")
+        and consumable_permissions(customer),
         **get_categories_and_tools_dictionary(customer, category),
     }
     return render(request, "kiosk/choices.html", dictionary)
