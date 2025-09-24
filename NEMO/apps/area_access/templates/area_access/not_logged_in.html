@@ -4,7 +4,7 @@
 <h2>Please contact {{ facility_name }} staff if you believe this is an error.</h2>
 <audio src="{% url 'media' 'warning.mp3' %}" autoplay></audio>
 {# Don't offer to open the door if there is no interlock #}
-{% if door.interlock %}
+{% if customizations|get_item:"area_access_open_door_on_logout" == "enabled" and door.interlock %}
     <p>
         <a href="javascript:void(0)"
            role="button"
