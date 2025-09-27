@@ -258,6 +258,7 @@ def do_exit_wait_list(entry, time):
 @permission_required("NEMO.kiosk")
 @require_POST
 def reserve_tool(request):
+    virtual_inputs = request.GET.get("virtual_inputs") != "false"
     tool = Tool.objects.get(id=request.POST["tool_id"])
     customer = User.objects.get(id=request.POST["customer_id"])
     project = Project.objects.get(id=request.POST["project_id"])
@@ -314,7 +315,7 @@ def reserve_tool(request):
                 "request_start": request.POST["start"],
                 "request_end": request.POST["end"],
                 "reservation": reservation,
-                "reservation_questions": dynamic_forms.render(virtual_inputs=True),
+                "reservation_questions": dynamic_forms.render(virtual_inputs=virtual_inputs),
             }
         )
         return render(request, "kiosk/tool_reservation_extra.html", dictionary)
@@ -464,6 +465,7 @@ def category_choices(request, category, user_id):
 @permission_required("NEMO.kiosk")
 @require_GET
 def tool_information(request, tool_id, user_id, back):
+    virtual_inputs = request.GET.get("virtual_inputs") != "false"
     tool = Tool.objects.get(id=tool_id, visible=True)
     customer = User.objects.get(id=user_id)
     wait_list = tool.current_wait_list()
@@ -498,7 +500,9 @@ def tool_information(request, tool_id, user_id, back):
         "rendered_configuration_html": tool.configuration_widget(
             customer, url=reverse("kiosk_tool_configuration") + "?badge_number=" + str(customer.badge_number)
         ),
-        "post_usage_questions": post_usage_questions.render(virtual_inputs=True) if post_usage_questions else "",
+        "post_usage_questions": (
+            post_usage_questions.render(virtual_inputs=virtual_inputs) if post_usage_questions else ""
+        ),
         "back": back,
         "tool_control_show_task_details": ToolCustomization.get_bool("tool_control_show_task_details"),
         "wait_list_position": user_wait_list_position,  # 0 if not in wait list
