@@ -703,7 +703,10 @@ def get_categories_and_tools_dictionary(customer: User, categories=None, tool_na
             tool_in_category_filter |= Q(_category__iexact=category)
             category_filter |= Q(_category__istartswith=category + "/")
         tools = tools.filter(category_filter)
-    tool_categories = [t[0] for t in tools.order_by("_category").values_list("_category").distinct()]
+    if tool_names and not categories:
+        tool_categories = []
+    else:
+        tool_categories = [t[0] for t in tools.order_by("_category").values_list("_category").distinct()]
     tool_ids_user_is_qualified = remove_duplicates(
         list(customer.qualifications.all().values_list("id", flat=True))
         + list(customer.staff_for_tools.all().values_list("id", flat=True))

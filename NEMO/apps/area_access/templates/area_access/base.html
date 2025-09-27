@@ -78,7 +78,8 @@
         {% endwith %}
 		let timeout_handle = null;
 		let countdown_handle = null;
-		let occupancy = new URLSearchParams(window.location.search).get('occupancy');
+        const current_url_parameters = new URLSearchParams(window.location.search);
+		let occupancy = current_url_parameters.get('occupancy');
 
 		let default_content_element = $("#default_content");
 		let status_element = $("#status");
@@ -237,7 +238,7 @@
         function go_to_kiosk(badge_number)
         {
             localStorage.setItem('kiosk_badge_number', badge_number);
-            window.open("{% url 'kiosk' %}", "_blank", "noopener,noreferrer");
+            window.open("{% url 'kiosk' %}?"+current_url_parameters.toString(), "_blank", "noopener,noreferrer");
         }
 	
         </script>
