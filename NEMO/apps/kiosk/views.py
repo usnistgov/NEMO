@@ -389,7 +389,8 @@ def tool_reservation(request, tool_id, user_id, back):
 @require_GET
 def choices(request):
     try:
-        category = request.GET.get("category")
+        categories = request.GET.getlist("category")
+        tool_names = request.GET.getlist("tool")
         customer = User.objects.get(badge_number=request.GET["badge_number"])
         usage_events = (
             UsageEvent.objects.filter(operator=customer.id, end=None)
@@ -436,7 +437,7 @@ def choices(request):
         "upcoming_reservations": tool_reservations,
         "show_consumable_self_checkout": ApplicationCustomization.get_bool("kiosk_consumable_checkout")
         and consumable_permissions(customer),
-        **get_categories_and_tools_dictionary(customer, category),
+        **get_categories_and_tools_dictionary(customer, categories, tool_names),
     }
     return render(request, "kiosk/choices.html", dictionary)
 
@@ -454,7 +455,7 @@ def category_choices(request, category, user_id):
         return render(request, "kiosk/acknowledgement.html", dictionary)
     dictionary = {
         "customer": customer,
-        **get_categories_and_tools_dictionary(customer, category),
+        **get_categories_and_tools_dictionary(customer, [category]),
     }
     return render(request, "kiosk/category_choices.html", dictionary)
 
@@ -685,25 +686,36 @@ def post_comment(request):
     return redirect("kiosk_tool_information", tool_id=tool.id, user_id=customer.id, back=back)
 
 
-def get_categories_and_tools_dictionary(customer: User, category=None) -> Dict:
+def get_categories_and_tools_dictionary(customer: User, categories=None, tool_names=None) -> Dict:
     tools = Tool.objects.filter(visible=True)
-    if category:
-        tools = tools.filter(_category__istartswith=category + "/")
-    categories = [t[0] for t in tools.order_by("_category").values_list("_category").distinct()]
+    tool_in_category_filter = Q()  # filter for tools displayed at this root level
+    if tool_names:
+        # We are displaying selected tools at the root level
+        for tool_name in tool_names:
+            tool_in_category_filter |= Q(name__iexact=tool_name)
+    if categories:
+        category_filter = Q()
+        for category in categories:
+            tool_in_category_filter |= Q(_category__iexact=category)
+            category_filter |= Q(_category__istartswith=category + "/")
+        tools = tools.filter(category_filter)
+    tool_categories = [t[0] for t in tools.order_by("_category").values_list("_category").distinct()]
     tool_ids_user_is_qualified = remove_duplicates(
         list(customer.qualifications.all().values_list("id", flat=True))
         + list(customer.staff_for_tools.all().values_list("id", flat=True))
     )
     unqualified_categories = [
         category
-        for category in categories
+        for category in tool_categories
         if not customer.is_staff
         and not Tool.objects.filter(visible=True, _category=category, id__in=tool_ids_user_is_qualified).exists()
     ]
-    tools_in_this_category = list(Tool.objects.filter(visible=True, _category__iexact=category))
+    tools_in_this_category = (
+        list(Tool.objects.filter(visible=True).filter(tool_in_category_filter)) if tool_in_category_filter else []
+    )
     return {
-        "selected_category": category,
-        "categories": categories,
+        "selected_category": categories[0] if categories and len(categories) == 1 else None,
+        "categories": tool_categories,
         "unqualified_categories": unqualified_categories,
         "tools": tools_in_this_category,
         "unqualified_tools": [

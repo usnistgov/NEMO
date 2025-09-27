@@ -229,16 +229,19 @@
 		}
 		function load_choices(badge_number)
 		{
-			let data = {
-				'location': '{{ location }}',
-				'badge_number': badge_number,
-                'category': '{{ request.GET.category|default_if_none:"" }}',
-			};
+            const urlParams = new URLSearchParams(window.location.search);
+            const categories = urlParams.getAll('category');
+            const tool_names = urlParams.getAll('tool');
+            let params = new URLSearchParams();
+            params.append('location', '{{ location }}');
+    		params.append('badge_number', badge_number);
+			categories.forEach(c => params.append('category', c));
+			tool_names.forEach(c => params.append('tool', c));
 			default_content_element.hide();
 			error_interlock_element.hide();
 			error_element.hide();
 			status_element.html("<h1>Loading choices...</h1>").show();
-            ajax_get('{% url 'kiosk_choices' %}?' + $.param(data), undefined, load_complete);
+            ajax_get('{% url 'kiosk_choices' %}?' + params.toString(), undefined, load_complete);
 		}
 		function tool_information(url)
 		{
