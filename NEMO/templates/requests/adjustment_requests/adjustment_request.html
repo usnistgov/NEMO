@@ -143,6 +143,30 @@
                     {% endif %}
                 </div>
             {% endif %}
+            {% if customer_projects and form.item_id.value and form.item_type.value %}
+                <div class="form-group" id="new_project">
+                    <div class="row">
+                        <div class="col-md-3 col-sm-6">
+                            <label for="new_project">New project</label>
+                            <select id="new_project" name="new_project" class="form-control text-center">
+                                <option value="" selected></option>
+                                {% for project in customer_projects %}
+                                    <option value="{{ project.id }}" {% if form.new_project.value|to_int == project.id %}selected{% endif %}>
+                                        {{ project.display_with_status }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    {% if form.new_project.errors %}
+                        <div class="row">
+                            <div class="col-md-3 col-sm-6">
+                                {% if form.new_project.errors %}<span style="color:red">{{ form.new_project.errors|striptags }}</span>{% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
             {% if item.can_be_waived %}
                 <div class="form-group">
                     <label>
@@ -233,7 +257,7 @@
             let waive_checkbox = $("#waive_charge")[0];
             if (waive_checkbox)
             {
-                $("#new_quantity, #new_times").toggle(!waive_checkbox.checked);
+                $("#new_project, #new_quantity, #new_times").toggle(!waive_checkbox.checked);
             }
         }
         

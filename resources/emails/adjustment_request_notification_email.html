@@ -54,18 +54,38 @@
                             <br>
                             <u>Charge</u>: {{ adjustment_request.item.get_display }}
                             <br>
+                            <br>
                             {% if not adjustment_request.waive %}
-                                <u>Start time</u>: {{ adjustment_request.item.start|date:"SHORT_DATETIME_FORMAT" }}
-                                {% if adjustment_request.get_new_start %}
-                                    -> <b>{{ adjustment_request.get_new_start|date:"SHORT_DATETIME_FORMAT" }}</b>
+                                {% if adjustment_request.item.get_start %}
+                                    <u>Start time</u>: {{ adjustment_request.item.get_start|date:"SHORT_DATETIME_FORMAT" }}
+                                    {% if adjustment_request.get_new_start %}
+                                        -> <b>{{ adjustment_request.get_new_start|date:"SHORT_DATETIME_FORMAT" }}</b>
+                                    {% endif %}
+                                    <br>
                                 {% endif %}
-                                <br>
-                                <u>End time</u>: {{ adjustment_request.item.end|date:"SHORT_DATETIME_FORMAT" }}
-                                {% if adjustment_request.get_new_end %}
-                                    -> <b>{{ adjustment_request.get_new_end|date:"SHORT_DATETIME_FORMAT" }}</b>
+                                {% if adjustment_request.item.get_end %}
+                                    <u>
+                                        {% if adjustment_request.get_new_start %}
+                                            End time
+                                        {% else %}
+                                            Date
+                                        {% endif %}
+                                    </u>: {{ adjustment_request.item.get_end|date:"SHORT_DATETIME_FORMAT" }}
+                                    {% if adjustment_request.get_new_end %}
+                                        -> <b>{{ adjustment_request.get_new_end|date:"SHORT_DATETIME_FORMAT" }}</b>
+                                    {% endif %}
+                                    <br>
                                 {% endif %}
+                                {% if adjustment_request.item.quantity is not None %}
+                                    <u>Quantity</u>: {{ adjustment_request.item.quantity }}
+                                    {% if adjustment_request.new_quantity is not None %}-> <b>{{ adjustment_request.new_quantity }}</b>{% endif %}
+                                    <br>
+                                {% endif %}
+                                <u>Project</u>: {{ adjustment_request.item.project }}
+                                {% if adjustment_request.new_project %}-> <b>{{ adjustment_request.new_project }}</b>{% endif %}
                                 <br>
-                                <u>Difference</u>: <b>{{ adjustment_request.get_time_difference|default_if_none:"" }}</b>
+                                <br>
+                                <u>Difference</u>: <b>{{ adjustment_request.get_difference|default_if_none:""|linebreaksbr }}</b>
                             {% else %}
                                 <u>Waive</u>: <b>I request that this charge be waived</b>
                             {% endif %}

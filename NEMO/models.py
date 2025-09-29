@@ -4757,6 +4757,7 @@ class AdjustmentRequest(BaseModel):
     new_start = models.DateTimeField(null=True, blank=True)
     new_end = models.DateTimeField(null=True, blank=True)
     new_quantity = models.PositiveIntegerField(null=True, blank=True)
+    new_project = models.ForeignKey(Project, null=True, blank=True, on_delete=models.CASCADE)
     waive = models.BooleanField(default=False)
     status = models.IntegerField(choices=RequestStatus.choices_without_expired(), default=RequestStatus.PENDING)
     reviewer = models.ForeignKey(
@@ -4796,27 +4797,43 @@ class AdjustmentRequest(BaseModel):
             else None
         )
 
-    def get_quantity_difference(self) -> int:
+    def get_quantity_difference(self) -> Optional[int]:
         if self.item and self.new_quantity is not None:
             return self.new_quantity - self.item.quantity
+        return None
 
-    def get_time_difference(self) -> str:
-        if self.item and self.new_start and self.new_end:
+    def get_project_difference(self) -> str:
+        if self.item and self.new_project and self.item.project != self.new_project:
+            return f"{self.item.project} -> {self.new_project}"
+        else:
+            return ""
+
+    def get_time_difference(self) -> Optional[str]:
+        if self.has_changed_time():
             previous_duration = self.item.end.replace(microsecond=0, second=0) - self.item.start.replace(
                 microsecond=0, second=0
             )
-            new_duration = self.new_end - self.new_start
+            new_duration = (self.new_end or self.item.end) - (self.new_start or self.item.start)
             return (
                 f"+{(new_duration - previous_duration)}"
                 if new_duration >= previous_duration
                 else f"- {(previous_duration - new_duration)}"
             )
+        return None
 
     def get_difference(self):
         if self.waive:
             return "Waived" if self.item and self.item.waived else "Waive requested"
         else:
-            return (self.get_time_difference() or self.get_quantity_difference()) if self.item else ""
+            if self.item:
+                diff = str(self.get_quantity_difference() or self.get_time_difference() or "")
+                if self.get_project_difference():
+                    if diff:
+                        diff += "\n"
+                    diff += self.get_project_difference()
+                return diff
+            else:
+                return ""
 
     def adjustable_charge(self):
         return (
@@ -4824,6 +4841,7 @@ class AdjustmentRequest(BaseModel):
             or self.has_changed_time()
             or isinstance(self.item, Reservation)
             or self.get_quantity_difference()
+            or self.get_project_difference()
         )
 
     def has_changed_time(self) -> bool:
@@ -4855,30 +4873,35 @@ class AdjustmentRequest(BaseModel):
     def apply_adjustment(self, user):
         if self.status == RequestStatus.APPROVED:
             if self.waive:
+                # If waiving, waive the charge and move on
                 self.item.waive(user)
                 self.applied = True
                 self.applied_by = user
                 self.save()
-            elif self.has_changed_time():
-                new_start = self.get_new_start()
-                new_end = self.get_new_end()
-                if new_start:
-                    self.item.start = new_start
-                if new_end:
-                    self.item.end = new_end
-                self.item.save()
-                self.applied = True
-                self.applied_by = user
-                self.save()
-            elif self.get_quantity_difference():
-                self.item.quantity = self.new_quantity
-                self.item.save()
-                self.applied = True
-                self.applied_by = user
-            elif isinstance(self.item, Reservation):
-                # in this case the times have not been changed so we are essentially waiving the charge
-                self.waive = True
-                self.apply_adjustment(user)
+            else:
+                # Otherwise let's make the changes required
+                if self.has_changed_time() or self.get_quantity_difference() or self.get_project_difference():
+                    # We can only have one of times changed or quantity changed
+                    if self.has_changed_time():
+                        new_start = self.get_new_start()
+                        new_end = self.get_new_end()
+                        if new_start:
+                            self.item.start = new_start
+                        if new_end:
+                            self.item.end = new_end
+                    elif self.get_quantity_difference():
+                        self.item.quantity = self.new_quantity
+                    # But changing the project can happen in addition to changed times and quantity
+                    if self.get_project_difference():
+                        self.item.project = self.new_project
+                    self.item.save()
+                    self.applied = True
+                    self.applied_by = user
+                    self.save()
+                elif isinstance(self.item, Reservation):
+                    # in this case the time, quantity or project has not been changed so we are essentially waiving the charge
+                    self.waive = True
+                    self.apply_adjustment(user)
 
     def delete(self, using=None, keep_parents=False):
         adjustment_id = self.id
@@ -4893,11 +4916,12 @@ class AdjustmentRequest(BaseModel):
         ).delete()
 
     def save(self, *args, **kwargs):
-        # We are removing new start, new end and new quantity just in case
+        # We are removing new start, new end, new quantity and new project just in case
         if self.waive:
             self.new_end = None
             self.new_start = None
             self.new_quantity = None
+            self.new_project = None
         super().save(*args, **kwargs)
 
     def clean(self):

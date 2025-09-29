@@ -17,6 +17,9 @@ class ToolWaitListTestCase(NEMOTestCaseMixin, TestCase):
             open("resources/emails/tool_wait_list_notification_email.html", "r"), "wait_list_notification_email.html"
         )
 
+    def tearDown(self):
+        store_media_file(None, "wait_list_notification_email.html")
+
     def test_user_enter_wait_list_regular_mode_fail(self):
         self.enter_wait_list_mode_fail(reverse("enter_wait_list"), Tool.OperationMode.REGULAR)
 

@@ -34,8 +34,12 @@
                     {% endif %}
                     {% if a_request.get_new_end %}end -> {{ a_request.get_new_end|date:'SHORT_DATETIME_FORMAT' }}{% endif %}
                     {% if a_request.new_quantity is not None %}quantity -> {{ a_request.new_quantity }}{% endif %}
+                    {% if a_request.new_project %}
+                        {% if a_request.get_new_start or a_request.get_new_end or a_request.new_quantity %}<br>{% endif %}
+                        project -> {{ a_request.new_project }}
+                    {% endif %}
                 </td>
-                <td class="text-center">{{ a_request.get_difference|default_if_none:"" }}</td>
+                <td class="text-center">{{ a_request.get_difference|default_if_none:""|linebreaksbr }}</td>
                 <td class="text-right text-nowrap" rowspan="2">
                     {% if request_status == 'approved' or request_status == 'denied' %}
                         {{ a_request.reviewer.get_name }}

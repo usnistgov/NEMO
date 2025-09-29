@@ -50,7 +50,7 @@ class BillableItemMixin:
     CONSUMABLE = "consumable"
     MISSED_RESERVATION = "missed_reservation"
 
-    def get_customer(self) -> User:
+    def get_customer(self) -> Optional[User]:
         if self.get_real_type() in [
             BillableItemMixin.AREA_ACCESS,
             BillableItemMixin.REMOTE_WORK,
@@ -61,6 +61,7 @@ class BillableItemMixin:
             return self.user
         elif self.get_real_type() == BillableItemMixin.TRAINING:
             return self.trainee
+        return None
 
     def get_operator(self) -> Optional[User]:
         if self.get_real_type() == BillableItemMixin.AREA_ACCESS:
@@ -75,6 +76,7 @@ class BillableItemMixin:
             return self.merchant
         elif self.get_real_type() == BillableItemMixin.MISSED_RESERVATION:
             return self.creator
+        return None
 
     def get_item(self) -> str:
         if self.get_real_type() == BillableItemMixin.AREA_ACCESS:
@@ -90,6 +92,7 @@ class BillableItemMixin:
             return f"{self.consumable}{quantity}"
         elif self.get_real_type() == BillableItemMixin.MISSED_RESERVATION:
             return f"{self.tool or self.area} missed reservation"
+        return f"{self.__class__.__name__}"
 
     def waive(self, user: User):
         if hasattr(self, "waived"):
@@ -112,6 +115,7 @@ class BillableItemMixin:
             BillableItemMixin.MISSED_RESERVATION,
         ]:
             return self.start
+        return None
 
     def get_end(self) -> Optional[datetime.datetime]:
         if self.get_real_type() in [
@@ -123,6 +127,7 @@ class BillableItemMixin:
             return self.end
         elif self.get_real_type() in [BillableItemMixin.TRAINING, BillableItemMixin.CONSUMABLE]:
             return self.date
+        return None
 
     def can_be_adjusted(self, user: User):
         # determine if the given user can make an adjustment request for this charge
@@ -246,6 +251,7 @@ class BillableItemMixin:
             return "charged "
         elif self.get_real_type() == BillableItemMixin.MISSED_RESERVATION:
             return "created "
+        return ""
 
     def get_real_type(self) -> str:
         from NEMO.models import (
@@ -285,6 +291,7 @@ class BillableItemMixin:
             return self.get_real_type()
 
     def get_display(self, user: User = None) -> str:
+        project_display = f", charged to {self.project}"
         customer_display = f" for {self.get_customer()}"
         operator_display = f" {self.get_operator_action()}by {self.get_operator()}"
         user_display = ""
@@ -298,7 +305,7 @@ class BillableItemMixin:
             charge_time = f" from {format_datetime(self.get_start(), DTF)} to {format_datetime(self.get_end(), DTF)}"
         elif self.get_start() or self.get_end():
             charge_time = f" on {format_datetime(self.get_start() or self.get_end(), DTF)}"
-        return f"{self.get_item()}{user_display}{charge_time}"
+        return f"{self.get_item()}{user_display}{charge_time}{project_display}"
 
 
 class RecurrenceMixin:

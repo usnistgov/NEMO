@@ -112,13 +112,15 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
 
     edit = bool(adjustment_request.id)
     initial_data = {"creator": adjustment_request.creator if edit else user}
-    # set those initial properties on the form if we just changed the item
+    # set those initial properties on the form if we just changed the charge
     item_changed = bool(item_type_id)
     if item_changed and adjustment_request.item and adjustment_request.item.can_times_be_changed():
         initial_data["new_start"] = adjustment_request.item.start
         initial_data["new_end"] = adjustment_request.item.end
     if item_changed and adjustment_request.item and adjustment_request.item.can_quantity_be_changed():
         initial_data["new_quantity"] = adjustment_request.item.quantity
+    if item_changed and adjustment_request.item:
+        initial_data["new_project"] = adjustment_request.item.project
     description = request.GET.get("description")
     if description:
         initial_data["description"] = description
@@ -132,18 +134,27 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
     item_type = form.data.get("item_type") if form.is_bound else None
     item_id = form.data.get("item_id") if form.is_bound else None
 
-    # item from the form always has priority
-    item = (
+    # charge from the form always has priority
+    charge: BillableItemMixin = (
         ContentType.objects.get_for_id(item_type).get_object_for_this_type(pk=item_id)
         if item_type and item_id
         else adjustment_request.item
     )
 
-    dictionary = {"item": item, "form": form}
+    # Find the customer:
+    # 1. We have a charge, the customer is the customer of the charge
+    # 2. We have an adjustment request, the customer is the creator of the adjustment request (if we have a creator)
+    # 3. Otherwise, the person making the request is the customer
+    customer = user
+    if charge:
+        customer = charge.get_customer()
+    elif adjustment_request and adjustment_request.creator_id:
+        customer = adjustment_request.creator
+    dictionary = {"item": charge, "form": form, "customer_projects": customer.projects.order_by("-active", "name")}
     if get_django_view_name_from_url(request.META.get("HTTP_REFERER", "")) == "create_adjustment_request":
         dictionary["select_not_required"] = True
     if not edit:
-        dictionary["eligible_items"] = adjustment_eligible_items(user, current_item=item)
+        dictionary["eligible_items"] = adjustment_eligible_items(user, current_item=charge)
 
     if request.method == "POST":
         # some extra validation needs to be done here because it depends on the user
@@ -466,6 +477,8 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
     table_result.add_header(("item", "Item"))
     table_result.add_header(("new_start", "New start"))
     table_result.add_header(("new_end", "New end"))
+    table_result.add_header(("new_quantity", "New quantity"))
+    table_result.add_header(("new_project", "New project"))
     table_result.add_header(("difference", "Difference"))
     table_result.add_header(("waived", "Waive requested"))
     table_result.add_header(("reviewer", "Reviewer"))
@@ -483,7 +496,8 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
                 "new_start": req.new_start,
                 "new_end": req.new_end,
                 "new_quantity": req.new_quantity,
-                "difference": req.get_time_difference() or req.get_quantity_difference(),
+                "new_project": req.new_project,
+                "difference": req.get_difference(),
                 "waived": req.waive,
                 "reviewer": req.reviewer,
                 "applied": req.applied,
