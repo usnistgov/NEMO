@@ -61,6 +61,7 @@ from NEMO.models import (
     TrainingSession,
     UsageEvent,
     User,
+    UserCalendarToolList,
     UserDocuments,
     UserPreferences,
 )
@@ -197,6 +198,16 @@ class UserDocumentSerializer(FlexFieldsSerializerMixin, ModelSerializer):
         fields = "__all__"
         expandable_fields = {
             "user": "NEMO.serializers.UserSerializer",
+        }
+
+
+class UserCalendarToolListSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = UserCalendarToolList
+        fields = "__all__"
+        expandable_fields = {
+            "user": "NEMO.serializers.UserSerializer",
+            "tools": ("NEMO.serializers.ToolSerializer", {"many": True}),
         }
 
 

@@ -59,6 +59,7 @@ from NEMO.models import (
     TrainingSession,
     UsageEvent,
     User,
+    UserCalendarToolList,
     UserDocuments,
     UserPreferences,
 )
@@ -107,6 +108,7 @@ from NEMO.serializers import (
     ToolUsageQuestionsSerializer,
     TrainingSessionSerializer,
     UsageEventSerializer,
+    UserCalendarToolListSerializer,
     UserDocumentSerializer,
     UserPreferenceSerializer,
     UserSerializer,
@@ -257,6 +259,13 @@ class UserDocumentsViewSet(ModelViewSet):
         "display_order": number_filters,
         "uploaded_at": datetime_filters,
     }
+
+
+class UserCalendarToolListViewSet(ModelViewSet):
+    filename = "user_calendar_tool_lists"
+    queryset = UserCalendarToolList.objects.all()
+    serializer_class = UserCalendarToolListSerializer
+    filterset_fields = {"id": key_filters, "name": string_filters, "user": key_filters, "tools": manykey_filters}
 
 
 class UserPreferencesViewSet(ModelViewSet):
