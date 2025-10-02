@@ -10,7 +10,7 @@ from django.db import transaction
 from django.http import FileResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound
 from django.utils.safestring import mark_safe
 from drf_excel.mixins import XLSXFileMixin
-from rest_framework import status, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import BrowsableAPIRenderer
@@ -38,6 +38,7 @@ from NEMO.models import (
     Interlock,
     InterlockCard,
     InterlockCardCategory,
+    MembershipHistory,
     PhysicalAccessLevel,
     Project,
     ProjectDiscipline,
@@ -85,6 +86,7 @@ from NEMO.serializers import (
     InterlockCardCategorySerializer,
     InterlockCardSerializer,
     InterlockSerializer,
+    MembershipHistorySerializer,
     PermissionSerializer,
     PhysicalAccessLevelSerializer,
     ProjectDisciplineSerializer,
@@ -146,11 +148,9 @@ class SingleInstanceHTMLFormBrowsableAPIRenderer(BrowsableAPIRenderer):
             return super().render_form_for_serializer(serializer)
 
 
-class ModelViewSet(XLSXFileMixin, viewsets.ModelViewSet):
+class XLSXFileListModelMixin(XLSXFileMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     """
-    An extension of the model view set, which accepts a json list of objects
-    to create multiple instances at once.
-    Also allows XLSX retrieval
+    Adds pagination bypass and also allows XLSX retrieval
     """
 
     # Bypass pagination when exporting into any format that's not the browsable API
@@ -162,6 +162,16 @@ class ModelViewSet(XLSXFileMixin, viewsets.ModelViewSet):
         if page_size_override is not None or not renderer or isinstance(renderer, BrowsableAPIRenderer):
             return super().paginate_queryset(queryset)
         return None
+
+    def get_filename(self, *args, **kwargs):
+        return f"{self.filename}-{export_format_datetime()}.xlsx"
+
+
+class ModelViewSet(XLSXFileListModelMixin, viewsets.ModelViewSet):
+    """
+    An extension of the model view set, which accepts a json list of objects
+    to create multiple instances at once.
+    """
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
@@ -184,9 +194,6 @@ class ModelViewSet(XLSXFileMixin, viewsets.ModelViewSet):
             else:
                 new_renderers.append(renderer())
         return new_renderers
-
-    def get_filename(self, *args, **kwargs):
-        return f"{self.filename}-{export_format_datetime()}.xlsx"
 
 
 class AlertCategoryViewSet(viewsets.ModelViewSet):
@@ -969,6 +976,22 @@ class StaffAssistanceRequestViewSet(ModelViewSet):
         "description": string_filters,
         "resolved": boolean_filters,
         "deleted": boolean_filters,
+    }
+
+
+class MembershipHistoryViewSet(XLSXFileListModelMixin, mixins.RetrieveModelMixin):
+    filename = "membership_history"
+    queryset = MembershipHistory.objects.all()
+    serializer_class = MembershipHistorySerializer
+    filterset_fields = {
+        "id": key_filters,
+        "parent_content_type": key_filters,
+        "parent_object_id": key_filters,
+        "child_content_type": key_filters,
+        "child_object_id": key_filters,
+        "date": datetime_filters,
+        "authorizer": key_filters,
+        "action": boolean_filters,
     }
 
 

@@ -39,6 +39,7 @@ from NEMO.models import (
     Interlock,
     InterlockCard,
     InterlockCardCategory,
+    MembershipHistory,
     PhysicalAccessLevel,
     Project,
     ProjectDiscipline,
@@ -612,6 +613,17 @@ class StaffAssistanceRequestSerializer(FlexFieldsSerializerMixin, ModelSerialize
         expandable_fields = {
             "tool": "NEMO.serializers.ToolSerializer",
             "user": "NEMO.serializers.UserSerializer",
+        }
+
+
+class MembershipHistorySerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = MembershipHistory
+        fields = "__all__"
+        expandable_fields = {
+            "parent_content_type": "NEMO.serializers.ContentTypeSerializer",
+            "child_content_type": "NEMO.serializers.ContentTypeSerializer",
+            "authorizer": "NEMO.serializers.UserSerializer",
         }
 
 
