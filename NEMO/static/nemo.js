@@ -599,10 +599,12 @@ function autofocus(selector)
 	});
 }
 
-function toggle_details(element)
+function toggle_details(element, open, closed)
 {
-	$(element).children('.chevron').toggleClass('glyphicon-chevron-right glyphicon-chevron-down', 200);
-	return false;
+    const closed_chevron = closed || "down";
+    const open_chevron = open || "right";
+    $(element).children('.chevron').toggleClass('glyphicon-chevron-' + open_chevron + ' glyphicon-chevron-' + closed_chevron, 200);
+    return false;
 }
 
 function add_to_list(list_selector, on_click, id, text, removal_title, input_name, readonly)
@@ -1027,6 +1029,10 @@ function build_django_url(urlTemplate, placeholders, actualValues)
         console.error('Mismatch between placeholders and actual values count');
         return undefined;
     }
+
+    // Make each array strings, just to be safe
+    placeholders = placeholders.map(String);
+    actualValues = actualValues.map(String);
 
     // Split URL into segments
     const segments = urlTemplate.split('/');

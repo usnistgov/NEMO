@@ -1282,3 +1282,19 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	padding: 5px 10px;
 	font-size: 14px;
 }
+
+.hr-sm
+{
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border: 0;
+    border-top: 1px solid #eee;
+}
+
+.hr-xs
+{
+    margin-top: 5px;
+    margin-bottom: 5px;
+    border: 0;
+    border-top: 1px solid #eee;
+}
