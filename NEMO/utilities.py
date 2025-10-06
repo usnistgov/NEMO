@@ -12,6 +12,7 @@ from enum import Enum
 from io import BytesIO, StringIO
 from logging import getLogger
 from smtplib import SMTPAuthenticationError, SMTPConnectError, SMTPServerDisconnected
+from string import Formatter
 from typing import Any, Dict, Iterator, List, Optional, Sequence, Set, TYPE_CHECKING, Tuple, Union
 from urllib.parse import urljoin, urlparse
 
@@ -508,6 +509,58 @@ def export_format_datetime(
         else export_time_format if not d_format and t_format else export_date_format + separator + export_time_format
     )
     return format_datetime(this_time, datetime_format, as_current_timezone)
+
+
+# See https://stackoverflow.com/a/42320260/597548
+def format_timedelta(t_delta, fmt="{D:02}d {H:02}h {M:02}m {S:02}s", input_type="timedelta"):
+    """Convert a datetime.timedelta object or a regular number to a custom formatted string,
+    just like the strftime() method does for datetime.datetime objects.
+
+    The fmt argument allows custom formatting to be specified. Fields can include seconds,
+    minutes, hours, days, and weeks. Each field is optional.
+
+    Some examples:
+        '{D:02}d {H:02}h {M:02}m {S:02}s' --> '05d 08h 04m 02s' (default)
+        '{W}w {D}d {H}:{M:02}:{S:02}'     --> '4w 5d 8:04:02'
+        '{D:2}d {H:2}:{M:02}:{S:02}'      --> ' 5d  8:04:02'
+        '{H}h {S}s'                       --> '72h 800s'
+
+    The input_type argument allows t_delta to be a regular number instead of the
+    default, which is a datetime.timedelta object.  Valid input_type strings:
+        's', 'seconds',
+        'm', 'minutes',
+        'h', 'hours',
+        'd', 'days',
+        'w', 'weeks'
+    """
+
+    # Convert t_delta to integer seconds.
+    if input_type == "timedelta":
+        remainder = int(t_delta.total_seconds())
+    elif input_type in ["s", "seconds"]:
+        remainder = int(t_delta)
+    elif input_type in ["m", "minutes"]:
+        remainder = int(t_delta) * 60
+    elif input_type in ["h", "hours"]:
+        remainder = int(t_delta) * 3600
+    elif input_type in ["d", "days"]:
+        remainder = int(t_delta) * 86400
+    elif input_type in ["w", "weeks"]:
+        remainder = int(t_delta) * 604800
+
+    f = Formatter()
+    desired_fields = [field_tuple[1] for field_tuple in f.parse(fmt) if field_tuple[1]]
+    possible_fields = ("W", "D", "H", "M", "S")
+    constants = {"W": 604800, "D": 86400, "H": 3600, "M": 60, "S": 1}
+    values = {}
+    for field in possible_fields:
+        if field in desired_fields and field in constants:
+            is_last_field = field == desired_fields[-1]
+            if is_last_field:
+                values[field] = remainder / constants[field]
+            else:
+                values[field], remainder = divmod(remainder, constants[field])
+    return f.format(fmt, **values)
 
 
 def as_timezone(dt):
