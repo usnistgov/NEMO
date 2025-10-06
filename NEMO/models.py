@@ -20,7 +20,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.core.validators import MinValueValidator, validate_comma_separated_integer_list
 from django.db import connections, models, transaction
-from django.db.models import Q
+from django.db.models import IntegerChoices, Q
 from django.db.models.manager import Manager
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
@@ -282,21 +282,15 @@ class EmailNotificationType(object):
         return [(choice[0], choice[1]) for choice in cls.Choices if choice[0] not in [cls.OFF, cls.ALTERNATE_EMAIL]]
 
 
-class RequestStatus(object):
-    PENDING = 0
-    APPROVED = 1
-    DENIED = 2
-    EXPIRED = 3
-    Choices = (
-        (PENDING, "Pending"),
-        (APPROVED, "Approved"),
-        (DENIED, "Denied"),
-        (EXPIRED, "Expired"),
-    )
+class RequestStatus(IntegerChoices):
+    PENDING = 0, _("Pending")
+    APPROVED = 1, _("Approved")
+    DENIED = 2, _("Denied")
+    EXPIRED = 3, _("Expired")
 
     @classmethod
     def choices_without_expired(cls):
-        return [(choice[0], choice[1]) for choice in cls.Choices if choice[0] not in [cls.EXPIRED]]
+        return [(choice[0], choice[1]) for choice in cls.choices if choice[0] not in [cls.EXPIRED]]
 
 
 class ToolUsageQuestionType(models.TextChoices):
@@ -613,7 +607,7 @@ class TemporaryPhysicalAccessRequest(BaseModel):
     start_time = models.DateTimeField(help_text="The requested time for the access to start.")
     end_time = models.DateTimeField(help_text="The requested time for the access to end.")
     other_users = models.ManyToManyField("User", blank=True, help_text="Select the other users requesting access.")
-    status = models.IntegerField(choices=RequestStatus.Choices, default=RequestStatus.PENDING)
+    status = models.IntegerField(choices=RequestStatus.choices, default=RequestStatus.PENDING)
     reviewer = models.ForeignKey(
         "User", null=True, blank=True, related_name="access_requests_reviewed", on_delete=models.CASCADE
     )
