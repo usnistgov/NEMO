@@ -27,12 +27,13 @@ def staff_assistance_requests(request):
         return HttpResponseBadRequest("Staff assistance requests are not enabled")
 
     user: User = request.user
+    staff_assistance_requests_qs = StaffAssistanceRequest.objects.prefetch_related("replies")
     if user.is_staff:
-        open_staff_assistance_requests = StaffAssistanceRequest.objects.filter(resolved=False, deleted=False)
-        resolved_staff_assistance_requests = StaffAssistanceRequest.objects.filter(resolved=True, deleted=False)
+        open_staff_assistance_requests = staff_assistance_requests_qs.filter(resolved=False, deleted=False)
+        resolved_staff_assistance_requests = staff_assistance_requests_qs.filter(resolved=True, deleted=False)
     else:
-        open_staff_assistance_requests = StaffAssistanceRequest.objects.filter(user=user, resolved=False, deleted=False)
-        resolved_staff_assistance_requests = StaffAssistanceRequest.objects.filter(
+        open_staff_assistance_requests = staff_assistance_requests_qs.filter(user=user, resolved=False, deleted=False)
+        resolved_staff_assistance_requests = staff_assistance_requests_qs.filter(
             user=user, resolved=True, deleted=False
         )
 

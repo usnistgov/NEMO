@@ -35,17 +35,56 @@
     <div class="panel-body" style="padding: 15px 0">
         {% block tab_content %}
             {% if page %}
-                {% if selected_status == 1 %}
-                    <div class="form-group">
-                        <label class="col-xs-1 form-control-static" for="applied_status">Applied</label>
-                        <div class="col-xs-2">
-                            <select class="form-control" id="applied_status" onchange="load_adjustment_requests_approved()">
-                                <option selected value="">All</option>
-                                <option value="false" {% if selected_applied_status == 'false' %}selected{% endif %}>No</option>
-                                <option value="true" {% if selected_applied_status == 'true' %}selected{% endif %}>Yes</option>
-                            </select>
-                        </div>
-                    </div>
+                {% if selected_status == 1 or request_tools or request_areas %}
+                    <form class="form-horizontal" style="margin-bottom: -15px">
+                        {% if selected_status == 1 %}
+                            <div class="form-group">
+                                <label class="col-xs-1 control-label" for="applied_status">Applied</label>
+                                <div class="col-xs-9">
+                                    <select class="form-control"
+                                            style="width: auto"
+                                            id="applied_status"
+                                            onchange="load_adjustment_requests({{ selected_status }})">
+                                        <option selected value="">All</option>
+                                        <option value="false" {% if selected_applied_status == 'false' %}selected{% endif %}>No</option>
+                                        <option value="true" {% if selected_applied_status == 'true' %}selected{% endif %}>Yes</option>
+                                    </select>
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if request_tools %}
+                            <div class="form-group">
+                                <label class="col-xs-1 control-label" for="tool">Tool</label>
+                                <div class="col-xs-9">
+                                    <select class="form-control"
+                                            style="width: auto"
+                                            id="tool"
+                                            onchange="load_adjustment_requests({{ selected_status }})">
+                                        <option selected value="">All</option>
+                                        {% for tool in request_tools %}
+                                            <option value="{{ tool.id }}" {% if selected_tool_id|to_int == tool.id %}selected{% endif %}>{{ tool.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if request_areas %}
+                            <div class="form-group">
+                                <label class="col-xs-1 control-label" for="area">Area</label>
+                                <div class="col-xs-9">
+                                    <select class="form-control"
+                                            style="width: auto"
+                                            id="area"
+                                            onchange="load_adjustment_requests({{ selected_status }})">
+                                        <option selected value="">All</option>
+                                        {% for area in request_areas %}
+                                            <option value="{{ area.id }}" {% if selected_area_id|to_int == area.id %}selected{% endif %}>{{ area.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </form>
                 {% endif %}
                 {% with paginator=page.paginator %}
                     {% block pagination_header %}

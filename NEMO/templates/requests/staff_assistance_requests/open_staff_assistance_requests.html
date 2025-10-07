@@ -7,7 +7,7 @@
             {% for staff_assistance_request in date.list %}
                 <li>
                     <ul class="staff-assistance-list list-unstyled" id="request_{{ staff_assistance_request.id }}">
-                        {% if staff_assistance_request.id in request_notifications and not staff_assistance_request.replies %}
+                        {% if staff_assistance_request.id in request_notifications and not staff_assistance_request.replies.exists %}
                             <span class="label label-danger">Unread</span>
                         {% endif %}
                         {% if user.is_staff %}
@@ -38,7 +38,7 @@
                                 </div>
                             </div>
                         </li>
-                        {% for message in staff_assistance_request.replies %}
+                        {% for message in staff_assistance_request.replies.all %}
                             <li class="staff-assistance-list-item" id="reply_{{ message.id }}">
                                 {% if message.id in reply_notifications %}<span class="label label-success">New reply</span>{% endif %}
                                 <div class="list-group-item staff-assistance-list-item-message">

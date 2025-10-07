@@ -3,7 +3,7 @@ from typing import List, Set
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import F, Q
+from django.db.models import F, Q, QuerySet
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
@@ -56,13 +56,19 @@ def adjustment_requests(request, status: int):
     status = status if status in [0, 1, 2] else 0
     status = RequestStatus(status)
     selected_applied_status = request.GET.get("applied_status", "")
+    selected_tool_id = request.GET.get("tool_id", "")
+    selected_area_id = request.GET.get("area_id", "")
 
     user: User = request.user
     adj_requests = AdjustmentRequest.objects.filter(deleted=False, status=status)
     if selected_applied_status:
         adj_requests = adj_requests.filter(applied=bool(selected_applied_status == "true"))
+    if selected_tool_id:
+        adj_requests = adj_requests.filter(item_tool_id=selected_tool_id)
+    if selected_area_id:
+        adj_requests = adj_requests.filter(item_area_id=selected_area_id)
     adj_requests = adj_requests.select_related("creator", "item_type", "reviewer").prefetch_related(
-        "item", "original_project", "new_project", "item_tool", "item_area"
+        "item", "original_project", "new_project", "item_tool", "item_area", "replies"
     )
     my_requests = adj_requests.filter(creator=user)
 
@@ -73,11 +79,7 @@ def adjustment_requests(request, status: int):
         adj_requests = my_requests
     elif user_is_reviewer:
         # show all requests the user can review, exclude the rest
-        exclude = []
-        for adj in adj_requests:
-            if user != adj.creator and user not in adj.reviewers():
-                exclude.append(adj.pk)
-        adj_requests = adj_requests.exclude(pk__in=exclude)
+        adj_requests = for_reviewer(adj_requests, user)
 
     js_callback = f"load_adjustment_requests_" + status.name.lower()
 
@@ -93,6 +95,22 @@ def adjustment_requests(request, status: int):
         "request_statuses": RequestStatus.choices_without_expired(),
         "selected_status": status.value,
         "selected_applied_status": selected_applied_status,
+        "selected_tool_id": selected_tool_id,
+        "selected_area_id": selected_area_id,
+        "request_tools": set(
+            Tool.objects.filter(
+                id__in=AdjustmentRequest.objects.filter(deleted=False, status=status).values_list(
+                    "item_tool_id", flat=True
+                )
+            )
+        ),
+        "request_areas": set(
+            Area.objects.filter(
+                id__in=AdjustmentRequest.objects.filter(deleted=False, status=status).values_list(
+                    "item_area_id", flat=True
+                )
+            )
+        ),
     }
 
     # Delete notifications for seen requests
@@ -532,3 +550,23 @@ def is_user_a_reviewer(user: User) -> bool:
     is_reviewer_on_any_tool = Tool.objects.filter(_adjustment_request_reviewers__in=[user]).exists()
     is_reviewer_on_any_area = Area.objects.filter(adjustment_request_reviewers__in=[user]).exists()
     return user.is_facility_manager or is_reviewer_on_any_tool or is_reviewer_on_any_area
+
+
+def for_reviewer(adjustment_request_qs: QuerySet[AdjustmentRequest], user: User) -> QuerySet[AdjustmentRequest]:
+    # Start with the base conditions: the user is an explicit reviewer.
+    can_review_tool = Q(item_tool___adjustment_request_reviewers=user)
+    can_review_area = Q(item_area__adjustment_request_reviewers=user)
+
+    # If the user is a facility manager, add the new condition.
+    if user.is_facility_manager:
+        # Condition for tool/area with an empty reviewer list.
+        tool_has_no_reviewers = Q(item_tool___adjustment_request_reviewers=None)
+        area_has_no_reviewers = Q(item_area__adjustment_request_reviewers=None)
+
+        # Now, the logic is: "user is a reviewer OR tool has no reviewers".
+        can_review_tool |= tool_has_no_reviewers
+        can_review_area |= area_has_no_reviewers
+
+    final_query = can_review_tool | can_review_area
+
+    return adjustment_request_qs.select_related("item_tool", "item_area").filter(final_query).distinct()

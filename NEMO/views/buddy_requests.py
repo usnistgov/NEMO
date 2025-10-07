@@ -31,8 +31,10 @@ from NEMO.views.notifications import (
 @require_GET
 def buddy_requests(request):
     mark_requests_expired()
-    buddy_requests = BuddyRequest.objects.filter(expired=False, deleted=False).order_by(
-        "start", "end", "-creation_time"
+    buddy_requests = (
+        BuddyRequest.objects.filter(expired=False, deleted=False)
+        .order_by("start", "end", "-creation_time")
+        .prefetch_related("replies")
     )
     # extend buddy request to add whether the current user can reply
     for buddy_request in buddy_requests:

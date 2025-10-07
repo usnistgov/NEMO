@@ -143,10 +143,10 @@
                                         <span class="light-grey">· {{ request_obj.creation_time }}</span>
                                     </div>
                                     <div>{{ request_obj.description|linebreaks }}</div>
-                                    {% if request_obj.replies %}<hr class="hr-xs">{% endif %}
+                                    {% if request_obj.replies.all %}<hr class="hr-xs">{% endif %}
                                 {% endif %}
-                                {% if request_obj.replies %}
-                                    {% for message in request_obj.replies %}
+                                {% if request_obj.replies.all %}
+                                    {% for message in request_obj.replies.all %}
                                         <div style="{% if not forloop.last %}margin-bottom: 5px{% endif %}">
                                             <div>
                                                 <strong>{{ message.author.get_name }}</strong>

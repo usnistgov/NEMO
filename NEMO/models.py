@@ -15,7 +15,7 @@ from typing import Dict, List, Optional, Set, TYPE_CHECKING, Union
 
 from django.conf import settings
 from django.contrib.auth.models import BaseUserManager, Group, Permission, PermissionsMixin
-from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.core.validators import MinValueValidator, validate_comma_separated_integer_list
@@ -4676,18 +4676,15 @@ class BuddyRequest(BaseModel):
     deleted = models.BooleanField(
         default=False, help_text="Indicates the request has been deleted and won't be shown anymore."
     )
+    replies = GenericRelation("RequestMessage")
 
     @property
     def creator(self) -> User:
         return self.user
 
-    @property
-    def replies(self) -> QuerySetType[RequestMessage]:
-        return RequestMessage.objects.filter(object_id=self.id, content_type=ContentType.objects.get_for_model(self))
-
     def creator_and_reply_users(self) -> List[User]:
         result = {self.user}
-        for reply in self.replies:
+        for reply in self.replies.all():
             result.add(reply.author)
         return list(result)
 
@@ -4707,6 +4704,7 @@ class StaffAssistanceRequest(BaseModel):
     deleted = models.BooleanField(
         default=False, help_text="Indicates the request has been deleted and won't be shown anymore."
     )
+    replies = GenericRelation("RequestMessage")
 
     class Meta:
         ordering = ["-creation_time"]
@@ -4715,13 +4713,9 @@ class StaffAssistanceRequest(BaseModel):
     def creator(self) -> User:
         return self.user
 
-    @property
-    def replies(self) -> QuerySetType[RequestMessage]:
-        return RequestMessage.objects.filter(object_id=self.id, content_type=ContentType.objects.get_for_model(self))
-
     def creator_and_reply_users(self) -> List[User]:
         result = {self.user}
-        for reply in self.replies:
+        for reply in self.replies.all():
             result.add(reply.author)
         return list(result)
 
@@ -4774,10 +4768,7 @@ class AdjustmentRequest(BaseModel):
     deleted = models.BooleanField(
         default=False, help_text="Indicates the request has been deleted and won't be shown anymore."
     )
-
-    @property
-    def replies(self) -> QuerySetType[RequestMessage]:
-        return RequestMessage.objects.filter(object_id=self.id, content_type=ContentType.objects.get_for_model(self))
+    replies = GenericRelation("RequestMessage")
 
     def get_original_start(self) -> Optional[datetime.datetime]:
         # if the request has been applied already, our only luck is the original
@@ -4918,7 +4909,7 @@ class AdjustmentRequest(BaseModel):
 
     def creator_and_reply_users(self) -> List[User]:
         result = {self.creator}
-        for reply in self.replies:
+        for reply in self.replies.all():
             result.add(reply.author)
         result.update(self.reviewers())
         return list(result)

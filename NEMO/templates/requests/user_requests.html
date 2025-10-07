@@ -112,9 +112,19 @@
             let failure_dialog = ajax_complete_callback("Unable to load adjustment requests", "There was a problem loading adjustment requests.");
             const parameters = new URLSearchParams(request_params);
             const applied_status_param = $("#applied_status").val();
+            const tool_id_param = $("#tool").val();
+            const area_id_param = $("#area").val();
             if (applied_status_param)
             {
                 parameters.set("applied_status", applied_status_param);
+            }
+            if (tool_id_param)
+            {
+                parameters.set("tool_id", tool_id_param);
+            }
+            if (area_id_param)
+            {
+                parameters.set("area_id", area_id_param);
             }
             $("#adjustment-requests").load(build_django_url("{% url 'adjustment_requests' 0 %}",[0],[status])+"?"+parameters.toString(), undefined, failure_dialog);
         }
