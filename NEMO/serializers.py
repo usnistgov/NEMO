@@ -562,6 +562,8 @@ class AdjustmentRequestSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "item_type": "NEMO.serializers.ContentTypeSerializer",
             "applied_by": "NEMO.serializers.UserSerializer",
             "new_project": "NEMO.serializers.ProjectSerializer",
+            "item_tool": "NEMO.serializers.ToolSerializer",
+            "item_area": "NEMO.serializers.AreaSerializer",
         }
 
 

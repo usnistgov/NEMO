@@ -880,6 +880,8 @@ class AdjustmentRequestViewSet(ModelViewSet):
         "new_end": datetime_filters,
         "new_quantity": number_filters,
         "new_project": key_filters,
+        "item_tool": key_filters,
+        "item_area": key_filters,
         "status": number_filters,
         "reviewer": key_filters,
         "applied": boolean_filters,
