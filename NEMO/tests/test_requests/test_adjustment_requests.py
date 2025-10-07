@@ -24,7 +24,7 @@ class AdjustmentRequestTestCase(NEMOTestCaseMixin, TestCase):
     def test_enable_adjustment_requests(self):
         AdjustmentRequestsCustomization.set("adjustment_requests_enabled", "")
         self.login_as_user()
-        response = self.client.get(reverse("adjustment_requests"))
+        response = self.client.get(reverse("adjustment_requests", args=[0]))
         self.assertContains(response, "not enabled", status_code=400)
 
     def test_create_request(self):
