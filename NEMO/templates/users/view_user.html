@@ -74,7 +74,7 @@
             {% endif %}
         </div>
     </div>
-    {% if user.primary_tool_owner.all or user.backup_for_tools.all or user.superuser_for_tools.all or user.staff_for_tools.all %}
+    {% if user.primary_tool_owner.all or user.backup_for_tools.all or user.superuser_for_tools.all or user.staff_for_tools.all or user.adjustment_request_reviewer_on_tools.all %}
         <div class="panel panel-default">
             <div class="panel-body">
                 <h3 style="margin-top: 0">Tool responsibilities</h3>
@@ -108,6 +108,14 @@
                             Superuser:
                             <ul>
                                 {% for tool in user.superuser_for_tools.all %}<li>{{ tool }}</li>{% endfor %}
+                            </ul>
+                        </li>
+                    {% endif %}
+                    {% if user.adjustment_request_reviewer_on_tools.all %}
+                        <li>
+                            Adjustment request reviewer:
+                            <ul>
+                                {% for tool in user.adjustment_request_reviewer_on_tools.all %}<li>{{ tool }}</li>{% endfor %}
                             </ul>
                         </li>
                     {% endif %}

@@ -8,7 +8,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Max
-from django.http import HttpResponseBadRequest
+from django.http import Http404, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
@@ -487,7 +487,22 @@ def user_preferences(request):
 @require_GET
 def view_user(request, user_id):
     if UserCustomization.get_bool("user_allow_profile_view"):
-        user = get_object_or_404(User, pk=user_id)
+        user = (
+            User.objects.filter(pk=user_id)
+            .prefetch_related(
+                "qualifications",
+                "groups",
+                "physical_access_levels",
+                "primary_tool_owner",
+                "backup_for_tools",
+                "staff_for_tools",
+                "superuser_for_tools",
+                "adjustment_request_reviewer_on_tools",
+            )
+            .first()
+        )
+        if not user:
+            raise Http404("No user matches the given query")
 
         if request.user.id != user_id:
             return HttpResponseBadRequest("You are not allowed to view this user's profile")
