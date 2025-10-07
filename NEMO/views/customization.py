@@ -509,7 +509,6 @@ class AdjustmentRequestsCustomization(CustomizationBase):
         "adjustment_requests_title": "Adjustment requests",
         "adjustment_requests_description": "",
         "adjustment_requests_charges_display_number": "10",
-        "adjustment_requests_display_max": "",
         "adjustment_requests_time_limit_interval": "2",
         "adjustment_requests_time_limit_frequency": RecurrenceFrequency.WEEKLY.index,
         "adjustment_requests_edit_charge_button": "",

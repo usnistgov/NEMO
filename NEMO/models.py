@@ -28,6 +28,7 @@ from django.template import loader
 from django.template.defaultfilters import linebreaksbr
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import localize_input
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django_jsonform.models.fields import JSONField as JSONFormField
@@ -54,6 +55,7 @@ from NEMO.utilities import (
     document_filename_upload,
     format_daterange,
     format_datetime,
+    format_timedelta,
     get_chemical_document_filename,
     get_duration_with_off_schedule,
     get_full_url,
@@ -4748,6 +4750,14 @@ class AdjustmentRequest(BaseModel):
         blank=True,
         help_text="A manager's note to send to the user when a request is denied or to the user office when it is approved.",
     )
+    item_tool = models.ForeignKey(Tool, null=True, blank=True, on_delete=models.SET_NULL)
+    item_area = models.ForeignKey(Area, null=True, blank=True, on_delete=models.SET_NULL)
+    original_start = models.DateTimeField(null=True, blank=True)
+    original_end = models.DateTimeField(null=True, blank=True)
+    original_quantity = models.PositiveIntegerField(null=True, blank=True)
+    original_project = models.ForeignKey(
+        Project, null=True, blank=True, related_name="original_adjustmentrequest_set", on_delete=models.CASCADE
+    )
     new_start = models.DateTimeField(null=True, blank=True)
     new_end = models.DateTimeField(null=True, blank=True)
     new_quantity = models.PositiveIntegerField(null=True, blank=True)
@@ -4769,78 +4779,142 @@ class AdjustmentRequest(BaseModel):
     def replies(self) -> QuerySetType[RequestMessage]:
         return RequestMessage.objects.filter(object_id=self.id, content_type=ContentType.objects.get_for_model(self))
 
-    def get_new_start(self) -> Optional[datetime]:
-        # Returns the new start if different from the item's start (not counting seconds and microseconds)
-        return (
-            self.new_start
-            if self.new_start
-            and self.item
-            and self.item.start
-            and self.item.start.replace(microsecond=0, second=0) != self.new_start
-            else None
-        )
+    def get_original_start(self) -> Optional[datetime.datetime]:
+        # if the request has been applied already, our only luck is the original
+        if self.applied:
+            return self.original_start
+        else:
+            # otherwise we can use the item start
+            return self.original_start or getattr(getattr(self, "item", None), "start", None)
 
-    def get_new_end(self) -> Optional[datetime]:
-        # Returns the new end if different from the item's end (not counting seconds and microseconds)
-        return (
-            self.new_end
-            if self.new_end
-            and self.item
-            and self.item.end
-            and self.item.end.replace(microsecond=0, second=0) != self.new_end
-            else None
-        )
+    def get_original_end(self) -> Optional[datetime.datetime]:
+        # if the request has been applied already, our only luck is the original
+        if self.applied:
+            return self.original_end
+        else:
+            # otherwise we can use the item end
+            return self.original_end or getattr(getattr(self, "item", None), "end", None)
+
+    def get_original_quantity(self) -> Optional[int]:
+        # if the request has been applied already, our only luck is the original
+        if self.applied:
+            return self.original_quantity
+        else:
+            # otherwise we can use the item quantity
+            return self.original_quantity or getattr(getattr(self, "item", None), "quantity", None)
+
+    def get_original_project(self) -> Optional[Project]:
+        # if the request has been applied already, our only luck is the original
+        if self.applied:
+            return self.original_project
+        else:
+            # otherwise we can use the item project
+            return self.original_project or getattr(getattr(self, "item", None), "project", None)
+
+    def item_changes_to_apply_text(self) -> str:
+        # to apply changes, we are only using the item properties, since it has not yet been applied
+        result = ""
+        datetime_format = "SHORT_DATETIME_FORMAT"
+        if self.is_start_time_adjustable():
+            result += "- start: "
+            result += format_datetime(self.get_original_start(), datetime_format)
+            result += " -> " + format_datetime(self.new_start, datetime_format)
+        if self.is_end_time_adjustable():
+            if self.is_start_time_adjustable():
+                result += "\n"
+            result += "- end: "
+            result += format_datetime(self.get_original_end(), datetime_format)
+            result += " -> " + format_datetime(self.new_end, datetime_format)
+        if self.is_quantity_adjustable():
+            if self.is_start_time_adjustable() or self.is_end_time_adjustable():
+                result += "\n"
+            result += "- quantity: "
+            result += str(self.get_original_quantity())
+            result += " -> " + str(self.new_quantity)
+        if self.is_project_adjustable():
+            if self.is_start_time_adjustable() or self.is_end_time_adjustable() or self.is_quantity_adjustable():
+                result += "\n"
+            result += "- project: "
+            result += self.get_original_project().name if self.get_original_project() else ""
+            result += " -> " + self.new_project.name
+        if self.is_waivable():
+            result += "- the charge will be waived entirely"
+        return result
 
     def get_quantity_difference(self) -> Optional[int]:
-        if self.item and self.new_quantity is not None:
-            return self.new_quantity - self.item.quantity
+        if self.new_quantity is not None and self.get_original_quantity():
+            return self.new_quantity - self.get_original_quantity()
         return None
-
-    def get_project_difference(self) -> str:
-        if self.item and self.new_project and self.item.project != self.new_project:
-            return f"{self.item.project} -> {self.new_project}"
-        else:
-            return ""
 
     def get_time_difference(self) -> Optional[str]:
-        if self.has_changed_time():
-            previous_duration = self.item.end.replace(microsecond=0, second=0) - self.item.start.replace(
-                microsecond=0, second=0
-            )
-            new_duration = (self.new_end or self.item.end) - (self.new_start or self.item.start)
-            return (
-                f"+{(new_duration - previous_duration)}"
-                if new_duration >= previous_duration
-                else f"- {(previous_duration - new_duration)}"
-            )
+        timedelta_format = "{H:02}h {M:02}m {S:02}s"
+        if self.new_start or self.new_end:
+            # we need both original start and original end
+            if self.get_original_start() and self.get_original_end():
+                previous_duration = self.get_original_end() - self.get_original_start()
+                new_duration = (self.new_end or self.get_original_end()) - (self.new_start or self.get_original_start())
+                return (
+                    f"+{format_timedelta(new_duration - previous_duration, timedelta_format)}"
+                    if new_duration >= previous_duration
+                    else f"- {format_timedelta(previous_duration - new_duration, timedelta_format)}"
+                )
         return None
 
-    def get_difference(self):
-        if self.waive:
-            return "Waived" if self.item and self.item.waived else "Waive requested"
+    def changes_status(self) -> str:
+        # return the status of the changes, whether they have been applied internally, externally or not yet
+        if not self.applied:
+            # has not been applied yet so still "requested" changes
+            return "requested changes"
         else:
-            if self.item:
-                diff = str(self.get_quantity_difference() or self.get_time_difference() or "")
-                if self.get_project_difference():
-                    if diff:
-                        diff += "\n"
-                    diff += self.get_project_difference()
-                return diff
+            # has been applied but the underlying charge is still adjustable so it was mark as applied
+            if not self.item or self.is_charge_adjustable():
+                return "changes marked as applied"
+            # has been applied directly in NEMO
             else:
-                return ""
+                return "applied changes"
 
-    def adjustable_charge(self):
+    def is_waivable(self) -> bool:
+        return self.waive and self.item and not self.item.waived
+
+    def is_start_time_adjustable(self) -> bool:
+        return self.new_start and self.item and self.item.start and self.diff_times(self.new_start, self.item.start)
+
+    def is_end_time_adjustable(self) -> bool:
+        return self.new_end and self.item and self.item.end and self.diff_times(self.new_end, self.item.end)
+
+    def is_quantity_adjustable(self) -> bool:
         return (
-            self.waive
-            or self.has_changed_time()
-            or isinstance(self.item, Reservation)
-            or self.get_quantity_difference()
-            or self.get_project_difference()
+            self.new_quantity is not None
+            and self.item
+            and self.item.quantity is not None
+            and self.item.quantity != self.new_quantity
         )
 
-    def has_changed_time(self) -> bool:
-        """Returns whether the original charge is editable, i.e. if it has a changed start or end"""
-        return self.item and (self.get_new_end() or self.get_new_start())
+    def is_project_adjustable(self) -> bool:
+        return self.new_project_id and self.item and self.item.project_id != self.new_project_id
+
+    def is_charge_adjustable(self):
+        # returns whether the charge is adjustable, meaning if there is still a difference between the item
+        # and the requested changes
+        return (
+            self.is_waivable()
+            or self.is_start_time_adjustable()
+            or self.is_end_time_adjustable()
+            or self.is_quantity_adjustable()
+            or self.is_project_adjustable()
+        )
+
+    @staticmethod
+    def diff_times(first, second) -> bool:
+        # returns True if the times are different for adjustment purposes
+        # we are comparing formatted date from the UI.
+        # if the ui doesn't have microseconds or seconds then we are not using them to compare
+        return localize_input(first) != localize_input(second)
+
+    def has_item_changes(self) -> bool:
+        return self.item and (
+            self.waive or self.new_start or self.new_end or self.new_quantity is not None or self.new_project_id
+        )
 
     def creator_and_reply_users(self) -> List[User]:
         result = {self.creator}
@@ -4852,20 +4926,24 @@ class AdjustmentRequest(BaseModel):
     def reviewers(self) -> QuerySetType[User]:
         # Create the list of users to notify/show request to. If the adjustment request has a tool/area and their
         # list of reviewers is empty, send/show to all facility managers
-        item = get_model_instance(self.item_type, self.item_id)
-        tool: Tool = getattr(item, "tool", None) if item else None
-        area: Area = getattr(item, "area", None) if item else None
         facility_managers = User.objects.filter(is_active=True, is_facility_manager=True)
-        if tool:
-            tool_reviewers = tool._adjustment_request_reviewers.filter(is_active=True)
+        if self.item_tool:
+            tool_reviewers = self.item_tool._adjustment_request_reviewers.filter(is_active=True)
             return tool_reviewers or facility_managers
-        if area:
-            area_reviewers = area.adjustment_request_reviewers.filter(is_active=True)
+        if self.item_area:
+            area_reviewers = self.item_area.adjustment_request_reviewers.filter(is_active=True)
             return area_reviewers or facility_managers
         return facility_managers
 
+    def apply_adjustment_text(self) -> str:
+        result = "Are you sure you want to adjust this charge?"
+        result += "\n\n"
+        result += "The following changes will be applied:\n"
+        result += self.item_changes_to_apply_text()
+        return result
+
     def apply_adjustment(self, user):
-        if self.status == RequestStatus.APPROVED:
+        if not self.applied and self.status == RequestStatus.APPROVED and self.has_item_changes():
             if self.waive:
                 # If waiving, waive the charge and move on
                 self.item.waive(user)
@@ -4874,28 +4952,56 @@ class AdjustmentRequest(BaseModel):
                 self.save()
             else:
                 # Otherwise let's make the changes required
-                if self.has_changed_time() or self.get_quantity_difference() or self.get_project_difference():
-                    # We can only have one of times changed or quantity changed
-                    if self.has_changed_time():
-                        new_start = self.get_new_start()
-                        new_end = self.get_new_end()
-                        if new_start:
-                            self.item.start = new_start
-                        if new_end:
-                            self.item.end = new_end
-                    elif self.get_quantity_difference():
-                        self.item.quantity = self.new_quantity
-                    # But changing the project can happen in addition to changed times and quantity
-                    if self.get_project_difference():
-                        self.item.project = self.new_project
-                    self.item.save()
-                    self.applied = True
-                    self.applied_by = user
-                    self.save()
-                elif isinstance(self.item, Reservation):
-                    # in this case the time, quantity or project has not been changed so we are essentially waiving the charge
-                    self.waive = True
-                    self.apply_adjustment(user)
+                # We can only have one of times changed or quantity changed
+                if self.new_start or self.new_end:
+                    if self.new_start:
+                        self.item.start = self.new_start
+                    if self.new_end:
+                        self.item.end = self.new_end
+                elif self.new_quantity:
+                    self.item.quantity = self.new_quantity
+                # But changing the project can happen in addition to changed times and quantity
+                if self.new_project:
+                    self.item.project_id = self.new_project_id
+                self.item.save()
+                self.applied = True
+                self.applied_by = user
+                self.save()
+
+    def unapply(self):
+        self.applied = False
+        self.applied_by = None
+        self.save()
+
+    def can_be_reverted(self):
+        return self.applied and (
+            self.waive
+            or self.new_start
+            and self.original_start
+            or self.new_end
+            and self.original_end
+            or self.new_project_id
+            and self.original_project_id
+            or self.new_quantity
+            and self.original_quantity
+        )
+
+    def revert_adjustment(self):
+        # in case this is needed in the future
+        if self.can_be_reverted():
+            if self.waive and self.item.waived:
+                self.item.unwaive()
+            else:
+                if self.new_start:
+                    self.item.start = self.original_start
+                if self.new_end:
+                    self.item.end = self.original_end
+                if self.new_quantity:
+                    self.item.quantity = self.original_quantity
+                if self.new_project_id:
+                    self.item.project_id = self.original_project_id
+                self.item.save()
+            self.unapply()
 
     def delete(self, using=None, keep_parents=False):
         adjustment_id = self.id
@@ -4916,6 +5022,18 @@ class AdjustmentRequest(BaseModel):
             self.new_start = None
             self.new_quantity = None
             self.new_project = None
+        # Set the original attributes
+        if self.item and self.status == RequestStatus.PENDING:
+            for att in ["start", "end", "quantity", "project_id"]:
+                item_att = getattr(self.item, att, None)
+                if item_att is not None:
+                    setattr(self, f"original_{att}", item_att)
+            tool_id = getattr(self.item, "tool_id", None)
+            area_id = getattr(self.item, "area_id", None)
+            if tool_id:
+                self.item_tool_id = tool_id
+            if area_id:
+                self.item_area_id = area_id
         super().save(*args, **kwargs)
 
     def clean(self):

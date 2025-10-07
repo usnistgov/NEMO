@@ -95,10 +95,17 @@ class BillableItemMixin:
         return f"{self.__class__.__name__}"
 
     def waive(self, user: User):
-        if hasattr(self, "waived"):
+        if hasattr(self, "waived") and not self.waived:
             self.waived = True
             self.waived_by = user
             self.waived_on = timezone.now()
+            self.save(update_fields=["waived", "waived_by", "waived_on"])
+
+    def unwaive(self):
+        if hasattr(self, "waived") and self.waived:
+            self.waived = False
+            self.waived_by = None
+            self.waived_on = None
             self.save(update_fields=["waived", "waived_by", "waived_on"])
 
     def validate(self, user: User):

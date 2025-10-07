@@ -17,7 +17,7 @@
     {% with instance_id=form.instance.id %}
         <h1 class="form-group">
             {% if instance_id %}
-                Modify adjustment request
+                Modify adjustment request #{{ instance_id }}
             {% else %}
                 New adjustment request
             {% endif %}
@@ -206,7 +206,7 @@
             <div class="text-right">
                 {% if form.instance.get_status_display == "Pending" %}
                     {% if instance_id and user in form.instance.reviewers %}
-                        {% if form.instance.adjustable_charge and customizations|get_item:"adjustment_requests_apply_button" == "enabled" %}
+                        {% if form.instance.is_charge_adjustable and customizations|get_item:"adjustment_requests_apply_button" == "enabled" %}
                             {% button type="save" submit=False name="approve_apply_request" title="Approve and adjust the original charge" icon="glyphicon-ok-circle" value="Approve and adjust" onclick="confirm_review_dialog(this, 'approve and adjust the actual charge of');" %}
                             {% button type="save" submit=False name="approve_request" title="Approve without adjusting" icon="glyphicon-ok-circle" value="Approve only" onclick="confirm_review_dialog(this);" %}
                         {% else %}

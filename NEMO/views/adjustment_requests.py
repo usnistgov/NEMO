@@ -33,9 +33,8 @@ from NEMO.utilities import (
     EmailCategory,
     bootstrap_primary_color,
     export_format_datetime,
-    get_full_url,
     get_django_view_name_from_url,
-    quiet_int,
+    get_full_url,
     render_email_template,
     send_mail,
 )
@@ -46,18 +45,24 @@ from NEMO.views.notifications import (
     delete_notification,
     get_notifications,
 )
+from NEMO.views.pagination import SortedPaginator
 
 
 @login_required
 @require_GET
-def adjustment_requests(request):
+def adjustment_requests(request, status: int):
     if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_enabled"):
         return HttpResponseBadRequest("Adjustment requests are not enabled")
+    status = status if status in [0, 1, 2] else 0
+    status = RequestStatus(status)
+    selected_applied_status = request.GET.get("applied_status", "")
 
     user: User = request.user
-    max_requests = quiet_int(AdjustmentRequestsCustomization.get("adjustment_requests_display_max"), None)
-    adj_requests = (
-        AdjustmentRequest.objects.filter(deleted=False).select_related("creator", "item_type").prefetch_related("item")
+    adj_requests = AdjustmentRequest.objects.filter(deleted=False, status=status)
+    if selected_applied_status:
+        adj_requests = adj_requests.filter(applied=bool(selected_applied_status == "true"))
+    adj_requests = adj_requests.select_related("creator", "item_type", "reviewer").prefetch_related(
+        "item", "original_project", "new_project", "item_tool", "item_area"
     )
     my_requests = adj_requests.filter(creator=user)
 
@@ -74,14 +79,20 @@ def adjustment_requests(request):
                 exclude.append(adj.pk)
         adj_requests = adj_requests.exclude(pk__in=exclude)
 
+    js_callback = f"load_adjustment_requests_" + status.name.lower()
+
+    order_by = "-last_updated" if status == RequestStatus.APPROVED else "-creation_time"
+    page = SortedPaginator(adj_requests, request, order_by=order_by, js_callback=js_callback).get_current_page()
+
     dictionary = {
-        "pending_adjustment_requests": adj_requests.filter(status=RequestStatus.PENDING),
-        "approved_adjustment_requests": adj_requests.filter(status=RequestStatus.APPROVED)[:max_requests],
-        "denied_adjustment_requests": adj_requests.filter(status=RequestStatus.DENIED)[:max_requests],
+        "page": page,
         "adjustment_requests_description": AdjustmentRequestsCustomization.get("adjustment_requests_description"),
         "request_notifications": get_notifications(request.user, Notification.Types.ADJUSTMENT_REQUEST, delete=False),
         "reply_notifications": get_notifications(request.user, Notification.Types.ADJUSTMENT_REQUEST_REPLY),
         "user_is_reviewer": user_is_reviewer,
+        "request_statuses": RequestStatus.choices_without_expired(),
+        "selected_status": status.value,
+        "selected_applied_status": selected_applied_status,
     }
 
     # Delete notifications for seen requests
@@ -475,11 +486,14 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
     table_result.add_header(("last_updated", "Last updated"))
     table_result.add_header(("creator", "Creator"))
     table_result.add_header(("item", "Item"))
+    table_result.add_header(("original_start", "Original start"))
+    table_result.add_header(("original_end", "Original end"))
+    table_result.add_header(("original_quantity", "Original quantity"))
+    table_result.add_header(("original_project", "Original project"))
     table_result.add_header(("new_start", "New start"))
     table_result.add_header(("new_end", "New end"))
     table_result.add_header(("new_quantity", "New quantity"))
     table_result.add_header(("new_project", "New project"))
-    table_result.add_header(("difference", "Difference"))
     table_result.add_header(("waived", "Waive requested"))
     table_result.add_header(("reviewer", "Reviewer"))
     table_result.add_header(("applied", "Applied"))
@@ -493,11 +507,14 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
                 "last_updated": req.last_updated,
                 "creator": req.creator,
                 "item": req.item.get_display() if req.item else "",
+                "original_start": req.original_start,
+                "original_end": req.original_end,
+                "original_quantity": req.original_quantity,
+                "original_project": req.original_project,
                 "new_start": req.new_start,
                 "new_end": req.new_end,
                 "new_quantity": req.new_quantity,
                 "new_project": req.new_project,
-                "difference": req.get_difference(),
                 "waived": req.waive,
                 "reviewer": req.reviewer,
                 "applied": req.applied,

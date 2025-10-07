@@ -272,7 +272,11 @@ urlpatterns += [
         name="staff_assistance_request_reply",
     ),
     # Adjustment requests
-    path("adjustment_requests/", adjustment_requests.adjustment_requests, name="adjustment_requests"),
+    path(
+        "adjustment_requests/<int:status>/",
+        adjustment_requests.adjustment_requests,
+        name="adjustment_requests",
+    ),
     path("create_adjustment_request/", adjustment_requests.create_adjustment_request, name="create_adjustment_request"),
     path(
         "create_adjustment_request/<int:item_type_id>/<int:item_id>/",

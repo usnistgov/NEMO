@@ -1806,11 +1806,11 @@ class BuddyRequestAdmin(admin.ModelAdmin):
 class AdjustmentRequestAdmin(admin.ModelAdmin):
     inlines = [RequestMessageInlines]
     list_display = (
+        "id",
         "creator",
         "creation_time",
         "last_updated",
         "get_item",
-        "get_difference",
         "get_status_display",
         "reply_count",
         "waive",

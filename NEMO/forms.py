@@ -536,22 +536,35 @@ class TemporaryPhysicalAccessRequestForm(ModelForm):
 class AdjustmentRequestForm(ModelForm):
     class Meta:
         model = AdjustmentRequest
-        exclude = ["creation_time", "creator", "last_updated", "last_updated_by", "status", "reviewer", "deleted"]
+        exclude = [
+            "creation_time",
+            "creator",
+            "last_updated",
+            "last_updated_by",
+            "status",
+            "reviewer",
+            "deleted",
+            "original_start",
+            "original_end",
+            "original_quantity",
+            "original_project",
+            "item_tool",
+            "item_area",
+        ]
 
     def clean(self) -> dict:
         cleaned_data = super().clean()
-        edit = bool(self.instance.pk)
         item_type = cleaned_data.get("item_type")
         item_id = cleaned_data.get("item_id")
-        if item_type and item_id and not edit:
+        if item_type and item_id:
             item = item_type.get_object_for_this_type(pk=item_id)
             new_start = cleaned_data.get("new_start")
             new_end = cleaned_data.get("new_end")
             # If the dates/quantities/projects are not changed, remove them
             # We are comparing formatted dates so we have the correct precision (otherwise user input might not have seconds/milliseconds and they would not be equal)
-            if new_start and format_datetime(new_start) == format_datetime(item.start):
+            if new_start and not AdjustmentRequest.diff_times(new_start, item.start):
                 cleaned_data["new_start"] = None
-            if new_end and format_datetime(new_end) == format_datetime(item.end):
+            if new_end and not AdjustmentRequest.diff_times(new_end, item.end):
                 cleaned_data["new_end"] = None
             # also remove quantity if not changed
             new_quantity = cleaned_data.get("new_quantity")
