@@ -504,6 +504,8 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
     table_result.add_header(("last_updated", "Last updated"))
     table_result.add_header(("creator", "Creator"))
     table_result.add_header(("item", "Item"))
+    table_result.add_header(("tool", "tool"))
+    table_result.add_header(("area", "area"))
     table_result.add_header(("original_start", "Original start"))
     table_result.add_header(("original_end", "Original end"))
     table_result.add_header(("original_quantity", "Original quantity"))
@@ -525,6 +527,8 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
                 "last_updated": req.last_updated,
                 "creator": req.creator,
                 "item": req.item.get_display() if req.item else "",
+                "tool": req.item_tool,
+                "area": req.item_area,
                 "original_start": req.original_start,
                 "original_end": req.original_end,
                 "original_quantity": req.original_quantity,
