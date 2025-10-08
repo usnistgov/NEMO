@@ -814,14 +814,15 @@ class DynamicForm:
         return results
 
     def process_run_data(self, usage_event: UsageEvent, run_data: str, request=None):
-        try:
-            run_data_json = loads(run_data)
-        except Exception as error:
-            dynamic_form_logger.debug(error)
-            return
-        self._charge_for_consumables(usage_event, run_data_json, request)
-        self._update_tool_counters(usage_event, run_data_json)
-        self._report_problems(usage_event, run_data_json, request)
+        if run_data:
+            try:
+                run_data_json = loads(run_data)
+            except Exception:
+                dynamic_form_logger.debug(exc_info=True)
+                return
+            self._charge_for_consumables(usage_event, run_data_json, request)
+            self._update_tool_counters(usage_event, run_data_json)
+            self._report_problems(usage_event, run_data_json, request)
 
     def _charge_for_consumables(self, usage_event, run_data_json: Dict, request=None):
         customer = usage_event.user
@@ -916,14 +917,15 @@ class MultiDynamicForms:
         return self.merged_dynamic_forms.extract(request) if self.merged_dynamic_forms else ""
 
     def process_run_data(self, usage_event: UsageEvent, run_data: str, request=None):
-        try:
-            run_data_json = loads(run_data)
-        except Exception as error:
-            dynamic_form_logger.debug(error)
-            return
-        self.merged_dynamic_forms._charge_for_consumables(usage_event, run_data_json, request)
-        self.merged_dynamic_forms._update_tool_counters(usage_event, run_data_json)
-        self.merged_dynamic_forms._report_problems(usage_event, run_data_json, request)
+        if run_data:
+            try:
+                run_data_json = loads(run_data)
+            except Exception:
+                dynamic_form_logger.debug(exc_info=True)
+                return
+            self.merged_dynamic_forms._charge_for_consumables(usage_event, run_data_json, request)
+            self.merged_dynamic_forms._update_tool_counters(usage_event, run_data_json)
+            self.merged_dynamic_forms._report_problems(usage_event, run_data_json, request)
 
     def __bool__(self) -> bool:
         return bool(self.items)
