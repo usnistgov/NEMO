@@ -25,7 +25,9 @@
                         Users logged in outside their allowed schedule are highlighted in <span class="bg-danger">&nbsp;red&nbsp;</span>
                     </p>
                     {% for area in area_occupants %}
-                        {% include 'occupancy/occupancy_content.html' with area=area.grouper occupants=area.list transparent_bg=True center_th=True %}
+                        <div class="table-wrapper-autofit">
+                            {% include 'occupancy/occupancy_content.html' with area=area.grouper occupants=area.list transparent_bg=True center_th=True %}
+                        </div>
                     {% endfor %}
                 {% endif %}
             </div>
@@ -41,29 +43,31 @@
                         &nbsp;
                     </p>
                     {# Panel is used to make table borders rounded. #}
-                    <div class="panel panel-default" style="background:transparent">
-                        <table class="table table-bordered table-condensed" style="background:transparent">
-                            <thead>
-                                <tr>
-                                    <th style="text-align: center">Tool</th>
-                                    <th style="text-align: center">User</th>
-                                    <th style="text-align: center">In use since...</th>
-                                </tr>
-                            </thead>
-                            <tbody style="background:transparent">
-                                {% for u in usage_events %}
-                                    <tr {% if u.operator.is_any_part_of_staff %}class="success"{% elif u.operator.is_service_personnel %}class="warning"{% elif u.tool.in_use_without_reservation or u.tool.in_use_outside_schedule %}class="danger"{% else %} style="background:transparent"{% endif %}>
-                                        <td>{{ u.tool }}</td>
-                                        <td>
-                                            <span>{{ u.operator.first_name }} {{ u.operator.last_name }}
-                                                {% if u.user != u.operator %}on behalf of {{ u.user.first_name }} {{ u.user.last_name }}{% endif %}
-                                            </span>
-                                        </td>
-                                        <td>{{ u.start|date:"MONTH_DAY_FORMAT" }} @ {{ u.start|time }}</td>
+                    <div class="table-wrapper-autofit">
+                        <div class="panel panel-default" style="background:transparent">
+                            <table class="table table-bordered table-condensed" style="background:transparent">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align: center">Tool</th>
+                                        <th style="text-align: center">User</th>
+                                        <th style="text-align: center">In use since...</th>
                                     </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody style="background:transparent">
+                                    {% for u in usage_events %}
+                                        <tr {% if u.operator.is_any_part_of_staff %}class="success"{% elif u.operator.is_service_personnel %}class="warning"{% elif u.tool.in_use_without_reservation or u.tool.in_use_outside_schedule %}class="danger"{% else %} style="background:transparent"{% endif %}>
+                                            <td>{{ u.tool }}</td>
+                                            <td>
+                                                <span>{{ u.operator.first_name }} {{ u.operator.last_name }}
+                                                    {% if u.user != u.operator %}on behalf of {{ u.user.first_name }} {{ u.user.last_name }}{% endif %}
+                                                </span>
+                                            </td>
+                                            <td>{{ u.start|date:"MONTH_DAY_FORMAT" }} @ {{ u.start|time }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 {% else %}
                     <h2>No {{ facility_name }} tools are in use</h2>
