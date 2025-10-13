@@ -47,7 +47,7 @@
 		}
 		function refresh_jumbotron()
 		{
-			$("#content").load("{% url 'jumbotron_content' %}", undefined, on_complete);
+			$("#content").load("{% url 'jumbotron_content' %}"+window.location.search, undefined, on_complete);
 		}
 		function on_load()
 		{
