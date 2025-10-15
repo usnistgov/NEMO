@@ -66,7 +66,7 @@ def new_reservation(request, item_type, item_id, date=None):
     dictionary = {
         "item": item,
         "item_type": item_type.value,
-        "date": date,
+        "date": parse_date(date) if date else None,
         "item_reservation_times": list(
             Reservation.objects.filter(**{item_type.value: item}).filter(
                 cancelled=False, missed=False, shortened=False, start__gte=timezone.now()

@@ -115,10 +115,6 @@
 
 	let date_picker = $('#estimated_resolution_dt').pickadate({format: "yyyy-mm-dd", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true});
 	let start_time_picker = $('#estimated_resolution_tm').pickatime({interval: 15, format: "H:i",formatSubmit: "H:i", hiddenName: true});
-	// set initial date
-	if ('{{ date|default_if_none:'' }}') {
-		date_picker.pickadate('picker').set('select', '{{ date }}', {format: 'MM/DD/YYYY'})
-	}
 
 	revert(90);
 </script>

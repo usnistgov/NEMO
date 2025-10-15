@@ -84,11 +84,6 @@
 	let end_date_picker = $('#end_date').pickadate({format: "{{ pickadate_date_format }}", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, onSet: refresh_times});
 	let start_time_picker = $('#start').pickatime({interval: 15, format: "{{ pickadate_time_format }}", formatSubmit: "H:i", hiddenName: true, formatLabel: format_labels(true)});
 	let end_time_picker = $('#end').pickatime({interval: 15, format: "{{ pickadate_time_format }}", formatSubmit: "H:i", hiddenName: true, formatLabel: format_labels(false)});
-	// set initial date
-	if ('{{ start_date|default_if_none:'' }}')
-    {
-		start_date_picker.pickadate('picker').set('select', '{{ start_date }}', {format: '{{ pickadate_date_format }}'});
-	}
 	function refresh_times()
     {
 		start_time_picker.pickatime('picker').render();

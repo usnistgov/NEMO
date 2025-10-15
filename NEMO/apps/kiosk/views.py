@@ -16,10 +16,12 @@ from django.utils.html import format_html
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from NEMO.decorators import synchronized
-from NEMO.exceptions import RequiredUnansweredQuestionsException, ProjectChargeException
-from NEMO.forms import CommentForm, TaskForm, nice_errors, ConsumableWithdrawForm
+from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
+from NEMO.forms import CommentForm, ConsumableWithdrawForm, TaskForm, nice_errors
 from NEMO.models import (
     BadgeReader,
+    Consumable,
+    ConsumableWithdraw,
     Project,
     Reservation,
     TaskCategory,
@@ -29,13 +31,17 @@ from NEMO.models import (
     ToolWaitList,
     UsageEvent,
     User,
-    Consumable,
-    ConsumableWithdraw,
 )
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import localize, quiet_int, remove_duplicates
 from NEMO.views.area_access import log_out_user
 from NEMO.views.calendar import cancel_the_reservation, set_reservation_configuration, shorten_reservation
+from NEMO.views.consumables import (
+    consumable_permissions,
+    make_withdrawal,
+    make_withdrawal_success_message,
+    self_checkout,
+)
 from NEMO.views.customization import ApplicationCustomization, ToolCustomization, UserCustomization
 from NEMO.views.get_projects import get_projects
 from NEMO.views.tasks import save_task
@@ -45,12 +51,6 @@ from NEMO.views.tool_control import (
     interlock_error,
     save_comment,
     tool_configuration,
-)
-from NEMO.views.consumables import (
-    self_checkout,
-    make_withdrawal,
-    make_withdrawal_success_message,
-    consumable_permissions,
 )
 
 
@@ -585,7 +585,6 @@ def tool_report_problem(request, tool_id, user_id, back):
 
     dictionary = {
         "tool": tool,
-        "date": None,
         "customer": customer,
         "back": back,
         "task_categories": TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT),
