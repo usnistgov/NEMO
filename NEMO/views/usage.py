@@ -111,7 +111,6 @@ def user_usage(request):
         customer_filter &= Q(customer=user)
         user_filter &= Q(user=user)
         trainee_filter &= Q(trainee=user)
-        csv_export = bool(request.GET.get("csv", False))
     return usage(
         request,
         usage_filter=user_filter,
