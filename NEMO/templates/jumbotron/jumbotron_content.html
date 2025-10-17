@@ -24,11 +24,11 @@
                         {% endif %}
                         Users logged in outside their allowed schedule are highlighted in <span class="bg-danger">&nbsp;red&nbsp;</span>
                     </p>
-                    {% for area in area_occupants %}
-                        <div class="table-wrapper-autofit">
+                    <div class="content-wrapper-autofit" data-autofit-element=".panel">
+                        {% for area in area_occupants %}
                             {% include 'occupancy/occupancy_content.html' with area=area.grouper occupants=area.list transparent_bg=True center_th=True %}
-                        </div>
-                    {% endfor %}
+                        {% endfor %}
+                    </div>
                 {% endif %}
             </div>
         {% endif %}
@@ -43,7 +43,7 @@
                         &nbsp;
                     </p>
                     {# Panel is used to make table borders rounded. #}
-                    <div class="table-wrapper-autofit">
+                    <div class="content-wrapper-autofit">
                         <div class="panel panel-default" style="background:transparent">
                             <table class="table table-bordered table-condensed" style="background:transparent">
                                 <thead>

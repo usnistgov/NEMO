@@ -20,31 +20,12 @@
         <style>
 			{# Style for autofit #}
 
-			.table-wrapper-autofit
+			.content-wrapper-autofit
 			{
 				overflow: hidden;
 			}
 
-			.table-wrapper-autofit table.table-autofit th
-			{
-				position: sticky;
-				top: 0;
-				z-index: 11;
-				opacity: 1 !important;
-				border: 1px solid transparent;
-			}
-
-			.table-wrapper-autofit table.table-autofit td
-            {
-				border: 1px solid transparent;
-			}
-
-			.table-wrapper-autofit table.table-autofit tbody
-			{
-				overflow: hidden;
-			}
-
-			.table-wrapper-autofit .panel, .table-wrapper-autofit .table.table-autofit
+			.content-wrapper-autofit .panel, .content-wrapper-autofit .content-autofit
 			{
 				margin-bottom: 0;
 			}
@@ -64,7 +45,7 @@
         </div>
         {% include 'base/footer.html' %}
         <script>
-		function resize_table_to_fit()
+		function resize_content_to_fit()
 		{
             {# No need to do all that if we are not on a large screen, since the items will stack vertically #}
             const break_point_lg = 1200;
@@ -73,7 +54,7 @@
                 return;
 			}
 
-			$.each($(".table-wrapper-autofit"), function (index, wrapper_element)
+			$.each($(".content-wrapper-autofit"), function (index, wrapper_element)
 			{
                 const autoscroll_id = "autoscroll-" + index;
 
@@ -85,20 +66,22 @@
 
 				// Leave a margin at bottom (70px here)
 				const available = viewport_height - top - 70;
-                const content_height = wrapper_element.scrollHeight
+                const content_height = wrapper_element.scrollHeight;
 
-                let table_element = $(wrapper_element).find("table");
-                if (!table_element) return;
+                // By default, we look for a table, but it could be anything
+                const find_element = $(wrapper_element).data("autofit-element") || "table";
+                let content_element = $(wrapper_element).find(find_element);
+                if (!content_element) return;
 
 				if (available < content_height)
 				{
-                    table_element.addClass(`table-autofit table-autofit-${index}`);
+                    content_element.addClass(`content-autofit content-autofit-${index}`);
 
                     {# Remove old keyframes before adding new ones #}
                     const oldStyle = document.getElementById(autoscroll_id + "-keyframes");
   					if (oldStyle) oldStyle.remove();
 
-                    const overflow = content_height - available - 6; // overflow we need to display
+                    const overflow = content_height - available; // overflow we need to display
                     const animation_speed = 15; // px per seconds
 					const duration = overflow / animation_speed;
 
@@ -109,19 +92,47 @@
       					@keyframes ${autoscroll_id}
       					{
         					0%, 35%   { transform: translateY(0); }
-        					65%, 100% { transform: translateY(-${overflow}px); }
+        					55%, 100% { transform: translateY(-${overflow}px); }
       					}
+    				`;
+                    if (find_element === "table")
+                    {
+                        style.innerHTML += `
+                        .content-autofit-${index} th
+                        {
+                            position: sticky;
+                            top: 0;
+                            z-index: 11;
+                            opacity: 1 !important;
+                            border: 1px solid transparent;
+                        }
 
-      					.table-autofit-${index} tbody
+                        .content-autofit-${index} td
+                        {
+                            border: 1px solid transparent;
+                        }
+
+                        .content-autofit-${index} tbody
+                        {
+                            overflow: hidden;
+                            animation: ${autoscroll_id} ${duration}s linear infinite;
+                        }
+                        `
+                    }
+                    else
+                    {
+                        style.innerHTML += `
+                        .content-autofit-${index}
       					{
       						animation: ${autoscroll_id} ${duration}s linear infinite;
       					}
-    				`;
+                        `
+                    }
     				document.head.appendChild(style);
 				}
 				else
 				{
-					table_element.removeClass(`table-autofit table-autofit-${index}`);
+					content_element.removeClass(`content-autofit content-autofit-${index}`);
 				}
 
 				wrapper_element.style.maxHeight = available + 'px';
@@ -140,7 +151,7 @@
 				$("#content").hide();
 				$("#offline-message").show();
 			}
-            resize_table_to_fit();
+            resize_content_to_fit();
 		}
 		function refresh_jumbotron()
 		{
@@ -150,7 +161,7 @@
 		{
 			refresh_jumbotron();
 			set_interval_when_visible(document, refresh_jumbotron, 10000);
-			window.addEventListener('resize', resize_table_to_fit);
+			window.addEventListener('resize', resize_content_to_fit);
 		}
 		$(on_load);
 	
