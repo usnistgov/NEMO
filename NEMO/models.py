@@ -923,6 +923,12 @@ class User(BaseModel, PermissionsMixin):
 
         return is_staff_on_tool(self, tool)
 
+    @property
+    def is_adjustment_request_reviewer(self) -> bool:
+        is_reviewer_on_any_tool = Tool.objects.filter(_adjustment_request_reviewers__in=[self]).exists()
+        is_reviewer_on_any_area = Area.objects.filter(adjustment_request_reviewers__in=[self]).exists()
+        return self.is_facility_manager or is_reviewer_on_any_tool or is_reviewer_on_any_area
+
     def get_username(self):
         return self.username
 

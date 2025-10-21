@@ -27,6 +27,18 @@ class AdjustmentRequestTestCase(NEMOTestCaseMixin, TestCase):
         response = self.client.get(reverse("adjustment_requests", args=[0]))
         self.assertContains(response, "not enabled", status_code=400)
 
+    def test_enable_adjustment_requests_reviewers_only(self):
+        AdjustmentRequestsCustomization.set("adjustment_requests_enabled", "reviewers_only")
+        self.login_as_user()
+        response = self.client.get(reverse("adjustment_requests", args=[0]))
+        self.assertContains(response, "not enabled", status_code=400)
+        tool = Tool.objects.create(name="tool")
+        user = User.objects.create(username="test", first_name="t", last_name="e")
+        tool.adjustment_request_reviewers.add(user)
+        self.login_as(user)
+        response = self.client.get(reverse("adjustment_requests", args=[0]))
+        self.assertTrue(response.status_code == 200)
+
     def test_create_request(self):
         user, project = create_user_and_project()
         adjustment_request = AdjustmentRequest()

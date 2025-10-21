@@ -6,13 +6,27 @@
         <div class="form-group">
             <label class="control-label col-md-4">Enable adjustment requests</label>
             <div class="col-md-8">
-                <div class="checkbox">
+                <div class="radio">
                     <label>
-                        <input type="checkbox"
+                        <input type="radio"
                                name="adjustment_requests_enabled"
-                               {% if adjustment_requests_enabled %}checked{% endif %}
+                               {% if adjustment_requests_enabled == "enabled" %}checked{% endif %}
                                value="enabled">
-                        Check this box to allow users to request adjustment for charges.
+                        Enabled for everyone
+                    </label>
+                    <label>
+                        <input type="radio"
+                               name="adjustment_requests_enabled"
+                               {% if adjustment_requests_enabled == "reviewers_only" %}checked{% endif %}
+                               value="reviewers_only">
+                        Enabled for reviewers only
+                    </label>
+                    <label>
+                        <input type="radio"
+                               name="adjustment_requests_enabled"
+                               {% if not adjustment_requests_enabled %}checked{% endif %}
+                               value="">
+                        Disabled
                     </label>
                     <br />
                 </div>

@@ -37,6 +37,7 @@ from NEMO.models import (
     TrainingSession,
     UserPreferences,
     UserType,
+    User,
 )
 from NEMO.utilities import RecurrenceFrequency, date_input_format, datetime_input_format, quiet_int
 
@@ -535,10 +536,19 @@ class AdjustmentRequestsCustomization(CustomizationBase):
             pass
 
     @classmethod
+    def are_adjustment_requests_enabled_for_user(cls, user: User) -> bool:
+        adjustment_requests_enabled = cls.get("adjustment_requests_enabled")
+        if adjustment_requests_enabled == "enabled":
+            return True
+        elif adjustment_requests_enabled == "reviewers_only":
+            return user.is_adjustment_request_reviewer
+        return False
+
+    @classmethod
     def set(cls, name: str, value):
-        if name == "adjustment_requests_enabled" and value != "enabled":
+        if name == "adjustment_requests_enabled" and not value:
             # If adjustment requests are being disabled, remove all notifications
-            previously_enabled = cls.get_bool("adjustment_requests_enabled")
+            previously_enabled = cls.get("adjustment_requests_enabled")
             if previously_enabled:
                 Notification.objects.filter(
                     notification_type__in=[

@@ -51,15 +51,17 @@ from NEMO.views.pagination import SortedPaginator
 @login_required
 @require_GET
 def adjustment_requests(request, status: int):
-    if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_enabled"):
+    user: User = request.user
+
+    if not AdjustmentRequestsCustomization.are_adjustment_requests_enabled_for_user(user):
         return HttpResponseBadRequest("Adjustment requests are not enabled")
+
     status = status if status in [0, 1, 2] else 0
     status = RequestStatus(status)
     selected_applied_status = request.GET.get("applied_status", "")
     selected_tool_id = request.GET.get("tool_id", "")
     selected_area_id = request.GET.get("area_id", "")
 
-    user: User = request.user
     adj_requests = AdjustmentRequest.objects.filter(deleted=False, status=status)
     if selected_applied_status:
         adj_requests = adj_requests.filter(applied=bool(selected_applied_status == "true"))
@@ -72,7 +74,7 @@ def adjustment_requests(request, status: int):
     )
     my_requests = adj_requests.filter(creator=user)
 
-    user_is_reviewer = is_user_a_reviewer(user)
+    user_is_reviewer = user.is_adjustment_request_reviewer
     user_is_staff = user.is_facility_manager or user.is_user_office or user.is_accounting_officer
     if not user_is_reviewer and not user_is_staff:
         # only show own requests
@@ -123,10 +125,9 @@ def adjustment_requests(request, status: int):
 @login_required
 @require_http_methods(["GET", "POST"])
 def create_adjustment_request(request, request_id=None, item_type_id=None, item_id=None):
-    if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_enabled"):
-        return HttpResponseBadRequest("Adjustment requests are not enabled")
-
     user: User = request.user
+    if not AdjustmentRequestsCustomization.are_adjustment_requests_enabled_for_user(user):
+        return HttpResponseBadRequest("Adjustment requests are not enabled")
 
     try:
         adjustment_request = AdjustmentRequest.objects.get(id=request_id)
@@ -245,11 +246,11 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
 @login_required
 @require_POST
 def adjustment_request_reply(request, request_id):
-    if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_enabled"):
+    user: User = request.user
+    if not AdjustmentRequestsCustomization.are_adjustment_requests_enabled_for_user(user):
         return HttpResponseBadRequest("Adjustment requests are not enabled")
 
     adjustment_request = get_object_or_404(AdjustmentRequest, id=request_id)
-    user: User = request.user
     message_content = request.POST["reply_content"]
     expiration = timezone.now() + timedelta(days=30)  # 30 days for adjustment requests replies to expire
 
@@ -273,7 +274,7 @@ def adjustment_request_reply(request, request_id):
 @login_required
 @require_GET
 def delete_adjustment_request(request, request_id):
-    if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_enabled"):
+    if not AdjustmentRequestsCustomization.are_adjustment_requests_enabled_for_user(request.user):
         return HttpResponseBadRequest("Adjustment requests are not enabled")
 
     adjustment_request = get_object_or_404(AdjustmentRequest, id=request_id)
@@ -293,7 +294,7 @@ def delete_adjustment_request(request, request_id):
 @require_GET
 def mark_adjustment_as_applied(request, request_id):
     user: User = request.user
-    if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_enabled"):
+    if not AdjustmentRequestsCustomization.are_adjustment_requests_enabled_for_user(user):
         return HttpResponseBadRequest("Adjustment requests are not enabled")
 
     adjustment_request = get_object_or_404(AdjustmentRequest, id=request_id)
@@ -314,7 +315,7 @@ def mark_adjustment_as_applied(request, request_id):
 @login_required
 @require_GET
 def apply_adjustment(request, request_id):
-    if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_enabled"):
+    if not AdjustmentRequestsCustomization.are_adjustment_requests_enabled_for_user(request.user):
         return HttpResponseBadRequest("Adjustment requests are not enabled")
     if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_apply_button"):
         return HttpResponseBadRequest("Applying adjustments is not allowed")
@@ -356,23 +357,34 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
             "user_office": False,
         }
         message = render_email_template(adjustment_request_notification_email, dictionary)
+        cc = None
+        enabled_for_creator = AdjustmentRequestsCustomization.are_adjustment_requests_enabled_for_user(
+            adjustment_request.creator
+        )
         creator_notification = adjustment_request.creator.get_preferences().email_send_adjustment_request_updates
+        if enabled_for_creator:
+            cc = adjustment_request.creator.get_emails(creator_notification)
         if status in ["received", "updated"]:
             send_mail(
                 subject=f"Adjustment request {status}",
                 content=message,
                 from_email=adjustment_request.creator.email,
                 to=reviewer_emails,
-                cc=adjustment_request.creator.get_emails(creator_notification),
+                cc=cc,
                 email_category=EmailCategory.ADJUSTMENT_REQUESTS,
             )
         else:
+            to = reviewer_emails
+            cc = None
+            if enabled_for_creator:
+                to = adjustment_request.creator.get_emails(creator_notification)
+                cc = reviewer_emails
             send_mail(
                 subject=f"Your adjustment request has been {status}",
                 content=message,
                 from_email=adjustment_request.reviewer.email,
-                to=adjustment_request.creator.get_emails(creator_notification),
-                cc=reviewer_emails,
+                to=to,
+                cc=cc,
                 email_category=EmailCategory.ADJUSTMENT_REQUESTS,
             )
 
@@ -394,24 +406,26 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
 
 def email_interested_parties(reply: RequestMessage, reply_url):
     creator: User = reply.content_object.creator
+    enabled_for_creator = AdjustmentRequestsCustomization.are_adjustment_requests_enabled_for_user(creator)
     for user in reply.content_object.creator_and_reply_users():
-        if user != reply.author and (user == creator or user.get_preferences().email_new_adjustment_request_reply):
-            creator_display = f"{creator.get_name()}'s" if creator != user else "your"
-            creator_display_their = creator_display if creator != reply.author else "their"
-            subject = f"New reply on {creator_display} adjustment request"
-            message = f"""{reply.author.get_name()} also replied to {creator_display_their} adjustment request:
+        if user != creator or enabled_for_creator:
+            if user != reply.author and (user == creator or user.get_preferences().email_new_adjustment_request_reply):
+                creator_display = f"{creator.get_name()}'s" if creator != user else "your"
+                creator_display_their = creator_display if creator != reply.author else "their"
+                subject = f"New reply on {creator_display} adjustment request"
+                message = f"""{reply.author.get_name()} also replied to {creator_display_their} adjustment request:
 <br><br>
 {linebreaksbr(reply.content)}
 <br><br>
 Please visit {reply_url} to reply"""
-            email_notification = user.get_preferences().email_send_adjustment_request_updates
-            user.email_user(
-                subject=subject,
-                message=message,
-                from_email=reply.author.email,
-                email_notification=email_notification,
-                email_category=EmailCategory.ADJUSTMENT_REQUESTS,
-            )
+                email_notification = user.get_preferences().email_send_adjustment_request_updates
+                user.email_user(
+                    subject=subject,
+                    message=message,
+                    from_email=reply.author.email,
+                    email_notification=email_notification,
+                    email_category=EmailCategory.ADJUSTMENT_REQUESTS,
+                )
 
 
 def adjustment_eligible_items(user: User, current_item=None) -> List[BillableItemMixin]:
@@ -548,12 +562,6 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
     response = table_result.to_csv()
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
-
-
-def is_user_a_reviewer(user: User) -> bool:
-    is_reviewer_on_any_tool = Tool.objects.filter(_adjustment_request_reviewers__in=[user]).exists()
-    is_reviewer_on_any_area = Area.objects.filter(adjustment_request_reviewers__in=[user]).exists()
-    return user.is_facility_manager or is_reviewer_on_any_tool or is_reviewer_on_any_area
 
 
 def for_reviewer(adjustment_request_qs: QuerySet[AdjustmentRequest], user: User) -> QuerySet[AdjustmentRequest]:
