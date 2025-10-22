@@ -2407,7 +2407,7 @@ class ConfigurationOption(BaseModel, ConfigurationMixin):
         return f"{self.name}, options: {self.available_settings_as_list()}{selected}"
 
     class Meta:
-        ordering = ["configuration__display_order"]
+        ordering = ["configuration__display_order", "id"]
 
 
 class TrainingSession(BaseModel, BillableItemMixin):

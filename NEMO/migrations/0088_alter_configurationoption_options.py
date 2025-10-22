@@ -12,6 +12,6 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterModelOptions(
             name="configurationoption",
-            options={"ordering": ["configuration__display_order"]},
+            options={"ordering": ["configuration__display_order", "id"]},
         ),
     ]
