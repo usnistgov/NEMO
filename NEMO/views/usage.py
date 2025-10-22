@@ -559,6 +559,8 @@ def csv_export_response(
     table_result.add_header(("start", "Start time"))
     table_result.add_header(("end", "End time"))
     table_result.add_header(("quantity", "Quantity"))
+    if user.is_any_part_of_staff:
+        table_result.add_header(("staff_charge_note", "Staff charge note"))
     data: List[BillableItem] = []
     data.extend(billable_items_missed_reservations(missed_reservations))
     data.extend(billable_items_consumable_withdrawals(consumables))
@@ -567,7 +569,10 @@ def csv_export_response(
     data.extend(billable_items_area_access_records(area_access))
     data.extend(billable_items_usage_events(usage_events))
     for billable_item in data:
-        table_result.add_row(vars(billable_item))
+        row = vars(billable_item)
+        if billable_item.type == "staff_charge" and billable_item.item:
+            row["staff_charge_note"] = billable_item.item.note
+        table_result.add_row(row)
     response = table_result.to_csv()
     filename = f"usage_export_{export_format_datetime()}.csv"
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
