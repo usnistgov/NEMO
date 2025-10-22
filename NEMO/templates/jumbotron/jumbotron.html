@@ -73,7 +73,8 @@
                 let content_element = $(wrapper_element).find(find_element);
                 if (!content_element) return;
 
-				if (available < content_height)
+				// Add 15 px so the content doesn't flicker (make sure we are not auto-scrolling for just a few px)
+				if (available + 15 < content_height)
 				{
                     content_element.addClass(`content-autofit content-autofit-${index}`);
 
