@@ -1061,7 +1061,12 @@
             <div class="form-group">
                 <label class="form-inline">
                     How many days would you like the comment to be visible?
-                    <select name="expiration" class="form-control" style="width:250px" required>
+                    <input list="expiration_days"
+                           name="expiration"
+                           class="form-control text-right"
+                           style="width:250px"
+                           required>
+                    <datalist id="expiration_days">
                         <option value="" disabled selected></option>
                         <option value="1">1 day</option>
                         <option value="7">7 days</option>
@@ -1070,7 +1075,7 @@
                         <option value="90">90 days</option>
                         <option value="-1">Indefinitely</option>
                         {% if user.is_any_part_of_staff %}<option value="0">Not visible</option>{% endif %}
-                    </select>
+                    </datalist>
                 </label>
             </div>
             <div class="form-group">
