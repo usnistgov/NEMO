@@ -784,22 +784,6 @@ function matcher(items, search_fields)
     			ev.keyCode = ev.which = 40;
     			el.trigger(ev);
 
-
-                // ensure the menu is positioned correctly
-                let $menu = el.parent().find('.tt-dropdown-menu');
-                const adjustMenu = function()
-                {
-                    const inputHeight = el.innerHeight();
-                    $menu.css(
-                    {
-                        top: inputHeight + 'px',
-                        left: 0
-                    });
-                };
-                // Reposition immediately and again on next tick (some builds render async)
-                adjustMenu();
-                setTimeout(adjustMenu, 0);
-
     			return true
 			});
 		}
