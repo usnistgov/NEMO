@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_http_methods
 
-from NEMO.decorators import staff_member_required
+from NEMO.decorators import postpone, staff_member_required
 from NEMO.forms import SafetyIssueCreationForm, SafetyIssueUpdateForm
 from NEMO.models import Chemical, ChemicalHazard, Notification, SafetyCategory, SafetyIssue, SafetyItem
 from NEMO.templatetags.custom_tags_and_filters import navigation_url
@@ -120,6 +120,7 @@ def create_safety_issue(request):
     return render(request, "safety/safety_issues_create.html", dictionary)
 
 
+@postpone
 def send_safety_email_notification(request, issue):
     recipient = EmailsCustomization.get("safety_email_address")
     message = get_media_file_contents("safety_issue_email.html")

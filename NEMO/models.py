@@ -1484,6 +1484,15 @@ class Tool(SerializationByNameModel):
         self._primary_owner = value
 
     @property
+    def primary_owner_id(self) -> int:
+        return self.parent_tool.primary_owner_id if self.is_child_tool() else self._primary_owner_id
+
+    @primary_owner_id.setter
+    def primary_owner_id(self, value):
+        self.raise_setter_error_if_child_tool("primary_owner_id")
+        self._primary_owner_id = value
+
+    @property
     def backup_owners(self) -> QuerySetType[User]:
         return self.parent_tool.backup_owners if self.is_child_tool() else self._backup_owners
 

@@ -11,7 +11,7 @@ from django.template.defaultfilters import linebreaksbr
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.decorators import staff_member_or_tool_staff_required
+from NEMO.decorators import postpone, staff_member_or_tool_staff_required
 from NEMO.forms import TaskForm, TaskImagesForm, nice_errors
 from NEMO.models import (
     Interlock,
@@ -122,6 +122,7 @@ def save_task(request, task: Task, user: User, task_images: List[TaskImages] = N
     set_task_status(request, task, request.POST.get("status"), user)
 
 
+@postpone
 def send_new_task_emails(request, task: Task, user, task_images: List[TaskImages]):
     message = get_media_file_contents("new_task_email.html")
     attachments = None
@@ -146,7 +147,7 @@ def send_new_task_emails(request, task: Task, user, task_images: List[TaskImages
         message = render_email_template(message, dictionary, request)
         tos, bcc = get_task_email_recipients(task, new=True)
         if ToolCustomization.get_bool("tool_problem_send_to_all_qualified_users"):
-            for qualified_user in task.tool.user_set.filter(is_active=True):
+            for qualified_user in task.tool.user_set.filter(is_active=True).select_related("preferences"):
                 bcc.extend(
                     [
                         email
@@ -169,7 +170,7 @@ def send_new_task_emails(request, task: Task, user, task_images: List[TaskImages
     if user_office_email and message:
         upcoming_reservations = Reservation.objects.filter(
             start__gt=timezone.now(), cancelled=False, tool=task.tool, user__is_staff=False
-        )
+        ).select_related("tool", "user__preferences")
         for reservation in upcoming_reservations:
             if not task.tool.operational:
                 subject = reservation.tool.name + " reservation problem"
@@ -230,6 +231,7 @@ def cancel(request, task_id):
     return redirect("tool_control")
 
 
+@postpone
 def send_task_updated_email(task, url, task_images: List[TaskImages] = None):
     try:
         tos, bcc = get_task_email_recipients(task)
@@ -421,27 +423,30 @@ def save_task_images(request, task: Task) -> List[TaskImages]:
 
 def get_task_email_recipients(task: Task, new=False) -> Tuple[List[str], List[str]]:
     # Add all recipients, starting with the primary owner
-    recipient_users: Set[User] = {task.tool.primary_owner}
-    bcc_users: Set[User] = set()
+    recipient_user_ids: Set[int] = {task.tool.primary_owner_id}
+    bcc_user_ids: Set[int] = set()
     # Add backup owners
-    recipient_users.update(task.tool.backup_owners.all())
+    recipient_user_ids.update(task.tool.backup_owners.values_list("id", flat=True))
     # Add tool staff
-    recipient_users.update(task.tool.staff.all())
+    recipient_user_ids.update(task.tool.staff.values_list("id", flat=True))
     if ToolCustomization.get_bool("tool_task_updates_superusers"):
-        recipient_users.update(task.tool.superusers.all())
+        recipient_user_ids.update(task.tool.superusers.values_list("id", flat=True))
     # Add facility managers and take into account their preferences
     if ToolCustomization.get_bool("tool_task_updates_facility_managers"):
-        recipient_users.update(
-            User.objects.filter(is_active=True, is_facility_manager=True).filter(
+        recipient_user_ids.update(
+            User.objects.filter(is_active=True, is_facility_manager=True)
+            .filter(
                 Q(preferences__tool_task_notifications__isnull=True)
                 | Q(preferences__tool_task_notifications__in=[task.tool])
             )
+            .values_list("id", flat=True)
         )
     # Add staff/service personnel with preferences set to receive notifications for this tool
-    recipient_users.update(
+    recipient_user_ids.update(
         User.objects.filter(is_active=True)
         .filter(Q(is_staff=True) | Q(is_service_personnel=True))
         .filter(Q(preferences__tool_task_notifications__in=[task.tool]))
+        .values_list("id", flat=True)
     )
     # Add regular users with preferences set to receive notifications for this tool if it's allowed
     send_email_to_regular_user = (
@@ -451,22 +456,38 @@ def get_task_email_recipients(task: Task, new=False) -> Tuple[List[str], List[st
         and ToolCustomization.get_bool("tool_task_updates_allow_regular_user_preferences")
     )
     if send_email_to_regular_user:
-        bcc_users.update(
-            User.objects.filter(is_active=True).filter(Q(preferences__tool_task_notifications__in=[task.tool]))
+        bcc_user_ids.update(
+            User.objects.filter(is_active=True)
+            .filter(Q(preferences__tool_task_notifications__in=[task.tool]))
+            .values_list("id", flat=True)
         )
     if task.resolved:
         # If the task is resolved and the option is set to send new problems to all qualified users,
         # then we need to send them when those tasks are resolved (otherwise they'll think there are only issues)
         if ToolCustomization.get_bool("tool_problem_send_to_all_qualified_users"):
-            bcc_users.update(task.tool.user_set.filter(is_active=True))
+            bcc_user_ids.update(task.tool.user_set.filter(is_active=True).values_list("id", flat=True))
         if ToolCustomization.get_bool("tool_problem_allow_regular_user_preferences"):
-            bcc_users.update(
-                User.objects.filter(is_active=True).filter(Q(preferences__tool_task_notifications__in=[task.tool]))
+            bcc_user_ids.update(
+                User.objects.filter(is_active=True)
+                .filter(Q(preferences__tool_task_notifications__in=[task.tool]))
+                .values_list("id", flat=True)
             )
+    # Load users and their preferences so we save time getting their email preferences
+    all_relevant_users = User.objects.filter(
+        is_active=True, id__in=recipient_user_ids.union(bcc_user_ids)
+    ).select_related("preferences")
     tos = [
-        email for user in recipient_users for email in user.get_emails(user.get_preferences().email_send_task_updates)
+        email
+        for user in all_relevant_users
+        for email in user.get_emails(user.get_preferences().email_send_task_updates)
+        if user.id in recipient_user_ids
     ]
-    bcc = [email for user in bcc_users for email in user.get_emails(user.get_preferences().email_send_task_updates)]
+    bcc = [
+        email
+        for user in all_relevant_users
+        for email in user.get_emails(user.get_preferences().email_send_task_updates)
+        if user.id in bcc_user_ids
+    ]
     if task.tool.notification_email_address:
         tos.append(task.tool.notification_email_address)
     return tos, bcc
