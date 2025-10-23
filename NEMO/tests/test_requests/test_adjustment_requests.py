@@ -1,5 +1,7 @@
-from datetime import timedelta
+from calendar import monthrange
+from datetime import datetime
 
+from dateutil.relativedelta import relativedelta
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -14,6 +16,7 @@ from NEMO.models import (
     User,
 )
 from NEMO.tests.test_utilities import NEMOTestCaseMixin, create_user_and_project
+from NEMO.utilities import RecurrenceFrequency, beginning_of_next_day, beginning_of_the_day
 from NEMO.views.customization import AdjustmentRequestsCustomization
 
 
@@ -51,7 +54,7 @@ class AdjustmentRequestTestCase(NEMOTestCaseMixin, TestCase):
         self.validate_model_error(adjustment_request, ["description"])
         adjustment_request.description = "some description"
         # now try with a charge
-        start = timezone.now() - timedelta(hours=1)
+        start = timezone.now() - relativedelta(hours=1)
         usage_event = UsageEvent.objects.create(
             user=user,
             operator=user,
@@ -63,7 +66,7 @@ class AdjustmentRequestTestCase(NEMOTestCaseMixin, TestCase):
         adjustment_request.item = usage_event
         adjustment_request.new_start = usage_event.start
         adjustment_request.new_end = usage_event.end
-        adjustment_request.new_start = usage_event.start - timedelta(minutes=5)
+        adjustment_request.new_start = usage_event.start - relativedelta(minutes=5)
         adjustment_request.full_clean()
         adjustment_request.save()
         self.assertEqual(adjustment_request.status, RequestStatus.PENDING)
@@ -208,3 +211,48 @@ class AdjustmentRequestTestCase(NEMOTestCaseMixin, TestCase):
             reverse("adjustment_request_reply", args=[adjustment_request.id]), data={"reply_content": "another one"}
         )
         self.assertContains(response, "Replies are only allowed on PENDING requests", status_code=400)
+
+    def test_date_limit(self):
+        # 20 days window
+        today = timezone.localtime()
+        self.assertEqual(
+            beginning_of_next_day(today - relativedelta(days=20)),
+            test_date_limit_dates("", str(RecurrenceFrequency.DAILY.index), "20"),
+        )
+        # 1 month window
+        self.assertEqual(
+            beginning_of_next_day(today - relativedelta(months=1)),
+            test_date_limit_dates("", str(RecurrenceFrequency.MONTHLY.index), "1"),
+        )
+        # billing cycle today, cutoff is the first of last month
+        self.assertEqual(
+            beginning_of_the_day((today - relativedelta(months=1)).replace(day=1)), test_date_limit_dates(today.day)
+        )
+        if today.day != monthrange(today.year, today.month)[1]:
+            # if we are not the last day of the month
+            # set billing day as tomorrow, so we are before it. in that case cutoff should be 1 of last month
+            self.assertEqual(
+                beginning_of_the_day((today - relativedelta(months=1)).replace(day=1)),
+                test_date_limit_dates(today.day + 1),
+            )
+            # test with also a period cutoff of 1 day, which should take precedence
+            self.assertEqual(
+                beginning_of_the_day(today),
+                test_date_limit_dates(today.day + 1, str(RecurrenceFrequency.DAILY.index), "1"),
+            )
+        if today.day != monthrange(today.year, today.month)[0]:
+            # if we are not the first day of the month
+            # set billing day as yesterday, so we are after it. in that case cutoff should be 1 of this month
+            self.assertEqual(beginning_of_the_day(today.replace(day=1)), test_date_limit_dates(today.day - 1))
+            # test with also a period cutoff of 1 day, which should take precedence
+            self.assertEqual(
+                beginning_of_the_day(today),
+                test_date_limit_dates(today.day - 1, str(RecurrenceFrequency.DAILY.index), "1"),
+            )
+
+
+def test_date_limit_dates(billing_days, freq="", interval="") -> datetime:
+    AdjustmentRequestsCustomization.set("adjustment_requests_time_limit_monthly_cycle_day", billing_days)
+    AdjustmentRequestsCustomization.set("adjustment_requests_time_limit_frequency", freq)
+    AdjustmentRequestsCustomization.set("adjustment_requests_time_limit_interval", interval)
+    return AdjustmentRequestsCustomization.get_date_limit()

@@ -35,11 +35,18 @@ from NEMO.models import (
     RecurringConsumableCharge,
     Tool,
     TrainingSession,
+    User,
     UserPreferences,
     UserType,
-    User,
 )
-from NEMO.utilities import RecurrenceFrequency, date_input_format, datetime_input_format, quiet_int
+from NEMO.utilities import (
+    RecurrenceFrequency,
+    beginning_of_next_day,
+    beginning_of_the_day,
+    date_input_format,
+    datetime_input_format,
+    quiet_int,
+)
 
 customization_logger = getLogger(__name__)
 
@@ -510,28 +517,48 @@ class AdjustmentRequestsCustomization(CustomizationBase):
         "adjustment_requests_title": "Adjustment requests",
         "adjustment_requests_description": "",
         "adjustment_requests_charges_display_number": "10",
-        "adjustment_requests_time_limit_interval": "2",
-        "adjustment_requests_time_limit_frequency": RecurrenceFrequency.WEEKLY.index,
+        "adjustment_requests_time_limit_interval": "",
+        "adjustment_requests_time_limit_frequency": "",
+        "adjustment_requests_time_limit_monthly_cycle_day": "",
         "adjustment_requests_edit_charge_button": "",
         "adjustment_requests_apply_button": "",
     }
 
     @classmethod
-    def get_date_limit(cls) -> datetime:
+    def get_date_limit(cls) -> Optional[datetime]:
         try:
+            monthly_billing_day: int = cls.get_int("adjustment_requests_time_limit_monthly_cycle_day")
             interval = cls.get_int("adjustment_requests_time_limit_interval")
-            freq = RecurrenceFrequency(cls.get_int("adjustment_requests_time_limit_frequency"))
-            if interval and freq:
-                delta = (
-                    relativedelta(months=interval)
-                    if freq == RecurrenceFrequency.MONTHLY
-                    else (
-                        relativedelta(weeks=interval)
-                        if freq == RecurrenceFrequency.WEEKLY
-                        else relativedelta(days=interval)
+            freq = None
+            if cls.get_int("adjustment_requests_time_limit_frequency"):
+                freq = RecurrenceFrequency(cls.get_int("adjustment_requests_time_limit_frequency"))
+            now_local = timezone.localtime()
+            if interval and freq or monthly_billing_day:
+                delta = relativedelta()
+                if interval and freq:
+                    delta = (
+                        relativedelta(months=interval)
+                        if freq == RecurrenceFrequency.MONTHLY
+                        else (
+                            relativedelta(weeks=interval)
+                            if freq == RecurrenceFrequency.WEEKLY
+                            else relativedelta(days=interval)
+                        )
                     )
-                )
-                return timezone.now() - delta
+                period_cutoff = beginning_of_next_day(now_local - delta) if delta else None
+                cycle_cutoff = None
+                if monthly_billing_day:
+                    if now_local.day > monthly_billing_day:
+                        # After cutoff → return 1st of this month
+                        cycle_cutoff = now_local.replace(day=1)
+                    else:
+                        # Before cutoff → return 1st of last month
+                        cycle_cutoff = now_local.replace(day=1) - relativedelta(months=1)
+                    cycle_cutoff = beginning_of_the_day(cycle_cutoff)
+                if period_cutoff and cycle_cutoff:
+                    return max(period_cutoff, cycle_cutoff)
+                else:
+                    return period_cutoff or cycle_cutoff
         except:
             pass
 
@@ -561,6 +588,7 @@ class AdjustmentRequestsCustomization(CustomizationBase):
     def context(self) -> Dict:
         context_dict = super().context()
         context_dict["frequency_choices"] = [(freq.index, freq.display_value) for freq in self.frequencies]
+        context_dict["date_limit"] = self.get_date_limit()
         return context_dict
 
     def validate(self, name, value):

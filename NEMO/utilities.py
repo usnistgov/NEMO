@@ -386,7 +386,7 @@ def get_month_timeframe(date_str: str = None):
     return first_of_the_month, last_of_the_month
 
 
-def get_day_timeframe(day_date: datetime.date = None):
+def get_day_timeframe(day_date: date = None):
     start = day_date
     if not day_date:
         start = date.today()
@@ -578,6 +578,10 @@ def localize(dt, tz=None):
 
 def naive_local_current_datetime():
     return django_timezone.localtime(django_timezone.now()).replace(tzinfo=None)
+
+
+def beginning_of_next_day(t: datetime, in_local_timezone=True) -> datetime:
+    return beginning_of_the_day(t + timedelta(days=1), in_local_timezone)
 
 
 def beginning_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
