@@ -1257,6 +1257,7 @@ class Tool(SerializationByNameModel):
     )
     _staff = models.ManyToManyField(
         User,
+        verbose_name="Act as staff",
         db_table="NEMO_tool_staff",
         blank=True,
         related_name="staff_for_tools",

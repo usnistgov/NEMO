@@ -1155,6 +1155,7 @@ class UserAdminForm(forms.ModelForm):
     )
 
     staff_on_tools = forms.ModelMultipleChoiceField(
+        label="Act as staff on tools",
         queryset=Tool.objects.filter(parent_tool__isnull=True),
         required=False,
         widget=FilteredSelectMultiple(verbose_name="tools", is_stacked=False),
