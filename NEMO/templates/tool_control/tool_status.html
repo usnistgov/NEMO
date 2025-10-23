@@ -1059,13 +1059,12 @@
                 You may remove the comment at any time because you are its author.
             </p>
             <div class="form-group">
-                <label class="form-inline">
-                    How many days would you like the comment to be visible?
-                    <input list="expiration_days"
-                           name="expiration"
-                           class="form-control text-right"
-                           style="width:250px"
-                           required>
+                <label class="form-inline" for="expiration">How many days would you like the comment to be visible?</label>
+                <div style="display: inline-block;vertical-align: middle; margin-left: 10px">
+                    <div class="input-group" style="max-width: 150px">
+                        <input list="expiration_days" id="expiration" name="expiration" class="form-control text-right" required>
+                        <span class="input-group-addon">Days</span>
+                    </div>
                     <datalist id="expiration_days">
                         <option value="" disabled selected></option>
                         <option value="1">1 day</option>
@@ -1076,7 +1075,7 @@
                         <option value="-1">Indefinitely</option>
                         {% if user.is_any_part_of_staff %}<option value="0">Not visible</option>{% endif %}
                     </datalist>
-                </label>
+                </div>
             </div>
             <div class="form-group">
                 <label for="content-area">What would you like to say?</label>
