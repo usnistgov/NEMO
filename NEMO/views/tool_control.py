@@ -312,7 +312,8 @@ def tool_configuration(request):
         return HttpResponseNotFound("Configuration not found.")
     if not configuration.enabled:
         return HttpResponseBadRequest("This configuration is not enabled")
-    if configuration.tool.in_use():
+    allow_change_in_use = ToolCustomization.get_bool("tool_configuration_change_while_in_use")
+    if not allow_change_in_use and configuration.tool.in_use():
         return HttpResponseBadRequest("Cannot change a configuration while a tool is in use.")
     if not configuration.user_is_maintainer(request.user):
         return HttpResponseBadRequest("You are not authorized to change this configuration.")

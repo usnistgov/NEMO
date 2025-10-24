@@ -667,6 +667,7 @@ class ToolCustomization(CustomizationBase):
         "tool_problem_allow_regular_user_preferences": "",
         "tool_problem_safety_hazard_automatic_shutdown": "",
         "tool_configuration_near_future_days": "1",
+        "tool_configuration_change_while_in_use": "",
         "tool_reservation_policy_superusers_bypass": "",
         "tool_wait_list_spot_expiration": "15",
         "tool_wait_list_reservation_buffer": "15",
