@@ -1062,7 +1062,13 @@
                 <label class="form-inline" for="expiration">How many days would you like the comment to be visible?</label>
                 <div style="display: inline-block;vertical-align: middle; margin-left: 10px">
                     <div class="input-group" style="max-width: 150px">
-                        <input list="expiration_days" id="expiration" name="expiration" class="form-control text-right" required>
+                        <input type="number"
+                               list="expiration_days"
+                               id="expiration"
+                               name="expiration"
+                               class="form-control text-right"
+                               max="999"
+                               required>
                         <span class="input-group-addon">Days</span>
                     </div>
                     <datalist id="expiration_days">

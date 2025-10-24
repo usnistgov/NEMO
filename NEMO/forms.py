@@ -236,7 +236,7 @@ class CommentForm(ModelForm):
         model = Comment
         fields = ["tool", "content", "staff_only", "pinned"]
 
-    expiration = IntegerField(label="Expiration date", min_value=-1)
+    expiration = IntegerField(label="Expiration date", min_value=-1, max_value=999)
 
 
 class SafetyIssueCreationForm(ModelForm):
