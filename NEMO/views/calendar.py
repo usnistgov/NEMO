@@ -468,7 +468,7 @@ def create_item_reservation(request, current_user: User, start, end, item_type: 
 
     # If the user only has one project then associate it with the reservation.
     # Otherwise, present a dialog box for the user to choose which project to associate.
-    if not user.is_staff and not staff_on_tool:
+    if not user.is_staff_on_tool(item):
         active_projects = user.active_projects()
         if len(active_projects) == 1:
             new_reservation.project = active_projects[0]
