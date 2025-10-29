@@ -1261,7 +1261,7 @@ class Tool(SerializationByNameModel):
         db_table="NEMO_tool_staff",
         blank=True,
         related_name="staff_for_tools",
-        help_text="Users who can act as staff for this tool..",
+        help_text="Users who can act as staff for this tool.",
     )
     _adjustment_request_reviewers = models.ManyToManyField(
         User,
@@ -3105,7 +3105,7 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     def question_data_json(self):
         return loads(self.question_data) if self.question_data else None
 
-    def copy(self, new_start: datetime = None, new_end: datetime = None):
+    def copy(self, new_start: datetime.datetime = None, new_end: datetime.datetime = None):
         new_reservation = new_model_copy(self)
         if new_start:
             new_reservation.start = new_start
