@@ -944,7 +944,7 @@ def create_ics(
         f'ATTENDEE;CN="{user.get_name()}";RSVP=TRUE:mailto:{user.email}\n',
         f'ORGANIZER;CN="{organizer}":mailto:{organizer_email}\n',
         f"SUMMARY:[{site_title}] {event_name}\n",
-        f"DESCRIPTION:{description or ''}\n",
+        f'DESCRIPTION:{repr(description)[1:-1] if description else ""}\n',
         f"STATUS:{'CANCELLED' if cancelled else 'CONFIRMED'}\n",
         "END:VEVENT\n",
         "END:VCALENDAR\n",

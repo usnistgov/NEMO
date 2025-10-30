@@ -833,10 +833,25 @@ def cancel_outage(request, outage_id):
 def set_reservation_title(request, reservation_id):
     """Change reservation title for a user."""
     reservation = get_object_or_404(Reservation, id=reservation_id)
-    if not request.user.is_staff and not request.user.is_staff_on_tool(reservation.tool):
+    if not request.user.is_staff_on_tool(reservation.tool):
         return HttpResponseBadRequest("You are not allowed to edit this reservation.")
     reservation.title = request.POST.get("title", "")[: reservation._meta.get_field("title").max_length]
     reservation.save()
+    return HttpResponse()
+
+
+@login_required
+@require_POST
+def change_reservation_note(request, reservation_id):
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+    if (
+        not request.user == reservation.user
+        and not request.user.is_staff
+        and not request.user.is_staff_on_tool(reservation.tool)
+    ):
+        return HttpResponseBadRequest("You are not allowed to edit this reservation.")
+    reservation.note = request.POST.get("note", "")
+    reservation.save(update_fields=["note"])
     return HttpResponse()
 
 
@@ -1080,7 +1095,14 @@ def send_user_created_reservation_notification(reservation: Reservation):
         # We don't need to check for existence of reservation_created_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
         if user_office_email:
             event_name = reservation.title or f"{reservation.reservation_item.name} Reservation"
-            attachment = create_ics(reservation.id, event_name, reservation.start, reservation.end, reservation.user)
+            attachment = create_ics(
+                reservation.id,
+                event_name,
+                reservation.start,
+                reservation.end,
+                reservation.user,
+                description=reservation.note,
+            )
             send_mail(
                 subject=subject, content=message, from_email=user_office_email, to=recipients, attachments=[attachment]
             )

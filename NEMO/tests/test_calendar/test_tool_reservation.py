@@ -688,6 +688,60 @@ class ReservationTestCase(NEMOTestCaseMixin, TransactionTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(Reservation.objects.get(tool=tool))
 
+    def test_change_reservation_note(self):
+        # create reservation
+        start = datetime.now() + timedelta(hours=1)
+        end = start + timedelta(hours=1)
+        data = self.get_reservation_data(start, end, tool)
+
+        self.login_as(consumer)
+        response = self.client.post(reverse("create_reservation"), data, follow=True)
+        self.assertEqual(response.status_code, 200)
+        reservation = Reservation.objects.get(tool=tool)
+        self.assertTrue(reservation.id)
+
+        # Consumer or staff should see the personal note field
+        response = self.client.get(
+            reverse("reservation_details", kwargs={"reservation_id": reservation.id}), {}, follow=True
+        )
+        self.assertContains(response, "Personal note")
+
+        self.login_as_staff()
+        response = self.client.get(
+            reverse("reservation_details", kwargs={"reservation_id": reservation.id}), {}, follow=True
+        )
+        self.assertContains(response, "Personal note")
+
+        # non-staff and non reservation owner cannot see the reservation note
+        self.login_as_user()
+        response = self.client.get(
+            reverse("reservation_details", kwargs={"reservation_id": reservation.id}), {}, follow=True
+        )
+        self.assertNotContains(response, "Personal note")
+        # they also cannot change the reservation note
+        response = self.client.post(
+            reverse("change_reservation_note", kwargs={"reservation_id": reservation.id}),
+            {"note": "this is a note"},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 400)
+
+        # owner can change, but not with wrong id
+        self.login_as(consumer)
+        # test wrong id
+        response = self.client.post(reverse("change_reservation_note", kwargs={"reservation_id": 999}), {}, follow=True)
+        self.assertEqual(response.status_code, 404)
+        # try again with correct id
+        response = self.client.post(
+            reverse("change_reservation_note", kwargs={"reservation_id": reservation.id}),
+            {"note": "this is a note"},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Reservation.objects.get(pk=reservation.id).note, "this is a note")
+
+        reservation.delete()
+
     def test_reservation_policy_off(self):
         # TODO: create those tests
         self.assertTrue(True)

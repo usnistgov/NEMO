@@ -3009,6 +3009,7 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
         max_length=CHAR_FIELD_MEDIUM_LENGTH,
         help_text="Shows a custom title for this reservation on the calendar. Leave this field blank to display the reservation's user name as the title (which is the default behaviour).",
     )
+    note = models.TextField(null=True, blank=True)
     question_data = models.TextField(null=True, blank=True)
     validated = models.BooleanField(default=False)
     validated_by = models.ForeignKey(
