@@ -51,7 +51,7 @@
                 {% endif %}
                 {% if show_usage_data_tab and not hide_data_history or show_usage_data_tab and user.is_any_part_of_staff %}
                     <li>
-                        <a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a>
+                        <a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Run Data History</a>
                     </li>
                 {% endif %}
                 <li>
