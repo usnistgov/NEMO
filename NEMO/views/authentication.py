@@ -119,6 +119,9 @@ class GenericRemoteUserAuthenticationBackend(ModelBackend):
         )
         return user
 
+    def clean_username(self, username: str) -> str:
+        return username
+
 
 class RemoteUserAuthenticationBackend(GenericRemoteUserAuthenticationBackend):
 
