@@ -31,6 +31,31 @@
             </div>
         </div>
         <div class="form-group">
+            <label class="control-label col-md-4 col-lg-3" for="default_user_is_inactive">New user active</label>
+            <div class="col-md-8 col-lg-9">
+                <div class="radio">
+                    <label>
+                        <input type="radio"
+                               id="default_user_is_inactive"
+                               name="default_user_is_inactive"
+                               {% if not default_user_is_inactive %}checked{% endif %}
+                               value="">
+                        Active
+                    </label>
+                    <label>
+                        <input type="radio"
+                               name="default_user_is_inactive"
+                               {% if default_user_is_inactive %}checked{% endif %}
+                               value="enabled">
+                        Not active
+                    </label>
+                </div>
+            </div>
+            <div class="col-lg-offset-3 col-md-offset-4 col-md-8 col-lg-9 help-block light-grey">
+                Whether the user is active by default when adding them
+            </div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-md-4 col-lg-3" for="user_type_required">User type</label>
             <div class="col-md-8 col-lg-9">
                 <div class="radio">

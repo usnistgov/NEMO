@@ -339,6 +339,7 @@ class ProjectsAccountsCustomization(CustomizationBase):
 class UserCustomization(CustomizationBase):
     variables = {
         "default_user_training_not_required": "",
+        "default_user_is_inactive": "",
         "user_type_required": "",
         "user_list_active_only": "",
         "user_access_expiration_reminder_days": "",

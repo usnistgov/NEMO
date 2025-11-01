@@ -122,10 +122,16 @@ def create_or_modify_user(request, user_id):
         )
 
     if readonly or request.method == "GET":
-        training_not_required = UserCustomization.get("default_user_training_not_required", raise_exception=False)
+        training_not_required = UserCustomization.get_bool("default_user_training_not_required", raise_exception=False)
+        inactive_by_default = UserCustomization.get_bool("default_user_is_inactive", raise_exception=False)
         # Only set training required initial value on new users
         dictionary["form"] = UserForm(
-            instance=user, initial={"training_required": not training_not_required} if not user else None
+            instance=user,
+            initial=(
+                {"training_required": not training_not_required, "is_active": not inactive_by_default}
+                if not user
+                else None
+            ),
         )
         try:
             if dictionary["identity_service_available"] and user and user.is_active and user.domain:
