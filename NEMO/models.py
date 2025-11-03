@@ -31,7 +31,6 @@ from django.utils import timezone
 from django.utils.formats import localize_input
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
-from django_jsonform.models.fields import JSONField as JSONFormField
 from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
 
@@ -43,7 +42,6 @@ from NEMO.constants import (
     CHAR_FIELD_SMALL_LENGTH,
     MEDIA_PROTECTED,
 )
-from NEMO.fields import DynamicChoicesIntegerField, MultiRoleGroupPermissionChoiceField
 from NEMO.mixins import BillableItemMixin, CalendarDisplayMixin, ConfigurationMixin, RecurrenceMixin
 from NEMO.typing import QuerySetType
 from NEMO.utilities import (
@@ -1230,7 +1228,9 @@ class Tool(SerializationByNameModel):
         default=False,
         help_text="Marking the tool non-operational will prevent users from using the tool.",
     )
-    _properties = JSONFormField(schema=load_properties_schemas("Tool"), db_column="properties", null=True, blank=True)
+    _properties = fields.JsonField(
+        schema=load_properties_schemas("Tool"), db_column="properties", null=True, blank=True
+    )
     # Tool permissions
     _primary_owner = models.ForeignKey(
         User,
@@ -4295,7 +4295,7 @@ class LandingPageChoice(BaseModel):
     hide_from_desktop_computers = models.BooleanField(
         default=False, help_text="Hides this choice when the landing page is viewed from a desktop computer"
     )
-    view_permissions = MultiRoleGroupPermissionChoiceField(
+    view_permissions = fields.MultiRoleGroupPermissionChoiceField(
         roles=True,
         groups=True,
         permissions=True,
@@ -4317,7 +4317,7 @@ class LandingPageChoice(BaseModel):
         return str(self.name)
 
     @classmethod
-    def get_view_permissions_field(cls) -> MultiRoleGroupPermissionChoiceField:
+    def get_view_permissions_field(cls) -> fields.MultiRoleGroupPermissionChoiceField:
         return cls._meta.get_field("view_permissions")
 
     def can_user_view(self, user) -> bool:
@@ -5326,7 +5326,7 @@ class ToolCredentials(BaseModel):
 
 
 class EmailLog(BaseModel):
-    category = DynamicChoicesIntegerField(choices=EmailCategory.choices, default=EmailCategory.GENERAL)
+    category = fields.DynamicChoicesIntegerField(choices=EmailCategory.choices, default=EmailCategory.GENERAL)
     when = models.DateTimeField(null=False, auto_now_add=True)
     sender = models.EmailField(null=False, blank=False)
     to = models.TextField(null=False, blank=False)

@@ -36,7 +36,7 @@ dependencies = [
     "packaging==25.0",
     "django-mptt==0.17.0",
     "pymodbus==3.8.6",
-    "django-jsonform==2.23.2",
+    "fastjsonschema==2.21.2",
 ]
 license = {file = "LICENSE"}
 

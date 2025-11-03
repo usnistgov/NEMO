@@ -1,0 +1,78 @@
+.json_schema_editor[data-theme=django]
+{
+    clear: both;
+    flex-grow: 1;
+}
+
+/* Use a minimal height for the JSON editor when a modal is open */
+.json_schema_editor[data-theme=django]:has(.je-modal:not([style*="display: none"]))
+{
+    min-height: 150px;
+}
+
+/* Hide the original textarea */
+.json_schema_editor[data-theme=django] > textarea
+{
+    display: none;
+}
+
+/* Hide the first title since it's useless */
+.json_schema_editor[data-theme=django] > :not([data-schematype="array"]) > .je-header:first-child
+{
+    display: none;
+}
+
+/* See above; first title is hidden, reset the negative top margin in this case */
+.json_schema_editor[data-theme=django] > :not([data-schematype="array"]) > .je-header:first-child ~ .je-indented-panel
+{
+    margin-top: 0;
+}
+
+.json_schema_editor[data-theme=django] .je-header,
+.json_schema_editor[data-theme=django] .control-group
+{
+    margin-left: 10px;
+}
+
+.json_schema_editor[data-theme=django] .row
+{
+    display: flex;
+    flex-flow: row wrap;
+    margin: 0.5rem 0;
+}
+
+/* Edit Json modal */
+.json_schema_editor[data-theme=django] .je-modal textarea
+{
+    min-width: min(70vw, 300px);
+    min-height: 150px;
+}
+
+.json_schema_editor[data-theme=django] [data-schematype="array"] table
+{
+    width: 100%;
+}
+
+.json_schema_editor[data-theme=django] [data-schematype="array"] [data-schematype="object"] [data-schematype="string"]:not(td) input
+{
+    width: 20em;
+}
+
+/* Hide label if it's empty */
+label:empty:has(+ .json_schema_editor[data-theme=django])
+{
+    display: none;
+}
+
+
+.json_schema_editor[data-theme=django] .button
+{
+    padding: 5px 10px;
+    margin-left: 2px;
+    margin-right: 2px;
+}
+
+.json_schema_editor[data-theme=django] .button span
+{
+    white-space: nowrap;
+}
