@@ -123,12 +123,45 @@
             </div>
         </div>
     {% endif %}
-    {% if user.accessible_access_levels.exists %}
+    {% if user.accessible_access_levels.all %}
         <div class="panel panel-default">
             <div class="panel-body">
                 <h3 style="margin-top: 0">Physical access levels</h3>
                 <ul>
                     {% for physical_access in user.accessible_access_levels.all %}<li>{{ physical_access }}</li>{% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+    {% if user.managed_users.all or user.managed_projects.all or user.managed_accounts.all %}
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <h3 style="margin-top: 0">Management</h3>
+                <ul>
+                    {% if user.managed_accounts.all %}
+                        <li>
+                            Managed accounts:
+                            <ul>
+                                {% for managed_account in user.managed_accounts.all %}<li>{{ managed_account.name }}</li>{% endfor %}
+                            </ul>
+                        </li>
+                    {% endif %}
+                    {% if user.managed_projects.all %}
+                        <li>
+                            Managed projects:
+                            <ul>
+                                {% for managed_project in user.managed_projects.all %}<li>{{ managed_project.name }}</li>{% endfor %}
+                            </ul>
+                        </li>
+                    {% endif %}
+                    {% if user.managed_users.all %}
+                        <li>
+                            Managed users:
+                            <ul>
+                                {% for managed_user in user.managed_users.all %}<li>{{ managed_user.get_name }}</li>{% endfor %}
+                            </ul>
+                        </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>

@@ -504,6 +504,8 @@ def view_user(request, user_id):
                 "staff_for_tools",
                 "superuser_for_tools",
                 "adjustment_request_reviewer_on_tools",
+                "managed_projects",
+                "managed_accounts",
             )
             .first()
         )

@@ -1080,13 +1080,13 @@ class User(BaseModel, PermissionsMixin):
             return access_record.project
 
     def active_project_count(self):
-        return self.active_projects().count()
+        return self.projects.filter(active=True, account__active=True).count()
 
     def active_projects(self):
-        return self.projects.filter(active=True, account__active=True)
+        return self.projects.filter(active=True, account__active=True).prefetch_related("manager_set")
 
     def inactive_projects(self):
-        return self.projects.exclude(active=True, account__active=True)
+        return self.projects.exclude(active=True, account__active=True).prefetch_related("manager_set")
 
     def charging_staff_time(self) -> bool:
         return StaffCharge.objects.filter(staff_member=self.id, end=None).exists()
