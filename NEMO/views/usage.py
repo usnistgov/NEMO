@@ -5,6 +5,7 @@ from typing import Callable, List, Set
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db.models import F, Q
+from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET
@@ -33,6 +34,7 @@ from NEMO.utilities import (
     get_day_timeframe,
     get_month_timeframe,
     month_list,
+    quiet_int,
 )
 from NEMO.views.api_billing import (
     BillableItem,
@@ -106,11 +108,16 @@ def user_usage(request):
     trainee_filter = Q(trainee=user) | Q(project__in=user_managed_projects)
     show_only_my_usage = user_managed_projects and request.GET.get("show_only_my_usage", "enabled") == "enabled"
     csv_export = bool(request.GET.get("csv", False))
-    if show_only_my_usage:
-        # Forcing to be user only
-        customer_filter &= Q(customer=user)
-        user_filter &= Q(user=user)
-        trainee_filter &= Q(trainee=user)
+    managed_user_id = quiet_int(request.GET.get("managed_user"))
+    if managed_user_id and not managed_user_id in user.managed_users.values_list("id", flat=True):
+        return HttpResponseBadRequest("You are not allowed to see this user's usage.")
+    if show_only_my_usage or managed_user_id:
+        # Forcing to be user only (either current user or the one selected)
+        forced_user_id = managed_user_id or user.id
+        customer_filter = Q(customer_id=forced_user_id)
+        user_filter = Q(user_id=forced_user_id)
+        trainee_filter = Q(trainee_id=forced_user_id)
+        show_only_my_usage = not managed_user_id
     return usage(
         request,
         usage_filter=user_filter,
@@ -128,14 +135,17 @@ def user_usage(request):
 @any_staff_required
 @require_GET
 def staff_usage(request):
-    user: User = request.user
-    usage_filter = Q(operator=user) & ~Q(user=F("operator"))
-    area_access_filter = Q(staff_charge__staff_member=user)
-    staff_charges_filter = Q(staff_member=user)
-    consumable_filter = Q(merchant=user)
-    user_filter = Q(pk__in=[])
-    trainee_filter = Q(trainer=user)
     csv_export = bool(request.GET.get("csv", False))
+    managed_user_id = quiet_int(request.GET.get("managed_user"))
+    if managed_user_id and not managed_user_id in request.user.managed_users.values_list("id", flat=True):
+        return HttpResponseBadRequest("You are not allowed to see this user's usage.")
+    user_id = managed_user_id or request.user.id
+    usage_filter = Q(operator_id=user_id) & ~Q(user=F("operator"))
+    area_access_filter = Q(staff_charge__staff_member_id=user_id)
+    staff_charges_filter = Q(staff_member_id=user_id)
+    consumable_filter = Q(merchant_id=user_id)
+    user_filter = Q(pk__in=[])
+    trainee_filter = Q(trainer_id=user_id)
     return usage(
         request,
         usage_filter=usage_filter,
@@ -164,8 +174,14 @@ def usage(
 ):
     user: User = request.user
     base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request, get_month_timeframe)
-    # Preloading user's managed projects'
-    base_dictionary["user"] = User.objects.filter(id=user.id).prefetch_related("managed_projects").first()
+    # Preloading user's managed projects' and managed users`
+    base_dictionary["user"] = (
+        User.objects.filter(id=user.id).prefetch_related("managed_projects", "managed_users").first()
+    )
+    selected_managed_user_id = request.GET.get("managed_user")
+    base_dictionary["selected_managed_user"] = selected_managed_user_id
+    if selected_managed_user_id:
+        base_dictionary["explicitly_display_customer"] = True
     project_id = request.GET.get("project") or request.GET.get("pi_project")
     if user_managed_projects:
         base_dictionary["selected_project"] = "all"

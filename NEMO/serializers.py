@@ -171,6 +171,8 @@ class UserSerializer(FlexFieldsSerializerMixin, ModelSerializer):
         expandable_fields = {
             "projects": ("NEMO.serializers.ProjectSerializer", {"many": True}),
             "managed_projects": ("NEMO.serializers.ProjectSerializer", {"many": True}),
+            "managed_accounts": ("NEMO.serializers.AccountSerializer", {"many": True}),
+            "managed_users": ("NEMO.serializers.UserSerializer", {"many": True}),
             "groups": ("NEMO.serializers.GroupSerializer", {"many": True}),
             "user_documents": ("NEMO.serializers.UserDocumentSerializer", {"many": True}),
             "user_permissions": ("NEMO.serializers.PermissionSerializer", {"many": True}),

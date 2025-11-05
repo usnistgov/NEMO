@@ -841,6 +841,13 @@ class User(BaseModel, PermissionsMixin):
         blank=True,
         help_text="Select the accounts that this user is a manager for.",
     )
+    managed_users = models.ManyToManyField(
+        "self",
+        symmetrical=False,
+        related_name="supervisors",
+        blank=True,
+        help_text="Select the users that this user is managing.",
+    )
 
     # Preferences
     preferences: UserPreferences = models.OneToOneField(UserPreferences, null=True, on_delete=models.SET_NULL)

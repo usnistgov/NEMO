@@ -1178,6 +1178,12 @@ class UserAdminForm(forms.ModelForm):
             self.fields["superuser_on_tools"].initial = self.instance.superuser_for_tools.all()
             self.fields["staff_on_tools"].initial = self.instance.staff_for_tools.all()
 
+    def clean_managed_users(self):
+        managed_users = self.cleaned_data["managed_users"]
+        if self.instance.pk in [s.pk for s in managed_users]:
+            raise forms.ValidationError("User cannot supervise themselves.")
+        return managed_users
+
 
 class UserDocumentsInline(DocumentModelAdmin):
     model = UserDocuments
@@ -1193,6 +1199,7 @@ class UserAdmin(admin.ModelAdmin):
         "projects",
         "managed_projects",
         "managed_accounts",
+        "managed_users",
         "physical_access_levels",
         "onboarding_phases",
         "safety_trainings",
@@ -1234,6 +1241,7 @@ class UserAdmin(admin.ModelAdmin):
                     "projects",
                     "managed_projects",
                     "managed_accounts",
+                    "managed_users",
                 )
             },
         ),
@@ -1287,6 +1295,7 @@ class UserAdmin(admin.ModelAdmin):
         record_local_many_to_many_changes(request, obj, form, "projects")
         record_local_many_to_many_changes(request, obj, form, "qualifications", "tool_qualifications")
         record_local_many_to_many_changes(request, obj, form, "physical_access_levels")
+        record_local_many_to_many_changes(request, obj, form, "managed_users")
         record_active_state(request, obj, form, "is_active", not change)
         if "tool_qualifications" in form.changed_data:
             obj.qualifications.set(form.cleaned_data["tool_qualifications"])

@@ -135,6 +135,28 @@
                 </div>
             {% endif %}
             {% if not project_autocomplete %}
+                {% if user.managed_users.all %}
+                </div>
+                <div class="form-group">
+                    <div class="control-label col-sm-2">
+                        <label for="managed_user">Managed user</label>
+                    </div>
+                    <div class="col-sm-3 col-md-3 col-lg-2">
+                        <select name="managed_user"
+                                id="managed_user"
+                                class="form-control"
+                                style="text-align-last:center"
+                                title="Select a user to see usage for only that user">
+                            <option selected value=""></option>
+                            {% for managed_user in user.managed_users.all %}
+                                <option value="{{ managed_user.id }}"
+                                        {% if selected_managed_user and selected_managed_user == managed_user.id|stringformat:'s' %}selected{% endif %}>
+                                    {{ managed_user.get_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                {% endif %}
                 <div class="hidden-lg hidden-md {% if charges_projects or managed_projects %}hidden-sm{% else %}col-sm-12{% endif %}">
                     &nbsp;
                 </div>

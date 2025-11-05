@@ -77,6 +77,7 @@ class UserForm(ModelForm):
             "last_login",
             "managed_projects",
             "managed_accounts",
+            "managed_users",
             "preferences",
         ]
 
