@@ -11,7 +11,7 @@ from email.mime.base import MIMEBase
 from enum import Enum
 from io import BytesIO, StringIO
 from logging import getLogger
-from smtplib import SMTPAuthenticationError, SMTPConnectError, SMTPServerDisconnected
+from smtplib import SMTPServerDisconnected, SMTPResponseException
 from string import Formatter
 from typing import Any, Dict, Iterator, List, Optional, Sequence, Set, TYPE_CHECKING, Tuple, Union
 from urllib.parse import urljoin, urlparse
@@ -656,7 +656,7 @@ def send_mail(
                 try:
                     msg_sent = mail.send()
                     break
-                except (SMTPServerDisconnected, SMTPConnectError, SMTPAuthenticationError) as e:
+                except (SMTPResponseException, SMTPServerDisconnected) as e:
                     if i == 0:
                         utilities_logger.exception(str(e))
                         utilities_logger.warning(f"Email sending got an error, retrying once")
