@@ -475,7 +475,11 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 
     # Now we can safely save the usage event
     new_usage_event.remote_work = remote_work
-    if (user.is_staff_on_tool(tool) or user in tool.superusers.all()) and not remote_work and is_training:
+    if (
+        (request.user.is_staff_on_tool(tool) or request.user in tool.superusers.all())
+        and not remote_work
+        and is_training
+    ):
         new_usage_event.training = True
     new_usage_event.save()
 
