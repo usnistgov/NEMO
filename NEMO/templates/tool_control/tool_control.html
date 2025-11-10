@@ -107,12 +107,12 @@
 			$("#project_choice").html("Fetching project list...").show().load("{% url 'get_projects_for_self' %}", data, load_projects_completion_callback);
 		}
 
-		function select_project(element, project_id, tool_id)
+		function select_project(element, project_id, customer_id, tool_id)
 		{
 			$(".project-choice").removeClass('active');
 			$(element).addClass('active');
 			$("#project_id").val(project_id);
-            load_pre_usage_questions(tool_id, project_id);
+            load_pre_usage_questions(tool_id, customer_id, project_id);
             $("#start").show();
 		}
 
@@ -364,10 +364,10 @@
             $("#config").load("{% url 'tool_config_history' 999 %}".replace('999', tool_id), undefined, failure_dialog);
         }
 
-        function load_pre_usage_questions(tool_id, project_id)
+        function load_pre_usage_questions(tool_id, customer_id, project_id)
         {
             let failure_dialog = ajax_complete_callback("Unable to load pre usage questions", "There was a problem loading pre usage questions.");
-            const resolved_url = build_django_url("{% url 'tool_usage_questions' 999 'pre' 888 'false' %}", ['999', '888'], [tool_id, project_id]);
+            const resolved_url = build_django_url("{% url 'tool_usage_questions' 999 'pre' 888 777 'false' %}", ['999', '888', '777'], [tool_id, customer_id, project_id]);
             $("#pre_usage_questions").load(resolved_url, update_start_button, failure_dialog).show();
         }
 

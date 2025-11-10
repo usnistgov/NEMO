@@ -188,7 +188,7 @@ urlpatterns += [
     re_path(
         r"^tool_usage_questions/(?P<tool_id>\d+)/"
         + tool_usage_question_types
-        + "/(?P<project_id>\d+)/(?P<virtual_inputs>(true|false))/$",
+        + "/(?P<user_id>\d+)/(?P<project_id>\d+)/(?P<virtual_inputs>(true|false))/$",
         tool_control.tool_usage_questions,
         name="tool_usage_questions",
     ),

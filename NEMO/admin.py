@@ -1,5 +1,6 @@
 import datetime
 import json
+from collections import Counter
 
 from django import forms
 from django.contrib import admin, messages
@@ -128,7 +129,7 @@ from NEMO.models import (
 )
 from NEMO.utilities import admin_get_item, format_daterange
 from NEMO.views.customization import ProjectsAccountsCustomization
-from NEMO.widgets.dynamic_form import admin_render_dynamic_form_preview
+from NEMO.widgets.dynamic_form import DynamicForm, PostUsageGroupQuestion, admin_render_dynamic_form_preview
 
 
 # Formset to require at least one inline form
@@ -343,14 +344,55 @@ class ToolUsageQuestionsAdminForm(forms.ModelForm):
             pass
         return questions
 
+    def clean(self):
+        cleaned_data = super(ToolUsageQuestionsAdminForm, self).clean()
+        only_tools = cleaned_data.get("only_for_tools") or Tool.objects.all()
+        questions_type = cleaned_data.get("questions_type")
+        questions = cleaned_data.get("questions")
+        if questions_type and questions:
+            fake_project = Project(id=0)
+            fake_user = User(id=0)
+            for tool in only_tools:
+                usage_questions = list(
+                    tool._get_usage_questions(questions_type, fake_user, fake_project).exclude(id=self.instance.id)
+                ) + [ToolUsageQuestions(questions=questions)]
+                names = []
+                for usage_question in usage_questions:
+                    for question in DynamicForm(usage_question.questions).questions:
+                        names.append(question.name)
+                        if isinstance(question, PostUsageGroupQuestion):
+                            for sub_question in question.sub_questions:
+                                names.append(sub_question.name)
+                duplicate_names = [k for k, v in Counter(names).items() if v > 1]
+                if duplicate_names:
+                    self.add_error(
+                        "questions",
+                        f"Question names need to be unique. Duplicates were found for tool {tool.name}: {duplicate_names}",
+                    )
+        return cleaned_data
+
 
 @register(ToolUsageQuestions)
 class ToolUsageQuestionsAdmin(admin.ModelAdmin):
     form = ToolUsageQuestionsAdminForm
-    list_display = ["id", "name", "enabled", "get_tool_visible", "tool", "display_order", "questions_type"]
-    list_filter = ["enabled", "questions_type", ("tool", admin.RelatedOnlyFieldListFilter)]
-    autocomplete_fields = ["tool"]
-    filter_horizontal = ["only_for_projects"]
+    list_display = [
+        "id",
+        "name",
+        "enabled",
+        "get_tools",
+        "get_projects",
+        "get_users",
+        "display_order",
+        "questions_type",
+    ]
+    list_filter = [
+        "enabled",
+        "questions_type",
+        ("only_for_tools", admin.RelatedOnlyFieldListFilter),
+        ("only_for_projects", admin.RelatedOnlyFieldListFilter),
+        ("only_for_users", admin.RelatedOnlyFieldListFilter),
+    ]
+    filter_horizontal = ["only_for_tools", "only_for_projects", "only_for_users"]
     readonly_fields = ["questions_preview"]
     actions = [duplicate_tool_usage_questions]
     fieldsets = (
@@ -361,8 +403,9 @@ class ToolUsageQuestionsAdmin(admin.ModelAdmin):
                     "enabled",
                     "display_order",
                     "name",
-                    "tool",
+                    "only_for_tools",
                     "only_for_projects",
+                    "only_for_users",
                     "questions_type",
                     "questions",
                     "questions_preview",
@@ -374,9 +417,23 @@ class ToolUsageQuestionsAdmin(admin.ModelAdmin):
     def questions_preview(self, obj):
         return admin_render_dynamic_form_preview(obj, "questions")
 
-    @display(boolean=True, ordering="tool__visible", description="Tool visible")
-    def get_tool_visible(self, obj):
-        return obj.tool.visible
+    @display(ordering="only_for_tools", description="Tools")
+    def get_tools(self, obj):
+        if not obj.only_for_tools.exists():
+            return "All tools"
+        return mark_safe("<br>".join([tool.name for tool in obj.only_for_tools.all()]))
+
+    @display(ordering="only_for_projects", description="Projects")
+    def get_projects(self, obj):
+        if not obj.only_for_projects.exists():
+            return "All projects"
+        return mark_safe("<br>".join([project.name for project in obj.only_for_projects.all()]))
+
+    @display(ordering="only_for_users", description="Users")
+    def get_users(self, obj):
+        if not obj.only_for_users.exists():
+            return "All users"
+        return mark_safe("<br>".join([str(user) for user in obj.only_for_users.all()]))
 
 
 @register(ToolWaitList)

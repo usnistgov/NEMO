@@ -133,7 +133,9 @@ def tool_status(request, tool_id):
         or (user_is_qualified and broadcast_upcoming_reservation == "qualified")
         or broadcast_upcoming_reservation == "all",
         "tool_control_show_task_details": ToolCustomization.get_bool("tool_control_show_task_details"),
-        "show_usage_data_tab": ToolUsageQuestions.objects.filter(enabled=True, tool=tool).exists(),
+        "show_usage_data_tab": ToolUsageQuestions.objects.filter(enabled=True)
+        .filter(Q(only_for_tools=None) | Q(only_for_tools__in=[tool_id]))
+        .exists(),
         "user_can_see_documents": user.is_any_part_of_staff
         or not ToolCustomization.get_bool("tool_control_show_documents_only_qualified_users")
         or user_is_qualified,
@@ -424,7 +426,7 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
     new_usage_event.tool = tool
 
     # Collect pre-usage questions and validate them
-    dynamic_forms = tool.get_usage_questions(ToolUsageQuestionType.PRE, project)
+    dynamic_forms = tool.get_usage_questions(ToolUsageQuestionType.PRE, user, project)
 
     try:
         new_usage_event.pre_run_data = dynamic_forms.extract(request)
@@ -749,12 +751,17 @@ def reset_tool_counter(request, counter_id):
 
 @login_required
 @require_GET
-def tool_usage_questions(request, tool_id: int, question_type: str, project_id: int, virtual_inputs: str = None):
+def tool_usage_questions(
+    request, tool_id: int, question_type: str, user_id: int, project_id: int, virtual_inputs: str = None
+):
     tool = get_object_or_404(Tool, pk=tool_id)
     project = get_object_or_404(Project, pk=project_id)
+    customer = get_object_or_404(User, pk=user_id)
     question_type = ToolUsageQuestionType(question_type)
     virtual_inputs = virtual_inputs == "true"
-    return HttpResponse(tool.get_usage_questions(question_type, project).render(virtual_inputs=virtual_inputs))
+    return HttpResponse(
+        tool.get_usage_questions(question_type, customer, project).render(virtual_inputs=virtual_inputs)
+    )
 
 
 def interlock_bypass_allowed(user: User, item):

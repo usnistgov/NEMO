@@ -896,11 +896,12 @@ class ToolUsageQuestionsViewSet(ModelViewSet):
     serializer_class = ToolUsageQuestionsSerializer
     filterset_fields = {
         "id": key_filters,
-        "tool": key_filters,
         "name": string_filters,
         "enabled": boolean_filters,
         "display_order": number_filters,
+        "only_for_tools": manykey_filters,
         "only_for_projects": manykey_filters,
+        "only_for_users": manykey_filters,
         "questions_type": string_filters,
         "questions": string_filters,
     }

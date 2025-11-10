@@ -215,18 +215,18 @@
         {
             $(".logged_in_user").html(user);
         }
-        function load_pre_usage_questions(tool_id, project_id)
+        function load_pre_usage_questions(tool_id, customer_id, project_id)
         {
             let failure_dialog = ajax_complete_callback("Unable to load pre usage questions", "There was a problem loading pre usage questions.");
-            const resolved_url = build_django_url("{% url 'tool_usage_questions' 999 'pre' 888 'true' %}", ['999', '888', 'true'], [tool_id, project_id, virtual_inputs]);
+            const resolved_url = build_django_url("{% url 'tool_usage_questions' 999 'pre' 888 777 'true' %}", ['999', '888', '777', 'true'], [tool_id, customer_id, project_id, virtual_inputs]);
             $("#pre_usage_questions").load(resolved_url, update_start_button, failure_dialog).show();
         }
-		function select_project(element, project_id, tool_id)
+		function select_project(element, project_id, customer_id, tool_id)
 		{
 			$(".project-choice").removeClass('active');
 			$(element).addClass('active');
 			$("#project_id").val(project_id);
-            load_pre_usage_questions(tool_id, project_id);
+            load_pre_usage_questions(tool_id, customer_id, project_id);
 			update_start_button();
 		}
 		function load_choices(badge_number)

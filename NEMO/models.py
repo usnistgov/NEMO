@@ -2091,17 +2091,17 @@ class Tool(SerializationByNameModel):
             reservation_questions = reservation_questions.filter(only_for_projects=None)
         return MultiDynamicForms(reservation_questions)
 
-    def _get_usage_questions(self, questions_type: str, project: Project = None) -> QuerySetType:
-        tool_questions = ToolUsageQuestions.objects.filter(
-            enabled=True, tool_id=self.tool_or_parent_id(), questions_type=questions_type
-        )
-        if project:
-            tool_questions = tool_questions.filter(Q(only_for_projects=None) | Q(only_for_projects__in=[project.id]))
-        else:
-            tool_questions = tool_questions.filter(only_for_projects=None)
+    def _get_usage_questions(self, questions_type: str, user: User, project: Project) -> QuerySetType:
+        real_id = self.tool_or_parent_id()
+        tool_questions = ToolUsageQuestions.objects.filter(enabled=True, questions_type=questions_type)
+        tool_questions = tool_questions.filter(Q(only_for_tools=None) | Q(only_for_tools__in=[real_id]))
+        tool_questions = tool_questions.filter(Q(only_for_projects=None) | Q(only_for_projects__in=[project.id]))
+        tool_questions = tool_questions.filter(Q(only_for_users=None) | Q(only_for_users__in=[user.id]))
         return tool_questions
 
-    def get_usage_questions(self, questions_type: ToolUsageQuestionType, project: Project = None) -> MultiDynamicForms:
+    def get_usage_questions(
+        self, questions_type: ToolUsageQuestionType, user: User = None, project: Project = None
+    ) -> MultiDynamicForms:
         from NEMO.widgets.dynamic_form import MultiDynamicForms
         from NEMO.views.customization import ToolCustomization
 
@@ -2113,12 +2113,15 @@ class Tool(SerializationByNameModel):
                 if ToolCustomization.get_bool("tool_control_prefill_post_usage_with_pre_usage_answers"):
                     initial_data = current_usage.pre_run_data_json()
                 project = current_usage.project
-            elif not project:
+                user = current_usage.user
+            elif not project or not user:
                 return None
-        if project:
-            return MultiDynamicForms(self._get_usage_questions(questions_type, project), initial_data=initial_data)
+        if project and user:
+            return MultiDynamicForms(
+                self._get_usage_questions(questions_type, user, project), initial_data=initial_data
+            )
         else:
-            raise ValueError("project must be provided for usage questions")
+            raise ValueError(f"A {'project' if user else 'user'} must be provided for usage questions")
 
     def clean(self):
         errors = {}
@@ -2160,16 +2163,22 @@ class ToolUsageQuestions(models.Model):
         help_text="The order in which these questions will be displayed. Can be any positive integer including 0. Lower values are displayed first.",
     )
     name = models.CharField(
-        null=True,
-        blank=True,
-        max_length=CHAR_FIELD_SMALL_LENGTH,
-        help_text=_("The optional name for these tool usage questions"),
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
+        help_text=_("The name for these tool usage questions"),
     )
-    tool = models.ForeignKey(Tool, on_delete=models.CASCADE, limit_choices_to={"parent_tool__isnull": True})
+    only_for_tools = models.ManyToManyField(
+        Tool,
+        blank=True,
+        limit_choices_to={"parent_tool__isnull": True},
+        help_text=_("Select the tools these questions only apply to. Leave blank for all tools"),
+    )
     only_for_projects = models.ManyToManyField(
         "Project",
         blank=True,
         help_text=_("Select the projects these questions only apply to. Leave blank for all projects"),
+    )
+    only_for_users = models.ManyToManyField(
+        User, blank=True, help_text=_("Select the users these questions only apply to. Leave blank for all users")
     )
     questions_type = models.CharField(
         max_length=10,
@@ -2186,31 +2195,13 @@ class ToolUsageQuestions(models.Model):
             dynamic_form_errors = validate_dynamic_form_model(self.questions, self, "questions")
             if dynamic_form_errors:
                 raise ValidationError({"questions": dynamic_form_errors})
-            if self.tool_id and self.questions_type:
-                usage_questions = list(self.tool._get_usage_questions(self.questions_type).exclude(id=self.id)) + [self]
-                names = []
-                for usage_question in usage_questions:
-                    for question in DynamicForm(usage_question.questions).questions:
-                        names.append(question.name)
-                        if isinstance(question, PostUsageGroupQuestion):
-                            for sub_question in question.sub_questions:
-                                names.append(sub_question.name)
-                duplicate_names = [k for k, v in Counter(names).items() if v > 1]
-                if duplicate_names:
-                    raise ValidationError(
-                        {
-                            "questions": f"Question names need to be unique. Duplicates were across tool usage questions found: {duplicate_names}"
-                        }
-                    )
 
     def __str__(self):
-        return (
-            self.name or f"{self.tool.name} - {self.get_questions_type_display()} usage question #{self.display_order}"
-        )
+        return self.name or f"{self.get_questions_type_display()} usage question #{self.id}"
 
     class Meta:
         verbose_name_plural = "Tool usage questions"
-        ordering = ["tool", "questions_type", "display_order"]
+        ordering = ["questions_type", "display_order"]
 
 
 class ToolWaitList(BaseModel):
@@ -4618,8 +4609,8 @@ class ToolUsageCounter(BaseModel):
             for question_type in ["pre", "post"]:
                 question_name = f"tool_{question_type}_usage_question"
                 question_data_name = getattr(self, question_name)
-                tool_questions = ToolUsageQuestions.objects.filter(
-                    enabled=True, tool_id=self.tool.tool_or_parent_id(), questions_type=question_type
+                tool_questions = ToolUsageQuestions.objects.filter(enabled=True, questions_type=question_type).filter(
+                    Q(only_for_tools=None) | Q(only_for_tools__in=[self.tool_or_parent_id()])
                 )
                 dynamic_form = MultiDynamicForms(tool_questions).merged_dynamic_forms
                 error = self.clean_counter_question(dynamic_form, question_data_name, question_type)

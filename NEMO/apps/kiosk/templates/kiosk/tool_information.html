@@ -348,7 +348,7 @@
         <div style="width: 100%;padding-top: 40px;border-bottom: 1px dashed lightgray"></div>
         {% if tool.allow_reservation %}
             <h1>Make a reservation</h1>
-            {% include 'kiosk/tool_project_selection_snippet.html' with active_projects=customer.active_projects tool=tool %}
+            {% include 'kiosk/tool_project_selection_snippet.html' with active_projects=customer.active_projects customer=customer tool=tool %}
             <div id="start_reserve" class="col-xs-offset-3 col-xs-6" style="display:none;margin-top:30px">
                 <div class=" alert alert-info"
                      style="text-align:center;
@@ -375,7 +375,7 @@
         {% endif %}
         <div id="use-tool" class="{% if show_wait_list and not wait_list_position == 1 %}collapse{% endif %}">
             {% if customer|is_staff_on_tool:tool or customer.is_service_personnel and tool in customer.qualifications.all or tool.ready_to_use and tool in customer.qualifications.all %}
-                {% include 'kiosk/tool_project_selection_snippet.html' with active_projects=customer.active_projects tool=tool %}
+                {% include 'kiosk/tool_project_selection_snippet.html' with active_projects=customer.active_projects customer=customer tool=tool %}
                 <div id="pre_usage_questions" style="display:none">
                     <h2>Pre usage questions</h2>
                 </div>

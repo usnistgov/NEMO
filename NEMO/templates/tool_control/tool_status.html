@@ -567,7 +567,7 @@
                         </div>
                         <div id="project_choice"></div>
                     {% elif tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress and not tool.scheduled_outage_in_progress %}
-                        {% include 'tool_control/get_projects.html' with active_projects=user.active_projects user_id=user.id tool_id=tool.id %}
+                        {% include 'tool_control/get_projects.html' with active_projects=user.active_projects customer_id=user.id tool_id=tool.id %}
                     {% endif %}
                     <div id="pre_usage_questions" style="display:none"></div>
                     {% if user|is_staff_on_tool:tool or user.is_service_personnel and tool in user.qualifications.all or tool.ready_to_use %}

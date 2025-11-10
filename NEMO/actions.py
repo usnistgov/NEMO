@@ -196,7 +196,9 @@ def duplicate_configuration(model_admin, request, queryset: QuerySetType[Configu
 def duplicate_tool_usage_questions(model_admin, request, queryset: QuerySetType[ToolUsageQuestions]):
     for tool_usage_question in queryset:
         try:
+            old_tools = tool_usage_question.only_for_tools.all()
             old_projects = tool_usage_question.only_for_projects.all()
+            old_users = tool_usage_question.only_for_users.all()
             new_tool_usage_question = new_model_copy(tool_usage_question)
             new_tool_usage_question.display_order = tool_usage_question.display_order + 1
 
@@ -216,8 +218,9 @@ def duplicate_tool_usage_questions(model_admin, request, queryset: QuerySetType[
 
             new_tool_usage_question.full_clean()
             new_tool_usage_question.save()
-            for project in old_projects:
-                new_tool_usage_question.only_for_projects.add(project)
+            new_tool_usage_question.only_for_tools.set(old_tools)
+            new_tool_usage_question.only_for_projects.set(old_projects)
+            new_tool_usage_question.only_for_users.set(old_users)
             messages.success(
                 request,
                 mark_safe(

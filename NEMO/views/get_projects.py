@@ -37,13 +37,13 @@ def get_projects(request, project_filter=Q()):
 def get_projects_for_tool_control(request):
     if not request.user.is_any_part_of_staff and not request.user.is_tool_staff:
         return redirect("landing")
-    user_id = request.GET.get("user_id")
+    customer_id = request.GET.get("user_id")
     tool_id = get_object_or_404(Tool, id=request.GET.get("tool_id")).id
-    user = get_object_or_404(User, id=user_id)
+    user = get_object_or_404(User, id=customer_id)
     return render(
         request,
         "tool_control/get_projects.html",
-        {"active_projects": user.active_projects(), "user_id": user_id, "tool_id": tool_id},
+        {"active_projects": user.active_projects(), "customer_id": customer_id, "tool_id": tool_id},
     )
 
 
@@ -55,5 +55,5 @@ def get_projects_for_self(request):
     return render(
         request,
         "tool_control/get_projects.html",
-        {"active_projects": request.user.active_projects(), "user_id": request.user.id, "tool_id": tool_id},
+        {"active_projects": request.user.active_projects(), "customer_id": request.user.id, "tool_id": tool_id},
     )

@@ -574,8 +574,9 @@ class ToolUsageQuestionsSerializer(FlexFieldsSerializerMixin, ModelSerializer):
         model = ToolUsageQuestions
         fields = "__all__"
         expandable_fields = {
-            "tool": "NEMO.serializers.ToolSerializer",
+            "only_for_tools": ("NEMO.serializers.ToolSerializer", {"many": True}),
             "only_for_projects": ("NEMO.serializers.ProjectSerializer", {"many": True}),
+            "only_for_users": ("NEMO.serializers.UserSerializer", {"many": True}),
         }
 
 
