@@ -1189,12 +1189,12 @@ def safe_lazy_queryset_evaluation(qs: QuerySet, default=UNSET, raise_exception=F
     except UndefinedTable if HAS_UNDEFINED_TABLE else OperationalError:
         if raise_exception:
             raise
-        utilities_logger.warning("Could not fetch queryset", exc_info=True)
+        utilities_logger.debug("Could not fetch queryset", exc_info=True)
         return default, True
     except OperationalError:
         if raise_exception:
             raise
-        utilities_logger.warning("Could not fetch queryset", exc_info=True)
+        utilities_logger.debug("Could not fetch queryset", exc_info=True)
         return default, True
 
 
