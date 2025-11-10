@@ -902,6 +902,7 @@ class ToolUsageQuestionsViewSet(ModelViewSet):
         "only_for_tools": manykey_filters,
         "only_for_projects": manykey_filters,
         "only_for_users": manykey_filters,
+        "only_for_groups": manykey_filters,
         "questions_type": string_filters,
         "questions": string_filters,
     }

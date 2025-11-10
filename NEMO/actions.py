@@ -199,6 +199,7 @@ def duplicate_tool_usage_questions(model_admin, request, queryset: QuerySetType[
             old_tools = tool_usage_question.only_for_tools.all()
             old_projects = tool_usage_question.only_for_projects.all()
             old_users = tool_usage_question.only_for_users.all()
+            old_groups = tool_usage_question.only_for_groups.all()
             new_tool_usage_question = new_model_copy(tool_usage_question)
             new_tool_usage_question.display_order = tool_usage_question.display_order + 1
 
@@ -221,6 +222,7 @@ def duplicate_tool_usage_questions(model_admin, request, queryset: QuerySetType[
             new_tool_usage_question.only_for_tools.set(old_tools)
             new_tool_usage_question.only_for_projects.set(old_projects)
             new_tool_usage_question.only_for_users.set(old_users)
+            new_tool_usage_question.only_for_groups.set(old_groups)
             messages.success(
                 request,
                 mark_safe(

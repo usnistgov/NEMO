@@ -2097,6 +2097,7 @@ class Tool(SerializationByNameModel):
         tool_questions = tool_questions.filter(Q(only_for_tools=None) | Q(only_for_tools__in=[real_id]))
         tool_questions = tool_questions.filter(Q(only_for_projects=None) | Q(only_for_projects__in=[project.id]))
         tool_questions = tool_questions.filter(Q(only_for_users=None) | Q(only_for_users__in=[user.id]))
+        tool_questions = tool_questions.filter(Q(only_for_groups=None) | Q(only_for_groups__in=user.groups.all()))
         return tool_questions
 
     def get_usage_questions(
@@ -2179,6 +2180,11 @@ class ToolUsageQuestions(models.Model):
     )
     only_for_users = models.ManyToManyField(
         User, blank=True, help_text=_("Select the users these questions only apply to. Leave blank for all users")
+    )
+    only_for_groups = models.ManyToManyField(
+        Group,
+        blank=True,
+        help_text=_("Select the user groups these questions only apply to. Leave blank for all users"),
     )
     questions_type = models.CharField(
         max_length=10,

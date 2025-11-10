@@ -577,6 +577,7 @@ class ToolUsageQuestionsSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "only_for_tools": ("NEMO.serializers.ToolSerializer", {"many": True}),
             "only_for_projects": ("NEMO.serializers.ProjectSerializer", {"many": True}),
             "only_for_users": ("NEMO.serializers.UserSerializer", {"many": True}),
+            "only_for_groups": ("NEMO.serializers.GroupSerializer", {"many": True}),
         }
 
 

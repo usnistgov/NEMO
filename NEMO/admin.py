@@ -382,6 +382,7 @@ class ToolUsageQuestionsAdmin(admin.ModelAdmin):
         "get_tools",
         "get_projects",
         "get_users",
+        "get_groups",
         "display_order",
         "questions_type",
     ]
@@ -391,8 +392,9 @@ class ToolUsageQuestionsAdmin(admin.ModelAdmin):
         ("only_for_tools", admin.RelatedOnlyFieldListFilter),
         ("only_for_projects", admin.RelatedOnlyFieldListFilter),
         ("only_for_users", admin.RelatedOnlyFieldListFilter),
+        ("only_for_groups", admin.RelatedOnlyFieldListFilter),
     ]
-    filter_horizontal = ["only_for_tools", "only_for_projects", "only_for_users"]
+    filter_horizontal = ["only_for_tools", "only_for_projects", "only_for_users", "only_for_groups"]
     readonly_fields = ["questions_preview"]
     actions = [duplicate_tool_usage_questions]
     fieldsets = (
@@ -406,6 +408,7 @@ class ToolUsageQuestionsAdmin(admin.ModelAdmin):
                     "only_for_tools",
                     "only_for_projects",
                     "only_for_users",
+                    "only_for_groups",
                     "questions_type",
                     "questions",
                     "questions_preview",
@@ -434,6 +437,12 @@ class ToolUsageQuestionsAdmin(admin.ModelAdmin):
         if not obj.only_for_users.exists():
             return "All users"
         return mark_safe("<br>".join([str(user) for user in obj.only_for_users.all()]))
+
+    @display(ordering="only_for_groups", description="Groups")
+    def get_groups(self, obj):
+        if not obj.only_for_groups.exists():
+            return "All groups"
+        return mark_safe("<br>".join([str(group) for group in obj.only_for_groups.all()]))
 
 
 @register(ToolWaitList)
