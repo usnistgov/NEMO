@@ -22,7 +22,7 @@ classifiers = [
 requires-python = ">=3.10, <4"
 dependencies = [
     "cryptography==45.0.6",
-    "Django==4.2.25",
+    "Django==4.2.26",
     "django-auditlog==3.2.1",
     "django-filter==25.1",
     "djangorestframework==3.16.1",
@@ -35,6 +35,7 @@ dependencies = [
     "packaging==25.0",
     "django-mptt==0.17.0",
     "pymodbus==3.8.6",
+    "django-jsonform==2.23.2",
     "fastjsonschema==2.21.2",
 ]
 license = {file = "LICENSE"}
