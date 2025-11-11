@@ -36,6 +36,12 @@
             <div id="default_content">
                 {% block default_content %}{% endblock %}
                 <div id="occupancy"></div>
+                <div id="usage_title"></div>
+                <div class="tab-pane{% if tools_exist and tab == 'tools' %} active{% endif %} info-tooltip-container" id="tools">
+                    <div id="usage"></div>
+                </div>
+                <div id="alerts">
+                </div>
             </div>
             <div id="error" style="display: none">
                 <h1>There was a problem communicating with the web server. Please visit the user office for assistance.</h1>
@@ -80,6 +86,8 @@
 		let countdown_handle = null;
         const current_url_parameters = new URLSearchParams(window.location.search);
 		let occupancy = current_url_parameters.get('occupancy');
+		let usage = new URLSearchParams(window.location.search).get('usage');
+        let alerts = new URLSearchParams(window.location.search).get('alerts');
 
 		let default_content_element = $("#default_content");
 		let status_element = $("#status");
@@ -98,6 +106,16 @@
 		{
 			fetch_occupancy();
 			set_interval_when_visible(document, fetch_occupancy, 30000);
+		}
+		if(usage)
+		{
+			fetch_usage();
+			set_interval_when_visible(document, fetch_usage, 30000);
+		}
+        if(alerts)
+		{
+			fetch_alerts();
+			set_interval_when_visible(document, fetch_alerts, 30000);
 		}
 		function load_complete(response, status, xml_http_request)
 		{
@@ -128,6 +146,8 @@
 		{
 			$('body').removeClass();
 			fetch_occupancy();
+			fetch_usage();
+            fetch_alerts();
 			clear_timeout();
 			status_element.hide();
 			error_element.hide();
@@ -186,6 +206,22 @@
 		{
 			ajax_get('{% url 'area_access_occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
 		}
+        function fetch_usage()
+		{
+            $("#usage_title").html("<h2>Tools in use</h2>")
+			ajax_get('{% url 'area_access_usage' %}', {'interest': 'tools'},
+                function(response) {
+                    $("#usage").html(response);
+                    $(".in_use").css("display", "table-row");
+                    $(".idle").hide();
+                    $(".glyphicon-remove-circle").hide();
+                }
+            );
+        }
+        function fetch_alerts()
+        {
+            $("#alerts").load("{% url 'area_access_alerts' %}");
+        }
 		function interlock_success_callback(response, status, xml_http_request)
         {
             $('body').removeClass();

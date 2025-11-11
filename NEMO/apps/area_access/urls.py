@@ -1,7 +1,7 @@
 from django.urls import path
 
 from NEMO.apps.area_access import views
-from NEMO.views import area_access
+from NEMO.views import area_access, status_dashboard
 
 urlpatterns = [
     # Tablet area access
@@ -12,4 +12,5 @@ urlpatterns = [
     path("login_to_area/<int:door_id>/", views.login_to_area, name="login_to_area"),
     path("logout_of_area/<int:door_id>/", views.logout_of_area, name="logout_of_area"),
     path("open_door/<int:door_id>/", views.open_door, name="open_door"),
+    path("area_access_usage/", status_dashboard.status_dashboard, name="area_access_usage"),
 ]
