@@ -1,6 +1,6 @@
 from django.urls import include, path, re_path
 from NEMO.apps.kiosk import views
-from NEMO.views import area_access, status_dashboard
+from NEMO.views import area_access
 
 urlpatterns = [
     # Tablet kiosk
@@ -9,7 +9,6 @@ urlpatterns = [
         include(
             [
                 path("occupancy/", area_access.occupancy, name="kiosk_occupancy"),
-                path("kiosk_usage/", status_dashboard.status_dashboard, name="kiosk_usage"),
                 path("enable_tool/", views.enable_tool, name="enable_tool_from_kiosk"),
                 path("disable_tool/", views.disable_tool, name="disable_tool_from_kiosk"),
                 path("reserve_tool/", views.reserve_tool, name="reserve_tool_from_kiosk"),
@@ -41,7 +40,7 @@ urlpatterns = [
                 path("exit_wait_list/", views.exit_wait_list, name="exit_wait_list_from_kiosk"),
                 path("logout_user/<int:tool_id>", views.logout_user, name="kiosk_logout_user"),
                 path("checkout/<int:customer_id>", views.checkout, name="kiosk_checkout"),
-                path("clear_withrawals", views.clear_withdrawals, name="kiosk_clear_withdrawals"),
+                path("clear_withdrawals", views.clear_withdrawals, name="kiosk_clear_withdrawals"),
                 path("withdraw_consumables", views.make_withdrawals, name="kiosk_withdraw_consumables"),
                 path("remove_consumable", views.remove_withdraw_at_index, name="kiosk_remove_consumable"),
                 path(
