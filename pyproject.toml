@@ -1,6 +1,6 @@
 [project]
 name = "NEMO"
-version = "7.2.4"
+version = "7.2.5"
 description = "NEMO is a laboratory logistics web application. Use it to schedule reservations, control tool access, track maintenance issues, and more."
 keywords = ["NEMO"]
 readme = "README.md"
@@ -23,7 +23,7 @@ classifiers = [
 requires-python = ">=3.9, <4"
 dependencies = [
     "cryptography==45.0.4",
-    "Django==4.2.23",
+    "Django==4.2.26",
     "django-auditlog==3.2.0",
     "django-filter==25.1",
     "djangorestframework==3.16.0",
