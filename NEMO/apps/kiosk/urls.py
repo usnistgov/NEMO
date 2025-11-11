@@ -1,6 +1,6 @@
 from django.urls import include, path, re_path
 from NEMO.apps.kiosk import views
-from NEMO.views import area_access, status_dashboard
+from NEMO.views import area_access
 
 urlpatterns = [
     # Tablet kiosk
