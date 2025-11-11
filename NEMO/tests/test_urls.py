@@ -132,6 +132,13 @@ url_kwargs_get_post = {
             "new_end": end_one_day.replace(minute=30).strftime(settings.DATETIME_INPUT_FORMATS[0]),
         },
     },
+    "change_reservation_note": {
+        "login_id": 1,
+        "post": {
+            "id": 2,
+            "note": "test",
+        },
+    },
     "change_outage_date": {
         "login_id": 1,
         "post": {
@@ -152,7 +159,7 @@ url_kwargs_get_post = {
     "view_user": {"login_id": 1},
     "enable_tool": {"login_id": 1, "kwargs": {"tool_id": 3, "user_id": 1, "project_id": 1, "staff_charge": "false"}},
     "tool_usage_questions": {
-        "kwargs": {"tool_id": 3, "project_id": 1, "question_type": "pre", "virtual_inputs": "false"}
+        "kwargs": {"tool_id": 3, "user_id": 1, "project_id": 1, "question_type": "pre", "virtual_inputs": "false"}
     },
     "kiosk_clear_withdrawals": {"post": {"customer_id": 1}},
     "kiosk_withdraw_consumables": {"post": {"customer_id": 1}},
@@ -245,7 +252,12 @@ class URLsTestCase(NEMOTestCaseMixin, TransactionTestCase):
         test_urls(self, module.urlpatterns, url_kwargs_get_post, urls_to_skip)
 
     def test_tool_usage_questions(self):
-        tool_id_pre = ToolUsageQuestions.objects.filter(questions_type=ToolUsageQuestionType.PRE).first().tool_id
+        tool_id_pre = (
+            ToolUsageQuestions.objects.filter(questions_type=ToolUsageQuestionType.PRE)
+            .first()
+            .only_for_tools.first()
+            .id
+        )
         test_url(
             self,
             "tool_usage_questions",
@@ -253,19 +265,22 @@ class URLsTestCase(NEMOTestCaseMixin, TransactionTestCase):
                 "kwargs": {
                     "tool_id": tool_id_pre,
                     "project_id": 1,
+                    "user_id": 1,
                     "question_type": "pre",
                     "virtual_inputs": "false",
                 }
             },
         )
         tool_question_post = ToolUsageQuestions.objects.filter(questions_type=ToolUsageQuestionType.POST).first()
+        tool = tool_question_post.only_for_tools.first()
         test_url(
             self,
             "tool_usage_questions",
             {
                 "kwargs": {
-                    "tool_id": tool_question_post.tool_id,
+                    "tool_id": tool.id,
                     "project_id": 1,
+                    "user_id": 1,
                     "question_type": "post",
                     "virtual_inputs": "false",
                 }
@@ -276,8 +291,8 @@ class URLsTestCase(NEMOTestCaseMixin, TransactionTestCase):
             "render_group_question",
             {
                 "kwargs": {
-                    "content_type_id": get_content_type_for_model(tool_question_post.tool).id,
-                    "item_id": tool_question_post.tool_id,
+                    "content_type_id": get_content_type_for_model(tool).id,
+                    "item_id": tool.id,
                     "field_name": "questions",
                     "group_name": "group1",
                 },

@@ -93,7 +93,7 @@ def do_enable_tool(request, tool_id):
     new_usage_event.tool = tool
 
     # Collect pre-usage questions
-    dynamic_forms = tool.get_usage_questions(ToolUsageQuestionType.PRE, project)
+    dynamic_forms = tool.get_usage_questions(ToolUsageQuestionType.PRE, customer, project)
 
     try:
         new_usage_event.pre_run_data = dynamic_forms.extract(request)
