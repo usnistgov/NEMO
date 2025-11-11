@@ -9,7 +9,6 @@ urlpatterns = [
         include(
             [
                 path("occupancy/", area_access.occupancy, name="kiosk_occupancy"),
-                path("kiosk_usage/", status_dashboard.status_dashboard, name="kiosk_usage"),
                 path("enable_tool/", views.enable_tool, name="enable_tool_from_kiosk"),
                 path("disable_tool/", views.disable_tool, name="disable_tool_from_kiosk"),
                 path("reserve_tool/", views.reserve_tool, name="reserve_tool_from_kiosk"),
