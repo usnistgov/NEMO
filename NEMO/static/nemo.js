@@ -834,30 +834,29 @@ function auto_size_textarea(textarea, rows)
 	if (textarea)
 	{
 		textarea.rows = rows || 1;
-		textarea.style.height = '';
 		const content = textarea.value || '';
 		const placeholder = textarea.placeholder || '';
 
-		// Create a temporary element to measure the placeholder size
-		if (!content && placeholder)
-		{
-			const tempDiv = document.createElement('div');
-			tempDiv.style.visibility = 'hidden';
-			tempDiv.style.position = 'absolute';
-			tempDiv.style.whiteSpace = 'pre-wrap';
-			tempDiv.style.font = window.getComputedStyle(textarea).font; // Match font style and size
+        if (content || placeholder)
+        {
+            textarea.style.height = '';
+            let content_height = textarea.scrollHeight;
+            if (!content_height)
+            {
+                // Create a temporary element to measure the actual size (in case it's hidden or only has placeholder)
+                const temp_div = document.createElement('div');
+                temp_div.style.visibility = 'hidden';
+                temp_div.style.position = 'absolute';
+                temp_div.style.whiteSpace = 'pre-wrap';
+                temp_div.style.font = window.getComputedStyle(textarea).font; // Match font style and size
 
-			tempDiv.textContent = placeholder;
-			document.body.appendChild(tempDiv);
-			const contentHeight = tempDiv.scrollHeight;
-			document.body.removeChild(tempDiv);
-
-			textarea.style.height = contentHeight + 15 + 'px';
-		}
-		else
-		{
-			textarea.style.height = textarea.scrollHeight + 3 + 'px';
-		}
+                temp_div.textContent = content || placeholder;
+                document.body.appendChild(temp_div);
+                content_height = temp_div.scrollHeight;
+                document.body.removeChild(temp_div);
+            }
+            textarea.style.height = content_height + (textarea.scrollHeight ? 3: 15) + 'px';
+        }
 	}
 }
 
