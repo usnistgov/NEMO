@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.utils.formats import localize
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.decorators import disable_session_expiry_refresh, postpone
+from NEMO.decorators import postpone
 from NEMO.exceptions import (
     InactiveUserError,
     MaximumCapacityReachedError,
@@ -23,7 +23,6 @@ from NEMO.exceptions import (
     UnavailableResourcesUserError,
 )
 from NEMO.models import (
-    Alert,
     Area,
     AreaAccessRecord,
     BadgeReader,
@@ -31,7 +30,6 @@ from NEMO.models import (
     PhysicalAccessLog,
     PhysicalAccessType,
     Project,
-    Resource,
     UsageEvent,
     User,
 )
@@ -387,14 +385,3 @@ def get_badge_reader(request) -> BadgeReader:
     except BadgeReader.DoesNotExist:
         badge_reader = BadgeReader.default()
     return badge_reader
-
-
-@login_required
-@disable_session_expiry_refresh
-@require_GET
-def get_alerts(request):
-    dictionary = {
-        "alerts": Alert.objects.filter(user=None, debut_time__lte=timezone.now(), expired=False, deleted=False),
-        "disabled_resources": Resource.objects.filter(available=False),
-    }
-    return render(request, "area_access/alerts.html", dictionary)

@@ -37,11 +37,11 @@
                 {% block default_content %}{% endblock %}
                 <div id="occupancy"></div>
                 <div id="usage_title"></div>
-                <div class="tab-pane{% if tools_exist and tab == 'tools' %} active{% endif %} info-tooltip-container" id="tools">
+                <div class="tab-pane{% if tools_exist and tab == 'tools' %} active{% endif %} info-tooltip-container"
+                     id="tools">
                     <div id="usage"></div>
                 </div>
-                <div id="alerts">
-                </div>
+                <div id="alerts"></div>
             </div>
             <div id="error" style="display: none">
                 <h1>There was a problem communicating with the web server. Please visit the user office for assistance.</h1>
@@ -86,8 +86,8 @@
 		let countdown_handle = null;
         const current_url_parameters = new URLSearchParams(window.location.search);
 		let occupancy = current_url_parameters.get('occupancy');
-		let usage = new URLSearchParams(window.location.search).get('usage');
-        let alerts = new URLSearchParams(window.location.search).get('alerts');
+		let usage = new URLSearchParams(window.location.search).get('usage') !== null;
+        let alerts = new URLSearchParams(window.location.search).get('alerts') !== null;
 
 		let default_content_element = $("#default_content");
 		let status_element = $("#status");

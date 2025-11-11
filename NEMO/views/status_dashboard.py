@@ -16,6 +16,7 @@ from NEMO.decorators import disable_session_expiry_refresh, facility_manager_req
 from NEMO.forms import StaffAbsenceForm
 from NEMO.model_tree import ModelTreeHelper, TreeItem, get_area_model_tree
 from NEMO.models import (
+    Alert,
     Area,
     AreaAccessRecord,
     ClosureTime,
@@ -39,6 +40,17 @@ from NEMO.utilities import (
     quiet_int,
 )
 from NEMO.views.customization import StatusDashboardCustomization
+
+
+@login_required
+@disable_session_expiry_refresh
+@require_GET
+def get_alerts(request):
+    dictionary = {
+        "alerts": Alert.objects.filter(user=None, debut_time__lte=timezone.now(), expired=False, deleted=False),
+        "disabled_resources": Resource.objects.filter(available=False),
+    }
+    return render(request, "status_dashboard/alerts.html", dictionary)
 
 
 @login_required

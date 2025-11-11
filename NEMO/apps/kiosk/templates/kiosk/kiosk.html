@@ -463,7 +463,7 @@
             if(usage)
             {
                 $("#usage_title").html("<h2>Tools in use</h2>")
-                ajax_get('{% url 'area_access_usage' %}', {'interest': 'tools'},
+                ajax_get('{% url 'kiosk_usage' %}', {'interest': 'tools'},
                     function(response) {
                         $("#usage").html(response);
                         $(".in_use").css("display", "table-row");
@@ -475,12 +475,10 @@
         }
         function fetch_alerts()
         {
-            {% if "NEMO.apps.area_access"|app_installed %}
-                if(alerts)
-                {
-                    $("#alerts").load("{% url 'area_access_alerts' %}");
-                }
-            {% endif %}
+            if(alerts)
+            {
+                $("#alerts").load("{% url 'kiosk_alerts' %}");
+            }
         }
 		function close_numpads()
 		{
