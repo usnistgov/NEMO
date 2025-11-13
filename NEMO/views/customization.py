@@ -611,6 +611,8 @@ class RecurringChargesCustomization(CustomizationBase):
         "recurring_charges_category": "",
         "recurring_charges_force_quantity": "",
         "recurring_charges_skip_customer_validation": "",
+        "recurring_charges_default_send_reminder_emails": "enabled",
+        "recurring_charges_default_reminder_days": "60,7",
     }
 
     def __init__(self, key, title):

@@ -69,21 +69,21 @@
                         <label>
                             <input name="attach_created_reservation"
                                    type="checkbox"
-                                   {% if user_preferences.attach_created_reservation %}checked{% endif %}>
+                                   {% if form.attach_created_reservation.value %}checked{% endif %}>
                             Check this box to receive ICS calendar invitation when creating reservation
                         </label>
                         <br>
                         <label>
                             <input name="attach_cancelled_reservation"
                                    type="checkbox"
-                                   {% if user_preferences.attach_cancelled_reservation %}checked{% endif %}>
+                                   {% if form.attach_cancelled_reservation.value %}checked{% endif %}>
                             Check this box to receive ICS calendar invitation when cancelling a reservation
                         </label>
                         <br>
                         <label>
                             <input name="create_reservation_confirmation_override"
                                    type="checkbox"
-                                   {% if user_preferences.create_reservation_confirmation_override %}checked{% endif %}>
+                                   {% if form.create_reservation_confirmation_override.value %}checked{% endif %}>
                             Check this box to
                             {% if customizations|get_item:"create_reservation_confirmation" == "enabled" %}
                                 not be asked to confirm before making a reservation
@@ -95,7 +95,7 @@
                         <label>
                             <input name="change_reservation_confirmation_override"
                                    type="checkbox"
-                                   {% if user_preferences.change_reservation_confirmation_override %}checked{% endif %}>
+                                   {% if form.change_reservation_confirmation_override.value %}checked{% endif %}>
                             Check this box to
                             {% if customizations|get_item:"change_reservation_confirmation" == "enabled" %}
                                 not be asked to confirm before moving or resizing a reservation
@@ -182,14 +182,14 @@
                         <label>
                             <input name="display_new_buddy_request_notification"
                                    type="checkbox"
-                                   {% if user_preferences.display_new_buddy_request_notification %}checked{% endif %}>
+                                   {% if form.display_new_buddy_request_notification.value %}checked{% endif %}>
                             Check this box to see notification badges for new buddy requests
                         </label>
                         <br>
                         <label>
                             <input name="email_new_buddy_request_reply"
                                    type="checkbox"
-                                   {% if user_preferences.email_new_buddy_request_reply %}checked{% endif %}>
+                                   {% if form.email_new_buddy_request_reply.value %}checked{% endif %}>
                             Check this box to receive an email notification when users reply to buddy requests you replied to
                         </label>
                     </div>
@@ -204,7 +204,7 @@
                         <label>
                             <input name="email_new_adjustment_request_reply"
                                    type="checkbox"
-                                   {% if user_preferences.email_new_adjustment_request_reply %}checked{% endif %}>
+                                   {% if form.email_new_adjustment_request_reply.value %}checked{% endif %}>
                             Check this box to receive an email notification for replies to your adjustment requests
                         </label>
                     </div>
@@ -258,14 +258,14 @@
                                        name="staff_status_view"
                                        id="staff_status_view"
                                        value="day"
-                                       {% if user_preferences.staff_status_view == 'day' %}checked{% endif %}>
+                                       {% if form.staff_status_view.value == 'day' %}checked{% endif %}>
                                 Day
                                 <br>
                                 <input type="radio"
                                        aria-label="Week view"
                                        name="staff_status_view"
                                        value="week"
-                                       {% if user_preferences.staff_status_view == 'week' %}checked{% endif %}>
+                                       {% if form.staff_status_view.value == 'week' %}checked{% endif %}>
                                 Week
                                 {% if not user_view %}
                                     <br>
@@ -273,7 +273,7 @@
                                            aria-label="Month view"
                                            name="staff_status_view"
                                            value="month"
-                                           {% if user_preferences.staff_status_view == 'month' %}checked{% endif %}>
+                                           {% if form.staff_status_view.value == 'month' %}checked{% endif %}>
                                     Month
                                 {% endif %}
                             </label>

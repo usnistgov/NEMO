@@ -1099,10 +1099,24 @@ class User(BaseModel, PermissionsMixin):
 
     def get_preferences(self) -> UserPreferences:
         if not self.preferences:
+            from NEMO.views.customization import RecurringChargesCustomization
+
+            default_recurring_charges_reminder_days = RecurringChargesCustomization.get(
+                "recurring_charges_default_reminder_days"
+            )
+            default_send_recurring_charges_reminder_emails = RecurringChargesCustomization.get_bool(
+                "recurring_charges_default_send_reminder_emails"
+            )
             default_reservation_preferences = getattr(settings, "USER_RESERVATION_PREFERENCES_DEFAULT", False)
             self.preferences = UserPreferences.objects.create(
                 attach_cancelled_reservation=default_reservation_preferences,
                 attach_created_reservation=default_reservation_preferences,
+                recurring_charges_reminder_days=default_recurring_charges_reminder_days,
+                email_send_recurring_charges_reminder_emails=(
+                    EmailNotificationType.BOTH_EMAILS
+                    if default_send_recurring_charges_reminder_emails
+                    else EmailNotificationType.OFF
+                ),
             )
             self.save()
         return self.preferences

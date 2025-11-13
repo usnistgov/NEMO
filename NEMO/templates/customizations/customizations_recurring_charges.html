@@ -4,7 +4,7 @@
     <form method="POST" action="{% url 'customize' 'recurring_charges' %}" class="form-horizontal">
         {% csrf_token %}
         <div class="form-group">
-            <label class="control-label col-md-2" for="recurring_charges_name">Feature name</label>
+            <label class="control-label col-md-3" for="recurring_charges_name">Feature name</label>
             <div class="col-md-3">
                 <input type="text"
                        id="recurring_charges_name"
@@ -12,11 +12,11 @@
                        class="form-control"
                        value="{{ recurring_charges_name }}">
             </div>
-            <div class="col-md-7 help-block light-grey">The name to use for this feature throughout the application.</div>
+            <div class="col-md-6 help-block light-grey">The name to use for this feature throughout the application.</div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2">Lock {{ recurring_charges_name|lower }}</label>
-            <div class="col-md-10">
+            <label class="control-label col-md-3">Lock {{ recurring_charges_name|lower }}</label>
+            <div class="col-md-9">
                 <div class="checkbox">
                     <label>
                         <input type="checkbox"
@@ -30,8 +30,8 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2">Customer validation</label>
-            <div class="col-md-10">
+            <label class="control-label col-md-3">Customer validation</label>
+            <div class="col-md-9">
                 <div class="checkbox">
                     <label>
                         <input type="checkbox"
@@ -45,7 +45,7 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2" for="recurring_charges_category">Category</label>
+            <label class="control-label col-md-3" for="recurring_charges_category">Category</label>
             <div class="col-md-3">
                 <select class="form-control" id="recurring_charges_category" name="recurring_charges_category">
                     <option selected>All categories</option>
@@ -57,12 +57,12 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-7 help-block light-grey">
+            <div class="col-md-6 help-block light-grey">
                 [Optional] Select a consumable category to restrict consumable choices to.
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2" for="recurring_charges_force_quantity">Force quantity</label>
+            <label class="control-label col-md-3" for="recurring_charges_force_quantity">Force quantity</label>
             <div class="col-md-3">
                 <input type="number"
                        step="1"
@@ -71,8 +71,41 @@
                        class="form-control"
                        value="{{ recurring_charges_force_quantity }}">
             </div>
-            <div class="col-md-7 help-block light-grey">
+            <div class="col-md-6 help-block light-grey">
                 [Optional] Define a quantity to be automatically set for every {{ recurring_charges_name|lower }}.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="recurring_charges_default_reminder_days">Default email reminders</label>
+            <div class="col-md-3">
+                <div class="checkbox">
+                    <input type="hidden" name="recurring_charges_default_send_reminder_emails" value="off" />
+                    <label>
+                        <input type="checkbox"
+                               name="recurring_charges_default_send_reminder_emails"
+                               id="recurring_charges_default_send_reminder_emails"
+                               {% if recurring_charges_default_send_reminder_emails == "enabled" %}checked{% endif %}
+                               value="enabled">
+                        Enabled
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-6 help-block light-grey">
+                Whether <b>new users</b> should receive reminder emails about recurring charges by default (they can override this in their preferences)
+            </div>
+            <div class="col-md-offset-3 col-md-3">
+                <div class="input-group">
+                    <input type="text"
+                           class="form-control"
+                           id="recurring_charges_default_reminder_days"
+                           name="recurring_charges_default_reminder_days"
+                           value="{{ recurring_charges_default_reminder_days|default_if_none:'' }}"
+                           maxlength="200">
+                    <span class="input-group-addon">days</span>
+                </div>
+            </div>
+            <div class="col-md-6 help-block light-grey">
+                Comma-separated list of default recurring charges reminder days for <b>new users</b> (they can override this in their preferences)
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
