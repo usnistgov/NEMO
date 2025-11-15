@@ -22,6 +22,7 @@ from dateutil.parser import parse
 from django.apps import apps
 from django.conf import global_settings, settings
 from django.contrib.admin import ModelAdmin
+from django.contrib.auth import get_permission_codename
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile
@@ -1284,3 +1285,15 @@ def get_tool_categories_for_filters(tool_qs: QuerySetType = None) -> List[ToolCa
         for category in prefixes:
             categories.add(ToolCategory(category))
     return sorted(categories, key=lambda x: str(x))
+
+
+def get_django_default_perm(model, action) -> str:
+    """
+    Returns the default Django permission for a given model and action.
+
+    :param model: Django model class whose permission is determined.
+    :param action: The type of action (e.g., "add", "change", "delete", "view")
+        for which the permission is being checked.
+    """
+    codename = get_permission_codename(action, model._meta)
+    return f"{model._meta.app_label}.{codename}"
