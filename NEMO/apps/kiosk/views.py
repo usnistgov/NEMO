@@ -91,6 +91,7 @@ def do_enable_tool(request, tool_id):
     new_usage_event.user = customer
     new_usage_event.project = project
     new_usage_event.tool = tool
+    new_usage_event.note = request.POST.get("note") or None
 
     # Collect pre-usage questions
     dynamic_forms = tool.get_usage_questions(ToolUsageQuestionType.PRE, customer, project)
@@ -158,6 +159,7 @@ def do_disable_tool(request, tool_id):
 
     # End the current usage event for the tool and save it.
     current_usage_event.end = timezone.now() + downtime
+    current_usage_event.note = request.POST.get("note") or None
 
     # Collect post-usage questions
     dynamic_forms = tool.get_usage_questions(ToolUsageQuestionType.POST)
@@ -535,6 +537,8 @@ def tool_information(request, tool_id, user_id, back):
         # Staff are exempt from reservation shortening.
         if remaining_reservation_duration > 2:
             dictionary["remaining_reservation_duration"] = remaining_reservation_duration
+        if ToolCustomization.get_bool("tool_control_note_copy_reservation"):
+            dictionary["reservation_note"] = current_reservation.note
 
     return render(request, "kiosk/tool_information.html", dictionary)
 

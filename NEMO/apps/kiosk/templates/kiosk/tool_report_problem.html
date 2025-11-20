@@ -105,7 +105,10 @@
     </div>
 </form>
 <script>
-	$('#description').keyboard();
+    if (virtual_inputs)
+    {
+	    $('#description').keyboard();
+    }
 	{% if task_categories %}
 		$('#problem_category option[value="{{ form.problem_category.value }}"]').prop('selected', true);
 	{% endif %}

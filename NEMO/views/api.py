@@ -529,6 +529,7 @@ class ReservationViewSet(ModelViewSet):
         "waived": boolean_filters,
         "waived_on": datetime_filters,
         "waived_by": key_filters,
+        "note": string_filters,
     }
 
 
@@ -571,6 +572,7 @@ class UsageEventViewSet(ModelViewSet):
         "waived": boolean_filters,
         "waived_on": datetime_filters,
         "waived_by": key_filters,
+        "note": string_filters,
     }
 
 

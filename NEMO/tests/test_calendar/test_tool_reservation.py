@@ -700,24 +700,24 @@ class ReservationTestCase(NEMOTestCaseMixin, TransactionTestCase):
         reservation = Reservation.objects.get(tool=tool)
         self.assertTrue(reservation.id)
 
-        # Consumer or staff should see the personal note field
+        # Consumer or staff should see the note field
         response = self.client.get(
             reverse("reservation_details", kwargs={"reservation_id": reservation.id}), {}, follow=True
         )
-        self.assertContains(response, "Personal note")
+        self.assertContains(response, "Note")
 
         self.login_as_staff()
         response = self.client.get(
             reverse("reservation_details", kwargs={"reservation_id": reservation.id}), {}, follow=True
         )
-        self.assertContains(response, "Personal note")
+        self.assertContains(response, "Note")
 
         # non-staff and non reservation owner cannot see the reservation note
         self.login_as_user()
         response = self.client.get(
             reverse("reservation_details", kwargs={"reservation_id": reservation.id}), {}, follow=True
         )
-        self.assertNotContains(response, "Personal note")
+        self.assertNotContains(response, "Note")
         # they also cannot change the reservation note
         response = self.client.post(
             reverse("change_reservation_note", kwargs={"reservation_id": reservation.id}),

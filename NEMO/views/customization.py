@@ -661,6 +661,8 @@ class ToolCustomization(CustomizationBase):
         "tool_control_use_for_other": "Use this tool on behalf of another user",
         "tool_control_use_for_other_training": "Use this tool on behalf of another user for training",
         "tool_control_use_for_other_remote": "Use this tool for a remote project",
+        "tool_control_note_show": "",
+        "tool_control_note_copy_reservation": "",
         "tool_qualification_reminder_days": "",
         "tool_qualification_expiration_days": "",
         "tool_qualification_expiration_never_used_days": "",

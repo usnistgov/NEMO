@@ -45,7 +45,7 @@ from NEMO.views.api_billing import (
     billable_items_training_sessions,
     billable_items_usage_events,
 )
-from NEMO.views.customization import AdjustmentRequestsCustomization, ProjectsAccountsCustomization
+from NEMO.views.customization import AdjustmentRequestsCustomization, ProjectsAccountsCustomization, ToolCustomization
 
 logger = getLogger(__name__)
 
@@ -575,8 +575,7 @@ def csv_export_response(
     table_result.add_header(("start", "Start time"))
     table_result.add_header(("end", "End time"))
     table_result.add_header(("quantity", "Quantity"))
-    if user.is_any_part_of_staff:
-        table_result.add_header(("staff_charge_note", "Staff charge note"))
+    table_result.add_header(("note", "Note"))
     data: List[BillableItem] = []
     data.extend(billable_items_missed_reservations(missed_reservations))
     data.extend(billable_items_consumable_withdrawals(consumables))
@@ -587,7 +586,13 @@ def csv_export_response(
     for billable_item in data:
         row = vars(billable_item)
         if billable_item.type == "staff_charge" and billable_item.item:
-            row["staff_charge_note"] = billable_item.item.note
+            row["note"] = billable_item.item.note
+        if (
+            ToolCustomization.get_bool("tool_control_note_show")
+            and billable_item.type == "tool_usage"
+            and billable_item.item
+        ):
+            row["note"] = billable_item.item.note
         table_result.add_row(row)
     response = table_result.to_csv()
     filename = f"usage_export_{export_format_datetime()}.csv"

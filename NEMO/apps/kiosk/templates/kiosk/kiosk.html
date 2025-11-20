@@ -219,6 +219,13 @@
         {
             let failure_dialog = ajax_complete_callback("Unable to load pre usage questions", "There was a problem loading pre usage questions.");
             const resolved_url = build_django_url("{% url 'tool_usage_questions' 999 'pre' 888 777 'true' %}", ['999', '888', '777', 'true'], [tool_id, customer_id, project_id, virtual_inputs]);
+            const note = $("#note");
+            note.prop("disabled", false).parents("#usage_note").show();
+            auto_size_textarea(note[0], 3);
+            if (virtual_inputs)
+            {
+                note.keyboard();
+            }
             $("#pre_usage_questions").load(resolved_url, update_start_button, failure_dialog).show();
         }
 		function select_project(element, project_id, customer_id, tool_id)
@@ -244,6 +251,38 @@
 			status_element.html("<h1>Loading choices...</h1>").show();
             ajax_get('{% url 'kiosk_choices' %}?' + params.toString(), undefined, load_complete);
 		}
+        function update_stop_button()
+        {
+            if(document.querySelector('#tool_control'))
+            {
+                if(document.querySelector('#tool_control').checkValidity())
+                {
+                    $('#answer_to_proceed').hide();
+                    $("#stop_button").show();
+                }
+                else
+                {
+                    $('#answer_to_proceed').show();
+                    $("#stop_button").hide();
+                }
+            }
+        }
+
+        function update_start_button()
+        {
+            $("#start_reserve").show();
+            if(document.querySelector('#tool_control'))
+            {
+                if(document.querySelector('#tool_control').checkValidity())
+                {
+                    $(".start_button").show();
+                }
+                else
+                {
+                    $(".start_button").hide();
+                }
+            }
+        }
 		function tool_information(url)
 		{
 			default_content_element.hide();

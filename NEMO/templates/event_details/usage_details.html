@@ -38,7 +38,15 @@
             <td>Identifier:</td>
             <td>{{ event.id }}</td>
         </tr>
-        {% if customizations|get_item:"tool_control_hide_data_history_users" != "enabled" or user|is_staff_on_tool:event.tool or user == event.user %}
+        {% if customizations|get_item:"tool_control_note_show" == "enabled" %}
+            {% if event.user == user or event.operator == user or user|is_staff_on_tool:event.tool %}
+                <tr>
+                    <td>Note:</td>
+                    <td>{{ event.note|default_if_none:""|linebreaksbr }}</td>
+                </tr>
+            {% endif %}
+        {% endif %}
+        {% if customizations|get_item:"tool_control_hide_data_history_users" != "enabled" or user|is_staff_on_tool:event.tool or user == event.user or user == event.operator %}
             {% if event.pre_run_data_json.items %}
                 <tr>
                     <td>Pre run data:</td>

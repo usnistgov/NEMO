@@ -286,6 +286,13 @@
     <input type="hidden" name="back" value="{{ back }}">
     {% if tool.in_use %}
         {% if tool.get_current_usage_event.operator.id == customer.id or tool.get_current_usage_event.user.id == customer.id %}
+            {% if customizations|get_item:"tool_control_note_show" %}
+                {# Disable tool note #}
+                <div class="form-group">
+                    <label for="note">Note:</label>
+                    <textarea name="note" id="note" class="form-control" oninput="auto_size_textarea(this)">{{ tool.get_current_usage_event.note|default_if_none:"" }}</textarea>
+                </div>
+            {% endif %}
             {% if post_usage_questions %}
                 <h2>Post usage questions</h2>
                 {{ post_usage_questions }}
@@ -376,6 +383,15 @@
         <div id="use-tool" class="{% if show_wait_list and not wait_list_position == 1 %}collapse{% endif %}">
             {% if customer|is_staff_on_tool:tool or customer.is_service_personnel and tool in customer.qualifications.all or tool.ready_to_use and tool in customer.qualifications.all %}
                 {% include 'kiosk/tool_project_selection_snippet.html' with active_projects=customer.active_projects customer=customer tool=tool %}
+                {% if customizations|get_item:"tool_control_note_show" %}
+                    <div id="usage_note" style="display: none">
+                        {# Enable tool note #}
+                        <div class="form-group">
+                            <label for="note">Note:</label>
+                            <textarea name="note" id="note" class="form-control" oninput="auto_size_textarea(this)">{% if reservation_note %}{{ reservation_note|default_if_none:"" }}{% endif %}</textarea>
+                        </div>
+                    </div>
+                {% endif %}
                 <div id="pre_usage_questions" style="display:none">
                     <h2>Pre usage questions</h2>
                 </div>
@@ -539,39 +555,6 @@
 {% endif %}
 <div style="height:150px">{# Spacer #}</div>
 <script>
-	function update_stop_button()
-	{
-        if(document.querySelector('#tool_control'))
-        {
-            if(document.querySelector('#tool_control').checkValidity())
-            {
-                $('#answer_to_proceed').hide();
-                $("#stop_button").show();
-            }
-            else
-            {
-                $('#answer_to_proceed').show();
-                $("#stop_button").hide();
-            }
-        }
-	}
-
-    function update_start_button()
-	{
-		$("#start_reserve").show();
-        if(document.querySelector('#tool_control'))
-        {
-            if(document.querySelector('#tool_control').checkValidity())
-            {
-                $(".start_button").show();
-            }
-            else
-            {
-                $(".start_button").hide();
-            }
-        }
-	}
-
 	update_stop_button();
 	{% if customer.active_projects|length == 1 %}update_start_button();{% endif %}
 
@@ -581,7 +564,10 @@
 	{% else %}
     	$('body').on('dynamic-form-group-changed dynamic-form-field-changed', update_start_button);
 	{% endif %}
-	$('#downtime').numpad({'readonly': false, 'hidePlusMinusButton': true, 'hideDecimalButton': true});
+    if (virtual_inputs)
+    {
+	    $('#downtime').numpad({'readonly': false, 'hidePlusMinusButton': true, 'hideDecimalButton': true});
+    }
 	$('#delayed_logoff_help').popover();
 	revert(60);
 	{# reset timeout if user is active in the tool control form #}

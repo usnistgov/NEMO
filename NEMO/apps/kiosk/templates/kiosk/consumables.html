@@ -198,7 +198,10 @@
     {# Initialize customer search #}
     {% if not self_checkout %}
         show_customer_search();
-        $customer_search_input.keyboard();
+        if (virtual_inputs)
+        {
+            $customer_search_input.keyboard();
+        }
     {% else %}
         hide_customer_search();
         show_projects_and_consumables();

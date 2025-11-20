@@ -165,6 +165,8 @@ def tool_status(request, tool_id):
     ).last()
     if current_reservation:
         dictionary["time_left"] = current_reservation.end
+        if ToolCustomization.get_bool("tool_control_note_copy_reservation"):
+            dictionary["reservation_note"] = current_reservation.note
 
     dictionary["next_reservation"] = (
         Reservation.objects.filter(
@@ -424,6 +426,7 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
     new_usage_event.user = user
     new_usage_event.project = project
     new_usage_event.tool = tool
+    new_usage_event.note = request.POST.get("note") or None
 
     # Collect pre-usage questions and validate them
     dynamic_forms = tool.get_usage_questions(ToolUsageQuestionType.PRE, user, project)
@@ -531,6 +534,7 @@ def disable_tool(request, tool_id):
 
     # End the current usage event for the tool
     current_usage_event.end = timezone.now() + downtime
+    current_usage_event.note = request.POST.get("note") or None
 
     # Collect post-usage questions
     dynamic_forms = tool.get_usage_questions(ToolUsageQuestionType.POST)

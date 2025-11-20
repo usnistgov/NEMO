@@ -403,6 +403,13 @@
         <form id="tool_control">
             {% if tool.in_use %}
                 {% if tool.get_current_usage_event.operator.id == user.id or tool.get_current_usage_event.user.id == user.id %}
+                    {% if customizations|get_item:"tool_control_note_show" %}
+                        {# Disable tool note #}
+                        <div class="form-group">
+                            <label for="note">Note:</label>
+                            <textarea name="note" id="note" class="form-control" oninput="auto_size_textarea(this)">{{ tool.get_current_usage_event.note|default_if_none:"" }}</textarea>
+                        </div>
+                    {% endif %}
                     {{ post_usage_questions }}
                     {% if tool.max_delayed_logoff is not None and not tool.delayed_logoff_in_progress %}
                         <div class="form-group">
@@ -568,6 +575,15 @@
                         <div id="project_choice"></div>
                     {% elif tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress and not tool.scheduled_outage_in_progress %}
                         {% include 'tool_control/get_projects.html' with active_projects=user.active_projects customer_id=user.id tool_id=tool.id %}
+                    {% endif %}
+                    {% if customizations|get_item:"tool_control_note_show" %}
+                        <div id="usage_note" style="display: none">
+                            {# Enable tool note #}
+                            <div class="form-group">
+                                <label for="note">Note:</label>
+                                <textarea name="note" id="note" class="form-control" oninput="auto_size_textarea(this)">{% if reservation_note %}{{ reservation_note|default_if_none:"" }}{% endif %}</textarea>
+                            </div>
+                        </div>
                     {% endif %}
                     <div id="pre_usage_questions" style="display:none"></div>
                     {% if user|is_staff_on_tool:tool or user.is_service_personnel and tool in user.qualifications.all or tool.ready_to_use %}
@@ -1124,32 +1140,6 @@
 	$('#task_and_comment_start').datetimepicker({format: '{{ date_input_js_format }}', 'widgetParent': '#task_and_comment_start_form_group'});
 	$('#task_and_comment_end').datetimepicker({format: '{{ date_input_js_format }}', 'widgetParent': '#task_and_comment_end_form_group'});
 	$('#delayed_logoff_help').popover();
-
-	function update_stop_button()
-	{
-		if(document.querySelector('#tool_control').checkValidity())
-		{
-			$('#stop_wrapper').tooltip('disable');
-			$("#stop_wrapper button").prop("disabled", false);
-		}
-		else
-		{
-			$('#stop_wrapper').tooltip('enable');
-			$("#stop_wrapper button").prop("disabled", true);
-		}
-	}
-
-    function update_start_button()
-	{
-        if(document.querySelector('#tool_control').checkValidity())
-        {
-            $("#start button").prop("disabled", false);
-        }
-        else
-        {
-            $("#start button").prop("disabled", true);
-        }
-	}
 
     show_alerts();
 	update_stop_button();
