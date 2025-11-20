@@ -200,7 +200,7 @@ def export_email_addresses(request):
         users, topic = get_users_for_email(audience, selection, no_type)
         response = HttpResponse(content_type="text/csv")
         writer = csv.writer(response)
-        writer.writerow(["First", "Last", "Username", "Email"])
+        writer.writerow(["First", "Last", "Username", "Email", "Name-Address"])
         if not send_to_inactive_users:
             users = [user for user in users if user.is_active]
         if not send_to_expired_access_users:
@@ -208,7 +208,15 @@ def export_email_addresses(request):
         for user in users:
             user: User = user
             for email in user.get_emails(user.get_preferences().email_send_broadcast_emails):
-                writer.writerow([user.first_name, user.last_name, user.username, email])
+                writer.writerow(
+                    [
+                        user.first_name,
+                        user.last_name,
+                        user.username,
+                        email,
+                        f"{user.first_name} {user.last_name} <{email}>",
+                    ]
+                )
         response["Content-Disposition"] = f'attachment; filename="email_addresses_{export_format_datetime()}.csv"'
         return response
     except:
