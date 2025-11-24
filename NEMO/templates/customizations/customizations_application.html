@@ -233,6 +233,15 @@
                 </div>
             {% endif %}
         {% endif %}
+        <div class="form-group">
+            <label class="control-label col-md-3" for="facility_rules_required_message">Facility rules required message</label>
+            <div class="col-md-9">
+                <textarea oninput="auto_size_textarea(this);"
+                          id="facility_rules_required_message"
+                          name="facility_rules_required_message"
+                          class="form-control">{{ facility_rules_required_message }}</textarea>
+            </div>
+        </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Page title settings</h3>
         <div class="form-group">
@@ -309,6 +318,7 @@
     function on_application_tab_show()
     {
         auto_size_textarea(document.getElementById('kiosk_message'));
+        auto_size_textarea(document.getElementById('facility_rules_required_message'));
     }
     on_application_tab_show();
 </script>

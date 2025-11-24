@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import redirect, render
+from django.template import Context, Template
 from django.urls import Resolver404, resolve
 from django.utils import timezone
 from django.views.decorators.http import require_GET
@@ -13,7 +14,7 @@ from django.views.decorators.http import require_GET
 from NEMO.models import Alert, LandingPageChoice, Reservation, Resource, UsageEvent, User
 from NEMO.views.alerts import mark_alerts_as_expired
 from NEMO.views.area_access import able_to_self_log_in_to_area, able_to_self_log_out_of_area
-from NEMO.views.customization import UserCustomization
+from NEMO.views.customization import ApplicationCustomization, UserCustomization
 from NEMO.views.notifications import delete_expired_notifications
 
 
@@ -80,6 +81,9 @@ def landing(request):
         "self_log_in": able_to_self_log_in_to_area(request.user),
         "self_log_out": able_to_self_log_out_of_area(request.user),
         "script_name": settings.FORCE_SCRIPT_NAME,
+        "facility_rules_required_message": Template(
+            ApplicationCustomization.get("facility_rules_required_message")
+        ).render(Context()),
     }
     return render(request, "landing.html", dictionary)
 
