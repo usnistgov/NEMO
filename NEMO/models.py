@@ -1249,6 +1249,11 @@ class Tool(SerializationByNameModel):
         default=False,
         help_text="Marking the tool non-operational will prevent users from using the tool.",
     )
+    _problem_shutdown_enabled = models.BooleanField(
+        db_column="problem_shutdown_enabled",
+        default=True,
+        help_text="Whether or not users can shut down the tool when reporting a problem.",
+    )
     _properties = fields.JsonField(
         schema=load_properties_schemas("Tool"), db_column="properties", null=True, blank=True
     )
@@ -1486,6 +1491,15 @@ class Tool(SerializationByNameModel):
     def operational(self, value):
         self.raise_setter_error_if_child_tool("operational")
         self._operational = value
+
+    @property
+    def problem_shutdown_enabled(self):
+        return self.parent_tool.problem_shutdown_enabled if self.is_child_tool() else self._problem_shutdown_enabled
+
+    @problem_shutdown_enabled.setter
+    def problem_shutdown_enabled(self, value):
+        self.raise_setter_error_if_child_tool("problem_shutdown_enabled")
+        self._problem_shutdown_enabled = value
 
     @property
     def properties(self):

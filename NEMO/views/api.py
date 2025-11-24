@@ -399,6 +399,8 @@ class ToolViewSet(ModelViewSet):
         "_operational": boolean_filters,
         "_location": string_filters,
         "_requires_area_access": key_filters,
+        "_problem_shutdown_enabled": boolean_filters,
+        "_qualifications_never_expire": boolean_filters,
     }
 
 

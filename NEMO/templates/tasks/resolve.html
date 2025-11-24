@@ -23,7 +23,9 @@
                 <input type="hidden"
                        name="estimated_resolution_time"
                        value="{{ estimated_resolution_time|input_date_format }}">
-                <input type="hidden" name="force_shutdown" value="{{ task.force_shutdown }}">
+                {% if task.tool.problem_shutdown_enabled %}
+                    <input type="hidden" name="force_shutdown" value="{{ task.force_shutdown }}">
+                {% endif %}
                 <input type="hidden" name="safety_hazard" value="{{ task.safety_hazard }}">
                 <div class="form-group">
                     <label for="description">

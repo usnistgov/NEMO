@@ -176,6 +176,9 @@ class TaskForm(ModelForm):
                 raise ValidationError(
                     "This task can't be resolved because it is marked as 'cancelled' or 'resolved' already."
                 )
+        tool = cleaned_data.get("tool")
+        if tool and not tool.problem_shutdown_enabled:
+            cleaned_data["force_shutdown"] = False
         return cleaned_data
 
     def save(self, commit=True):

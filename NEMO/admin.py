@@ -247,6 +247,7 @@ class ToolAdmin(admin.ModelAdmin):
                     "_operation_mode",
                     "qualified_users",
                     "_qualifications_never_expire",
+                    "_problem_shutdown_enabled",
                 )
             },
         ),
