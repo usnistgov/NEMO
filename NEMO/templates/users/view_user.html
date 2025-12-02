@@ -133,7 +133,7 @@
             </div>
         </div>
     {% endif %}
-    {% if user.managed_users.all or user.managed_projects.all or user.managed_accounts.all %}
+    {% if user.managed_users.all or user.supervisors.all or user.managed_projects.all or user.managed_accounts.all %}
         <div class="panel panel-default">
             <div class="panel-body">
                 <h3 style="margin-top: 0">Management</h3>
@@ -159,6 +159,14 @@
                             Managed users:
                             <ul>
                                 {% for managed_user in user.managed_users.all %}<li>{{ managed_user.get_name }}</li>{% endfor %}
+                            </ul>
+                        </li>
+                    {% endif %}
+                    {% if user.supervisors.all %}
+                        <li>
+                            Supervisors:
+                            <ul>
+                                {% for supervisor in user.supervisors.all %}<li>{{ supervisor.get_name }}</li>{% endfor %}
                             </ul>
                         </li>
                     {% endif %}
