@@ -234,12 +234,30 @@
             {% endif %}
         {% endif %}
         <div class="form-group">
-            <label class="control-label col-md-3" for="facility_rules_required_message">Facility rules required message</label>
+            <label class="control-label col-md-3" for="facility_rules_name">Facility rules name</label>
+            <div class="col-md-9">
+                <input type="text"
+                       id="facility_rules_name"
+                       name="facility_rules_name"
+                       class="form-control"
+                       value="{{ facility_rules_name }}">
+            </div>
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                The name of the facility rules tutorial property that appears on user profile pages.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="facility_rules_required_message">
+                {{ facility_rules_name }} required message
+            </label>
             <div class="col-md-9">
                 <textarea oninput="auto_size_textarea(this);"
                           id="facility_rules_required_message"
                           name="facility_rules_required_message"
                           class="form-control">{{ facility_rules_required_message }}</textarea>
+            </div>
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                This HTML message will be displayed on the dashboard when the user needs to complete the {{ facility_rules_name }}.
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>

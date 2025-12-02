@@ -201,7 +201,7 @@
                                name="training_required"
                                type="checkbox"
                                {% if form.training_required.value %}checked{% endif %}>
-                        Facility rules tutorial required
+                        {{ customizations|get_item:"facility_rules_name" }} required
                     </label>
                 </div>
             </div>

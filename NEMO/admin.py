@@ -128,7 +128,7 @@ from NEMO.models import (
     record_remote_many_to_many_changes_and_save,
 )
 from NEMO.utilities import admin_get_item, format_daterange
-from NEMO.views.customization import ProjectsAccountsCustomization
+from NEMO.views.customization import ApplicationCustomization, ProjectsAccountsCustomization
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageGroupQuestion, admin_render_dynamic_form_preview
 
 
@@ -1238,6 +1238,7 @@ class UserAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.instance: User = self.instance
+        self.fields["training_required"].label = f'{ApplicationCustomization.get("facility_rules_name")} required'
         if self.instance.pk:
             self.fields["primary_owner_on_tools"].initial = self.instance.primary_tool_owner.all()
             self.fields["tool_qualifications"].initial = self.instance.qualifications.all()
