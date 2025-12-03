@@ -276,6 +276,7 @@ class CustomizationBase(ABC):
 class ApplicationCustomization(CustomizationBase):
     variables = {
         "facility_name": "Facility",
+        "facility_rules_name": "Facility rules tutorial",
         "facility_rules_required_message": '{% load static %}\n<a href="{% url \'facility_rules\' %}">\n  <div class="well clearfix">\n    <div class="col-lg-2 text-center">\n      <img src="{% static \'icons/caution.png\' %}" alt="Caution image" height="128" width="128">\n    </div>\n    <div class="col-lg-8 text-center">\n      <h2>{{ facility_name }} Rules Tutorial</h2>\n      <p style="text-align: center">\nYou must complete your {{ facility_name }} rules tutorial before you can make reservations or use {{ facility_name }} tools. Click here to begin the tutorial.\n      </p>\n    </div>\n    <div class="col-lg-2 text-center">\n      <img src="{% static \'icons/agreement.png\' %}" alt="Agreement icon" height="128" width="128">\n    </div>\n  </div>\n</a>',
         "site_title": "NEMO",
         "self_log_in": "",
