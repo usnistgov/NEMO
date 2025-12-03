@@ -836,7 +836,7 @@ def set_reservation_title(request, reservation_id):
     if not request.user.is_staff_on_tool(reservation.tool):
         return HttpResponseBadRequest("You are not allowed to edit this reservation.")
     reservation.title = request.POST.get("title", "")[: reservation._meta.get_field("title").max_length]
-    reservation.save()
+    reservation.save_and_notify()
     return HttpResponse()
 
 
@@ -851,7 +851,7 @@ def change_reservation_note(request, reservation_id):
     ):
         return HttpResponseBadRequest("You are not allowed to edit this reservation.")
     reservation.note = request.POST.get("note", "")
-    reservation.save(update_fields=["note"])
+    reservation.save_and_notify()
     return HttpResponse()
 
 
