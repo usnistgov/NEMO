@@ -20,7 +20,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.core.validators import MinValueValidator, validate_comma_separated_integer_list
 from django.db import connections, models, transaction
-from django.db.models import IntegerChoices, Q
+from django.db.models import BooleanField, Case, Exists, IntegerChoices, OuterRef, Q, Value, When
 from django.db.models.manager import Manager
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
@@ -3528,6 +3528,62 @@ class RecurringConsumableCharge(BaseModel, RecurrenceMixin):
 
     class Meta:
         ordering = ["name"]
+
+    @staticmethod
+    def annotate_invalid():
+        from NEMO.views.customization import RecurringChargesCustomization
+
+        # Check if customer validation should be skipped based on customization
+        skip_customer_validation = RecurringChargesCustomization.get_bool("recurring_charges_skip_customer_validation")
+
+        # Subquery to check if the customer is a member of the project
+        # User.projects is the M2M field. Access the through table to check membership.
+        is_project_member = User.projects.through.objects.filter(
+            user_id=OuterRef("customer_id"), project_id=OuterRef("project_id")
+        )
+
+        # Valid only if the project exists, is active, the account is active, allows withdrawals,
+        # and the customer is a member of the project.
+        invalid_project_q = Q(project__isnull=False) & (
+            Q(project__active=False)
+            | Q(project__account__active=False)
+            | Q(project__allow_consumable_withdrawals=False)
+            | (Q(customer__isnull=False) & ~Exists(is_project_member))
+        )
+
+        # Valid only if the customer exists, is active, and access has not expired.
+        invalid_customer_q = Q()
+        if not skip_customer_validation:
+            invalid_customer_q = Q(customer__isnull=False) & (
+                Q(customer__is_active=False) | Q(customer__access_expiration__lt=datetime.date.today())
+            )
+
+        # Annotate and filter
+        return (
+            RecurringConsumableCharge.objects.annotate(
+                invalid_project=Case(
+                    When(invalid_project_q, then=True),
+                    default=False,
+                    output_field=BooleanField(),
+                )
+            )
+            .annotate(
+                invalid_customer=(
+                    Case(
+                        When(invalid_customer_q, then=True),
+                        default=False,
+                        output_field=BooleanField(),
+                    )
+                    if not skip_customer_validation
+                    else Value(False, output_field=BooleanField())
+                )
+            )
+            .annotate(
+                invalid=Case(
+                    When(invalid_project_q | invalid_customer_q, then=True), default=False, output_field=BooleanField()
+                )
+            )
+        )
 
     def next_charge(self, inc=False) -> datetime:
         return self.next_recurrence(inc)

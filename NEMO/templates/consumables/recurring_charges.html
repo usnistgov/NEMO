@@ -1,5 +1,12 @@
 {% extends 'pagination/pagination_base.html' %}
 {% load custom_tags_and_filters %}
+{% load static %}
+{% block extrahead %}
+    {# Select2 #}
+    <script type="text/javascript" src="{% static "select2/js/select2.min.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "select2/css/select2.min.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "select2/css/select2-bootstrap.min.css" %}" />
+{% endblock %}
 {% block title %}{{ recurring_charges_name }}{% endblock %}
 {% block before_pagination %}
     <div class="h1 row">
@@ -13,7 +20,7 @@
     </div>
     {% if page %}
         <div class="row" style="margin-bottom: 25px">
-            <div class="col-sm-6">
+            <div class="col-sm-12 col-md-8 col-lg-7">
                 <input id="search"
                        type="text"
                        aria-label="Search for {{ recurring_charges_name|lower }}"
@@ -23,6 +30,45 @@
             </div>
         </div>
     {% endif %}
+    <form class="form-horizontal">
+        {% if consumables %}
+            <div class="form-group">
+                <label class="col-sm-2 col-md-2 control-label" for="consumable_id">Consumables</label>
+                <div class="col-sm-10 col-md-6 col-lg-5">
+                    <select class="form-control" id="consumable_id" name="consumable_id" multiple>
+                        {% regroup consumables by category as consumable_by_category %}
+                        {% for category in consumable_by_category %}
+                            {% if consumable_by_category|length != 1 and category.grouper %}
+                                <optgroup label="{{ category.grouper.name }}">
+                                {% endif %}
+                                {% for consumable in category.list %}
+                                    <option label="{{ consumable.name }}"
+                                            value="{{ consumable.id }}"
+                                            {% if consumable.id|stringformat:"s" in selected_consumable_ids %}selected{% endif %}>
+                                        {{ consumable.name }}
+                                    </option>
+                                {% endfor %}
+                                {% if consumable_by_category|length != 1 and category.grouper %}</optgroup>{% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        {% endif %}
+        <div class="form-group">
+            <label class="col-sm-2 col-md-2 control-label" for="invalidity">Validity</label>
+            <div class="col-sm-10 col-md-4 col-lg-3">
+                <select class="form-control" id="invalidity" name="invalidity">
+                    <option value="" selected>Show all</option>
+                    <option value="yes" {% if invalidity == "yes" %}selected{% endif %}>Show only valid</option>
+                    <option value="no" {% if invalidity == "no" %}selected{% endif %}>Show only invalid</option>
+                </select>
+            </div>
+            <div class="col-sm-2 hidden-sm text-right">{% button type="save" value="Update" icon="glyphicon-refresh" %}</div>
+        </div>
+        <div class="form-group visible-sm">
+            <div class="col-sm-2 col-sm-offset-2">{% button type="save" value="Update" icon="glyphicon-refresh" %}</div>
+        </div>
+    </form>
 {% endblock %}
 {% block pagination_content %}
     {% regroup page by quantity as different_quantities %}
@@ -97,6 +143,7 @@
 		{
 			$("#search").autocomplete('recurring_charges', get_charge, '{% url 'search_recurring_charges' %}', true).focus();
 		}
+        $("#consumable_id").select2();
 		window.addEventListener('load', on_load, true);
     </script>
 {% endblock %}
