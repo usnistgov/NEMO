@@ -886,7 +886,7 @@ def change_reservation_date(request):
     new_start = request.POST.get("new_start", None)
     if new_start:
         try:
-            new_start = make_aware(datetime.strptime(new_start, datetime_input_format), is_dst=False)
+            new_start = make_aware(datetime.strptime(new_start, datetime_input_format))
             if new_start.time().minute not in [0, 15, 30, 45]:
                 return HttpResponseBadRequest("Reservation time only works with 15 min increments")
         except ValueError:
@@ -895,7 +895,7 @@ def change_reservation_date(request):
     new_end = request.POST.get("new_end", None)
     if new_end:
         try:
-            new_end = make_aware(datetime.strptime(new_end, datetime_input_format), is_dst=False)
+            new_end = make_aware(datetime.strptime(new_end, datetime_input_format))
             if new_end.time().minute not in [0, 15, 30, 45]:
                 return HttpResponseBadRequest("Reservation time only works with 15 min increments")
         except ValueError:
@@ -918,7 +918,7 @@ def change_outage_date(request):
     new_start = request.POST.get("new_start", None)
     if new_start:
         try:
-            new_start = make_aware(datetime.strptime(new_start, datetime_input_format), is_dst=False)
+            new_start = make_aware(datetime.strptime(new_start, datetime_input_format))
             if new_start.time().minute not in [0, 15, 30, 45]:
                 return HttpResponseBadRequest("Outage time only works with 15 min increments")
         except ValueError:
@@ -927,7 +927,7 @@ def change_outage_date(request):
     new_end = request.POST.get("new_end", None)
     if new_end:
         try:
-            new_end = make_aware(datetime.strptime(new_end, datetime_input_format), is_dst=False)
+            new_end = make_aware(datetime.strptime(new_end, datetime_input_format))
             if new_end.time().minute not in [0, 15, 30, 45]:
                 return HttpResponseBadRequest("Outage time only works with 15 min increments")
         except ValueError:
