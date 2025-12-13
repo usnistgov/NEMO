@@ -1216,6 +1216,34 @@
     }
   },
   {
+    "model": "NEMO.customization",
+    "pk": "account_enable_manager_edit_mode",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "kiosk_consumable_checkout",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "tool_control_note_show",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "tool_control_note_copy_reservation",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
     "model": "NEMO.news",
     "pk": 1,
     "fields": {
