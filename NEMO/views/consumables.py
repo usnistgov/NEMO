@@ -158,8 +158,23 @@ def make_withdrawals(request):
 @user_office_or_manager_required
 @require_GET
 def recurring_charges(request):
-    page = SortedPaginator(RecurringConsumableCharge.objects.all(), request, order_by="name").get_current_page()
-    dictionary = {"page": page, "extended_permissions": extended_permissions(request)}
+    consumable_ids = request.GET.getlist("consumable_id", [])
+    invalidity = request.GET.get("invalidity")
+    recurring_consumable_charges = RecurringConsumableCharge.annotate_invalid()
+    if consumable_ids:
+        recurring_consumable_charges = recurring_consumable_charges.filter(consumable_id__in=consumable_ids)
+    if invalidity:
+        recurring_consumable_charges = recurring_consumable_charges.filter(invalid=invalidity == "no")
+    page = SortedPaginator(recurring_consumable_charges, request, order_by="name").get_current_page()
+    dictionary = {
+        "page": page,
+        "extended_permissions": extended_permissions(request),
+        "consumables": Consumable.objects.filter(
+            id__in=RecurringConsumableCharge.objects.values_list("consumable_id", flat=True)
+        ),
+        "selected_consumable_ids": consumable_ids,
+        "invalidity": invalidity,
+    }
     return render(request, "consumables/recurring_charges.html", dictionary)
 
 

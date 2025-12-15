@@ -20,7 +20,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.core.validators import MinValueValidator, validate_comma_separated_integer_list
 from django.db import connections, models, transaction
-from django.db.models import IntegerChoices, Q
+from django.db.models import BooleanField, Case, Exists, IntegerChoices, OuterRef, Q, Value, When
 from django.db.models.manager import Manager
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
@@ -1324,6 +1324,14 @@ class Tool(SerializationByNameModel):
         help_text="Indicates that this tool is physically located in a billable area and requires an active area access record in order to be operated.",
         on_delete=models.PROTECT,
     )
+    _requires_area_occupancy_minimum = models.PositiveIntegerField(
+        db_column="requires_area_occupancy_minimum",
+        null=True,
+        blank=True,
+        help_text=_(
+            "Enter the minimum number of total users needed to be present in the required area to enable this tool"
+        ),
+    )
     _ask_to_leave_area_when_done_using = models.BooleanField(
         default=False,
         db_column="ask_to_leave_area_when_done_using",
@@ -1612,6 +1620,19 @@ class Tool(SerializationByNameModel):
     def requires_area_access(self, value):
         self.raise_setter_error_if_child_tool("requires_area_access")
         self._requires_area_access = value
+
+    @property
+    def requires_area_occupancy_minimum(self):
+        return (
+            self.parent_tool.requires_area_occupancy_minimum
+            if self.is_child_tool()
+            else self._requires_area_occupancy_minimum
+        )
+
+    @requires_area_occupancy_minimum.setter
+    def requires_area_occupancy_minimum(self, value):
+        self.raise_setter_error_if_child_tool("requires_area_occupancy_minimum")
+        self._requires_area_occupancy_minimum = value
 
     @property
     def ask_to_leave_area_when_done_using(self):
@@ -2156,24 +2177,32 @@ class Tool(SerializationByNameModel):
         errors = {}
         if self.parent_tool_id:
             if self.parent_tool_id == self.id:
-                errors["parent_tool"] = "You cannot select the parent to be the tool itself."
+                errors["parent_tool"] = _("You cannot select the parent to be the tool itself.")
         else:
             from NEMO.views.customization import ToolCustomization
 
             if not self._category:
-                errors["_category"] = "This field is required."
+                errors["_category"] = _("This field is required.")
             if not self._location and ToolCustomization.get_bool("tool_location_required"):
-                errors["_location"] = "This field is required."
+                errors["_location"] = _("This field is required.")
             if not self._phone_number and ToolCustomization.get_bool("tool_phone_number_required"):
-                errors["_phone_number"] = "This field is required."
+                errors["_phone_number"] = _("This field is required.")
             if not self._primary_owner_id:
-                errors["_primary_owner"] = "This field is required."
+                errors["_primary_owner"] = _("This field is required.")
 
             if self._policy_off_between_times and (not self._policy_off_start_time or not self._policy_off_end_time):
                 if not self._policy_off_start_time:
-                    errors["_policy_off_start_time"] = "Start time must be specified"
+                    errors["_policy_off_start_time"] = _("Start time must be specified")
                 if not self._policy_off_end_time:
-                    errors["_policy_off_end_time"] = "End time must be specified"
+                    errors["_policy_off_end_time"] = _("End time must be specified")
+
+            if self._requires_area_occupancy_minimum and not self._requires_area_access_id:
+                errors["_requires_area_access"] = _(
+                    "You cannot have a minimum occupancy without requiring an active access record to that area"
+                )
+                errors["_requires_area_occupancy_minimum"] = _(
+                    "You cannot have a minimum occupancy without requiring an active access record to that area"
+                )
         if errors:
             raise ValidationError(errors)
 
@@ -3499,6 +3528,62 @@ class RecurringConsumableCharge(BaseModel, RecurrenceMixin):
 
     class Meta:
         ordering = ["name"]
+
+    @staticmethod
+    def annotate_invalid():
+        from NEMO.views.customization import RecurringChargesCustomization
+
+        # Check if customer validation should be skipped based on customization
+        skip_customer_validation = RecurringChargesCustomization.get_bool("recurring_charges_skip_customer_validation")
+
+        # Subquery to check if the customer is a member of the project
+        # User.projects is the M2M field. Access the through table to check membership.
+        is_project_member = User.projects.through.objects.filter(
+            user_id=OuterRef("customer_id"), project_id=OuterRef("project_id")
+        )
+
+        # Valid only if the project exists, is active, the account is active, allows withdrawals,
+        # and the customer is a member of the project.
+        invalid_project_q = Q(project__isnull=False) & (
+            Q(project__active=False)
+            | Q(project__account__active=False)
+            | Q(project__allow_consumable_withdrawals=False)
+            | (Q(customer__isnull=False) & ~Exists(is_project_member))
+        )
+
+        # Valid only if the customer exists, is active, and access has not expired.
+        invalid_customer_q = Q()
+        if not skip_customer_validation:
+            invalid_customer_q = Q(customer__isnull=False) & (
+                Q(customer__is_active=False) | Q(customer__access_expiration__lt=datetime.date.today())
+            )
+
+        # Annotate and filter
+        return (
+            RecurringConsumableCharge.objects.annotate(
+                invalid_project=Case(
+                    When(invalid_project_q, then=True),
+                    default=False,
+                    output_field=BooleanField(),
+                )
+            )
+            .annotate(
+                invalid_customer=(
+                    Case(
+                        When(invalid_customer_q, then=True),
+                        default=False,
+                        output_field=BooleanField(),
+                    )
+                    if not skip_customer_validation
+                    else Value(False, output_field=BooleanField())
+                )
+            )
+            .annotate(
+                invalid=Case(
+                    When(invalid_project_q | invalid_customer_q, then=True), default=False, output_field=BooleanField()
+                )
+            )
+        )
 
     def next_charge(self, inc=False) -> datetime:
         return self.next_recurrence(inc)

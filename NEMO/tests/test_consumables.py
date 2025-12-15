@@ -308,16 +308,16 @@ class ConsumableTestCase(NEMOTestCaseMixin, TestCase):
         staff = self.login_as_user_office()
         response = self.client.post(reverse("create_recurring_charge"), data, follow=True)
         # Validation error, Consumable is required
-        self.assertFormError(response, "form", "consumable", "This field is required.")
+        self.assertFormError(response.context["form"], "consumable", "This field is required.")
         data["consumable"] = consumable.id
         response = self.client.post(reverse("create_recurring_charge"), data, follow=True)
         # Validation error. Customer is required when charging
-        self.assertFormError(response, "form", "customer", "This field is required when charging.")
+        self.assertFormError(response.context["form"], "customer", "This field is required when charging.")
         data["customer"] = user.id
         response = self.client.post(reverse("create_recurring_charge"), data, follow=True)
-        self.assertFormError(response, "form", "project", "This field is required.")
-        self.assertFormError(response, "form", "rec_frequency", "This field is required.")
-        self.assertFormError(response, "form", "rec_start", "This field is required.")
+        self.assertFormError(response.context["form"], "project", "This field is required.")
+        self.assertFormError(response.context["form"], "rec_frequency", "This field is required.")
+        self.assertFormError(response.context["form"], "rec_start", "This field is required.")
         data["project"] = project.id
         data["rec_frequency"] = RecurrenceFrequency.DAILY.value
         data["rec_start"] = format_datetime(datetime.now().date() + timedelta(days=5))

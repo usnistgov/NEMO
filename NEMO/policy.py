@@ -100,22 +100,32 @@ class NEMOPolicy:
         operator_logged_in = AreaAccessRecord.objects.filter(
             area=area_for_tool, customer=operator, staff_charge=None, end=None
         ).exists()
-        if area_for_tool and not operator_logged_in and not operator.is_staff_on_tool(tool):
-            abuse_email_address = EmailsCustomization.get("abuse_email_address")
-            message = get_media_file_contents("unauthorized_tool_access_email.html")
-            if abuse_email_address and message:
-                dictionary = {"operator": operator, "tool": tool, "type": "area-access"}
-                rendered_message = render_email_template(message, dictionary)
-                send_mail(
-                    subject="Area access requirement",
-                    content=rendered_message,
-                    from_email=abuse_email_address,
-                    to=[abuse_email_address],
-                    email_category=EmailCategory.ABUSE,
+        area_occupancy_minium = tool.requires_area_occupancy_minimum
+        if area_for_tool and not operator.is_staff_on_tool(tool):
+            if not operator_logged_in:
+                abuse_email_address = EmailsCustomization.get("abuse_email_address")
+                message = get_media_file_contents("unauthorized_tool_access_email.html")
+                if abuse_email_address and message:
+                    dictionary = {"operator": operator, "tool": tool, "type": "area-access"}
+                    rendered_message = render_email_template(message, dictionary)
+                    send_mail(
+                        subject="Area access requirement",
+                        content=rendered_message,
+                        from_email=abuse_email_address,
+                        to=[abuse_email_address],
+                        email_category=EmailCategory.ABUSE,
+                    )
+                return HttpResponseBadRequest(
+                    "You must be logged in to the {} to operate this tool.".format(tool.requires_area_access.name)
                 )
-            return HttpResponseBadRequest(
-                "You must be logged in to the {} to operate this tool.".format(tool.requires_area_access.name)
-            )
+            elif area_occupancy_minium:
+                area_occupancy = AreaAccessRecord.objects.filter(
+                    area=area_for_tool, staff_charge=None, end=None
+                ).count()
+                if area_occupancy < area_occupancy_minium:
+                    return HttpResponseBadRequest(
+                        f"There needs to be at least {area_occupancy_minium} users present in the {area_for_tool} before you can operate this tool"
+                    )
 
         # The tool operator may not activate tools in a particular area,
         # unless they are still within that area reservation window.

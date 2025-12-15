@@ -294,6 +294,7 @@ class ToolAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "_requires_area_access",
+                    "_requires_area_occupancy_minimum",
                     "_grant_physical_access_level_upon_qualification",
                     "_grant_badge_reader_access_upon_qualification",
                     "_interlock",

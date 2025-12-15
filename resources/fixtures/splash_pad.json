@@ -1216,6 +1216,34 @@
     }
   },
   {
+    "model": "NEMO.customization",
+    "pk": "account_enable_manager_edit_mode",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "kiosk_consumable_checkout",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "tool_control_note_show",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "tool_control_note_copy_reservation",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
     "model": "NEMO.news",
     "pk": 1,
     "fields": {
@@ -2195,6 +2223,9 @@
         "usageevent"
       ],
       "item_id": 2,
+      "item_tool": [
+        "790 RIE Middle"
+      ],
       "description": "I forgot to logoff the tool",
       "manager_note": "",
       "new_start": "2023-03-04T15:54:00Z",
@@ -2221,6 +2252,9 @@
         "usageevent"
       ],
       "item_id": 4,
+      "item_tool": [
+        "790 RIE Middle"
+      ],
       "description": "I forgot to logoff the tool",
       "manager_note": "Please enter this in the billing system with the note \"Approved by Captain NEMO\"",
       "new_start": "2023-01-20T23:54:00Z",
@@ -2249,6 +2283,9 @@
         "usageevent"
       ],
       "item_id": 3,
+      "item_tool": [
+        "790 RIE Middle"
+      ],
       "description": "I forgot to logoff the tool",
       "manager_note": "This is the second time in just a few weeks, so I cannot approve it.",
       "new_start": "2023-02-10T10:54:00Z",
@@ -2277,6 +2314,9 @@
         "reservation"
       ],
       "item_id": 1,
+      "item_tool": [
+        "Sinter"
+      ],
       "description": "Please waive this missed reservation",
       "status": 0,
       "reviewer": [

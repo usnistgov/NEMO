@@ -12,6 +12,8 @@ ROOT_URLCONF = "NEMO.urls"
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "login"
 
+LANGUAGE_CODE = "custom"
+
 DATETIME_FORMAT = "l, F jS, Y @ g:i A"
 DATE_FORMAT = "m/d/Y"
 TIME_FORMAT = "g:i A"
