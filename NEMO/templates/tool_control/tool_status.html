@@ -1053,10 +1053,18 @@
                 {% if tool.problem_shutdown_enabled %}
                     <div class="checkbox">
                         <label>
-                            <input name="force_shutdown" type="checkbox" />
+                            <input name="force_shutdown" id="force_shutdown" type="checkbox" />
                             Shut down the tool so that it may not be used until this problem is resolved.
                         </label>
                     </div>
+                    {% if user|is_staff_on_tool:tool and tool.interlock %}
+                        <div class="checkbox" id="tool_problem_lock">
+                            <label>
+                                <input name="lock" type="checkbox" checked />
+                                Also lock the tool when shutting it down.
+                            </label>
+                        </div>
+                    {% endif %}
                 {% endif %}
             </div>
             <div class="form-group">
@@ -1142,6 +1150,17 @@
 	$('#task_and_comment_start').datetimepicker({format: '{{ date_input_js_format }}', 'widgetParent': '#task_and_comment_start_form_group'});
 	$('#task_and_comment_end').datetimepicker({format: '{{ date_input_js_format }}', 'widgetParent': '#task_and_comment_end_form_group'});
 	$('#delayed_logoff_help').popover();
+
+    const shutdown_jq = $("#force_shutdown");
+    function toggle_lock_field()
+	{
+    	const checked = shutdown_jq.is(":checked");
+    	$("#tool_problem_lock").toggle(checked); // show if checked, hide if not
+  	}
+
+    shutdown_jq.on("change", toggle_lock_field);
+  	toggle_lock_field();
+
 
     show_alerts();
 	update_stop_button();

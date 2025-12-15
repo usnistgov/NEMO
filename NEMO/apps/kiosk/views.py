@@ -647,8 +647,10 @@ def report_problem(request):
 
     task = form.save()
     task.estimated_resolution_time = estimated_resolution_time
+    # Only staff can choose not to lock the tool
+    lock_interlock = not (customer.is_staff_on_tool(tool) and not form.cleaned_data["lock"])
 
-    save_task(request, task, customer)
+    save_task(request, task, customer, lock=lock_interlock)
 
     return redirect("kiosk_tool_information", tool_id=tool.id, user_id=customer.id, back=back)
 

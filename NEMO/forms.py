@@ -149,10 +149,11 @@ class TaskForm(ModelForm):
     )
     action = ChoiceField(choices=[("create", "create"), ("update", "update"), ("resolve", "resolve")], label="Action")
     description = CharField(required=False, label="Description")
+    lock = BooleanField(required=False, initial=True)
 
     class Meta:
         model = Task
-        fields = ["tool", "urgency", "estimated_resolution_time", "force_shutdown", "safety_hazard"]
+        fields = ["tool", "urgency", "estimated_resolution_time", "force_shutdown", "safety_hazard", "lock"]
 
     def __init__(self, user, *args, **kwargs):
         super(TaskForm, self).__init__(*args, **kwargs)

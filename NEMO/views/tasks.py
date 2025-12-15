@@ -79,13 +79,15 @@ def create(request):
 
     task = form.save()
     task_images = save_task_images(request, task)
+    # Only staff can choose not to lock the tool
+    lock_interlock = not (user.is_staff_on_tool(task.tool) and not form.cleaned_data["lock"])
 
-    save_task(request, task, user, task_images)
+    save_task(request, task, user, task_images, lock=lock_interlock)
 
     return redirect("tool_control")
 
 
-def save_task(request, task: Task, user: User, task_images: List[TaskImages] = None):
+def save_task(request, task: Task, user: User, task_images: List[TaskImages] = None, lock=True):
     task.save()
 
     if (
@@ -103,8 +105,9 @@ def save_task(request, task: Task, user: User, task_images: List[TaskImages] = N
             usage_event.save()
         # Lock the interlock for this tool.
         try:
-            tool_interlock = Interlock.objects.get(tool__id=task.tool.id)
-            tool_interlock.lock()
+            if lock:
+                tool_interlock = Interlock.objects.get(tool__id=task.tool.id)
+                tool_interlock.lock()
         except Interlock.DoesNotExist:
             pass
 
