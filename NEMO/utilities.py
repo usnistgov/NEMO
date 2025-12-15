@@ -29,7 +29,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
-from django.db import OperationalError
+from django.db import OperationalError, ProgrammingError
 from django.db.models import FileField, IntegerChoices, Model, QuerySet
 from django.http import HttpRequest, HttpResponse, QueryDict
 from django.shortcuts import resolve_url
@@ -1153,7 +1153,7 @@ def safe_lazy_queryset_evaluation(qs: QuerySet, default=UNSET, raise_exception=F
     Safely evaluates a queryset and returns the evaluated queryset or a default value.
 
     This function attempts to force the evaluation of a Django queryset. In case an
-    OperationalError occurs during the evaluation, it can either return a default value or
+    OperationalError or ProgrammingError occurs during the evaluation, it can either return a default value or
     raise the exception, based on the provided arguments. Additionally, it logs a warning
     message when the queryset evaluation fails and `raise_exception` is set to False. This
     can be helpful in handling database operational issues more gracefully.
@@ -1171,7 +1171,7 @@ def safe_lazy_queryset_evaluation(qs: QuerySet, default=UNSET, raise_exception=F
         indicating whether an error occurred.
 
     Raises:
-        OperationalError: If `raise_exception` is True and an OperationalError occurs.
+        OperationalError, ProgrammingError: If `raise_exception` is True and an OperationalError or ProgrammingError occurs.
     """
     # This isn't great but have no other option at the moment
     try:
@@ -1192,7 +1192,7 @@ def safe_lazy_queryset_evaluation(qs: QuerySet, default=UNSET, raise_exception=F
             raise
         utilities_logger.debug("Could not fetch queryset", exc_info=True)
         return default, True
-    except OperationalError:
+    except (OperationalError, ProgrammingError):
         if raise_exception:
             raise
         utilities_logger.debug("Could not fetch queryset", exc_info=True)
