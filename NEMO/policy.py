@@ -1,7 +1,9 @@
+from abc import ABC
 from collections import defaultdict
 from datetime import datetime, time, timedelta
-from typing import List, Optional, Union
+from typing import Any, Callable, Iterable, List, Optional, Tuple, Union
 
+from django.conf import settings
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils import timezone
@@ -43,6 +45,7 @@ from NEMO.utilities import (
     format_daterange,
     format_datetime,
     get_class_from_settings,
+    get_classes_from_settings,
     get_local_date_times_for_item_policy_times,
     render_email_template,
     send_mail,
@@ -55,7 +58,103 @@ from NEMO.views.customization import (
 )
 
 
-class NEMOPolicy:
+class BaseNEMOPolicy(ABC):
+    def check_to_enable_tool(
+        self, tool: Tool, operator: User, user: User, project: Project, staff_charge: bool, remote_work=False
+    ) -> HttpResponse:
+        """
+        Checks the tool enabling policy.
+        If all checks pass, the function should return an HTTP "OK" response.
+        Otherwise, the function should return an HTTP "Bad Request" with an error message.
+        """
+        return HttpResponse()
+
+    def check_to_disable_tool(self, tool: Tool, operator: User, downtime) -> HttpResponse:
+        """
+        Checks the tool disabling policy.
+        If all checks pass, the function should return an HTTP "OK" response.
+        Otherwise, the function should return an HTTP "Bad Request" with an error message.
+        """
+        return HttpResponse()
+
+    def check_to_save_reservation(
+        self,
+        cancelled_reservation: Optional[Reservation],
+        new_reservation: Reservation,
+        user_creating_reservation: User,
+        explicit_policy_override: bool,
+    ) -> Tuple[List[str], bool]:
+        """
+        Checks the tool reservation policy.
+        If all checks pass, the function should return an empty problem list and a boolean.
+        Otherwise, the function should return a list of problem strings and a boolean for
+        whether the problems are overridable by staff or not.
+        """
+        return [], True
+
+    def check_tool_reservation_requiring_area(
+        self,
+        policy_problems: List[str],
+        user_creating_reservation: User,
+        cancelled_reservation: Optional[Reservation],
+        new_reservation: Optional[Reservation],
+    ):
+        """
+        Checks the tool reservation policy when an area is required.
+        If there are any issues, the method should add to the policy problem argument
+        """
+        pass
+
+    def check_to_cancel_reservation(
+        self,
+        user_cancelling_reservation: User,
+        reservation_to_cancel: Reservation,
+        new_reservation: Optional[Reservation] = None,
+    ) -> HttpResponse:
+        """
+        Checks the reservation deletion policy.
+        If all checks pass, the function should return an HTTP "OK" response.
+        Otherwise, the function should return an HTTP "Bad Request" with an error message.
+        """
+        return HttpResponse()
+
+    def check_to_create_outage(self, outage: ScheduledOutage) -> HttpResponse:
+        """
+        Checks the outage creation policy.
+        If all checks pass, the function should return an HTTP "OK" response.
+        Otherwise, the function should return an HTTP "Bad Request" with an error message.
+        """
+        return HttpResponse()
+
+    def check_to_enter_any_area(self, user: User):
+        """
+        Checks the area policy for a user entering any of the areas.
+        If there are any issues, the method should throw an Exception
+        """
+        pass
+
+    def check_to_enter_area(self, area: Area, user: User):
+        """
+        Checks the area policy for a user entering a specific area.
+        If there are any issues, the method should throw an Exception
+        """
+        pass
+
+    def check_billing_to_project(
+        self,
+        project: Project,
+        user: User,
+        item: Union[Tool, Area, Consumable, StaffCharge] = None,
+        charge: Union[UsageEvent, AreaAccessRecord, ConsumableWithdraw, StaffCharge, Reservation] = None,
+    ):
+        """
+        Checks the billing policy for a project and a charge.
+        If there are any issues, the method should throw an Exception
+        """
+        pass
+
+
+class DefaultNEMOPolicy(BaseNEMOPolicy):
     def check_to_enable_tool(
         self, tool: Tool, operator: User, user: User, project: Project, staff_charge: bool, remote_work=False
     ) -> HttpResponse:
@@ -241,7 +340,7 @@ class NEMOPolicy:
         new_reservation: Reservation,
         user_creating_reservation: User,
         explicit_policy_override: bool,
-    ) -> (List[str], bool):
+    ) -> Tuple[List[str], bool]:
         """
         Check the reservation creation policy and return a list of policy problems if any.
         """
@@ -596,7 +695,7 @@ class NEMOPolicy:
                     reservations = list(children_events)
                     reservations.append(new_reservation)
                     # Check only distinct users since the same user could make reservations in different rooms
-                    maximum_users, time = self.check_maximum_users_in_overlapping_reservations(reservations)
+                    maximum_users, time = check_maximum_users_in_overlapping_reservations(reservations)
                     if maximum_users > area.maximum_capacity:
                         time_display = "at this time" if time is None else "at " + format_datetime(time, "TIME_FORMAT")
                         policy_problems.append(
@@ -956,10 +1055,10 @@ class NEMOPolicy:
 
         return HttpResponse()
 
-    def check_to_create_outage(self, outage: ScheduledOutage) -> Optional[str]:
+    def check_to_create_outage(self, outage: ScheduledOutage) -> HttpResponse:
         # Outages may not have a start time that is earlier than the end time.
         if outage.start >= outage.end:
-            return (
+            return HttpResponseBadRequest(
                 "Outage start time ("
                 + format_datetime(outage.start)
                 + ") must be before the end time ("
@@ -977,10 +1076,12 @@ class NEMOPolicy:
         coincident_events = coincident_events.exclude(start__lt=outage.start, end__lte=outage.start)
         coincident_events = coincident_events.exclude(start__gte=outage.end, end__gt=outage.end)
         if coincident_events.count() > 0:
-            return "Your scheduled outage coincides with a reservation that already exists. Please choose a different time."
+            return HttpResponseBadRequest(
+                "Your scheduled outage coincides with a reservation that already exists. Please choose a different time."
+            )
 
         # No policy issues! The outage can be created...
-        return None
+        return HttpResponse()
 
     def check_to_enter_any_area(self, user: User):
         """
@@ -1079,45 +1180,46 @@ class NEMOPolicy:
                     msg = f"Staff charges are not allowed for project {project.name}"
                     raise ItemNotAllowedForProjectException(project, user, "Staff Charges", msg)
 
-    def check_maximum_users_in_overlapping_reservations(self, reservations: List[Reservation]) -> (int, datetime):
-        """
-        Returns the maximum number of overlapping reservations and the earlier time the maximum is reached
-        This will only count reservations made by different users. i.e. if a user has 3 reservations at the same
-        time for different tools/areas, it will only count as one.
-        """
-        # First we need to merge reservations by user, since one user could have more than one at the same time.
-        # (and we should only count it as one)
-        intervals_by_user = defaultdict(list)
-        for r in reservations:
-            intervals_by_user[r.user.id].append((r.start, r.end))
 
-        merged_intervals = []
-        for user, intervals in intervals_by_user.items():
-            merged_intervals.extend(recursive_merge(sorted(intervals).copy()))
+def check_maximum_users_in_overlapping_reservations(reservations: List[Reservation]) -> Tuple[int, datetime]:
+    """
+    Returns the maximum number of overlapping reservations and the earlier time the maximum is reached
+    This will only count reservations made by different users. i.e. if a user has 3 reservations at the same
+    time for different tools/areas, it will only count as one.
+    """
+    # First we need to merge reservations by user, since one user could have more than one at the same time.
+    # (and we should only count it as one)
+    intervals_by_user = defaultdict(list)
+    for r in reservations:
+        intervals_by_user[r.user.id].append((r.start, r.end))
 
-        # Now let's count the maximum overlapping reservations
-        times = []
-        for interval in merged_intervals:
-            start_time, end_time = interval[0], interval[1]
-            times.append((start_time, "start"))
-            times.append((end_time, "end"))
-        times = sorted(times)
+    merged_intervals = []
+    for user, intervals in intervals_by_user.items():
+        merged_intervals.extend(recursive_merge(sorted(intervals).copy()))
 
-        count = 0
-        max_count = 0
-        max_time: Optional[datetime] = None
-        for time in times:
-            if time[1] == "start":
-                count += 1  # increment on arrival/start
-            else:
-                count -= 1  # decrement on departure/end
-            # maintain maximum
-            prev_count = max_count
-            max_count = max(count, max_count)
-            # maintain earlier time max is reached
-            if max_count > prev_count:
-                max_time = time[0]
-        return max_count, max_time
+    # Now let's count the maximum overlapping reservations
+    times = []
+    for interval in merged_intervals:
+        start_time, end_time = interval[0], interval[1]
+        times.append((start_time, "start"))
+        times.append((end_time, "end"))
+    times = sorted(times)
+
+    count = 0
+    max_count = 0
+    max_time: Optional[datetime] = None
+    for time in times:
+        if time[1] == "start":
+            count += 1  # increment on arrival/start
+        else:
+            count -= 1  # decrement on departure/end
+        # maintain maximum
+        prev_count = max_count
+        max_count = max(count, max_count)
+        # maintain earlier time max is reached
+        if max_count > prev_count:
+            max_time = time[0]
+    return max_count, max_time
 
 
 def recursive_merge(intervals: List[tuple], start_index=0) -> List[tuple]:
@@ -1131,4 +1233,92 @@ def recursive_merge(intervals: List[tuple], start_index=0) -> List[tuple]:
     return intervals
 
 
-policy_class: NEMOPolicy = get_class_from_settings("NEMO_POLICY_CLASS", "NEMO.policy.NEMOPolicy")
+class NEMOPolicyChain:
+    """
+    Calls multiple policy classes in order, similar to Django authentication backends.
+    Each policy is expected to implement some subset of NEMOPolicy's methods.
+    """
+
+    def __init__(self, policy_classes: Iterable[BaseNEMOPolicy]):
+        self._policies = policy_classes
+
+    def __getattr__(self, method_name: str) -> Callable[..., Any]:
+        """
+        Dynamically dispatch unknown attributes as "call all policies that implement this method".
+        This avoids manually proxying dozens of methods.
+        """
+
+        def _dispatch(*args, **kwargs):
+            # Collect all policy methods that exist
+            callables: List[Callable[..., Any]] = []
+            for policy in self._policies:
+                candidate = getattr(policy, method_name, None)
+                if callable(candidate):
+                    callables.append(candidate)
+
+            if not callables:
+                raise AttributeError(f"No policy implements method '{method_name}'")
+
+            results: List[Any] = []
+            for fn in callables:
+                # Case 1: Any of the method throws an exception -> it stops right away
+                result = fn(*args, **kwargs)
+                results.append(result)
+
+                # Case 2: HttpResponse short-circuit (common for "check_to_*" endpoints)
+                # If one response is not OK, stop and return it
+                if isinstance(result, HttpResponse) and result.status_code >= 400:
+                    return result
+
+            # Case 3: (problems, overridable) aggregator (reservation policy pattern)
+            # If the *last* result looks like that shape, we aggregate/combine the results.
+            if results and isinstance(results[-1], tuple) and len(results[-1]) == 2:
+                all_problems: List[str] = []
+                combined_overridable = True
+                for r in results:
+                    if isinstance(r, tuple) and len(r) == 2 and isinstance(r[0], Iterable):
+                        problems, overridable = r
+                        if problems:
+                            all_problems.extend(list(problems))
+                        combined_overridable = combined_overridable and bool(overridable)
+                return all_problems, combined_overridable
+
+            # Default: return the last policy's result
+            return results[-1]
+
+        return _dispatch
+
+
+def get_policy_classes() -> List[BaseNEMOPolicy]:
+    """
+    Returns policy class instances in order.
+    """
+    policies = []
+
+    # If the legacy single-policy setting exists, always put it first
+    if hasattr(settings, "NEMO_POLICY_CLASS"):
+        legacy = get_class_from_settings("NEMO_POLICY_CLASS", None)
+        if legacy:
+            policies.append(legacy)
+
+    # Then append the configured list
+    if hasattr(settings, "NEMO_POLICY_CLASSES"):
+        policies.extend(get_classes_from_settings("NEMO_POLICY_CLASSES", ["NEMO.policy.DefaultNEMOPolicy"]))
+    else:
+        policies.extend(get_classes_from_settings("NEMO_POLICY_CLASSES", ["NEMO.policy.DefaultNEMOPolicy"]))
+
+    # De-duplicate by instance type, preserving order
+    unique_classes = []
+    seen_types = set()
+    for policy in policies:
+        t = type(policy)
+        if t in seen_types:
+            continue
+        seen_types.add(t)
+        unique_classes.append(policy)
+
+    return unique_classes
+
+
+NEMOPolicy = DefaultNEMOPolicy
+policy_class = NEMOPolicyChain(get_policy_classes())

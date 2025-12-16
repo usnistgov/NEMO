@@ -13,7 +13,7 @@ from io import BytesIO, StringIO
 from logging import getLogger
 from smtplib import SMTPServerDisconnected, SMTPResponseException
 from string import Formatter
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Set, TYPE_CHECKING, Tuple, Union
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Set, TYPE_CHECKING, Tuple, Union
 from urllib.parse import urljoin, urlparse
 
 from PIL import Image
@@ -899,11 +899,21 @@ def get_email_from_settings() -> str:
 
 
 def get_class_from_settings(setting_name: str, default_value: str):
-    setting_class = getattr(settings, setting_name, default_value)
-    assert isinstance(setting_class, str)
-    pkg, attr = setting_class.rsplit(".", 1)
-    ret = getattr(importlib.import_module(pkg), attr)
-    return ret()
+    return get_classes_from_settings(setting_name, [default_value])[0]
+
+
+def get_classes_from_settings(setting_name: str, default_value: Iterable) -> List:
+    setting_classes = getattr(settings, setting_name, default_value)
+    if isinstance(setting_classes, str):
+        setting_classes = [setting_classes]
+    assert isinstance(setting_classes, Iterable)
+    assert not isinstance(setting_classes, str)
+    classes = []
+    for setting_class in setting_classes:
+        pkg, attr = setting_class.rsplit(".", 1)
+        ret = getattr(importlib.import_module(pkg), attr)
+        classes.append(ret())
+    return classes
 
 
 def create_ics(

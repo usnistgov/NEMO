@@ -34,7 +34,7 @@ from NEMO.models import (
     UserCalendarToolList,
     UserPreferences,
 )
-from NEMO.policy import policy_class as policy
+from NEMO.policy import check_maximum_users_in_overlapping_reservations, policy_class as policy
 from NEMO.utilities import (
     RecurrenceFrequency,
     bootstrap_primary_color,
@@ -563,14 +563,14 @@ def reservation_success(request, reservation: Reservation):
             )
         elif reservation.reservation_item_type == ReservationItemType.AREA:
             overlapping_reservations_in_same_area = overlapping_reservations_in_same_area.filter(area=area)
-        max_area_overlap, max_area_time = policy.check_maximum_users_in_overlapping_reservations(
+        max_area_overlap, max_area_time = check_maximum_users_in_overlapping_reservations(
             overlapping_reservations_in_same_area
         )
         if location:
             overlapping_reservations_in_same_location = overlapping_reservations_in_same_area.filter(
                 tool__in=Tool.objects.filter(_location=location)
             )
-            max_location_overlap, max_location_time = policy.check_maximum_users_in_overlapping_reservations(
+            max_location_overlap, max_location_time = check_maximum_users_in_overlapping_reservations(
                 overlapping_reservations_in_same_location
             )
     if max_area_overlap and max_area_overlap >= area.warning_capacity():
@@ -658,9 +658,9 @@ def create_outage(request):
         return render(request, "calendar/scheduled_outage_information.html", dictionary)
 
     # If there is a policy problem for the outage then return the error...
-    errors = save_scheduled_outage(form, request.user, item, start=start, end=end)
-    if errors:
-        return HttpResponseBadRequest(errors)
+    response = save_scheduled_outage(form, request.user, item, start=start, end=end)
+    if response and response.status_code != HTTPStatus.OK:
+        return response
 
     return HttpResponse()
 
@@ -783,9 +783,9 @@ def modify_outage(request, start_delta, end_delta):
         outage.start += start_delta
     if end_delta:
         outage.end += end_delta
-    policy_problem = policy.check_to_create_outage(outage)
-    if policy_problem:
-        return HttpResponseBadRequest(policy_problem)
+    response = policy.check_to_create_outage(outage)
+    if response.status_code != HTTPStatus.OK:
+        return response
     else:
         # All policy checks passed, so save the reservation.
         outage.save()

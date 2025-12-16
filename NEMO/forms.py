@@ -614,9 +614,9 @@ def save_scheduled_outage(
 
     # If there is a policy problem for the outage then return the error...
     if check_policy:
-        policy_problem = policy.check_to_create_outage(outage)
-        if policy_problem:
-            return policy_problem
+        response = policy.check_to_create_outage(outage)
+        if response.status_code != 200:
+            return response
 
     if form.cleaned_data.get("recurring_outage"):
         # we have to remove tz before creating rules otherwise 8am would become 7am after DST change for example.
