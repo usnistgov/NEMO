@@ -908,6 +908,7 @@ class UsageEventAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.Mo
     autocomplete_fields = ["tool", "user", "operator", "project", "validated_by", "waived_by"]
     readonly_fields = ["has_ended"]
     actions = [waive_selected_charges]
+    search_fields = ["user__username", "user__first_name", "user__last_name", "tool__name"]
 
 
 @register(Consumable)
