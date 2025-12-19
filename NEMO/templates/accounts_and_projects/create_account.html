@@ -59,6 +59,26 @@
             <div class="col-sm-6 form-control-static danger-highlight">{{ form.start_date.errors|striptags }}</div>
         </div>
         <div class="form-group">
+            <label for="note" class="control-label col-sm-2">Note</label>
+            <div class="col-sm-4">
+                <textarea id="note" name="note" class="form-control" oninput="auto_size_textarea(this)">{{ form.note.value|default_if_none:"" }}</textarea>
+            </div>
+            <div class="col-sm-6 form-control-static danger-highlight">{{ form.note.errors|striptags }}</div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="manager_search">Managers</label>
+            <div class="col-sm-4">
+                <input id="manager_search"
+                       type="text"
+                       autocomplete="off"
+                       class="form-control"
+                       placeholder="Add an account manager">
+            </div>
+        </div>
+        <div class="form-group">
+            <div id="manager-list" class="col-sm-offset-2 col-sm-4">This account has no managers.</div>
+        </div>
+        <div class="form-group">
             <div class="col-sm-offset-2 col-sm-10">
                 <div class="checkbox">
                     <label>
@@ -73,9 +93,25 @@
         </div>
     </form>
     <script>
+    function select_manager(jquery_event, search_selection, dataset_name)
+    {
+        add_to_list("#manager-list", "remove_manager", search_selection.id, search_selection.name, "remove " + search_selection.name + " as account manager", "managers");
+        $("#manager_search").typeahead('val', '');
+    }
+    function remove_manager(id)
+    {
+        remove_from_list("#manager-list", "#managers_" + id, "This project has no managers.")
+    }
+
     window.addEventListener("load", function ()
     {
         $('#start_date').datetimepicker({format: '{{ date_input_js_format }}'});
+        $('#manager_search').autocomplete('managers', select_manager, {{ form.fields.managers.queryset.all|json_search_base }});
+        {% for manager_id in form.managers.value %}
+            {% for user in form.fields.managers.queryset.all %}
+                {% if user.id == manager_id|to_int %}select_manager(null, {"id": "{{ user.id }}", "name": "{{ user }}"});{% endif %}
+            {% endfor %}
+        {% endfor %}
     });
     </script>
 {% endblock %}

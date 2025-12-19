@@ -15,6 +15,7 @@ from NEMO.models import (
     User,
 )
 from NEMO.utilities import end_of_the_day
+from NEMO.views.customization import AdjustmentRequestsCustomization
 
 
 def delete_expired_notifications():
@@ -99,15 +100,22 @@ def create_staff_assistance_request_notification(staff_assistance_request: Staff
 
 
 def create_request_message_notification(reply: RequestMessage, notification_type: str, expiration: datetime):
+    # Special case for adjustment requests if they are not enabled for the creator
+    enabled_for_creator = True
+    creator = None
+    if isinstance(reply.content_object, AdjustmentRequest):
+        creator = reply.content_object.creator
+        enabled_for_creator = AdjustmentRequestsCustomization.are_adjustment_requests_enabled_for_user(creator)
     for user in reply.content_object.creator_and_reply_users():
-        if user != reply.author:
-            Notification.objects.update_or_create(
-                user=user,
-                notification_type=notification_type,
-                content_type=ContentType.objects.get_for_model(reply),
-                object_id=reply.id,
-                defaults={"expiration": expiration},
-            )
+        if not (creator and user == creator and not enabled_for_creator):
+            if user != reply.author:
+                Notification.objects.update_or_create(
+                    user=user,
+                    notification_type=notification_type,
+                    content_type=ContentType.objects.get_for_model(reply),
+                    object_id=reply.id,
+                    defaults={"expiration": expiration},
+                )
 
 
 def create_access_request_notification(access_request: TemporaryPhysicalAccessRequest):
@@ -130,7 +138,8 @@ def create_access_request_notification(access_request: TemporaryPhysicalAccessRe
 
 def create_adjustment_request_notification(adjustment_request: AdjustmentRequest):
     users_to_notify = set(adjustment_request.reviewers())
-    users_to_notify.add(adjustment_request.creator)
+    if AdjustmentRequestsCustomization.are_adjustment_requests_enabled_for_user(adjustment_request.creator):
+        users_to_notify.add(adjustment_request.creator)
     expiration = timezone.now() + timedelta(days=30)  # 30 days for adjustment requests to expire
     for user in users_to_notify:
         # Only update users other than the one who last updated it

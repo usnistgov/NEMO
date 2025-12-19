@@ -3,7 +3,17 @@ from django.db.models import QuerySet
 
 
 class SortedPaginator(Paginator):
-    def __init__(self, object_list, request, per_page=None, order_by=None, orphans=0, allow_empty_first_page=True):
+    def __init__(
+        self,
+        object_list,
+        request,
+        per_page=None,
+        order_by=None,
+        js_callback=None,
+        orphans=0,
+        allow_empty_first_page=True,
+    ):
+        self.js_callback = js_callback
         per_page = self.get_session_per_page(request, object_list, per_page)
         self.page_number = request.GET.get("p")
         self.order_by = request.GET.get("o", order_by)

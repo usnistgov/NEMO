@@ -20,6 +20,11 @@
         ajax_post(url, contents, callback_success, [failure_dialog, callback_success]);
     }
 
+    function change_reservation_note(url, note)
+    {
+        let failure_dialog = ajax_failure_callback("Unable to change reservation note");
+        ajax_post(url, {'note': note}, callback_success, [failure_dialog]);
+    }
 
     function set_reservation_title(url, reservation_id, title)
     {
@@ -222,6 +227,28 @@
     <td>Identifier:</td>
     <td>{{ reservation.id }}</td>
 </tr>
+{% if user == reservation.user or user|is_staff_on_tool:reservation.tool %}
+    <tr>
+        <td>
+            <label for="reservation_note" style="margin-bottom: 0">Note:</label>
+        </td>
+        <td id="reservation_note_display">
+            <span class="glyphicon glyphicon-pencil pull-right"
+                  title="Change the reservation note"
+                  onclick="$('#reservation_note_display').hide();$('#reservation_note_change').show();auto_size_textarea(document.getElementById('reservation_note'));$('#reservation_note').focus()"></span>
+            {{ reservation.note|default_if_none:""|linebreaksbr }}
+        </td>
+        <td id="reservation_note_change" style="display: none">
+            <div class="input-group" style="width: 100%;">
+                <textarea id="reservation_note" class="form-control" oninput="auto_size_textarea(this);">{{ reservation.note|default_if_none:"" }}</textarea>
+                <span class="input-group-addon btn btn-success" style="color: #fff" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() {
+                {% endif %}
+                change_reservation_note('{% url 'change_reservation_note' reservation.id %}', $('#reservation_note').val()) {% if popup_view %}}){% endif %}
+        ">Change note</span>
+    </div>
+</td>
+</tr>
+{% endif %}
 {% if reservation.question_data_json.items %}
     <tr>
         <td>Reservation questions:</td>
@@ -296,7 +323,8 @@
             {% if reservation.user == user %}
                 <button type="button" class="btn btn-danger" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() {
                 {% endif %}
-                cancel_reservation('{% url 'cancel_reservation' reservation.id %}', 'Reservation {{ reservation.id }}') {% if popup_view %}}){% endif %}
+                cancel_reservation('{% url 'cancel_reservation' reservation.id %}', 'Reservation {{ reservation.id }}') {% if popup_view %}})
+            {% endif %}
             " title="Cancel this reservation">
             <i class="glyphicon glyphicon-trash"></i> Cancel this reservation
         </button>

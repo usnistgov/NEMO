@@ -34,7 +34,7 @@
         &quot;<a href="{% url 'facility_rules' %}" target="_blank">{{ facility_name }} rules tutorial</a>&quot; page
     </h3>
     <p>
-        The facility rules tutorial is an opportunity to provide new users with a tutorial to your facility operating procedures and rules.
+        The {{ customizations|get_item:"facility_rules_name"|lower }} is an opportunity to provide new users with a tutorial to your facility operating procedures and rules.
         <br>
         The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the page.
         <br>
@@ -48,7 +48,7 @@
         </li>
     </ul>
     <p>
-        Upon completion, the user's "facility rules tutorial required" attribute is set to false, and they are able to make reservations and control tools.
+        Upon completion, the user's "{{ customizations|get_item:"facility_rules_name"|lower }} required" attribute is set to false, and they are able to make reservations and control tools.
     </p>
     {% include 'customizations/customizations_upload.html' with element=facility_rules_tutorial name='facility rules tutorial' hide_content=True key='templates' %}
     <div class="customization-separation"></div>
@@ -229,9 +229,11 @@
         <div class="customization-separation"></div>
     </div>
     <div class="panel-body">
-        <h3 class="customization-section-title" id="facility_rules_tutorial_email_id">Facility rules tutorial email</h3>
+        <h3 class="customization-section-title" id="facility_rules_tutorial_email_id">
+            {{ customizations|get_item:"facility_rules_name" }} email
+        </h3>
         <p>
-            This email is sent when a user completes the facility rules tutorial. It can contain a free-response answer (quiz question).
+            This email is sent when a user completes the {{ customizations|get_item:"facility_rules_name"|lower }}. It can contain a free-response answer (quiz question).
             If you do not upload a template then no notification email is sent to staff when a user completes the training tutorial.
             The following context variables are provided when the email is rendered:
         </p>
@@ -498,6 +500,9 @@
             </li>
             <li>
                 <b>questions</b> - the questions the user needs to answer
+            </li>
+            <li>
+                <b>usage_event</b> - the usage event
             </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=tool_required_unanswered_questions_email name='tool required unanswered questions email' key='templates' %}

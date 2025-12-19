@@ -21,8 +21,9 @@ class Migration(migrations.Migration):
             field=models.ManyToManyField(
                 blank=True,
                 db_table="NEMO_tool_staff",
-                help_text="Users who can act as staff for this tool..",
+                help_text="Users who can act as staff for this tool.",
                 related_name="staff_for_tools",
+                verbose_name="Act as staff",
                 to=settings.AUTH_USER_MODEL,
             ),
         ),

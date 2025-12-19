@@ -21,16 +21,31 @@
     </div>
 {% endblock %}
 {% block pagination_content %}
+    {% if customizations|get_item:"account_enable_manager_edit_mode" == "enabled" %}
+        {% if user.is_superuser or user.is_user_office or user.is_accounting_officer or user.is_facility_manager %}
+            <div class="btn-group" role="group" aria-label="Toggle edit managers mode">
+                <button id="normal_mode_button"
+                        type="button"
+                        class="btn btn-default active"
+                        onclick="toggle_manager_edit(this)">View mode</button>
+                <button id="edit_managers_mode_button"
+                        type="button"
+                        class="btn btn-default"
+                        onclick="toggle_manager_edit(this)">Managers edit mode</button>
+            </div>
+        {% endif %}
+    {% endif %}
     <table class="table table-bordered table-condensed table-hover table-align-middle thead-light">
         <thead>
             <tr>
                 <th>{% include 'pagination/pagination_column.html' with order_by='name' name='Name' %}</th>
-                {% if project_types or account_types %}<th>Type(s)</th>{% endif %}
+                {% if project_types or account_types %}<th class="hide_for_manager_edit">Type(s)</th>{% endif %}
                 <th>{{ customizations|get_item:"project_application_identifier_name" }}</th>
-                <th class="button-column-minimum">
+                <th>Managers/PIs</th>
+                <th class="hide_for_manager_edit button-column-minimum">
                     {% include 'pagination/pagination_column.html' with order_by='active' name='Active' %}
                 </th>
-                <th class="button-column-minimum" aria-label="Action"></th>
+                <th class="hide_for_manager_edit button-column-minimum" aria-label="Action"></th>
             </tr>
         </thead>
         <tbody>
@@ -45,7 +60,8 @@
                         {{ account.name }}
                     </td>
                     {% if account_types or project_types %}
-                        <td data-toggle="collapse"
+                        <td class="hide_for_manager_edit"
+                            data-toggle="collapse"
                             data-target=".projects_{{ account.id }}"
                             onclick="toggle_details($('#chevron_{{ account.id }}'))">
                             {{ account.type|default_if_none:"" }}
@@ -54,86 +70,197 @@
                     <td data-toggle="collapse"
                         data-target=".projects_{{ account.id }}"
                         onclick="toggle_details($('#chevron_{{ account.id }}'))"></td>
-                    <td class="text-center">
-                        <form method="post" action="{% url 'toggle_active' 'account' account.id %}">
-                            {% csrf_token %}
-                            {% if account.active %}
-                                {% button type="save" size="small" title="Deactivate" icon="glyphicon-ok" value="" %}
-                            {% else %}
-                                {% button type="delete" submit=True size="small" title="Reactivate" icon="glyphicon-remove" value="" %}
+                    <td class="hide_for_manager_edit"
+                        data-toggle="collapse"
+                        data-target=".projects_{{ account.id }}"
+                        onclick="toggle_details($('#chevron_{{ account.id }}'))">
+                        <div id="managers_list_account_{{ account.id }}" class="manager_list">
+                            {% for manager in account.manager_set.all %}
+                                <span class="text-nowrap">{{ manager.get_name }}</span>
+                                {% if not forloop.last %}<br>{% endif %}
+                            {% endfor %}
+                        </td>
+                        <td class="show_for_manager_edit" style="display: none">
+                            <input type="text"
+                                   class="manager_search form-control"
+                                   data-kind="account"
+                                   data-identifier="{{ account.id }}"
+                                   placeholder="Add account manager" />
+                            {% if account.project_manager_ids_not_account_managers %}
+                                {% url 'add_or_remove_manager_from_account_project' 'add' 'account' account.id as add_account_managers_url %}
+                                <button type="button"
+                                        class="btn btn-success btn-sm"
+                                        onclick="ajax_post('{{ add_account_managers_url }}', {user_id: {{ account.project_manager_ids_not_account_managers }}}, function (response){update_manager_list('account', '{{ account.id }}', response.managers);}, ajax_failure_callback('There was a problem adding account managers'));">
+                                    Promote all PIs
+                                </button>
                             {% endif %}
-                        </form>
-                    </td>
-                    <td>
-                        {% url "account" account.id as account_url %}
-                        {% button type="view" size="small" value="View" title="View account" url=account_url %}
-                    </td>
-                </tr>
-                {% regroup account.sorted_projects by active as active_inactive_projects %}
-                {% if active_inactive_projects|length == 1 and not active_inactive_projects.0.grouper and project_list_active_only %}
-                    <tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
-                        <td colspan="4" style="padding-left: 28px">
-                            <span>This account does not have any active projects</span>
+                            <div id="managers_edit_list_account_{{ account.id }}" class="manager_list">
+                                {% for manager in account.manager_set.all %}
+                                    <span class="text-nowrap"><a href="javascript:remove_manager('account', '{{ account.id }}', '{{ manager.id }}')"
+   class="grey hover-black"
+   title="Remove {{ manager.get_name }} as manager"><span class="glyphicon glyphicon-remove-circle"></span></a> {{ manager.get_name }}</span>
+                                    {% if not forloop.last %}<br>{% endif %}
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td class="hide_for_manager_edit text-center">
+                            <form method="post" action="{% url 'toggle_active' 'account' account.id %}">
+                                {% csrf_token %}
+                                {% if account.active %}
+                                    {% button type="save" size="small" title="Deactivate" icon="glyphicon-ok" value="" %}
+                                {% else %}
+                                    {% button type="delete" submit=True size="small" title="Reactivate" icon="glyphicon-remove" value="" %}
+                                {% endif %}
+                            </form>
+                        </td>
+                        <td class="hide_for_manager_edit">
+                            {% url "account" account.id as account_url %}
+                            {% button type="view" size="small" value="View" title="View account" url=account_url %}
                         </td>
                     </tr>
-                {% endif %}
-                {% for project_list in active_inactive_projects %}
-                    {% if project_list.grouper or not project_list_active_only %}
-                        {% for project in project_list.list %}
-                            <tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
-                                <td style="padding-left: 28px">{{ project.name }}</td>
-                                {% if account_types or project_types %}<td>{{ project.project_types.all|join:", " }}</td>{% endif %}
-                                <td>{{ project.application_identifier }}</td>
-                                <td class="text-center">
-                                    <form style="display:inline" method="post" action="{% url 'toggle_active' 'project' project.id %}">
-                                        {% csrf_token %}
-                                        {% if project.active %}
-                                            {% button type="save" size="small" title="Deactivate" icon="glyphicon-ok" value="" %}
-                                        {% else %}
-                                            {% button type="delete" submit=True size="small" title="Reactivate" icon="glyphicon-remove" value="" %}
-                                        {% endif %}
-                                    </form>
-                                </td>
-                                <td>
-                                    {% url "project" project.id as project_url %}
-                                    {% button type="view" size="small" value="View" title="View project" url=project_url %}
-                                </td>
-                            </tr>
-                        {% endfor %}
+                    {% regroup account.sorted_projects by active as active_inactive_projects %}
+                    {% if active_inactive_projects|length == 1 and not active_inactive_projects.0.grouper and project_list_active_only %}
+                        <tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
+                            <td colspan="4" style="padding-left: 28px">
+                                <span>This account does not have any active projects</span>
+                            </td>
+                        </tr>
                     {% endif %}
-                {% empty %}
-                    <tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
-                        <td colspan="4" style="padding-left: 28px">
-                            <span>This account does not have any projects</span>
-                        </td>
-                    </tr>
+                    {% for project_list in active_inactive_projects %}
+                        {% if project_list.grouper or not project_list_active_only %}
+                            {% for project in project_list.list %}
+                                <tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
+                                    <td style="padding-left: 28px">{{ project.name }}</td>
+                                    {% if account_types or project_types %}
+                                        <td class="hide_for_manager_edit">{{ project.project_types.all|join:", " }}</td>
+                                    {% endif %}
+                                    <td>{{ project.application_identifier }}</td>
+                                    <td class="hide_for_manager_edit">
+                                        <div id="managers_list_project_{{ project.id }}" class="manager_list">
+                                            {% for manager in project.manager_set.all %}
+                                                <span class="text-nowrap">{{ manager.get_name }}</span>
+                                                {% if not forloop.last %}<br>{% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </td>
+                                    <td class="show_for_manager_edit" style="display: none">
+                                        <input type="text"
+                                               class="manager_search form-control"
+                                               data-kind="project"
+                                               data-identifier="{{ project.id }}"
+                                               placeholder="Add project PI" />
+                                        <div id="managers_edit_list_project_{{ project.id }}" class="manager_list">
+                                            {% for manager in project.manager_set.all %}
+                                                <span class="text-nowrap"><a href="javascript:remove_manager('project', '{{ project.id }}', '{{ manager.id }}')"
+   class="grey hover-black"
+   title="Remove {{ manager.get_name }} as manager"><span class="glyphicon glyphicon-remove-circle"></span></a> {{ manager.get_name }}</span>
+                                                {% if not forloop.last %}<br>{% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </td>
+                                    <td class="hide_for_manager_edit text-center">
+                                        <form style="display:inline" method="post" action="{% url 'toggle_active' 'project' project.id %}">
+                                            {% csrf_token %}
+                                            {% if project.active %}
+                                                {% button type="save" size="small" title="Deactivate" icon="glyphicon-ok" value="" %}
+                                            {% else %}
+                                                {% button type="delete" submit=True size="small" title="Reactivate" icon="glyphicon-remove" value="" %}
+                                            {% endif %}
+                                        </form>
+                                    </td>
+                                    <td class="hide_for_manager_edit">
+                                        {% url "project" project.id as project_url %}
+                                        {% button type="view" size="small" value="View" title="View project" url=project_url %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                    {% empty %}
+                        <tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
+                            <td colspan="4" style="padding-left: 28px">
+                                <span>This account does not have any projects</span>
+                            </td>
+                        </tr>
+                    {% endfor %}
                 {% endfor %}
-            {% endfor %}
-        </tbody>
-    </table>
-{% endblock %}
-{% block after_pagination %}
-    <script>
-		function get_project_or_account(jquery_event, search_selection, dataset_name)
-		{
-			if(search_selection.type === 'project')
-				window.location.href = "{% url 'project' 999 %}".replace('999', search_selection.id);
-			else if(search_selection.type === 'account')
-				window.location.href = "{% url 'account' 999 %}".replace('999', search_selection.id);
-		}
-		function on_load()
-		{
-			$('#search').autocomplete('accounts_and_projects', get_project_or_account, {% json_search_base_with_extra_fields accounts_and_projects 'application_identifier' display='display_with_status' %});
-		}
-		window.addEventListener('load', on_load, true);
+            </tbody>
+        </table>
+    {% endblock %}
+    {% block after_pagination %}
+        <script>
+            function toggle_manager_edit(button)
+            {
+                $(button).blur();
+                if ($(button).is($('#edit_managers_mode_button')))
+                {
+                    $('.show_for_manager_edit').show();
+                    $('.hide_for_manager_edit').hide();
+                    $('#edit_managers_mode_button').addClass('active');
+                    $('#normal_mode_button').removeClass('active');
+                }
+                else
+                {
+                    $('.show_for_manager_edit').hide();
+                    $('.hide_for_manager_edit').show();
+                    $('#edit_managers_mode_button').removeClass('active');
+                    $('#normal_mode_button').addClass('active');
+                }
+            }
+            function get_project_or_account(jquery_event, search_selection, dataset_name)
+            {
+                if(search_selection.type === 'project')
+                    window.location.href = "{% url 'project' 999 %}".replace('999', search_selection.id);
+                else if(search_selection.type === 'account')
+                    window.location.href = "{% url 'account' 999 %}".replace('999', search_selection.id);
+            }
+            function select_manager(jquery_event, search_selection, dataset_name)
+            {
+                let search_input = $(jquery_event.target);
+                let kind = search_input.data('kind');
+                let identifier = search_input.data('identifier');
+                let user_id = search_selection.id;
+                const url = "{% url 'add_or_remove_manager_from_account_project' 'add' 'account' '999' %}".replace('/account/', '/'+kind+'/').replace('999', identifier);
+                ajax_post(url, {user_id: [user_id]}, function (response){update_manager_list(kind, identifier, response.managers);}, ajax_failure_callback("Failed to add manager to "+kind));
+                search_input.typeahead('val', '');
+            }
+            function remove_manager(kind, identifier, user_id)
+            {
+                const url = "{% url 'add_or_remove_manager_from_account_project' 'remove' 'account' '999' %}".replace('/account/', '/'+kind+'/').replace('999', identifier);
+                ajax_post(url, {user_id: [user_id]}, function (response){update_manager_list(kind, identifier, response.managers);}, ajax_failure_callback("Failed to remove manager to "+kind));
+            }
+            function update_manager_list(kind, identifier, manager_dict)
+            {
+                let manager_list_element = $("#managers_list_" + kind + "_" + identifier).empty();
+                let manager_edit_list_element = $("#managers_edit_list_" + kind + "_" + identifier).empty();
+                $.each(manager_dict, (manager_id, manager_name) =>
+                {
+                    const remove_button = `
+                        <a href="javascript:remove_manager('${kind}', '${identifier}', '${manager_id}')" class="grey hover-black" title="Remove ${manager_name} as manager">
+                            <span class="glyphicon glyphicon-remove-circle"></span>
+                        </a>
+                    `;
+
+                    const manager_element_edit = $(`<div class="manager_element">${remove_button}<span class="manager_name"> ${manager_name}</span></div>`);
+                    const manager_element_list = $(`<div class="manager_element"><span class="manager_name">${manager_name}</span></div>`);
+
+                    manager_edit_list_element.append(manager_element_edit);
+                    manager_list_element.append(manager_element_list);
+                });
+            }
+            function on_load()
+            {
+                $('#search').autocomplete('accounts_and_projects', get_project_or_account, {% json_search_base_with_extra_fields accounts_and_projects 'application_identifier' display='display_with_status' %});
+                $('.manager_search').autocomplete('managers', select_manager, {{ users|json_search_base }});
+                toggle_manager_edit();
+            }
+            window.addEventListener('load', on_load, true);
 	
-    </script>
-    <style>
-		#search_container .tt-dropdown-menu
-		{
-			min-width: 400px;
-			max-height: 600px;
-		}
-	
-    </style>
-{% endblock %}
+        </script>
+        <style>
+            #search_container .tt-dropdown-menu
+            {
+                min-width: 400px;
+                max-height: 600px;
+            }
+        </style>
+    {% endblock %}

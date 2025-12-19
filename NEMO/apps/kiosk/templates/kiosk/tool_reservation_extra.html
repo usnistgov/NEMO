@@ -35,9 +35,34 @@
         {% endif %}
         {% include 'calendar/configuration_helper.html' %}
     {% endif %}
+    <h2 id="answer_to_reserve" style="text-align:center">
+        Please answer the required questions (above) to reserve the {{ tool.name_or_child_in_use_name }}
+    </h2>
     <div class="form-group text-center" style="margin-top:40px">
-        {% button type="save" submit=False style="text-align:center; margin-bottom:0; font-size:x-large" onclick="reserve_tool()" value="Create the reservation" %}
+        {% button id="reserve_button" type="save" submit=False style="text-align:center; margin-bottom:0; font-size:x-large" onclick="reserve_tool()" value="Create the reservation" %}
     </div>
 </form>
 <div style="height:350px"></div>
-<script>revert(120);</script>
+<script>
+    function update_reserve_button()
+	{
+        if(document.querySelector('#tool_reservation'))
+        {
+
+            if(document.querySelector('#tool_reservation').checkValidity())
+            {
+                $("#answer_to_reserve").hide();
+                $("#reserve_button").show();
+            }
+            else
+            {
+                $("#answer_to_reserve").show();
+                $("#reserve_button").hide();
+            }
+        }
+	}
+    update_reserve_button();
+
+    $('body').on('dynamic-form-group-changed dynamic-form-field-changed', update_reserve_button);
+    revert(120);
+</script>

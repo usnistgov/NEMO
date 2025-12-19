@@ -6,16 +6,21 @@ from django.utils.safestring import mark_safe
 
 
 class ConfigurationEditor(Widget):
-    def __init__(self, attrs=None):
-        self.url = reverse("tool_configuration")
+    def __init__(self, attrs=None, url=None):
+        self.url = url or reverse("tool_configuration")
         super().__init__(attrs)
 
     def render(self, name, value, attrs=None, **kwargs):
+        from NEMO.views.customization import ToolCustomization
+
         result = ""
         for config in value["configurations"]:
             render_as_form = value.get("render_as_form", None)
             if render_as_form is None:
-                render_as_form = not config.tool.in_use() and config.user_is_maintainer(value["user"])
+                allow_change_while_in_use = ToolCustomization.get_bool("tool_configuration_change_while_in_use")
+                render_as_form = (allow_change_while_in_use or not config.tool.in_use()) and config.user_is_maintainer(
+                    value["user"]
+                )
             if len(config.range_of_configurable_items()) == 1:
                 result += self._render_for_one(config, render_as_form)
             else:

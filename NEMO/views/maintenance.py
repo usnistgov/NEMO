@@ -1,5 +1,4 @@
 from itertools import chain
-from typing import List
 
 from django.db.models import Q
 from django.http import HttpResponseNotFound
@@ -7,8 +6,8 @@ from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET
 
 from NEMO.decorators import staff_member_or_tool_staff_required
-from NEMO.models import Task, TaskCategory, TaskStatus, Tool, User
-from NEMO.utilities import ToolCategory, as_timezone
+from NEMO.models import Task, TaskCategory, TaskStatus, User
+from NEMO.utilities import as_timezone, get_tool_categories_for_filters
 
 
 @staff_member_or_tool_staff_required
@@ -59,7 +58,7 @@ def maintenance(request, sort_by=""):
     dictionary = {
         "pending_tasks": pending_tasks,
         "closed_tasks": closed_tasks,
-        "tool_categories": get_all_tool_categories(),
+        "tool_categories": get_tool_categories_for_filters(),
         "tool_category": tool_category,
     }
     return render(request, "maintenance/maintenance.html", dictionary)
@@ -90,13 +89,3 @@ def task_details(request, task_id):
         dictionary["rendered_configuration_html"] = task.tool.configuration_widget(user)
 
     return render(request, "maintenance/pending_task_details.html", dictionary)
-
-
-def get_all_tool_categories() -> List[ToolCategory]:
-    categories = set()
-    for cat in Tool.objects.filter(visible=True).order_by("_category").values_list("_category").distinct():
-        parts = cat[0].split("/")
-        prefixes = ["/".join(parts[: i + 1]) for i in range(len(parts))]
-        for category in prefixes:
-            categories.add(ToolCategory(category))
-    return sorted(categories, key=lambda x: str(x))

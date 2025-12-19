@@ -138,7 +138,7 @@
             </div>
         </div>
         <div class="form-group {% if errors.tool_configuration_near_future_days %}has-error{% endif %}">
-            <label class="control-label col-sm-4 col-md-3" for="tool_configuration_near_future_days">Near future</label>
+            <label class="control-label col-md-3" for="tool_configuration_near_future_days">Near future</label>
             <div class="col-md-3">
                 <div class="input-group">
                     <input type="number"
@@ -157,6 +157,26 @@
                     The number of days for the "near future" configuration agenda (Weekend days are automatically included if the "near future" falls on the weekend).
                 {% endif %}
             </div>
+        </div>
+        <div class="form-group {% if errors.tool_configuration_change_while_in_use %}has-error{% endif %}">
+            <label class="control-label col-md-3" for="tool_configuration_change_while_in_use">Change while in use</label>
+            <div class="col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               id="tool_configuration_change_while_in_use"
+                               name="tool_configuration_change_while_in_use"
+                               value="enabled"
+                               {% if tool_configuration_change_while_in_use %}checked{% endif %} />
+                        Allow staff and maintainers to change the configuration while the tool is in use
+                    </label>
+                </div>
+            </div>
+            {% if errors.tool_configuration_change_while_in_use %}
+                <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                    {{ errors.tool_configuration_change_while_in_use.error }}
+                </div>
+            {% endif %}
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Tool problems</h3>
@@ -236,7 +256,68 @@
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Tool control</h3>
         <div class="form-group">
-            <label class="control-label col-sm-4 col-md-3">Usage data history</label>
+            <span class="control-label col-md-3">Tool enable labels</span>
+            <div class="col-md-7">
+                <input type="text"
+                       id="tool_control_use_self"
+                       name="tool_control_use_self"
+                       class="form-control"
+                       value="{{ tool_control_use_self }}" />
+            </div>
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                <label for="tool_control_use_self">This label if used when a user is using a tool for himself</label>
+            </div>
+            <div class="col-md-offset-3 col-md-7">
+                <input type="text"
+                       id="tool_control_use_self_training"
+                       name="tool_control_use_self_training"
+                       class="form-control"
+                       value="{{ tool_control_use_self_training }}" />
+            </div>
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                <label for="tool_control_use_self_training">
+                    This label if used when a user is using a tool form himself for a training
+                </label>
+            </div>
+            <div class="col-md-offset-3 col-md-7">
+                <input type="text"
+                       id="tool_control_use_for_other"
+                       name="tool_control_use_for_other"
+                       class="form-control"
+                       value="{{ tool_control_use_for_other }}" />
+            </div>
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                <label for="tool_control_use_for_other">
+                    This label if used when a user is using a tool on behalf of someone else
+                </label>
+            </div>
+            <div class="col-md-offset-3 col-md-7">
+                <input type="text"
+                       id="tool_control_use_for_other_training"
+                       name="tool_control_use_for_other_training"
+                       class="form-control"
+                       value="{{ tool_control_use_for_other_training }}" />
+            </div>
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                <label for="tool_control_use_for_other_training">
+                    This label if used when a user is using a tool on behalf of someone else for training
+                </label>
+            </div>
+            <div class="col-md-offset-3 col-md-7">
+                <input type="text"
+                       id="tool_control_use_for_other_remote"
+                       name="tool_control_use_for_other_remote"
+                       class="form-control"
+                       value="{{ tool_control_use_for_other_remote }}" />
+            </div>
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                <label for="tool_control_use_for_other_remote">
+                    This label if used when a user is using a tool on behalf of someone else for a remote project
+                </label>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Run data history</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
                     <label>
@@ -245,7 +326,31 @@
                                name="tool_control_hide_data_history_users"
                                {% if tool_control_hide_data_history_users %}checked{% endif %}
                                value="enabled">
-                        Check to only show usage data history tab for staff members
+                        Check to only show run data history tab for staff members
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Note</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               id="tool_control_note_show"
+                               name="tool_control_note_show"
+                               {% if tool_control_note_show %}checked{% endif %}
+                               value="enabled">
+                        Check to allow users to set notes for their tool usage
+                    </label>
+                    <br>
+                    <label>
+                        <input type="checkbox"
+                               id="tool_control_note_copy_reservation"
+                               name="tool_control_note_copy_reservation"
+                               {% if tool_control_note_copy_reservation %}checked{% endif %}
+                               value="enabled">
+                        Check to copy over the reservation note (if any) to the tool usage
                     </label>
                 </div>
             </div>

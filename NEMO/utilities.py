@@ -11,9 +11,10 @@ from email.mime.base import MIMEBase
 from enum import Enum
 from io import BytesIO, StringIO
 from logging import getLogger
-from smtplib import SMTPAuthenticationError, SMTPConnectError, SMTPServerDisconnected
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Set, TYPE_CHECKING, Tuple, Union
-from urllib.parse import urljoin
+from smtplib import SMTPServerDisconnected, SMTPResponseException
+from string import Formatter
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Set, TYPE_CHECKING, Tuple, Union
+from urllib.parse import urljoin, urlparse
 
 from PIL import Image
 from dateutil import rrule
@@ -21,19 +22,20 @@ from dateutil.parser import parse
 from django.apps import apps
 from django.conf import global_settings, settings
 from django.contrib.admin import ModelAdmin
+from django.contrib.auth import get_permission_codename
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
-from django.db import OperationalError
+from django.db import OperationalError, ProgrammingError
 from django.db.models import FileField, IntegerChoices, Model, QuerySet
 from django.http import HttpRequest, HttpResponse, QueryDict
 from django.shortcuts import resolve_url
 from django.template import Template
 from django.template.context import make_context
-from django.urls import NoReverseMatch, reverse
+from django.urls import NoReverseMatch, resolve, reverse
 from django.utils import timezone as django_timezone
 from django.utils.formats import date_format, get_format, time_format
 from django.utils.html import format_html
@@ -42,6 +44,7 @@ from django.utils.translation import gettext_lazy as _
 
 # For backwards compatibility
 import NEMO.plugins.utils
+from NEMO.typing import QuerySetType
 
 render_combine_responses = NEMO.plugins.utils.render_combine_responses
 
@@ -99,7 +102,7 @@ py_to_pick_date_formats = {
 UNSET = object()
 
 
-# Convert a python format string to javascript format string
+# Convert a python format string to a JavaScript format string
 def convert_py_format_to_js(string_format: str) -> str:
     for py, js in py_to_js_date_formats.items():
         string_format = js.join(string_format.split(py))
@@ -205,7 +208,7 @@ class ToolCategory(ProjectApplication):
 class EmptyHttpRequest(HttpRequest):
     def __init__(self):
         super().__init__()
-        self.session = QueryDict(mutable=True)
+        self.session: Any = QueryDict(mutable=True)
         self.device = "desktop"
 
 
@@ -333,7 +336,7 @@ class RecurrenceFrequency(Enum):
 def quiet_int(value_to_convert, default_upon_failure=0):
     """
     Attempt to convert the given value to an integer. If there is any problem
-    during the conversion, simply return 'default_upon_failure'.
+    during the conversion, return 'default_upon_failure'.
     """
     result = default_upon_failure
     try:
@@ -384,7 +387,7 @@ def get_month_timeframe(date_str: str = None):
     return first_of_the_month, last_of_the_month
 
 
-def get_day_timeframe(day_date: datetime.date = None):
+def get_day_timeframe(day_date: date = None):
     start = day_date
     if not day_date:
         start = date.today()
@@ -414,7 +417,7 @@ def extract_times(
     parameters, start_required=True, end_required=True, beginning_and_end=False
 ) -> Tuple[datetime, datetime]:
     """
-    Extract the "start" and "end" parameters from an HTTP request while performing a few logic validation checks.
+    Extract the "start" and "end" parameters from an HTTP request while performing some logic validation checks.
     The function assumes the UNIX timestamp is in the server's timezone.
     """
     start, end, new_start, new_end = None, None, None, None
@@ -492,7 +495,7 @@ def export_format_datetime(
 ) -> str:
     """
     This function returns a formatted date/time for export files.
-    Default returns date + time format, with underscores
+    Default returns a date and time format, with underscores
     """
     this_time = date_time if date_time else django_timezone.now() if as_current_timezone else datetime.now()
     export_date_format = getattr(settings, "EXPORT_DATE_FORMAT", "m_d_Y").replace("-", "_")
@@ -507,6 +510,58 @@ def export_format_datetime(
         else export_time_format if not d_format and t_format else export_date_format + separator + export_time_format
     )
     return format_datetime(this_time, datetime_format, as_current_timezone)
+
+
+# See https://stackoverflow.com/a/42320260/597548
+def format_timedelta(t_delta, fmt="{D:02}d {H:02}h {M:02}m {S:02}s", input_type="timedelta"):
+    """Convert a datetime.timedelta object or a regular number to a custom formatted string,
+    just like the strftime() method does for datetime.datetime objects.
+
+    The fmt argument allows custom formatting to be specified. Fields can include seconds,
+    minutes, hours, days, and weeks. Each field is optional.
+
+    Some examples:
+        '{D:02}d {H:02}h {M:02}m {S:02}s' --> '05d 08h 04m 02s' (default)
+        '{W}w {D}d {H}:{M:02}:{S:02}'     --> '4w 5d 8:04:02'
+        '{D:2}d {H:2}:{M:02}:{S:02}'      --> ' 5d  8:04:02'
+        '{H}h {S}s'                       --> '72h 800s'
+
+    The input_type argument allows t_delta to be a regular number instead of the
+    default, which is a datetime.timedelta object.  Valid input_type strings:
+        's', 'seconds',
+        'm', 'minutes',
+        'h', 'hours',
+        'd', 'days',
+        'w', 'weeks'
+    """
+
+    # Convert t_delta to integer seconds.
+    if input_type == "timedelta":
+        remainder = int(t_delta.total_seconds())
+    elif input_type in ["s", "seconds"]:
+        remainder = int(t_delta)
+    elif input_type in ["m", "minutes"]:
+        remainder = int(t_delta) * 60
+    elif input_type in ["h", "hours"]:
+        remainder = int(t_delta) * 3600
+    elif input_type in ["d", "days"]:
+        remainder = int(t_delta) * 86400
+    elif input_type in ["w", "weeks"]:
+        remainder = int(t_delta) * 604800
+
+    f = Formatter()
+    desired_fields = [field_tuple[1] for field_tuple in f.parse(fmt) if field_tuple[1]]
+    possible_fields = ("W", "D", "H", "M", "S")
+    constants = {"W": 604800, "D": 86400, "H": 3600, "M": 60, "S": 1}
+    values = {}
+    for field in possible_fields:
+        if field in desired_fields and field in constants:
+            is_last_field = field == desired_fields[-1]
+            if is_last_field:
+                values[field] = remainder / constants[field]
+            else:
+                values[field], remainder = divmod(remainder, constants[field])
+    return f.format(fmt, **values)
 
 
 def as_timezone(dt):
@@ -526,6 +581,10 @@ def naive_local_current_datetime():
     return django_timezone.localtime(django_timezone.now()).replace(tzinfo=None)
 
 
+def beginning_of_next_day(t: datetime, in_local_timezone=True) -> datetime:
+    return beginning_of_the_day(t + timedelta(days=1), in_local_timezone)
+
+
 def beginning_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
     """Returns the BEGINNING of today's day (12:00:00.000000 AM of the current day) in LOCAL time."""
     zero = t.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
@@ -539,7 +598,7 @@ def end_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
 
 
 def is_date_in_datetime_range(date_to_check: date, start_date: datetime, end_date: datetime) -> bool:
-    # use timezone of start_date for date_to_check
+    # use the timezone of start_date for date_to_check
     start_of_day = beginning_of_the_day(datetime.combine(date_to_check, time()))
     end_of_day = end_of_the_day(datetime.combine(date_to_check, time()))
     return start_date <= end_of_day and start_of_day <= end_date
@@ -598,7 +657,7 @@ def send_mail(
                 try:
                     msg_sent = mail.send()
                     break
-                except (SMTPServerDisconnected, SMTPConnectError, SMTPAuthenticationError) as e:
+                except (SMTPResponseException, SMTPServerDisconnected) as e:
                     if i == 0:
                         utilities_logger.exception(str(e))
                         utilities_logger.warning(f"Email sending got an error, retrying once")
@@ -658,7 +717,7 @@ def get_task_image_filename(task_images, filename):
     task: Task = task_images.task
     tool_name = slugify(task.tool)
     now = datetime.now()
-    date = export_format_datetime(now, t_format=False, as_current_timezone=False)
+    today = export_format_datetime(now, t_format=False, as_current_timezone=False)
     year = now.strftime("%Y")
     number = "{:02d}".format(
         TaskImages.objects.filter(
@@ -667,7 +726,7 @@ def get_task_image_filename(task_images, filename):
         + 1
     )
     ext = os.path.splitext(filename)[1]
-    return f"task_images/{year}/{tool_name}/{date}_{tool_name}_{number}{ext}"
+    return f"task_images/{year}/{tool_name}/{today}_{tool_name}_{number}{ext}"
 
 
 def get_tool_image_filename(tool, filename):
@@ -727,16 +786,16 @@ def distinct_qs_value_list(qs: QuerySet, field_name: str) -> Set:
 
 def render_email_template(template, dictionary: dict, request=None):
     """Use Django's templating engine to render the email template
-    If we don't have a request, create a empty one so context_processors (messages, customizations etc.) can be used
+    If we don't have a request, create an empty one so context_processors (messages, customizations, etc.) can be used
     """
     return Template(template).render(make_context(dictionary, request or EmptyHttpRequest()))
 
 
 def queryset_search_filter(query_set: QuerySet, search_fields: Sequence, request, display="__str__") -> HttpResponse:
     """
-    This function reuses django admin search result to implement our own autocomplete.
-    Its usage is the same as ModelAdmin, it needs a base queryset, list of fields and a search query.
-    It returns the HttpResponse with json formatted data, ready to use by the autocomplete js code
+    This function reuses the Django admin search result to implement our own autocomplete.
+    Its usage is the same as ModelAdmin, it needs a base queryset, a list of fields, and a search query.
+    It returns the HttpResponse with JSON formatted data, ready to use by the autocomplete js code
     """
     if is_ajax(request):
         query = request.GET.get("query", "")
@@ -771,7 +830,7 @@ def get_recurring_rule(start: date, frequency: RecurrenceFrequency, until=None, 
 def get_full_url(location, request=None):
     """
     Function used mainly in emails and places where the request might or might not be available.
-    If the request is available, use django's built in way to build the absolute URL, otherwise
+    If the request is available, use django's built-in way to build the absolute URL, otherwise
     use the SERVER_DOMAIN variable from settings, which defaults to the first ALLOWED_HOSTS value.
     """
     # For lazy locations
@@ -785,7 +844,7 @@ def get_full_url(location, request=None):
 
 def capitalize(string: Optional[str]) -> str:
     """
-    This function capitalizes the first letter only. Built-in .capitalize() method does it, but also
+    This function capitalizes the first letter only. The built-in .capitalize() method does it, but also
     makes the rest of the string lowercase, which is not what we want here
     """
     if not string:
@@ -840,11 +899,21 @@ def get_email_from_settings() -> str:
 
 
 def get_class_from_settings(setting_name: str, default_value: str):
-    setting_class = getattr(settings, setting_name, default_value)
-    assert isinstance(setting_class, str)
-    pkg, attr = setting_class.rsplit(".", 1)
-    ret = getattr(importlib.import_module(pkg), attr)
-    return ret()
+    return get_classes_from_settings(setting_name, [default_value])[0]
+
+
+def get_classes_from_settings(setting_name: str, default_value: Iterable) -> List:
+    setting_classes = getattr(settings, setting_name, default_value)
+    if isinstance(setting_classes, str):
+        setting_classes = [setting_classes]
+    assert isinstance(setting_classes, Iterable)
+    assert not isinstance(setting_classes, str)
+    classes = []
+    for setting_class in setting_classes:
+        pkg, attr = setting_class.rsplit(".", 1)
+        ret = getattr(importlib.import_module(pkg), attr)
+        classes.append(ret())
+    return classes
 
 
 def create_ics(
@@ -886,7 +955,7 @@ def create_ics(
         f'ATTENDEE;CN="{user.get_name()}";RSVP=TRUE:mailto:{user.email}\n',
         f'ORGANIZER;CN="{organizer}":mailto:{organizer_email}\n',
         f"SUMMARY:[{site_title}] {event_name}\n",
-        f"DESCRIPTION:{description or ''}\n",
+        f'DESCRIPTION:{repr(description)[1:-1] if description else ""}\n',
         f"STATUS:{'CANCELLED' if cancelled else 'CONFIRMED'}\n",
         "END:VEVENT\n",
         "END:VCALENDAR\n",
@@ -928,7 +997,7 @@ def strtobool(val):
         raise ValueError("invalid truth value %r" % (val,))
 
 
-# This method will subtract weekend time if applicable and weekdays time between weekday_start_time_off and weekday_end_time_off
+# This method will subtract weekend time if applicable and weekday times between weekday_start_time_off and weekday_end_time_off
 def get_duration_with_off_schedule(
     start: datetime,
     end: datetime,
@@ -959,8 +1028,8 @@ def get_duration_with_off_schedule(
                     current_date, current_start, current_end, weekday_start_time_off, weekday_end_time_off
                 )
             else:
-                # reverse time off with overnight. i.e. 6pm -> 6am
-                # we are just splitting into 2 and running same algorithm
+                # reverse time off with overnight. i.e., 6pm -> 6am
+                # we are just splitting into 2 and running the same algorithm
                 duration = duration - find_overlapping_duration(
                     current_date, current_start, current_end, weekday_start_time_off, time.min
                 )
@@ -990,9 +1059,9 @@ def find_overlapping_duration(
     return timedelta(0)
 
 
-# This method return datetime objects for start and end date of a policy off range
-# i.e. given Fri, Sep 20 and policy off 6pm -> 9pm it will return (Fri Sep 20 @ 6pm, Fri Sep 20 @ 9pm)
-# if the policy is overnight (6pm -> 6am) it will return (Fri Sep 20 @ 6pm, Sat Sep 21 @ 6am)
+# This method returns datetime objects for the start and end date of a policy off range
+# i.e., given Fri, Sep 20 2024 and policy off 6pm -> 9pm it will return (Fri Sep 20 2024 @ 6pm, Fri Sep 20 2024 @ 9pm)
+# if the policy is overnight (6pm -> 6am) it will return (Fri Sep 20 2024 @ 6pm, Sat Sep 21 2024 @ 6am)
 def get_local_date_times_for_item_policy_times(
     current_date: datetime, weekday_start_time_off: time, weekday_end_time_off: time
 ) -> (datetime, datetime):
@@ -1021,7 +1090,7 @@ def split_into_chunks(iterable: Set, chunk_size: int) -> Iterator[List]:
     """
     Splits a set into chunks of the specified size.
     """
-    iterable = list(iterable)  # Convert set to list to support slicing
+    iterable = list(iterable)  # Convert the set to a list to support slicing
     for i in range(0, len(iterable), chunk_size):
         yield iterable[i : i + chunk_size]
 
@@ -1037,11 +1106,11 @@ def copy_media_file(old_file_name, new_file_name, delete_old=False):
     """
     if default_storage.exists(old_file_name):
         if new_file_name and new_file_name != old_file_name:
-            # Save new file if it's different
+            # Save the new file if it's different
             with default_storage.open(old_file_name, "rb") as file:
                 default_storage.save(new_file_name, file)
         if delete_old and (not new_file_name or new_file_name != old_file_name):
-            # Delete old file if no new file name is provided or if it was different
+            # Delete the old file if no new file name is provided or if it was different
             default_storage.delete(old_file_name)
 
 
@@ -1081,10 +1150,10 @@ def update_media_file_on_model_update(instance, file_field_name):
         cleaned_old_file_name = os.path.normcase(os.path.normpath(old_file.name))
         cleaned_new_file_name = os.path.normcase(os.path.normpath(new_file_name))
         if old_file != new_file:
-            # if new file is different from old file, delete old file
+            # if the new file is different from the old file, delete the old file
             old_file.delete(save=False)
         elif cleaned_new_file_name != cleaned_old_file_name:
-            # if the new filename if different but it's the same file, rename it
+            # if the new filename is different, but it's the same file, rename it
             copy_media_file(old_file.name, new_file_name, delete_old=True)
             new_file.name = new_file_name
 
@@ -1094,7 +1163,7 @@ def safe_lazy_queryset_evaluation(qs: QuerySet, default=UNSET, raise_exception=F
     Safely evaluates a queryset and returns the evaluated queryset or a default value.
 
     This function attempts to force the evaluation of a Django queryset. In case an
-    OperationalError occurs during the evaluation, it can either return a default value or
+    OperationalError or ProgrammingError occurs during the evaluation, it can either return a default value or
     raise the exception, based on the provided arguments. Additionally, it logs a warning
     message when the queryset evaluation fails and `raise_exception` is set to False. This
     can be helpful in handling database operational issues more gracefully.
@@ -1112,18 +1181,31 @@ def safe_lazy_queryset_evaluation(qs: QuerySet, default=UNSET, raise_exception=F
         indicating whether an error occurred.
 
     Raises:
-        OperationalError: If `raise_exception` is True and an OperationalError occurs.
+        OperationalError, ProgrammingError: If `raise_exception` is True and an OperationalError or ProgrammingError occurs.
     """
+    # This isn't great but have no other option at the moment
+    try:
+        from psycopg2.errors import UndefinedTable
+
+        HAS_UNDEFINED_TABLE = True
+    except ImportError:
+        HAS_UNDEFINED_TABLE = False
+
     if default is UNSET:
         default = []
     try:
         # force evaluation of queryset
         _ = list(qs)
         return qs, False
-    except OperationalError:
+    except UndefinedTable if HAS_UNDEFINED_TABLE else OperationalError:
         if raise_exception:
             raise
-        utilities_logger.warning("Could not fetch queryset", exc_info=True)
+        utilities_logger.debug("Could not fetch queryset", exc_info=True)
+        return default, True
+    except (OperationalError, ProgrammingError):
+        if raise_exception:
+            raise
+        utilities_logger.debug("Could not fetch queryset", exc_info=True)
         return default, True
 
 
@@ -1178,3 +1260,50 @@ def get_content_types_for_billable_item_subclasses() -> List[ContentType]:
     ]
 
     return sorted(billable_item_content_types, key=lambda x: x.name)
+
+
+def get_django_view_name_from_url(url: str) -> str:
+    """
+    Retrieve the Django view name from a given URL.
+
+    This function attempts to resolve the URL path into a Django view name
+    using the `resolve` function. If the resolution fails, an empty string
+    is returned instead of raising an error. The provided URL must be in
+    a valid format.
+
+    :param url: The URL string from which the Django view name is resolved.
+    :type url: str
+    :return: The Django view name if successfully resolved, otherwise an
+        empty string.
+    :rtype: str
+    """
+    try:
+        return resolve(urlparse(url).path).view_name
+    except:
+        pass
+    return ""
+
+
+def get_tool_categories_for_filters(tool_qs: QuerySetType = None) -> List[ToolCategory]:
+    from NEMO.models import Tool
+
+    tool_qs = tool_qs or Tool.objects
+    categories = set()
+    for cat in tool_qs.filter(visible=True).order_by("_category").values_list("_category").distinct():
+        parts = cat[0].split("/")
+        prefixes = ["/".join(parts[: i + 1]) for i in range(len(parts))]
+        for category in prefixes:
+            categories.add(ToolCategory(category))
+    return sorted(categories, key=lambda x: str(x))
+
+
+def get_django_default_perm(model, action) -> str:
+    """
+    Returns the default Django permission for a given model and action.
+
+    :param model: Django model class whose permission is determined.
+    :param action: The type of action (e.g., "add", "change", "delete", "view")
+        for which the permission is being checked.
+    """
+    codename = get_permission_codename(action, model._meta)
+    return f"{model._meta.app_label}.{codename}"

@@ -1,13 +1,19 @@
 from __future__ import annotations
 
+import copy
+import json
+from functools import partial
 from typing import List, Tuple
 
+import fastjsonschema
 from django import forms
+from django.conf import settings
 from django.contrib.admin.widgets import AutocompleteMixin, FilteredSelectMultiple
 from django.contrib.auth.models import Group, Permission
 from django.core import validators
 from django.core.cache import cache
 from django.core.exceptions import FieldError, ValidationError
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.db.models.signals import post_delete, post_save
 from django.utils.translation import gettext_lazy as _
@@ -22,6 +28,18 @@ from NEMO.utilities import (
 )
 
 DEFAULT_SEPARATOR = ","
+
+
+JSON_EDITOR_DEFAULT_CONFIG = getattr(
+    settings,
+    "JSON_EDITOR_DEFAULT_CONFIG",
+    {
+        "no_additional_properties": True,
+        "disable_collapse": True,
+        "display_required_only": False,
+        "theme": "django",
+    },
+)
 
 
 @models.Field.register_lookup
@@ -172,6 +190,78 @@ class CommaSeparatedTextMultipleChoiceField(forms.MultipleChoiceField):
 
     def prepare_value(self, value) -> List:
         return CommaSeparatedListConverter.to_list(value)
+
+
+class JsonFormField(forms.JSONField):
+    def __init__(self, *args, **kwargs):
+        self._config = kwargs.pop("config", {})
+        self._schema = kwargs.pop("schema")
+        kwargs["widget"] = JsonEditorWidget
+        super().__init__(*args, **kwargs)
+        if self._config:
+            self.widget.editor_config.update(self._config)
+        if self._schema:
+            self.widget.editor_config["schema"] = self._schema
+
+    def clean(self, value):
+        value = super().clean(value)
+        # Only validate if there is a schema
+        if schema := self._schema:
+            try:
+                fastjsonschema.validate(schema, value, use_formats=False)
+            except fastjsonschema.JsonSchemaValueException as ex:
+                raise ValidationError(ex.message) from ex
+        return value
+
+    pass
+
+
+class JsonEditorWidget(forms.Textarea):
+    template_name = "snippets/admin_json_editor.html"
+
+    def __init__(self, *args, editor_config=None, **kwargs):
+        self.editor_config = copy.deepcopy(JSON_EDITOR_DEFAULT_CONFIG)
+        if editor_config:
+            self.editor_config.update(editor_config)
+        super().__init__(*args, **kwargs)
+
+    def get_context(self, *args, **kwargs):
+        context = super().get_context(*args, **kwargs)
+        context["editor_config"] = json.dumps(self.editor_config, cls=DjangoJSONEncoder)
+        return context
+
+    @property
+    def media(self):
+        css = {
+            "screen": ["admin/json_editor/jsoneditor-django.css"],
+        }
+        js = [
+            "admin/json_editor/jsoneditor.min.js",
+            "admin/json_editor/jsoneditor_widget.js",
+        ]
+        return forms.Media(css=css, js=js)
+
+
+class JsonField(models.JSONField):
+    def __init__(self, *args, **kwargs):
+        self._config = kwargs.pop("config", None)
+        self._schema = kwargs.pop("schema", None)
+        super().__init__(*args, **kwargs)
+
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        return name, "django.db.models.JSONField", args, kwargs
+
+    def formfield(self, **kwargs):
+        kwargs.setdefault(
+            "form_class",
+            partial(
+                JsonFormField,
+                config=self._config,
+                schema=self._schema,
+            ),
+        )
+        return super().formfield(**kwargs)
 
 
 class DynamicChoicesMixin:

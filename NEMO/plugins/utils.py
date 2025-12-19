@@ -2,7 +2,9 @@ import importlib.metadata
 from logging import getLogger
 from typing import List, Optional, Tuple, Union
 
+from django.apps import AppConfig, apps
 from django.conf import settings
+from django.core.checks import Error, register
 from django.core.exceptions import FieldDoesNotExist, ImproperlyConfigured
 from django.db.models import Field
 from django.http import HttpResponse
@@ -11,6 +13,46 @@ from packaging.requirements import Requirement
 from packaging.version import InvalidVersion, Version
 
 utils_logger = getLogger(__name__)
+
+
+N001 = "plugins.N001"
+
+
+class NEMOPluginConfig(AppConfig):
+
+    @classmethod
+    def get_plugin_id(cls):
+        # Used to make EmailCategory and other IntegerChoices ranges unique
+        return getattr(settings, f"{cls.name.upper()}_PLUGIN_ID", getattr(cls, "plugin_id"))
+
+
+@register()
+def check_unique_plugin_ids(app_configs, silent=False, **kwargs):
+    errors = []
+    if getattr(settings, "PLUGIN_ID_DUPLICATE_CHECK", True):
+
+        plugin_ids = {}
+
+        for config in apps.get_app_configs():
+            if isinstance(config, NEMOPluginConfig):
+                plugin_id = config.get_plugin_id()
+
+                if plugin_id is None:
+                    continue
+
+                # Check for conflicting plugin_ids
+                if plugin_id in plugin_ids:
+                    conflicting_app_name = plugin_ids[plugin_id]
+                    errors.append(
+                        Error(
+                            f"App '{config.name}' (class: {config.__class__.__name__}) has a conflicting 'plugin_id': '{plugin_id}'.",
+                            hint=f"This ID is already used by app '{conflicting_app_name}'. Change the 'plugin_id' to be unique.",
+                            id=N001,
+                        )
+                    )
+                else:
+                    plugin_ids[plugin_id] = config.name
+    return errors
 
 
 # Useful function to render and combine 2 separate django templates

@@ -6,6 +6,6 @@
         </div>
     </div>
 </div>
-<h1>{{ selected_category }}</h1>
+{% if selected_category %}<h1>{{ selected_category }}</h1>{% endif %}
 {% include 'kiosk/tool_categories.html' %}
 <script>revert(60);</script>

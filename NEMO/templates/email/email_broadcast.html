@@ -31,6 +31,9 @@
             <a href="{% url 'email_broadcast' 'project-pis' %}">are project principal investigators</a>
         </li>
         <li>
+            <a href="{% url 'email_broadcast' 'account-managers' %}">are account managers</a>
+        </li>
+        <li>
             <a href="{% url 'email_broadcast' 'account' %}">bill to an account</a>
         </li>
     </ul>
@@ -45,13 +48,22 @@
                         </label>
                     </div>
                 </div>
+            {% elif audience == "account-managers" %}
+                <div class="row">
+                    <div class="col-sm-4 checkbox">
+                        <label>
+                            <input type="checkbox" name="no_type" checked />
+                            Active accounts
+                        </label>
+                    </div>
+                </div>
             {% endif %}
             <div class="row">
                 <div class="col-sm-4">
                     <input id="search"
                            class="form-control"
                            aria-label="Audience"
-                           placeholder="{% if audience == "project-pis" %}[Optional] Select project(s){% else %}Which {% if audience == 'tool-reservation' %}tool{% else %}{{ audience }}{% endif %}?{% endif %}"
+                           placeholder="{% if audience == "project-pis" %}[Optional] Select project(s){% elif audience == "account-managers" %}[Optional] Select account(s){% else %}Which {% if audience == 'tool-reservation' %}tool{% else %}{{ audience }}{% endif %}?{% endif %}"
                            autofocus />
                 </div>
             </div>
@@ -80,11 +92,10 @@
                 $("#selection_" + id).remove();
                 if($("#selection-list").find("input").length === 0)
                 {
-                    {% if audience != "project-pis" %}$("#confirm").hide();{% endif %}
+                    {% if audience != "project-pis" and audience != "account-managers" %}$("#confirm").hide();{% endif %}
                 }
             }
-            {% if audience == "project-pis" %}$("#confirm").show();{% endif %}
-		
+            {% if audience == "project-pis" or audience == "account-managers" %}$("#confirm").show();{% endif %}
         </script>
     {% endif %}
     {% if user_types %}

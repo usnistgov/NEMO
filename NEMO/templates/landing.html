@@ -6,24 +6,7 @@
     <h1 class="sr-only">Main dashboard</h1>
     {% if user.training_required %}
         <div class="row">
-            <div class="col-lg-12">
-                <a href="{% url 'facility_rules' %}">
-                    <div class="well clearfix">
-                        <div class="col-lg-2 text-center">
-                            <img src="{% static 'icons/caution.png' %}" alt="Caution image" height="128" width="128">
-                        </div>
-                        <div class="col-lg-8 text-center">
-                            <h2>{{ facility_name }} Rules Tutorial</h2>
-                            <p style="text-align: center">
-                                You must complete your {{ facility_name }} rules tutorial before you can make reservations or use {{ facility_name }} tools. Click here to begin the tutorial.
-                            </p>
-                        </div>
-                        <div class="col-lg-2 text-center">
-                            <img src="{% static 'icons/agreement.png' %}" alt="Agreement icon" height="128" width="128">
-                        </div>
-                    </div>
-                </a>
-            </div>
+            <div class="col-lg-12">{{ facility_rules_required_message|safe }}</div>
         </div>
     {% endif %}
     {% if user.access_expiration %}

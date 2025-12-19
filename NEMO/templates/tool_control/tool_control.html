@@ -62,6 +62,33 @@
         <div id="interlock_error_contents" style="display: none">{% include 'tool_control/interlock_error.html' %}</div>
         <script>
         let previous_tasks_and_comments_url;
+
+        function update_stop_button()
+        {
+            if(document.querySelector('#tool_control').checkValidity())
+            {
+                $('#stop_wrapper').tooltip('disable');
+                $("#stop_wrapper button").prop("disabled", false);
+            }
+            else
+            {
+                $('#stop_wrapper').tooltip('enable');
+                $("#stop_wrapper button").prop("disabled", true);
+            }
+        }
+
+        function update_start_button()
+        {
+            if(document.querySelector('#tool_control').checkValidity())
+            {
+                $("#start button").prop("disabled", false);
+            }
+            else
+            {
+                $("#start button").prop("disabled", true);
+            }
+        }
+
 		function refresh_tool_status()
 		{
 			let selected_item = {% if device == 'mobile' %}{{ selected_tool }}{% else %}get_selected_item(){% endif %};
@@ -99,26 +126,30 @@
 			}
 		}
 
-		function use_tool_for_self(training)
+		function use_tool_for_self(tool_id, training)
 		{
             $("#training").val(training || "");
-			$("#project_choice").html("Fetching project list...").show().load("{% url 'get_projects_for_self' %}", undefined, load_projects_completion_callback);
+            $("#start").hide();
+            $("#pre_usage_questions").html("");
+            $("#note").prop("disabled", true).parents("#usage_note").hide();
+            const data = "tool_id=" + tool_id;
+			$("#project_choice").html("Fetching project list...").show().load("{% url 'get_projects_for_self' %}", data, load_projects_completion_callback);
 		}
 
-		function select_project(element, project_id)
+		function select_project(element, project_id, customer_id, tool_id)
 		{
 			$(".project-choice").removeClass('active');
 			$(element).addClass('active');
 			$("#project_id").val(project_id);
-            $("#pre_usage_questions").show();
+            load_pre_usage_questions(tool_id, customer_id, project_id);
             $("#start").show();
 		}
 
-		function load_projects(jquery_event, search_selection, dataset_name)
+		function load_projects(jquery_event, search_selection, tool_id)
 		{
 			$("#user_search").typeahead('val', '').hide();
 			$("#customer").text(search_selection.name).show();
-			let data = "user_id=" + search_selection.id;
+			let data = "user_id=" + search_selection.id + "&tool_id=" + tool_id;
 			$("#customer_project").html("Fetching project list...").show().load("{% url 'get_projects_for_tool_control' %}", data, load_projects_completion_callback);
 		}
 
@@ -213,9 +244,8 @@
 				success_callbacks = [reload_page]; {# If there's a new staff charge then we need to reload the whole page so it's displayed in the menu bar. #}
 			else
 				success_callbacks = [refresh_tool_status, ajax_success_callback];
-			let enable_start_button = function() { $("#start button").prop("disabled", false); };
             let data = $("#tool_control").serialize();
-			try_post_catch_interlock_error(url, data, success_callbacks, enable_start_button);
+			try_post_catch_interlock_error(url, data, success_callbacks, update_start_button);
 		}
 
 		function disable_tool(url, shorten)
@@ -223,21 +253,22 @@
 			$("#stop_wrapper button").prop("disabled", true);
 			let data = $("#tool_control").serialize();
             if (shorten !== undefined && shorten) data += '&shorten=True';
-			let enable_stop_button = function() { $("#stop_wrapper button").prop("disabled", false); };
-			try_post_catch_interlock_error(url, data, [refresh_tool_status, ajax_success_callback], enable_stop_button);
+			try_post_catch_interlock_error(url, data, [refresh_tool_status, ajax_success_callback], update_stop_button);
 		}
 
 		{% if user.is_staff or user.is_tool_staff %}
 
 			{# Only staff can perform the functions in this if-block. #}
 
-			function use_tool_for_other(remote_work, training)
+			function use_tool_for_other(tool_id, remote_work, training)
 			{
                 $("#remote_work").val(remote_work || "");
                 $("#training").val(training || "");
 				$("#start").hide();
-                $("#pre_usage_questions").hide();
-				$("#project_choice").html("Fetching user list...").show().load("{% url 'use_tool_for_other' %}", undefined, load_projects_completion_callback);
+                $("#pre_usage_questions").html("");
+                $("#note").prop("disabled", true).parents("#usage_note").hide();
+                const data = "tool_id=" + tool_id;
+				$("#project_choice").html("Fetching user list...").show().load("{% url 'use_tool_for_other' %}", data, load_projects_completion_callback);
 			}
 
 			function clear_customer()
@@ -245,7 +276,8 @@
 				$("#customer").text("").hide();
 				$("#customer_project").html("").hide();
 				$("#start").hide();
-                $("#pre_usage_questions").hide();
+                $("#pre_usage_questions").html("");
+                $("#note").prop("disabled", true).parents("#usage_note").hide();
 				$("#user_search").show().focus();
 			}
 
@@ -355,9 +387,20 @@
 			}
 		}
 
-        function load_config_history(tool_id) {
+        function load_config_history(tool_id)
+        {
             let failure_dialog = ajax_complete_callback("Unable to find the configuration history", "There was a problem looking up the configuration history.");
             $("#config").load("{% url 'tool_config_history' 999 %}".replace('999', tool_id), undefined, failure_dialog);
+        }
+
+        function load_pre_usage_questions(tool_id, customer_id, project_id)
+        {
+            let failure_dialog = ajax_complete_callback("Unable to load pre usage questions", "There was a problem loading pre usage questions.");
+            const resolved_url = build_django_url("{% url 'tool_usage_questions' 999 'pre' 888 777 'false' %}", ['999', '888', '777'], [tool_id, customer_id, project_id]);
+            const note = $("#note");
+            note.prop("disabled", false).parents("#usage_note").show();
+            auto_size_textarea(note[0], 3);
+            $("#pre_usage_questions").load(resolved_url, update_start_button, failure_dialog).show();
         }
 
 		function refresh_sidebar_tool_icons()

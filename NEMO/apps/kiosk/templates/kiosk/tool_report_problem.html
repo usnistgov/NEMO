@@ -90,22 +90,35 @@
                 <span style="padding-left:10px;">This problem represents a safety hazard to the {{ facility_name }} and should be regarded as urgent.Notify the {{ facility_name }} safety officer of this issue.</span>
             </label>
         </div>
-        <div class="checkbox">
-            <label>
-                <input name="force_shutdown"
-                       id="force_shutdown"
-                       type="checkbox"
-                       {% if form.force_shutdown.value %}checked{% endif %} />
-                <span style="padding-left:10px;">Shut down the tool so that it may not be used until this problem is resolved.</span>
-            </label>
-        </div>
+        {% if tool.problem_shutdown_enabled %}
+            <div class="checkbox">
+                <label>
+                    <input name="force_shutdown"
+                           id="force_shutdown"
+                           type="checkbox"
+                           {% if form.force_shutdown.value %}checked{% endif %} />
+                    <span style="padding-left:10px;">Shut down the tool so that it may not be used until this problem is resolved.</span>
+                </label>
+            </div>
+            {% if customer|is_staff_on_tool:tool and tool.interlock %}
+                <div class="checkbox" id="tool_problem_lock">
+                    <label>
+                        <input name="lock" type="checkbox" {% if form.lock.value %}checked{% endif %} />
+                        <span style="padding-left: 10px;">Also lock the tool when shutting it down.</span>
+                    </label>
+                </div>
+            {% endif %}
+        {% endif %}
     </div>
     <div class="form-group text-center" style="margin-top:40px">
         {% button type="delete" submit=False style="text-align:center; margin-bottom:0; font-size:x-large" icon="glyphicon-send" onclick="report_problem()" value="Report problem" %}
     </div>
 </form>
 <script>
-	$('#description').keyboard();
+    if (virtual_inputs)
+    {
+	    $('#description').keyboard();
+    }
 	{% if task_categories %}
 		$('#problem_category option[value="{{ form.problem_category.value }}"]').prop('selected', true);
 	{% endif %}
@@ -115,10 +128,16 @@
 
 	let date_picker = $('#estimated_resolution_dt').pickadate({format: "yyyy-mm-dd", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true});
 	let start_time_picker = $('#estimated_resolution_tm').pickatime({interval: 15, format: "H:i",formatSubmit: "H:i", hiddenName: true});
-	// set initial date
-	if ('{{ date|default_if_none:'' }}') {
-		date_picker.pickadate('picker').set('select', '{{ date }}', {format: 'MM/DD/YYYY'})
-	}
+
+    const shutdown_jq = $("#force_shutdown");
+    function toggle_lock_field()
+	{
+    	const checked = shutdown_jq.is(":checked");
+    	$("#tool_problem_lock").toggle(checked); // show if checked, hide if not
+  	}
+
+  	shutdown_jq.on("change", toggle_lock_field);
+  	toggle_lock_field();
 
 	revert(90);
 </script>

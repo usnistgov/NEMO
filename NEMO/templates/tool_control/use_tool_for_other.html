@@ -4,5 +4,5 @@
     <div id="customer_project"></div>
     <script>
 	{% load custom_tags_and_filters %}
-	$('#user_search').autocomplete('users', load_projects, {{ users|json_search_base }}).focus();
+	$('#user_search').autocomplete('{{ tool_id }}', load_projects, {{ users|json_search_base }}).focus();
     </script>

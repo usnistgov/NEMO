@@ -17,7 +17,7 @@
     {% with instance_id=form.instance.id %}
         <h1 class="form-group">
             {% if instance_id %}
-                Modify adjustment request
+                Modify adjustment request #{{ instance_id }}
             {% else %}
                 New adjustment request
             {% endif %}
@@ -43,14 +43,23 @@
             {% endif %}
             <div class="form-group">
                 <div class="row">
-                    <div class="col-sm-12">
+                    <div class="{% if instance_id %}col-sm-12{% else %}col-sm-9{% endif %}">
                         <input type="hidden" name="item_type" value="{{ form.item_type.value|default_if_none:"" }}">
                         <input type="hidden" name="item_id" value="{{ form.item_id.value|default_if_none:"" }}">
                         <label for="billable_item" class="control-label">Charge</label>
-                        <select class="form-control" id="billable_item" name="item" {% if instance_id %}readonly{% endif %}>
+                        <select class="form-control"
+                                id="billable_item"
+                                name="item"
+                                {% if instance_id %}readonly{% endif %}
+                                {% if not instance_id and not select_not_required %}required{% endif %}>
+                            {% if not instance_id and not select_not_required %}
+                                <option value="" selected disabled>Select a charge to adjust</option>
+                            {% endif %}
                             <option url="{% if instance_id %}{% url 'edit_adjustment_request' instance_id %}{% else %}{% url 'create_adjustment_request' %}{% endif %}"
-                                    selected
-                                    value="">General adjustment request</option>
+                                    value=""
+                                    {% if not form.instance.item and select_not_required %}selected{% endif %}>
+                                General adjustment request
+                            </option>
                             {% if form.instance.item %}
                                 <option url="{% if instance_id %}{% url 'edit_adjustment_request' instance_id form.item_type.value form.item_id.value %}{% else %}{% url 'create_adjustment_request' form.item_type.value form.item_id.value %}{% endif %}"
                                         value="{{ form.item_type.value }}|{{ form.item_id.value }}"
@@ -67,9 +76,18 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-sm-12 help-block">
-                        Only the {{ customizations|get_item:"adjustment_requests_charges_display_number" }} most recent charges are displayed. To find earlier charges, go to your <a href='{% url "user_usage" %}'>Usage</a> page and create an adjustment request from there.
-                    </div>
+                    {% if not instance_id %}
+                        <div class="col-sm-3">
+                            <span class="control-label" style="display: inline-block;margin-bottom: 5px;">Find a charge</span>
+                            <a href="{% url 'user_usage' %}" class="btn btn-info form-control" type="button">
+                                <i class="glyphicon glyphicon-floppy-save"></i>
+                                Go to my usage
+                            </a>
+                        </div>
+                        <div class="col-sm-12 help-block">
+                            Only the {{ customizations|get_item:"adjustment_requests_charges_display_number" }} most recent charges are displayed. To find earlier charges, go to your Usage page and create an adjustment request from there.
+                        </div>
+                    {% endif %}
                 </div>
             </div>
             {% if item.can_times_be_changed and form.item_id.value and form.item_type.value %}
@@ -125,6 +143,30 @@
                     {% endif %}
                 </div>
             {% endif %}
+            {% if customer_projects and form.item_id.value and form.item_type.value %}
+                <div class="form-group" id="new_project">
+                    <div class="row">
+                        <div class="col-md-3 col-sm-6">
+                            <label for="new_project">New project</label>
+                            <select id="new_project" name="new_project" class="form-control text-center">
+                                <option value="" selected></option>
+                                {% for project in customer_projects %}
+                                    <option value="{{ project.id }}" {% if form.new_project.value|to_int == project.id %}selected{% endif %}>
+                                        {{ project.display_with_status }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    {% if form.new_project.errors %}
+                        <div class="row">
+                            <div class="col-md-3 col-sm-6">
+                                {% if form.new_project.errors %}<span style="color:red">{{ form.new_project.errors|striptags }}</span>{% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
             {% if item.can_be_waived %}
                 <div class="form-group">
                     <label>
@@ -164,7 +206,7 @@
             <div class="text-right">
                 {% if form.instance.get_status_display == "Pending" %}
                     {% if instance_id and user in form.instance.reviewers %}
-                        {% if form.instance.adjustable_charge and customizations|get_item:"adjustment_requests_apply_button" == "enabled" %}
+                        {% if form.instance.is_charge_adjustable and customizations|get_item:"adjustment_requests_apply_button" == "enabled" %}
                             {% button type="save" submit=False name="approve_apply_request" title="Approve and adjust the original charge" icon="glyphicon-ok-circle" value="Approve and adjust" onclick="confirm_review_dialog(this, 'approve and adjust the actual charge of');" %}
                             {% button type="save" submit=False name="approve_request" title="Approve without adjusting" icon="glyphicon-ok-circle" value="Approve only" onclick="confirm_review_dialog(this);" %}
                         {% else %}
@@ -215,7 +257,7 @@
             let waive_checkbox = $("#waive_charge")[0];
             if (waive_checkbox)
             {
-                $("#new_quantity, #new_times").toggle(!waive_checkbox.checked);
+                $("#new_project, #new_quantity, #new_times").toggle(!waive_checkbox.checked);
             }
         }
         

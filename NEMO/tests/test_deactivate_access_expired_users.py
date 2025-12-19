@@ -3,11 +3,12 @@ from datetime import date, timedelta
 from django.test import TestCase
 
 from NEMO.models import Account, Project, User, UserType
+from NEMO.tests.test_utilities import NEMOTestCaseMixin
 from NEMO.views.customization import UserCustomization
 from NEMO.views.timed_services import do_deactivate_access_expired_users
 
 
-class UserActiveAccessExpirationTestCase(TestCase):
+class UserActiveAccessExpirationTestCase(NEMOTestCaseMixin, TestCase):
     def setUp(self):
         self.expired_user: User = User.objects.create(
             username="mctest", first_name="Testy", last_name="McTester", email="testy.mctester@example.com"

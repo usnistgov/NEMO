@@ -32,6 +32,8 @@ class NEMOConfig(AppConfig):
     name = "NEMO"
 
     def ready(self):
+        from NEMO.plugins import utils  # needed for checks
+
         if "migrate" in sys.argv or "makemigrations" in sys.argv:
             return
         from django.apps import apps

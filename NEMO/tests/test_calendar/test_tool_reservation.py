@@ -7,10 +7,10 @@ from django.utils import timezone
 
 from NEMO.exceptions import NotAllowedToChargeProjectException
 from NEMO.models import Account, Area, Configuration, Project, Reservation, ScheduledOutage, Tool, User
-from NEMO.tests.test_utilities import login_as, login_as_user
+from NEMO.tests.test_utilities import NEMOTestCaseMixin
 
 
-class ReservationTestCase(TransactionTestCase):
+class ReservationTestCase(NEMOTestCaseMixin, TransactionTestCase):
     tool: Tool = None
     owner: User = None
     consumer: User = None
@@ -57,7 +57,7 @@ class ReservationTestCase(TransactionTestCase):
         end = start + timedelta(hours=1)
         data = self.get_reservation_data(start, end, tool)
 
-        login_as(self.client, user)
+        self.login_as(user)
 
         response = self.client.post(reverse("create_reservation"), data, follow=True)
         self.assertEqual(response.status_code, 200)
@@ -77,7 +77,7 @@ class ReservationTestCase(TransactionTestCase):
         user.access_expiration = None
         user.training_required = False
         user.save()
-        login_as(self.client, user)
+        self.login_as(user)
         response = self.client.post(reverse("create_reservation"), data, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(
@@ -94,7 +94,7 @@ class ReservationTestCase(TransactionTestCase):
         )
 
         user.qualifications.add(tool)
-        login_as(self.client, user)
+        self.login_as(user)
         response = self.client.post(reverse("create_reservation"), data, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(
@@ -112,7 +112,7 @@ class ReservationTestCase(TransactionTestCase):
         end = base_start - timedelta(hours=1)
         data = self.get_reservation_data(base_start, end, tool)
 
-        login_as(self.client, consumer)
+        self.login_as(consumer)
 
         response = self.client.post(reverse("create_reservation"), data, follow=True)
         self.assertEqual(response.status_code, 400)
@@ -167,7 +167,7 @@ class ReservationTestCase(TransactionTestCase):
         end = start + timedelta(hours=1)
         data = self.get_reservation_data(start, end, tool)
 
-        login_as(self.client, consumer)
+        self.login_as(consumer)
         response = self.client.post(reverse("create_reservation"), data, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "You may not create reservations further than 2 days from now for this tool.")
@@ -181,7 +181,7 @@ class ReservationTestCase(TransactionTestCase):
         end = start + timedelta(hours=1)
         data = self.get_reservation_data(start, end, tool)
 
-        login_as(self.client, consumer)
+        self.login_as(consumer)
         response = self.client.post(reverse("create_reservation"), data, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertContains(
@@ -292,7 +292,7 @@ class ReservationTestCase(TransactionTestCase):
         end = start + timedelta(hours=1)
         data = self.get_reservation_data(start, end, tool)
 
-        login_as(self.client, consumer)
+        self.login_as(consumer)
         response = self.client.post(reverse("create_reservation"), data, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Reservation.objects.all().count(), 1)
@@ -303,7 +303,7 @@ class ReservationTestCase(TransactionTestCase):
         end = start + timedelta(hours=1)
         data = self.get_reservation_data(start, end, tool)
 
-        login_as(self.client, consumer)
+        self.login_as(consumer)
 
         second_project = Project.objects.create(name="project2", account=Account.objects.get(name="account1"))
         consumer.projects.add(second_project)
@@ -336,7 +336,7 @@ class ReservationTestCase(TransactionTestCase):
         data = self.get_reservation_data(start, end, tool)
         data["impersonate"] = consumer.id
 
-        login_as(self.client, staff)
+        self.login_as(staff)
         response = self.client.post(reverse("create_reservation"), data, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Reservation.objects.all().count(), 1)
@@ -350,7 +350,7 @@ class ReservationTestCase(TransactionTestCase):
         data = self.get_reservation_data(start, end, tool)
         data["impersonate"] = consumer.id
 
-        login_as(self.client, staff_on_tool)
+        self.login_as(staff_on_tool)
         response = self.client.post(reverse("create_reservation"), data, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Reservation.objects.all().count(), 1)
@@ -364,7 +364,7 @@ class ReservationTestCase(TransactionTestCase):
         end = start + timedelta(hours=1)
         data = self.get_reservation_data(start, end, tool)
 
-        login_as(self.client, consumer)
+        self.login_as(consumer)
         response = self.client.post(reverse("create_reservation"), data, follow=True)
         self.assertEqual(response.status_code, 200)
         reservation = Reservation.objects.get(tool=tool)
@@ -442,7 +442,7 @@ class ReservationTestCase(TransactionTestCase):
         end = start + timedelta(hours=1)
         data = self.get_reservation_data(start, end, tool)
 
-        login_as(self.client, consumer)
+        self.login_as(consumer)
         response = self.client.post(reverse("create_reservation"), data, follow=True)
         self.assertEqual(response.status_code, 200)
         reservation = Reservation.objects.get(tool=tool)
@@ -501,7 +501,7 @@ class ReservationTestCase(TransactionTestCase):
         end = start + timedelta(hours=1)
         data = self.get_reservation_data(start, end, tool)
 
-        login_as(self.client, consumer)
+        self.login_as(consumer)
         response = self.client.post(reverse("create_reservation"), data, follow=True)
         self.assertEqual(response.status_code, 200)
         reservation = Reservation.objects.get(tool=tool)
@@ -516,7 +516,7 @@ class ReservationTestCase(TransactionTestCase):
         self.assertEqual(response.status_code, 404)
 
         # test non staff user trying to cancel reservation
-        login_as_user(self.client)
+        self.login_as_user()
         response = self.client.post(
             reverse("cancel_reservation", kwargs={"reservation_id": reservation.id}), {}, follow=True
         )
@@ -531,7 +531,7 @@ class ReservationTestCase(TransactionTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual("You may not cancel reservations that you do not own.", response.content.decode())
 
-        login_as(self.client, consumer)
+        self.login_as(consumer)
 
         # test cancel missed reservation
         missed_resa = Reservation.objects.create(
@@ -589,7 +589,7 @@ class ReservationTestCase(TransactionTestCase):
             creator=consumer,
             short_notice=False,
         )
-        login_as(self.client, staff)
+        self.login_as(staff)
         response = self.client.post(
             reverse("cancel_reservation", kwargs={"reservation_id": other_resa.id}), {}, follow=True
         )
@@ -614,7 +614,7 @@ class ReservationTestCase(TransactionTestCase):
             creator=consumer,
             short_notice=False,
         )
-        login_as(self.client, staff_on_tool)
+        self.login_as(staff_on_tool)
         response = self.client.post(
             reverse("cancel_reservation", kwargs={"reservation_id": other_resa.id}), {}, follow=True
         )
@@ -636,14 +636,14 @@ class ReservationTestCase(TransactionTestCase):
         end = start + timedelta(hours=1)
         data = self.get_reservation_data(start, end, tool)
 
-        login_as(self.client, consumer)
+        self.login_as(consumer)
         response = self.client.post(reverse("create_reservation"), data, follow=True)
         self.assertEqual(response.status_code, 200)
         reservation = Reservation.objects.get(tool=tool)
         self.assertTrue(reservation.id)
 
         # anybody that is logged in can see reservation details
-        login_as_user(self.client)
+        self.login_as_user()
 
         # post should fail
         response = self.client.post(reverse("reservation_details", kwargs={"reservation_id": 999}), {}, follow=True)
@@ -676,17 +676,71 @@ class ReservationTestCase(TransactionTestCase):
         data = self.get_reservation_data(start, end, tool)
         data["configured"] = "false"
 
-        login_as(self.client, consumer)
+        self.login_as(consumer)
         response = self.client.post(reverse("create_reservation"), data, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Choose tool configuration")
         self.assertFalse(Reservation.objects.filter(tool=tool).exists())
 
         data["configured"] = "true"
-        login_as(self.client, consumer)
+        self.login_as(consumer)
         response = self.client.post(reverse("create_reservation"), data, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertTrue(Reservation.objects.get(tool=tool))
+
+    def test_change_reservation_note(self):
+        # create reservation
+        start = datetime.now() + timedelta(hours=1)
+        end = start + timedelta(hours=1)
+        data = self.get_reservation_data(start, end, tool)
+
+        self.login_as(consumer)
+        response = self.client.post(reverse("create_reservation"), data, follow=True)
+        self.assertEqual(response.status_code, 200)
+        reservation = Reservation.objects.get(tool=tool)
+        self.assertTrue(reservation.id)
+
+        # Consumer or staff should see the note field
+        response = self.client.get(
+            reverse("reservation_details", kwargs={"reservation_id": reservation.id}), {}, follow=True
+        )
+        self.assertContains(response, "Note")
+
+        self.login_as_staff()
+        response = self.client.get(
+            reverse("reservation_details", kwargs={"reservation_id": reservation.id}), {}, follow=True
+        )
+        self.assertContains(response, "Note")
+
+        # non-staff and non reservation owner cannot see the reservation note
+        self.login_as_user()
+        response = self.client.get(
+            reverse("reservation_details", kwargs={"reservation_id": reservation.id}), {}, follow=True
+        )
+        self.assertNotContains(response, "Note")
+        # they also cannot change the reservation note
+        response = self.client.post(
+            reverse("change_reservation_note", kwargs={"reservation_id": reservation.id}),
+            {"note": "this is a note"},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 400)
+
+        # owner can change, but not with wrong id
+        self.login_as(consumer)
+        # test wrong id
+        response = self.client.post(reverse("change_reservation_note", kwargs={"reservation_id": 999}), {}, follow=True)
+        self.assertEqual(response.status_code, 404)
+        # try again with correct id
+        response = self.client.post(
+            reverse("change_reservation_note", kwargs={"reservation_id": reservation.id}),
+            {"note": "this is a note"},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Reservation.objects.get(pk=reservation.id).note, "this is a note")
+
+        reservation.delete()
 
     def test_reservation_policy_off(self):
         # TODO: create those tests

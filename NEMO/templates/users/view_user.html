@@ -74,7 +74,7 @@
             {% endif %}
         </div>
     </div>
-    {% if user.primary_tool_owner.all or user.backup_for_tools.all or user.superuser_for_tools.all or user.staff_for_tools.all %}
+    {% if user.primary_tool_owner.all or user.backup_for_tools.all or user.superuser_for_tools.all or user.staff_for_tools.all or user.adjustment_request_reviewer_on_tools.all %}
         <div class="panel panel-default">
             <div class="panel-body">
                 <h3 style="margin-top: 0">Tool responsibilities</h3>
@@ -111,16 +111,65 @@
                             </ul>
                         </li>
                     {% endif %}
+                    {% if user.adjustment_request_reviewer_on_tools.all %}
+                        <li>
+                            Adjustment request reviewer:
+                            <ul>
+                                {% for tool in user.adjustment_request_reviewer_on_tools.all %}<li>{{ tool }}</li>{% endfor %}
+                            </ul>
+                        </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
     {% endif %}
-    {% if user.accessible_access_levels.exists %}
+    {% if user.accessible_access_levels.all %}
         <div class="panel panel-default">
             <div class="panel-body">
                 <h3 style="margin-top: 0">Physical access levels</h3>
                 <ul>
                     {% for physical_access in user.accessible_access_levels.all %}<li>{{ physical_access }}</li>{% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+    {% if user.managed_users.all or user.supervisors.all or user.managed_projects.all or user.managed_accounts.all %}
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <h3 style="margin-top: 0">Management</h3>
+                <ul>
+                    {% if user.managed_accounts.all %}
+                        <li>
+                            Managed accounts:
+                            <ul>
+                                {% for managed_account in user.managed_accounts.all %}<li>{{ managed_account.name }}</li>{% endfor %}
+                            </ul>
+                        </li>
+                    {% endif %}
+                    {% if user.managed_projects.all %}
+                        <li>
+                            Managed projects:
+                            <ul>
+                                {% for managed_project in user.managed_projects.all %}<li>{{ managed_project.name }}</li>{% endfor %}
+                            </ul>
+                        </li>
+                    {% endif %}
+                    {% if user.managed_users.all %}
+                        <li>
+                            Managed users:
+                            <ul>
+                                {% for managed_user in user.managed_users.all %}<li>{{ managed_user.get_name }}</li>{% endfor %}
+                            </ul>
+                        </li>
+                    {% endif %}
+                    {% if user.supervisors.all %}
+                        <li>
+                            Supervisors:
+                            <ul>
+                                {% for supervisor in user.supervisors.all %}<li>{{ supervisor.get_name }}</li>{% endfor %}
+                            </ul>
+                        </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>

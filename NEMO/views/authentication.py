@@ -43,7 +43,9 @@ def get_pre_authentication_backends():
         settings,
         "PRE_AUTH_BACKENDS",
         [
+            get_full_class_name(GenericRemoteUserAuthenticationBackend),
             get_full_class_name(RemoteUserAuthenticationBackend),
+            get_full_class_name(GenericBasicAuthenticationHeaderAuthenticationBackend),
             get_full_class_name(NginxKerberosAuthorizationHeaderAuthenticationBackend),
         ],
     )
@@ -118,6 +120,9 @@ class GenericRemoteUserAuthenticationBackend(ModelBackend):
             f"User {username} successfully authenticated with {type(self).__name__} and was granted access."
         )
         return user
+
+    def clean_username(self, username: str) -> str:
+        return username
 
 
 class RemoteUserAuthenticationBackend(GenericRemoteUserAuthenticationBackend):

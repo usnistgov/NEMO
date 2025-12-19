@@ -6,13 +6,27 @@
         <div class="form-group">
             <label class="control-label col-md-4">Enable adjustment requests</label>
             <div class="col-md-8">
-                <div class="checkbox">
+                <div class="radio">
                     <label>
-                        <input type="checkbox"
+                        <input type="radio"
                                name="adjustment_requests_enabled"
-                               {% if adjustment_requests_enabled %}checked{% endif %}
+                               {% if adjustment_requests_enabled == "enabled" %}checked{% endif %}
                                value="enabled">
-                        Check this box to allow users to request adjustment for charges.
+                        Enabled for everyone
+                    </label>
+                    <label>
+                        <input type="radio"
+                               name="adjustment_requests_enabled"
+                               {% if adjustment_requests_enabled == "reviewers_only" %}checked{% endif %}
+                               value="reviewers_only">
+                        Enabled for reviewers only
+                    </label>
+                    <label>
+                        <input type="radio"
+                               name="adjustment_requests_enabled"
+                               {% if not adjustment_requests_enabled %}checked{% endif %}
+                               value="">
+                        Disabled
                     </label>
                     <br />
                 </div>
@@ -44,24 +58,6 @@
             </div>
             <div class="col-md-offset-4 col-md-8 help-block light-grey">
                 The description/instructions to display on the adjustment requests page.
-            </div>
-        </div>
-        <div class="form-group">
-            <label class="control-label col-md-4" for="adjustment_requests_display_max">Adjustment requests display maximum</label>
-            <div class="col-md-3">
-                <div class="input-group">
-                    <input type="number"
-                           step="1"
-                           min="0"
-                           id="adjustment_requests_display_max"
-                           name="adjustment_requests_display_max"
-                           class="form-control text-right"
-                           value="{{ adjustment_requests_display_max }}" />
-                    <span class="input-group-addon">requests</span>
-                </div>
-            </div>
-            <div class="col-md-offset-4 col-md-8 help-block light-grey">
-                The maximum number of requests to display in each section (approved, denied). Leave blank for all.
             </div>
         </div>
         <div class="form-group">
@@ -237,8 +233,10 @@
                 The number of most recent charges to show in the dropdown menu when creating an adjustment.
             </div>
         </div>
-        <div class="form-group {% if errors.adjustment_requests_time_limit_interval or errors.adjustment_requests_time_limit_frequency %}has-error{% endif %}">
-            <label class="control-label col-md-4" for="adjustment_requests_time_limit_interval">Time limit for adjustments</label>
+        <div class="form-group {% if errors.adjustment_requests_time_limit_interval or errors.adjustment_requests_time_limit_frequency or errors.adjustment_requests_time_limit_monthly_cycle_day %}has-error{% endif %}">
+            <label id="adjustment_requests_time_limit"
+                   class="control-label col-md-4"
+                   for="adjustment_requests_time_limit_interval">Time limit for adjustments</label>
             <div class="col-md-5">
                 <div class="input-group">
                     <span class="input-group-addon">last</span>
@@ -275,9 +273,37 @@
                 {% elif errors.adjustment_requests_time_limit_frequency %}
                     {{ errors.adjustment_requests_time_limit_frequency.error }}
                 {% else %}
-                    The timeframe for users to be able to request adjustment on charges.
+                    Users can request adjustments for charges made within this period
                 {% endif %}
             </div>
+            <div class="col-md-offset-4 col-md-5">
+                <div class="input-group">
+                    <span class="input-group-addon">until the</span>
+                    <input aria-labelledby="adjustment_requests_time_limit"
+                           type="number"
+                           name="adjustment_requests_time_limit_monthly_cycle_day"
+                           value="{{ adjustment_requests_time_limit_monthly_cycle_day }}"
+                           min="1"
+                           max="31"
+                           step="1"
+                           class="form-control text-right">
+                    <span class="input-group-addon">of next month</span>
+                </div>
+            </div>
+            <div class="col-md-offset-4 col-md-8 help-block light-grey" style="margin-bottom: 0">
+                {% if errors.adjustment_requests_time_limit_monthly_cycle_day %}
+                    {{ errors.adjustment_requests_time_limit_monthly_cycle_day.error }}
+                {% else %}
+                    Charges are only refundable until this monthly cutoff date
+                {% endif %}
+            </div>
+            {% if date_limit %}
+                <div class="col-md-offset-4 col-md-8">
+                    <div class="alert alert-info" style="margin-top: 15px;margin-bottom: 0">
+                        Currently, users can request adjustments for charges that ended after {{ date_limit }}.
+                    </div>
+                </div>
+            {% endif %}
         </div>
         <div class="form-group">
             <label class="control-label col-md-4">Approved charges</label>

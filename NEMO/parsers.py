@@ -37,10 +37,12 @@ class CSVParser(BaseParser):
     def check_for_related_fields(self, row: Iterable) -> Iterable:
         return [self.to_json(item) for item in row]
 
-    def to_json(self, item: str) -> Union[str, List]:
+    def to_json(self, item: str) -> Union[str, List, None]:
         if item and item.startswith("["):
             try:
                 return json.loads(item)
             except:
                 pass
+        if item == "":
+            return None
         return item

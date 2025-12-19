@@ -1,6 +1,6 @@
 import datetime
 import json
-from typing import Optional
+from collections import Counter
 
 from django import forms
 from django.contrib import admin, messages
@@ -27,6 +27,7 @@ from NEMO.actions import (
     disable_selected_cards,
     duplicate_configuration,
     duplicate_tool_configuration,
+    duplicate_tool_usage_questions,
     enable_selected_cards,
     lock_selected_interlocks,
     rebuild_area_tree,
@@ -111,6 +112,7 @@ from NEMO.models import (
     ToolDocuments,
     ToolQualificationGroup,
     ToolUsageCounter,
+    ToolUsageQuestions,
     ToolWaitList,
     TrainingSession,
     UsageEvent,
@@ -126,14 +128,8 @@ from NEMO.models import (
     record_remote_many_to_many_changes_and_save,
 )
 from NEMO.utilities import admin_get_item, format_daterange
-from NEMO.views.customization import ProjectsAccountsCustomization
-from NEMO.widgets.dynamic_form import (
-    DynamicForm,
-    PostUsageFloatFieldQuestion,
-    PostUsageNumberFieldQuestion,
-    admin_render_dynamic_form_preview,
-    validate_dynamic_form_model,
-)
+from NEMO.views.customization import ApplicationCustomization, ProjectsAccountsCustomization
+from NEMO.widgets.dynamic_form import DynamicForm, PostUsageGroupQuestion, admin_render_dynamic_form_preview
 
 
 # Formset to require at least one inline form
@@ -156,8 +152,7 @@ class ToolAdminForm(forms.ModelForm):
         fields = "__all__"
 
     class Media:
-        js = ("admin/tool/tool.js", "admin/dynamic_form_preview/dynamic_form_preview.js")
-        css = {"": ("admin/dynamic_form_preview/dynamic_form_preview.css",)}
+        js = ["admin/tool/tool.js"]
 
     qualified_users = forms.ModelMultipleChoiceField(
         queryset=User.objects.all(),
@@ -193,22 +188,6 @@ class ToolAdminForm(forms.ModelForm):
             self.fields["required_resources"].initial = self.instance.required_resource_set.all()
             self.fields["nonrequired_resources"].initial = self.instance.nonrequired_resource_set.all()
 
-    def clean__pre_usage_questions(self):
-        questions = self.cleaned_data["_pre_usage_questions"]
-        try:
-            return json.dumps(json.loads(questions), indent=4)
-        except:
-            pass
-        return questions
-
-    def clean__post_usage_questions(self):
-        questions = self.cleaned_data["_post_usage_questions"]
-        try:
-            return json.dumps(json.loads(questions), indent=4)
-        except:
-            pass
-        return questions
-
     def clean(self):
         cleaned_data = super().clean()
         image = cleaned_data.get("_image")
@@ -238,8 +217,6 @@ class ToolAdmin(admin.ModelAdmin):
         "_operation_mode",
         "problematic",
         "is_configurable",
-        "has_pre_usage_questions",
-        "has_post_usage_questions",
         "id",
     )
     filter_horizontal = ("_backup_owners", "_staff", "_superusers", "_adjustment_request_reviewers")
@@ -252,7 +229,6 @@ class ToolAdmin(admin.ModelAdmin):
         "_location",
         ("_requires_area_access", admin.RelatedOnlyFieldListFilter),
     )
-    readonly_fields = ("_post_usage_preview", "_pre_usage_preview")
     autocomplete_fields = [
         "_primary_owner",
         "parent_tool",
@@ -271,10 +247,7 @@ class ToolAdmin(admin.ModelAdmin):
                     "_operation_mode",
                     "qualified_users",
                     "_qualifications_never_expire",
-                    "_pre_usage_questions",
-                    "_pre_usage_preview",
-                    "_post_usage_questions",
-                    "_post_usage_preview",
+                    "_problem_shutdown_enabled",
                 )
             },
         ),
@@ -298,7 +271,7 @@ class ToolAdmin(admin.ModelAdmin):
             },
         ),
         ("Approval", {"fields": ("_adjustment_request_reviewers",)}),
-        ("Reservation", {"fields": ("_reservation_horizon", "_missed_reservation_threshold")}),
+        ("Reservation", {"fields": ("_reservation_horizon", "_missed_reservation_threshold", "_abuse_weight")}),
         (
             "Usage policy",
             {
@@ -321,6 +294,7 @@ class ToolAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "_requires_area_access",
+                    "_requires_area_occupancy_minimum",
                     "_grant_physical_access_level_upon_qualification",
                     "_grant_badge_reader_access_upon_qualification",
                     "_interlock",
@@ -331,26 +305,6 @@ class ToolAdmin(admin.ModelAdmin):
         ),
         ("Dependencies", {"fields": ("required_resources", "nonrequired_resources")}),
     )
-
-    @admin.display(description="Pre Questions", ordering="_pre_usage_questions", boolean=True)
-    def has_pre_usage_questions(self, obj: Tool):
-        return True if obj.pre_usage_questions else False
-
-    @admin.display(description="Post Questions", ordering="_post_usage_questions", boolean=True)
-    def has_post_usage_questions(self, obj: Tool):
-        return True if obj.post_usage_questions else False
-
-    def _pre_usage_preview(self, obj: Tool):
-        return admin_render_dynamic_form_preview(obj, "pre_usage_questions")
-
-    def _post_usage_preview(self, obj: Tool):
-        return admin_render_dynamic_form_preview(obj, "post_usage_questions")
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        """We only want non children tool to be eligible as parents"""
-        if db_field.name == "parent_tool":
-            kwargs["queryset"] = Tool.objects.filter(parent_tool__isnull=True)
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def save_model(self, request, obj, form, change):
         """
@@ -373,6 +327,124 @@ class ToolAdmin(admin.ModelAdmin):
                 obj.required_resource_set.set(form.cleaned_data["required_resources"])
             if "nonrequired_resources" in form.changed_data:
                 obj.nonrequired_resource_set.set(form.cleaned_data["nonrequired_resources"])
+
+
+class ToolUsageQuestionsAdminForm(forms.ModelForm):
+    class Meta:
+        model = ToolUsageQuestions
+        fields = "__all__"
+
+    class Media:
+        js = ("admin/dynamic_form_preview/dynamic_form_preview.js",)
+        css = {"": ("admin/dynamic_form_preview/dynamic_form_preview.css",)}
+
+    def clean_questions(self):
+        questions = self.cleaned_data["questions"]
+        try:
+            return json.dumps(json.loads(questions), indent=4)
+        except:
+            pass
+        return questions
+
+    def clean(self):
+        cleaned_data = super(ToolUsageQuestionsAdminForm, self).clean()
+        only_tools = cleaned_data.get("only_for_tools") or Tool.objects.all()
+        questions_type = cleaned_data.get("questions_type")
+        questions = cleaned_data.get("questions")
+        if questions_type and questions:
+            fake_project = Project(id=0)
+            fake_user = User(id=0)
+            for tool in only_tools:
+                usage_questions = list(
+                    tool._get_usage_questions(questions_type, fake_user, fake_project).exclude(id=self.instance.id)
+                ) + [ToolUsageQuestions(questions=questions)]
+                names = []
+                for usage_question in usage_questions:
+                    for question in DynamicForm(usage_question.questions).questions:
+                        names.append(question.name)
+                        if isinstance(question, PostUsageGroupQuestion):
+                            for sub_question in question.sub_questions:
+                                names.append(sub_question.name)
+                duplicate_names = [k for k, v in Counter(names).items() if v > 1]
+                if duplicate_names:
+                    self.add_error(
+                        "questions",
+                        f"Question names need to be unique. Duplicates were found for tool {tool.name}: {duplicate_names}",
+                    )
+        return cleaned_data
+
+
+@register(ToolUsageQuestions)
+class ToolUsageQuestionsAdmin(admin.ModelAdmin):
+    form = ToolUsageQuestionsAdminForm
+    list_display = [
+        "id",
+        "name",
+        "enabled",
+        "get_tools",
+        "get_projects",
+        "get_users",
+        "get_groups",
+        "display_order",
+        "questions_type",
+    ]
+    list_filter = [
+        "enabled",
+        "questions_type",
+        ("only_for_tools", admin.RelatedOnlyFieldListFilter),
+        ("only_for_projects", admin.RelatedOnlyFieldListFilter),
+        ("only_for_users", admin.RelatedOnlyFieldListFilter),
+        ("only_for_groups", admin.RelatedOnlyFieldListFilter),
+    ]
+    filter_horizontal = ["only_for_tools", "only_for_projects", "only_for_users", "only_for_groups"]
+    readonly_fields = ["questions_preview"]
+    actions = [duplicate_tool_usage_questions]
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "enabled",
+                    "display_order",
+                    "name",
+                    "only_for_tools",
+                    "only_for_projects",
+                    "only_for_users",
+                    "only_for_groups",
+                    "questions_type",
+                    "questions",
+                    "questions_preview",
+                )
+            },
+        ),
+    )
+
+    def questions_preview(self, obj):
+        return admin_render_dynamic_form_preview(obj, "questions")
+
+    @display(ordering="only_for_tools", description="Tools")
+    def get_tools(self, obj):
+        if not obj.only_for_tools.exists():
+            return "All tools"
+        return mark_safe("<br>".join([tool.name for tool in obj.only_for_tools.all()]))
+
+    @display(ordering="only_for_projects", description="Projects")
+    def get_projects(self, obj):
+        if not obj.only_for_projects.exists():
+            return "All projects"
+        return mark_safe("<br>".join([project.name for project in obj.only_for_projects.all()]))
+
+    @display(ordering="only_for_users", description="Users")
+    def get_users(self, obj):
+        if not obj.only_for_users.exists():
+            return "All users"
+        return mark_safe("<br>".join([str(user) for user in obj.only_for_users.all()]))
+
+    @display(ordering="only_for_groups", description="Groups")
+    def get_groups(self, obj):
+        if not obj.only_for_groups.exists():
+            return "All groups"
+        return mark_safe("<br>".join([str(group) for group in obj.only_for_groups.all()]))
 
 
 @register(ToolWaitList)
@@ -442,7 +514,7 @@ class AreaAdmin(DraggableMPTTAdmin):
             },
         ),
         ("Approval", {"fields": ("adjustment_request_reviewers", "access_request_reviewers")}),
-        ("Reservation", {"fields": ("reservation_horizon", "missed_reservation_threshold")}),
+        ("Reservation", {"fields": ("reservation_horizon", "missed_reservation_threshold", "abuse_weight")}),
         (
             "Policy",
             {
@@ -576,16 +648,40 @@ class ConfigurationHistoryAdmin(admin.ModelAdmin):
     autocomplete_fields = ["user"]
 
 
+class AccountAdminForm(forms.ModelForm):
+    class Meta:
+        model = Account
+        fields = "__all__"
+
+    managers = forms.ModelMultipleChoiceField(
+        queryset=User.objects.all(),
+        required=False,
+        widget=FilteredSelectMultiple(verbose_name="Managers", is_stacked=False),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields["managers"].initial = self.instance.manager_set.all()
+
+
 @register(Account)
 class AccountAdmin(admin.ModelAdmin):
-    list_display = ("name", "id", "active", "type", "start_date")
+    list_display = ("name", "id", "active", "type", "start_date", "get_managers")
     search_fields = ("name",)
     list_filter = ("active", ("type", admin.RelatedOnlyFieldListFilter), "start_date")
+    form = AccountAdminForm
+
+    @display(description="Managers", ordering="manager_set")
+    def get_managers(self, account: Account):
+        return mark_safe("<br>".join([manager.get_name() for manager in account.manager_set.all()]))
 
     def save_model(self, request, obj, form, change):
         """Audit account and project active status."""
         super(AccountAdmin, self).save_model(request, obj, form, change)
         record_active_state(request, obj, form, "active", not change)
+        if "managers" in form.changed_data:
+            obj.manager_set.set(form.cleaned_data["managers"])
 
 
 class ProjectAdminForm(forms.ModelForm):
@@ -599,7 +695,7 @@ class ProjectAdminForm(forms.ModelForm):
         widget=FilteredSelectMultiple(verbose_name="Users", is_stacked=False),
     )
 
-    principal_investigators = forms.ModelMultipleChoiceField(
+    managers = forms.ModelMultipleChoiceField(
         queryset=User.objects.all(),
         required=False,
         widget=FilteredSelectMultiple(verbose_name="Principal investigators", is_stacked=False),
@@ -613,7 +709,7 @@ class ProjectAdminForm(forms.ModelForm):
             )
         if self.instance.pk:
             self.fields["members"].initial = self.instance.user_set.all()
-            self.fields["principal_investigators"].initial = self.instance.manager_set.all()
+            self.fields["managers"].initial = self.instance.manager_set.all()
 
     def clean_project_types(self):
         data = self.cleaned_data["project_types"]
@@ -659,7 +755,7 @@ class ProjectAdmin(admin.ModelAdmin):
 
     @display(description="PIs", ordering="manager_set")
     def get_managers(self, project: Project):
-        return mark_safe("<br>".join([pi.get_name() for pi in project.manager_set.all()]))
+        return mark_safe("<br>".join([manager.get_name() for manager in project.manager_set.all()]))
 
     @display(description="Project type(s)", ordering="project_types")
     def get_project_types(self, project: Project):
@@ -695,8 +791,8 @@ class ProjectAdmin(admin.ModelAdmin):
         # Record whether the project is active or not.
         record_active_state(request, obj, form, "active", not change)
 
-        if "principal_investigators" in form.changed_data:
-            obj.manager_set.set(form.cleaned_data["principal_investigators"])
+        if "managers" in form.changed_data:
+            obj.manager_set.set(form.cleaned_data["managers"])
 
 
 class ConfigurationOptionInline(admin.TabularInline):
@@ -756,7 +852,6 @@ class ReservationQuestionsForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        reservation_questions = cleaned_data.get("questions")
         tool_reservations = cleaned_data.get("tool_reservations")
         only_tools = cleaned_data.get("only_for_tools")
         area_reservations = cleaned_data.get("area_reservations")
@@ -772,11 +867,6 @@ class ReservationQuestionsForm(forms.ModelForm):
             self.add_error(
                 "area_reservations", "You cannot restrict areas these questions apply to without enabling it for areas"
             )
-        # Validate reservation_questions JSON format
-        if reservation_questions:
-            errors = validate_dynamic_form_model(reservation_questions, self.instance, "questions")
-            for error in errors:
-                self.add_error("questions", error)
         return cleaned_data
 
 
@@ -818,6 +908,7 @@ class UsageEventAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.Mo
     autocomplete_fields = ["tool", "user", "operator", "project", "validated_by", "waived_by"]
     readonly_fields = ["has_ended"]
     actions = [waive_selected_charges]
+    search_fields = ["user__username", "user__first_name", "user__last_name", "tool__name"]
 
 
 @register(Consumable)
@@ -1133,19 +1224,35 @@ class UserAdminForm(forms.ModelForm):
     )
 
     staff_on_tools = forms.ModelMultipleChoiceField(
+        label="Act as staff on tools",
         queryset=Tool.objects.filter(parent_tool__isnull=True),
         required=False,
         widget=FilteredSelectMultiple(verbose_name="tools", is_stacked=False),
     )
 
+    primary_owner_on_tools = forms.ModelMultipleChoiceField(
+        queryset=Tool.objects.filter(parent_tool__isnull=True),
+        required=False,
+        widget=FilteredSelectMultiple(verbose_name="tools (readonly)", is_stacked=False, attrs={"disabled": True}),
+        disabled=True,
+    )
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.instance: User = self.instance
+        self.fields["training_required"].label = f'{ApplicationCustomization.get("facility_rules_name")} required'
         if self.instance.pk:
+            self.fields["primary_owner_on_tools"].initial = self.instance.primary_tool_owner.all()
             self.fields["tool_qualifications"].initial = self.instance.qualifications.all()
             self.fields["backup_owner_on_tools"].initial = self.instance.backup_for_tools.all()
             self.fields["superuser_on_tools"].initial = self.instance.superuser_for_tools.all()
             self.fields["staff_on_tools"].initial = self.instance.staff_for_tools.all()
+
+    def clean_managed_users(self):
+        managed_users = self.cleaned_data["managed_users"]
+        if self.instance.pk in [s.pk for s in managed_users]:
+            raise forms.ValidationError("User cannot supervise themselves.")
+        return managed_users
 
 
 class UserDocumentsInline(DocumentModelAdmin):
@@ -1161,6 +1268,8 @@ class UserAdmin(admin.ModelAdmin):
         "user_permissions",
         "projects",
         "managed_projects",
+        "managed_accounts",
+        "managed_users",
         "physical_access_levels",
         "onboarding_phases",
         "safety_trainings",
@@ -1195,11 +1304,14 @@ class UserAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "tool_qualifications",
+                    "primary_owner_on_tools",
                     "backup_owner_on_tools",
                     "staff_on_tools",
                     "superuser_on_tools",
                     "projects",
                     "managed_projects",
+                    "managed_accounts",
+                    "managed_users",
                 )
             },
         ),
@@ -1253,6 +1365,7 @@ class UserAdmin(admin.ModelAdmin):
         record_local_many_to_many_changes(request, obj, form, "projects")
         record_local_many_to_many_changes(request, obj, form, "qualifications", "tool_qualifications")
         record_local_many_to_many_changes(request, obj, form, "physical_access_levels")
+        record_local_many_to_many_changes(request, obj, form, "managed_users")
         record_active_state(request, obj, form, "is_active", not change)
         if "tool_qualifications" in form.changed_data:
             obj.qualifications.set(form.cleaned_data["tool_qualifications"])
@@ -1715,49 +1828,6 @@ class BadgeReaderAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "send_key", "record_key")
 
 
-class ToolUsageCounterAdminForm(forms.ModelForm):
-    class Meta:
-        model = ToolUsageCounter
-        fields = "__all__"
-
-    def clean(self):
-        cleaned_data = super().clean()
-        tool = cleaned_data.get("tool")
-        if tool:
-            for question_type in ["pre", "post"]:
-                question_name = f"tool_{question_type}_usage_question"
-                question_data_name = cleaned_data.get(question_name)
-                tool_questions = getattr(tool, f"{question_type}_usage_questions")
-                error = self.clean_counter_question(tool_questions, question_data_name, question_type)
-                if error:
-                    self.add_error(question_name, error)
-        return cleaned_data
-
-    @staticmethod
-    def clean_counter_question(tool_questions: str, counter_question_name: str, pre_post: str) -> Optional[str]:
-        error = None
-        if counter_question_name:
-            if tool_questions:
-                candidate_questions = []
-                usage_form = DynamicForm(tool_questions)
-                candidate_questions.extend(
-                    usage_form.filter_questions(
-                        lambda x: isinstance(x, (PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion))
-                    )
-                )
-                matching_tool_question = any(
-                    question for question in candidate_questions if question.name == counter_question_name
-                )
-                if not matching_tool_question:
-                    candidates = {question.name for question in candidate_questions}
-                    error = f"The tool has no {pre_post} usage question of type Number or Float with this name."
-                    if candidates:
-                        error += f" Valid question names are: {', '.join(candidates)}"
-            else:
-                error = f"The tool does not have any {pre_post} usage questions."
-        return error
-
-
 @register(ToolUsageCounter)
 class ToolUsageCounterAdmin(admin.ModelAdmin):
     list_display = (
@@ -1785,7 +1855,6 @@ class ToolUsageCounterAdmin(admin.ModelAdmin):
         "last_reset",
     )
     readonly_fields = ("warning_threshold_reached",)
-    form = ToolUsageCounterAdminForm
     autocomplete_fields = ["tool", "last_reset_by"]
 
 
@@ -1817,11 +1886,11 @@ class BuddyRequestAdmin(admin.ModelAdmin):
 class AdjustmentRequestAdmin(admin.ModelAdmin):
     inlines = [RequestMessageInlines]
     list_display = (
+        "id",
         "creator",
         "creation_time",
         "last_updated",
         "get_item",
-        "get_time_difference",
         "get_status_display",
         "reply_count",
         "waive",
@@ -1839,10 +1908,6 @@ class AdjustmentRequestAdmin(admin.ModelAdmin):
     date_hierarchy = "last_updated"
     actions = [adjustment_requests_export_csv, adjustment_requests_mark_as_applied]
     readonly_fields = ["creation_time"]
-
-    @admin.display(description="Diff")
-    def get_time_difference(self, adjustment_request: AdjustmentRequest):
-        return adjustment_request.get_time_difference()
 
     @admin.display(ordering="replies", description="Replies")
     def reply_count(self, adjustment_request: AdjustmentRequest):

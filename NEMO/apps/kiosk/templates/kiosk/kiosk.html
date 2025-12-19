@@ -100,9 +100,11 @@
         {% endwith %}
 		let timeout_handle = null;
 		let countdown_handle = null;
-		let occupancy = new URLSearchParams(window.location.search).get('occupancy');
-        let usage = new URLSearchParams(window.location.search).get('usage') !== null;
-        let alerts = new URLSearchParams(window.location.search).get('alerts') !== null;
+        const current_url_parameters = new URLSearchParams(window.location.search);
+		const occupancy = current_url_parameters.get("occupancy");
+        const usage = current_url_parameters.get("usage") !== null;
+        const alerts = current_url_parameters.get("alerts") !== null;
+        const virtual_inputs = current_url_parameters.get("virtual_inputs") !== "false";
 		let default_content_element = $("#default_content");
 		let status_element = $("#status");
 		let error_element = $("#error");
@@ -213,35 +215,90 @@
         {
             $(".logged_in_user").html(user);
         }
-		function select_project(element, project_id)
+        function load_pre_usage_questions(tool_id, customer_id, project_id)
+        {
+            let failure_dialog = ajax_complete_callback("Unable to load pre usage questions", "There was a problem loading pre usage questions.");
+            const resolved_url = build_django_url("{% url 'tool_usage_questions' 999 'pre' 888 777 'true' %}", ['999', '888', '777', 'true'], [tool_id, customer_id, project_id, virtual_inputs]);
+            const note = $("#note");
+            note.prop("disabled", false).parents("#usage_note").show();
+            auto_size_textarea(note[0], 3);
+            if (virtual_inputs)
+            {
+                note.keyboard();
+            }
+            $("#pre_usage_questions").load(resolved_url, update_start_button, failure_dialog).show();
+        }
+		function select_project(element, project_id, customer_id, tool_id)
 		{
 			$(".project-choice").removeClass('active');
 			$(element).addClass('active');
 			$("#project_id").val(project_id);
-            $("#pre_usage_questions").show();
+            load_pre_usage_questions(tool_id, customer_id, project_id);
 			update_start_button();
 		}
 		function load_choices(badge_number)
 		{
-			let data = {
-				'location': '{{ location }}',
-				'badge_number': badge_number,
-                'category': '{{ request.GET.category|default_if_none:"" }}',
-			};
+            const categories = current_url_parameters.getAll('category');
+            const tool_names = current_url_parameters.getAll('tool');
+            let params = new URLSearchParams();
+            params.append('location', '{{ location }}');
+    		params.append('badge_number', badge_number);
+			categories.forEach(c => params.append('category', c));
+			tool_names.forEach(c => params.append('tool', c));
 			default_content_element.hide();
 			error_interlock_element.hide();
 			error_element.hide();
 			status_element.html("<h1>Loading choices...</h1>").show();
-            ajax_get('{% url 'kiosk_choices' %}?' + $.param(data), undefined, load_complete);
+            ajax_get('{% url 'kiosk_choices' %}?' + params.toString(), undefined, load_complete);
 		}
+        function update_stop_button()
+        {
+            if(document.querySelector('#tool_control'))
+            {
+                if(document.querySelector('#tool_control').checkValidity())
+                {
+                    $('#answer_to_proceed').hide();
+                    $("#stop_button").show();
+                }
+                else
+                {
+                    $('#answer_to_proceed').show();
+                    $("#stop_button").hide();
+                }
+            }
+        }
+
+        function update_start_button()
+        {
+            $("#start_reserve").show();
+            if(document.querySelector('#tool_control'))
+            {
+                if(document.querySelector('#tool_control').checkValidity())
+                {
+                    $(".start_button").show();
+                }
+                else
+                {
+                    $(".start_button").hide();
+                }
+            }
+        }
 		function tool_information(url)
 		{
 			default_content_element.hide();
 			error_element.hide();
 			error_interlock_element.hide();
 			status_element.html("<h1>Loading tool information...</h1>").show();
-            ajax_get(url, undefined, load_complete);
+            ajax_get(url, "virtual_inputs="+virtual_inputs, load_complete);
 		}
+        function open_checkout(url)
+        {
+            default_content_element.hide();
+            error_element.hide();
+            error_interlock_element.hide();
+            status_element.html("<h1>Loading supplies/consumables...</h1>").show();
+            ajax_get(url, undefined, load_complete);
+        }
 		function tool_report_problem(url)
         {
             default_content_element.hide();
@@ -310,6 +367,7 @@
 			error_element.hide();
 			error_interlock_element.hide();
 			let data = $('#tool_reservation').serialize();
+            data += "&virtual_inputs=" + virtual_inputs;
 			status_element.html("<h1>Reserving tool...</h1>").show();
             ajax_post('{% url 'reserve_tool_from_kiosk' %}', data, load_complete);
 		}
@@ -456,12 +514,10 @@
         }
         function fetch_alerts()
         {
-            {% if "NEMO.apps.area_access"|app_installed %}
-                if(alerts)
-                {
-                    $("#alerts").load("{% url 'area_access_alerts' %}");
-                }
-            {% endif %}
+            if(alerts)
+            {
+                $("#alerts").load("{% url 'kiosk_alerts' %}");
+            }
         }
 		function close_numpads()
 		{

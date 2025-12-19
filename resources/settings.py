@@ -94,9 +94,11 @@ TIME_INPUT_FORMATS = ["%I:%M:%S %p", *global_settings.TIME_INPUT_FORMATS]
 # This provides an easy way to turn it off, for performance.
 # If this is set to False, Django will make some optimizations so as not to load the translation machinery.
 USE_I18N = False
-# A boolean that specifies if localized formatting of data will be enabled by default or not.
-# If this is set to True, e.g. Django will display numbers and dates using the format of the current locale
-USE_L10N = False
+# Language code for this installation. Valid choices can be found here:
+# https://www.iana.org/assignments/language-subtag-registry/
+# If LANGUAGE_CODE is not listed in LANGUAGES (below), the project must
+# provide the necessary translations and locale definitions.
+# LANGUAGE_CODE = "custom"
 # A boolean that specifies if datetimes will be timezone-aware by default or not. If this is set to True,
 # Django will use timezone-aware datetimes internally. Otherwise, Django will use naive datetimes in local time.
 USE_TZ = True
@@ -110,7 +112,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.admin",
     "django.contrib.humanize",
-    "django_jsonform",
     "NEMO.apps.kiosk",  # Comment out if you are not planning on using the Kiosk tablet pages
     "NEMO.apps.area_access",  # Comment out if you are not planning on using the Area Access tablets screen
     "NEMO",
@@ -324,6 +325,8 @@ LOGGING = {
 
 # -------------------- Organization specific settings (NEMO specific; NOT supported by Django) --------------------
 # Customize these to suit your needs
+# Cache timeout for customizations. This is used to avoid re-fetching the same customizations every time.
+CUSTOMIZATIONS_CACHE_SECONDS = 30
 
 # When true, all available URLs and NEMO functionality is enabled.
 # When false, conditional URLs are removed to reduce the attack surface of NEMO.

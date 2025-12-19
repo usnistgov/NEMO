@@ -1,4 +1,4 @@
-<h1>{{ message }}</h1>
+<h1>{{ message|safe }}</h1>
 {% if badge_number %}
     {% if not delay %}
         <script>load_choices('{{ badge_number }}')</script>

@@ -25,11 +25,10 @@
                     <p>
                         Dear
                         {% if user_office %}
-                            User Office
+                            User Office,
                         {% else %}
-                            {{ adjustment_request.creator.first_name }}
+                            {{ adjustment_request.creator.first_name }},
                         {% endif %}
-                        ,
                     </p>
                     <p>
                         {% if user_office %}
@@ -37,11 +36,12 @@
                         {% else %}
                             Your
                         {% endif %}
-                        adjustment request has been {{ status }}
+                        adjustment request has been
                         {% if adjustment_request.creator != adjustment_request.last_updated_by %}
-                            by {{ adjustment_request.last_updated_by.get_name }}
+                            {{ status }} by {{ adjustment_request.last_updated_by.get_name }}.
+                        {% else %}
+                            {{ status }}.
                         {% endif %}
-                        .
                     </p>
                 </td>
             </tr>
@@ -50,24 +50,71 @@
                     {% if manager_note %}<p>{{ manager_note }}</p>{% endif %}
                     <p>
                         Request details:
-                        {% if adjustment_request.item %}
+                        {% if adjustment_request.has_item_changes %}
                             <br>
                             <u>Charge</u>: {{ adjustment_request.item.get_display }}
                             <br>
-                            {% if not adjustment_request.waive %}
-                                <u>Start time</u>: {{ adjustment_request.item.start|date:"SHORT_DATETIME_FORMAT" }}
-                                {% if adjustment_request.get_new_start %}
-                                    -> <b>{{ adjustment_request.get_new_start|date:"SHORT_DATETIME_FORMAT" }}</b>
-                                {% endif %}
-                                <br>
-                                <u>End time</u>: {{ adjustment_request.item.end|date:"SHORT_DATETIME_FORMAT" }}
-                                {% if adjustment_request.get_new_end %}
-                                    -> <b>{{ adjustment_request.get_new_end|date:"SHORT_DATETIME_FORMAT" }}</b>
-                                {% endif %}
-                                <br>
-                                <u>Difference</u>: <b>{{ adjustment_request.get_time_difference|default_if_none:"" }}</b>
+                            <br>
+                            <u>{{ adjustment_request.changes_status|capfirst }}:</u>
+                            <br>
+                            {% if adjustment_request.waive %}
+                                <strong>
+                                    {% if adjustment_request.applied %}
+                                        This charge was waived
+                                    {% else %}
+                                        {{ adjustment_request.creator.get_name }} has requested that this charge be waived
+                                    {% endif %}
+                                </strong>
                             {% else %}
-                                <u>Waive</u>: <b>I request that this charge be waived</b>
+                                {% if adjustment_request.new_start or adjustment_request.new_end %}
+                                    <strong style="width: 90px; display: inline-block;"><u>Start Time:</u></strong>
+                                    {% if not adjustment_request.new_start %}
+                                        {{ adjustment_request.get_original_start|date:"SHORT_DATETIME_FORMAT" }} (unchanged)
+                                    {% else %}
+                                        {% if adjustment_request.get_original_start %}
+                                            <del>{{ adjustment_request.get_original_start|date:"SHORT_DATETIME_FORMAT" }}</del>
+                                        {% endif %}
+                                        ->
+                                        {{ adjustment_request.new_start|date:"SHORT_DATETIME_FORMAT" }}
+                                    {% endif %}
+                                    <br>
+                                    <strong style="width: 90px; display: inline-block;"><u>End Time:</u></strong>
+                                    {% if not adjustment_request.new_end %}
+                                        {{ adjustment_request.get_original_end|date:"SHORT_DATETIME_FORMAT" }} (unchanged)
+                                    {% else %}
+                                        {% if adjustment_request.get_original_end %}
+                                            <del>{{ adjustment_request.get_original_end|date:"SHORT_DATETIME_FORMAT" }}</del>
+                                        {% endif %}
+                                        ->
+                                        {{ adjustment_request.new_end|date:"SHORT_DATETIME_FORMAT" }}
+                                    {% endif %}
+                                    {% if adjustment_request.get_time_difference %}
+                                        <br>
+                                        <strong style="width: 90px; display: inline-block;"><u>Difference:</u></strong>
+                                        <span>{{ adjustment_request.get_time_difference }}</span>
+                                    {% endif %}
+                                {% endif %}
+                                {% if adjustment_request.new_quantity is not None %}
+                                    <br>
+                                    <strong style="width: 90px; display: inline-block;"><u>Quantity:</u></strong>
+                                    {% if adjustment_request.get_original_quantity is not None %}
+                                        <del>
+                                            {{ adjustment_request.get_original_quantity }}
+                                        </del>
+                                    {% endif %}
+                                    ->
+                                    {{ adjustment_request.new_quantity }}
+                                    {% if adjustment_request.get_quantity_difference %}
+                                        <span>({{ adjustment_request.get_quantity_difference }})</span>
+                                    {% endif %}
+                                {% endif %}
+                                {% if adjustment_request.new_project %}
+                                    <br>
+                                    <strong style="width: 90px; display: inline-block;"><u>Project:</u></strong>
+                                    {% if adjustment_request.get_original_project %}<del>{{ adjustment_request.get_original_project }}</del>{% endif %}
+                                    ->
+                                    {{ adjustment_request.new_project }}
+                                {% endif %}
                             {% endif %}
                             <br>
                         {% endif %}

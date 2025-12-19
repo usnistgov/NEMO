@@ -1,28 +1,33 @@
-from datetime import datetime, timedelta, time
+from datetime import datetime, time, timedelta
 from http import HTTPStatus
-from typing import Dict
+from typing import Dict, List
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.db.models import Q
+from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from django.utils.html import format_html
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from NEMO.decorators import synchronized
-from NEMO.exceptions import RequiredUnansweredQuestionsException
-from NEMO.forms import CommentForm, TaskForm, nice_errors
+from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
+from NEMO.forms import CommentForm, ConsumableWithdrawForm, TaskForm, nice_errors
 from NEMO.models import (
     BadgeReader,
+    Consumable,
+    ConsumableWithdraw,
     Project,
     Reservation,
-    ReservationItemType,
     TaskCategory,
     TaskStatus,
     Tool,
+    ToolUsageQuestionType,
     ToolWaitList,
     UsageEvent,
     User,
@@ -30,22 +35,23 @@ from NEMO.models import (
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import localize, quiet_int, remove_duplicates
 from NEMO.views.area_access import log_out_user
-from NEMO.views.calendar import (
-    cancel_the_reservation,
-    extract_reservation_questions,
-    render_reservation_questions,
-    set_reservation_configuration,
-    shorten_reservation,
+from NEMO.views.calendar import cancel_the_reservation, set_reservation_configuration, shorten_reservation
+from NEMO.views.consumables import (
+    consumable_permissions,
+    make_withdrawal,
+    make_withdrawal_success_message,
+    self_checkout,
 )
 from NEMO.views.customization import ApplicationCustomization, ToolCustomization, UserCustomization
+from NEMO.views.get_projects import get_projects
 from NEMO.views.tasks import save_task
 from NEMO.views.tool_control import (
     email_managers_required_questions_disable_tool,
     interlock_bypass_allowed,
     interlock_error,
     save_comment,
+    tool_configuration,
 )
-from NEMO.widgets.dynamic_form import DynamicForm
 
 
 @login_required
@@ -85,12 +91,13 @@ def do_enable_tool(request, tool_id):
     new_usage_event.user = customer
     new_usage_event.project = project
     new_usage_event.tool = tool
+    new_usage_event.note = request.POST.get("note") or None
 
-    # Collect post-usage questions
-    dynamic_form = DynamicForm(tool.pre_usage_questions)
+    # Collect pre-usage questions
+    dynamic_forms = tool.get_usage_questions(ToolUsageQuestionType.PRE, customer, project)
 
     try:
-        new_usage_event.pre_run_data = dynamic_form.extract(request)
+        new_usage_event.pre_run_data = dynamic_forms.extract(request)
     except RequiredUnansweredQuestionsException as e:
         dictionary = {"message": str(e), "delay": 10}
         return render(request, "kiosk/acknowledgement.html", dictionary)
@@ -109,7 +116,7 @@ def do_enable_tool(request, tool_id):
         wait_list_entry.update(deleted=True, date_exited=timezone.now())
 
     try:
-        dynamic_form.process_run_data(new_usage_event, new_usage_event.pre_run_data, request)
+        dynamic_forms.process_run_data(new_usage_event, new_usage_event.pre_run_data, request)
     except Exception as e:
         dictionary = {"message": str(e), "delay": 10}
         return render(request, "kiosk/acknowledgement.html", dictionary)
@@ -152,23 +159,24 @@ def do_disable_tool(request, tool_id):
 
     # End the current usage event for the tool and save it.
     current_usage_event.end = timezone.now() + downtime
+    current_usage_event.note = request.POST.get("note") or None
 
     # Collect post-usage questions
-    dynamic_form = DynamicForm(tool.post_usage_questions)
+    dynamic_forms = tool.get_usage_questions(ToolUsageQuestionType.POST)
 
     try:
-        current_usage_event.run_data = dynamic_form.extract(request)
+        current_usage_event.run_data = dynamic_forms.extract(request)
     except RequiredUnansweredQuestionsException as e:
         if customer != current_usage_event.operator and current_usage_event.user != customer:
             # if someone else is forcing somebody off the tool and there are required questions, send an email and proceed
             current_usage_event.run_data = e.run_data
-            email_managers_required_questions_disable_tool(current_usage_event.operator, customer, tool, e.questions)
+            email_managers_required_questions_disable_tool(current_usage_event, customer, e.questions)
         else:
             dictionary = {"message": str(e), "delay": 10}
             return render(request, "kiosk/acknowledgement.html", dictionary)
 
     try:
-        dynamic_form.process_run_data(current_usage_event, current_usage_event.run_data, request)
+        dynamic_forms.process_run_data(current_usage_event, current_usage_event.run_data, request)
     except Exception as e:
         dictionary = {"message": str(e), "delay": 10}
         return render(request, "kiosk/acknowledgement.html", dictionary)
@@ -185,7 +193,6 @@ def do_disable_tool(request, tool_id):
         dictionary["area"] = record.area
         dictionary["delay"] = 10
         dictionary["ask_logout"] = True
-        return render(request, "kiosk/acknowledgement.html", dictionary)
     return render(request, "kiosk/acknowledgement.html", dictionary)
 
 
@@ -253,6 +260,7 @@ def do_exit_wait_list(entry, time):
 @permission_required("NEMO.kiosk")
 @require_POST
 def reserve_tool(request):
+    virtual_inputs = request.GET.get("virtual_inputs") != "false"
     tool = Tool.objects.get(id=request.POST["tool_id"])
     customer = User.objects.get(id=request.POST["customer_id"])
     project = Project.objects.get(id=request.POST["project_id"])
@@ -297,9 +305,9 @@ def reserve_tool(request):
         dictionary["message"] = "You must specify a project for your reservation"
         return render(request, "kiosk/error.html", dictionary)
 
-    reservation_questions = render_reservation_questions(ReservationItemType.TOOL, tool.id, reservation.project, True)
+    dynamic_forms = tool.get_reservation_questions(reservation.project)
     tool_config = tool.is_configurable()
-    needs_extra_config = reservation_questions or tool_config
+    needs_extra_config = dynamic_forms or tool_config
     if needs_extra_config and not request.POST.get("configured") == "true":
         dictionary.update(tool.get_configuration_information(user=customer, start=reservation.start))
         dictionary.update(
@@ -309,7 +317,7 @@ def reserve_tool(request):
                 "request_start": request.POST["start"],
                 "request_end": request.POST["end"],
                 "reservation": reservation,
-                "reservation_questions": reservation_questions,
+                "reservation_questions": dynamic_forms.render(virtual_inputs=virtual_inputs),
             }
         )
         return render(request, "kiosk/tool_reservation_extra.html", dictionary)
@@ -321,9 +329,7 @@ def reserve_tool(request):
 
     # Reservation questions if applicable
     try:
-        reservation.question_data = extract_reservation_questions(
-            request, ReservationItemType.TOOL, tool.id, reservation.project
-        )
+        reservation.question_data = dynamic_forms.extract(request)
     except RequiredUnansweredQuestionsException as e:
         dictionary["message"] = str(e)
         return render(request, "kiosk/error.html", dictionary)
@@ -346,6 +352,15 @@ def cancel_reservation(request, reservation_id):
         return render(request, "kiosk/success.html", {"cancelled_reservation": reservation, "customer": customer})
     else:
         return render(request, "kiosk/error.html", {"message": response.content, "customer": customer})
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_POST
+def kiosk_tool_configuration(request):
+    # Use the badged-in user as the user making the request and call the configuration directly
+    request.user = User.objects.get(badge_number=request.GET["badge_number"])
+    return tool_configuration(request)
 
 
 @login_required
@@ -377,7 +392,8 @@ def tool_reservation(request, tool_id, user_id, back):
 @require_GET
 def choices(request):
     try:
-        category = request.GET.get("category")
+        categories = request.GET.getlist("category")
+        tool_names = request.GET.getlist("tool")
         customer = User.objects.get(badge_number=request.GET["badge_number"])
         usage_events = (
             UsageEvent.objects.filter(operator=customer.id, end=None)
@@ -422,7 +438,9 @@ def choices(request):
         "customer": customer,
         "usage_events": list(usage_events),
         "upcoming_reservations": tool_reservations,
-        **get_categories_and_tools_dictionary(customer, category),
+        "show_consumable_self_checkout": ApplicationCustomization.get_bool("kiosk_consumable_checkout")
+        and consumable_permissions(customer),
+        **get_categories_and_tools_dictionary(customer, categories, tool_names),
     }
     return render(request, "kiosk/choices.html", dictionary)
 
@@ -440,7 +458,7 @@ def category_choices(request, category, user_id):
         return render(request, "kiosk/acknowledgement.html", dictionary)
     dictionary = {
         "customer": customer,
-        **get_categories_and_tools_dictionary(customer, category),
+        **get_categories_and_tools_dictionary(customer, [category]),
     }
     return render(request, "kiosk/category_choices.html", dictionary)
 
@@ -449,6 +467,7 @@ def category_choices(request, category, user_id):
 @permission_required("NEMO.kiosk")
 @require_GET
 def tool_information(request, tool_id, user_id, back):
+    virtual_inputs = request.GET.get("virtual_inputs") != "false"
     tool = Tool.objects.get(id=tool_id, visible=True)
     customer = User.objects.get(id=user_id)
     wait_list = tool.current_wait_list()
@@ -475,16 +494,16 @@ def tool_information(request, tool_id, user_id, back):
             tool_credentials = tool.toolcredentials_set.filter(
                 Q(authorized_staff__isnull=True) | Q(authorized_staff__in=[customer])
             )
+    post_usage_questions = tool.get_usage_questions(ToolUsageQuestionType.POST)
     dictionary = {
         "customer": customer,
         "tool": tool,
         "tool_credentials": tool_credentials,
-        "rendered_configuration_html": tool.configuration_widget(customer),
-        "pre_usage_questions": DynamicForm(tool.pre_usage_questions).render(
-            tool, "pre_usage_questions", virtual_inputs=True
+        "rendered_configuration_html": tool.configuration_widget(
+            customer, url=reverse("kiosk_tool_configuration") + "?badge_number=" + str(customer.badge_number)
         ),
-        "post_usage_questions": DynamicForm(tool.post_usage_questions).render(
-            tool, "post_usage_questions", virtual_inputs=True
+        "post_usage_questions": (
+            post_usage_questions.render(virtual_inputs=virtual_inputs) if post_usage_questions else ""
         ),
         "back": back,
         "tool_control_show_task_details": ToolCustomization.get_bool("tool_control_show_task_details"),
@@ -518,6 +537,8 @@ def tool_information(request, tool_id, user_id, back):
         # Staff are exempt from reservation shortening.
         if remaining_reservation_duration > 2:
             dictionary["remaining_reservation_duration"] = remaining_reservation_duration
+        if ToolCustomization.get_bool("tool_control_note_copy_reservation"):
+            dictionary["reservation_note"] = current_reservation.note
 
     return render(request, "kiosk/tool_information.html", dictionary)
 
@@ -568,7 +589,6 @@ def tool_report_problem(request, tool_id, user_id, back):
 
     dictionary = {
         "tool": tool,
-        "date": None,
         "customer": customer,
         "back": back,
         "task_categories": TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT),
@@ -627,8 +647,10 @@ def report_problem(request):
 
     task = form.save()
     task.estimated_resolution_time = estimated_resolution_time
+    # Only staff can choose not to lock the tool
+    lock_interlock = not (customer.is_staff_on_tool(tool) and not form.cleaned_data["lock"])
 
-    save_task(request, task, customer)
+    save_task(request, task, customer, lock=lock_interlock)
 
     return redirect("kiosk_tool_information", tool_id=tool.id, user_id=customer.id, back=back)
 
@@ -673,25 +695,39 @@ def post_comment(request):
     return redirect("kiosk_tool_information", tool_id=tool.id, user_id=customer.id, back=back)
 
 
-def get_categories_and_tools_dictionary(customer: User, category=None) -> Dict:
+def get_categories_and_tools_dictionary(customer: User, categories=None, tool_names=None) -> Dict:
     tools = Tool.objects.filter(visible=True)
-    if category:
-        tools = tools.filter(_category__istartswith=category + "/")
-    categories = [t[0] for t in tools.order_by("_category").values_list("_category").distinct()]
+    tool_in_category_filter = Q()  # filter for tools displayed at this root level
+    if tool_names:
+        # We are displaying selected tools at the root level
+        for tool_name in tool_names:
+            tool_in_category_filter |= Q(name__iexact=tool_name)
+    if categories:
+        category_filter = Q()
+        for category in categories:
+            tool_in_category_filter |= Q(_category__iexact=category)
+            category_filter |= Q(_category__istartswith=category + "/")
+        tools = tools.filter(category_filter)
+    if tool_names and not categories:
+        tool_categories = []
+    else:
+        tool_categories = [t[0] for t in tools.order_by("_category").values_list("_category").distinct()]
     tool_ids_user_is_qualified = remove_duplicates(
         list(customer.qualifications.all().values_list("id", flat=True))
         + list(customer.staff_for_tools.all().values_list("id", flat=True))
     )
     unqualified_categories = [
         category
-        for category in categories
+        for category in tool_categories
         if not customer.is_staff
         and not Tool.objects.filter(visible=True, _category=category, id__in=tool_ids_user_is_qualified).exists()
     ]
-    tools_in_this_category = list(Tool.objects.filter(visible=True, _category__iexact=category))
+    tools_in_this_category = (
+        list(Tool.objects.filter(visible=True).filter(tool_in_category_filter)) if tool_in_category_filter else []
+    )
     return {
-        "selected_category": category,
-        "categories": categories,
+        "selected_category": categories[0] if categories and len(categories) == 1 else None,
+        "categories": tool_categories,
         "unqualified_categories": unqualified_categories,
         "tools": tools_in_this_category,
         "unqualified_tools": [
@@ -700,3 +736,184 @@ def get_categories_and_tools_dictionary(customer: User, category=None) -> Dict:
             if not customer.is_staff and tool.id not in tool_ids_user_is_qualified
         ],
     }
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_GET
+def get_projects_for_consumables(request):
+    # Only return project for which consumable withdrawals are allowed
+    return get_projects(request, Q(allow_consumable_withdrawals=True))
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_http_methods(["GET", "POST"])
+def checkout(request, customer_id):
+    user: User = User.objects.get(pk=customer_id)
+    if not consumable_permissions(user):
+        return HttpResponseForbidden("You do not have permission to access consumables.")
+
+    is_self_checkout = self_checkout(user)
+    if request.method == "GET":
+        from NEMO.rates import rate_class
+
+        rate_dict = rate_class.get_consumable_rates(Consumable.objects.all())
+        consumable_list = Consumable.objects.filter(visible=True).order_by("category", "name")
+        if is_self_checkout:
+            consumable_list = consumable_list.filter(allow_self_checkout=True).filter(
+                Q(self_checkout_only_users__isnull=True) | Q(self_checkout_only_users__in=[user])
+            )
+
+        dictionary = {
+            "customer": user,
+            "users": User.objects.filter(is_active=True),
+            "consumables": consumable_list,
+            "rates": rate_dict,
+            "self_checkout": is_self_checkout,
+        }
+        if is_self_checkout:
+            dictionary["projects"] = user.active_projects().filter(allow_consumable_withdrawals=True)
+
+        return render(request, "kiosk/consumables.html", dictionary)
+    elif request.method == "POST":
+        updated_post_data = request.POST.copy()
+        if is_self_checkout:
+            updated_post_data.update({"customer": user.id})
+        form = ConsumableWithdrawForm(updated_post_data)
+        if form.is_valid():
+            withdraw = form.save(commit=False)
+            customer_allowed = (
+                not withdraw.consumable.self_checkout_only_users.exists()
+                or withdraw.customer in withdraw.consumable.self_checkout_only_users.all()
+            )
+            if is_self_checkout and (not withdraw.consumable.allow_self_checkout or not customer_allowed):
+                return HttpResponseBadRequest("You can not self checkout this consumable")
+            try:
+                policy.check_billing_to_project(withdraw.project, withdraw.customer, withdraw.consumable, withdraw)
+            except ProjectChargeException as e:
+                return HttpResponseBadRequest(e.msg)
+            add_withdraw_to_session(request, user.id, withdraw)
+        else:
+            return HttpResponseBadRequest(nice_errors(form).as_ul())
+        return render(
+            request,
+            "kiosk/consumables_order.html",
+            {
+                "customer": user,
+            },
+        )
+    else:
+        return HttpResponseBadRequest("Invalid Request")
+
+
+def add_withdraw_to_session(request, customer_id, withdrawal: ConsumableWithdraw):
+    request.session.setdefault("kiosk_withdrawals", {})
+    customer_id_key = str(customer_id)
+    withdrawals: dict = request.session.get("kiosk_withdrawals")
+    if withdrawals is not None:
+        if customer_id_key not in withdrawals:
+            withdrawals[customer_id_key] = []
+        withdrawal_dict = {
+            "customer": str(withdrawal.customer),
+            "customer_id": withdrawal.customer_id,
+            "consumable": str(withdrawal.consumable),
+            "consumable_id": withdrawal.consumable_id,
+            "project": str(withdrawal.project),
+            "project_id": withdrawal.project_id,
+            "quantity": withdrawal.quantity,
+        }
+        withdrawals[customer_id_key].append(withdrawal_dict)
+    request.session["kiosk_withdrawals"] = withdrawals
+
+
+def get_customer_cart(request, customer_id: str) -> List:
+    withdrawals: List = request.session.get("kiosk_withdrawals", {}).get(str(customer_id), [])
+    return withdrawals
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_POST
+def remove_withdraw_at_index(request):
+    try:
+        customer_id = request.POST["customer_id"]
+        user: User = User.objects.get(pk=customer_id)
+        if not consumable_permissions(user):
+            return HttpResponseForbidden("You do not have permission to access consumables.")
+
+        index = int(request.POST["index"])
+        withdrawals: List = get_customer_cart(request, customer_id)
+        if withdrawals:
+            del withdrawals[index]
+            request.session["kiosk_withdrawals"][customer_id] = withdrawals
+        return render(
+            request,
+            "kiosk/consumables_order.html",
+            {
+                "customer": user,
+            },
+        )
+    except Exception:
+        return HttpResponseBadRequest("Invalid Request")
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_POST
+def clear_withdrawals(request):
+    try:
+        customer_id = request.POST["customer_id"]
+        user: User = User.objects.get(pk=customer_id)
+        if not consumable_permissions(user):
+            return HttpResponseForbidden("You do not have permission to access consumables.")
+
+        if "kiosk_withdrawals" in request.session and customer_id in request.session["kiosk_withdrawals"]:
+            del request.session["kiosk_withdrawals"][customer_id]
+        return render(
+            request,
+            "kiosk/consumables_order.html",
+            {
+                "customer": user,
+            },
+        )
+    except Exception:
+        return HttpResponseBadRequest("Invalid Request")
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_POST
+def make_withdrawals(request):
+    customer_id = request.POST["customer_id"]
+    user: User = User.objects.get(pk=customer_id)
+    if not consumable_permissions(user):
+        return HttpResponseForbidden("You do not have permission to access consumables.")
+
+    withdrawals: List = get_customer_cart(request, customer_id)
+    force_customer = user.id if self_checkout(user) else None
+    try:
+        with transaction.atomic():
+            success_messages = []
+            for withdraw in withdrawals:
+                withdrawal = make_withdrawal(
+                    consumable_id=withdraw["consumable_id"],
+                    merchant=user,
+                    customer_id=force_customer or withdraw["customer_id"],
+                    quantity=withdraw["quantity"],
+                    project_id=withdraw["project_id"],
+                )
+                success_messages.append(make_withdrawal_success_message(withdrawal, user))
+
+            if "kiosk_withdrawals" in request.session and customer_id in request.session["kiosk_withdrawals"]:
+                del request.session["kiosk_withdrawals"][customer_id]
+            message = "<br>".join(success_messages)
+            return render(
+                request,
+                "kiosk/acknowledgement.html",
+                {"message": message, "delay": 10, "badge_number": user.badge_number},
+            )
+    except ValidationError as e:
+        return HttpResponseBadRequest(nice_errors(e).as_ul())
+    except Exception:
+        return HttpResponseBadRequest("An error occurred while processing the withdrawals.")

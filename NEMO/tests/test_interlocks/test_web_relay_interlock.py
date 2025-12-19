@@ -5,6 +5,7 @@ from django.test import TestCase
 
 from NEMO.interlocks import WebRelayHttpInterlock
 from NEMO.models import Interlock, InterlockCard, InterlockCardCategory, Tool, User
+from NEMO.tests.test_utilities import NEMOTestCaseMixin
 
 server1 = "server1.nist.gov"
 server2 = "https://server2.nist.gov"
@@ -78,7 +79,7 @@ def mocked_requests_get(*args, **kwargs):
     return MockResponse("", 404)
 
 
-class WebRelayInterlockTestCase(TestCase):
+class WebRelayInterlockTestCase(NEMOTestCaseMixin, TestCase):
     tool: Tool = None
 
     def setUp(self):

@@ -107,8 +107,8 @@ def email_broadcast(request, audience=""):
     elif audience == "project" or audience == "project-pis":
         dictionary["display_str"] = "display_with_status"
         dictionary["search_base"] = Project.objects.filter(account__active=True).order_by("-active", "name")
-    elif audience == "account":
-        dictionary["search_base"] = Account.objects.filter(active=True)
+    elif audience == "account" or audience == "account-managers":
+        dictionary["search_base"] = Account.objects.all().order_by("-active", "name")
     elif audience == "user":
         user_types = UserType.objects.all()
         dictionary["user_types"] = user_types
@@ -200,7 +200,7 @@ def export_email_addresses(request):
         users, topic = get_users_for_email(audience, selection, no_type)
         response = HttpResponse(content_type="text/csv")
         writer = csv.writer(response)
-        writer.writerow(["First", "Last", "Username", "Email"])
+        writer.writerow(["First", "Last", "Username", "Email", "Name-Address"])
         if not send_to_inactive_users:
             users = [user for user in users if user.is_active]
         if not send_to_expired_access_users:
@@ -208,7 +208,15 @@ def export_email_addresses(request):
         for user in users:
             user: User = user
             for email in user.get_emails(user.get_preferences().email_send_broadcast_emails):
-                writer.writerow([user.first_name, user.last_name, user.username, email])
+                writer.writerow(
+                    [
+                        user.first_name,
+                        user.last_name,
+                        user.username,
+                        email,
+                        f"{user.first_name} {user.last_name} <{email}>",
+                    ]
+                )
         response["Content-Disposition"] = f'attachment; filename="email_addresses_{export_format_datetime()}.csv"'
         return response
     except:
@@ -253,10 +261,7 @@ def send_broadcast_email(request):
         warning_message = "Your email was not sent. There was a problem finding the users to send the email to."
         dictionary = {"error": warning_message}
         logger.warning(
-            warning_message
-            + " audience: {}, only_active: {}. The error message that was received is: {}".format(
-                audience, active_choice, str(error)
-            )
+            warning_message + " audience: {}. The error message that was received is: {}".format(audience, str(error))
         )
         return render(request, "email/compose_email.html", dictionary)
     if not users:
@@ -367,6 +372,16 @@ def get_users_for_email(audience: str, selection: List, no_type: bool) -> (Query
         users = User.objects.filter(managed_projects__in=projects).distinct()
         if len(selection) == 1:
             topic = Project.objects.filter(pk=selection[0]).first().name
+    elif audience == "account-managers":
+        accounts = Account.objects.all()
+        if no_type:
+            # reusing no_type field as active project flag
+            accounts = accounts.filter(active=True)
+        if selection:
+            accounts = accounts.filter(id__in=selection)
+        users = User.objects.filter(managed_accounts__in=accounts).distinct()
+        if len(selection) == 1:
+            topic = Account.objects.filter(pk=selection[0]).first().name
     elif audience == "account":
         users = User.objects.filter(projects__account__id__in=selection).distinct()
         if len(selection) == 1:

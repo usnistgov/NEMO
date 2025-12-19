@@ -12,56 +12,116 @@
         {% button type="add" url="create_adjustment_request" value="New request" %}
     </div>
 </div>
-{% if pending_adjustment_requests or approved_adjustment_requests or denied_adjustment_requests %}
+{% if page %}
     {% if user.is_superuser or user.is_facility_manager or user.is_user_office or user.is_accounting_officer %}
         <div class="text-right" style="margin-bottom: -20px">
             {% button type="export" value="Export" url="export_adjustment_requests" target="_blank" %}
         </div>
     {% endif %}
-    <div>
-        {% if pending_adjustment_requests %}
-            <h3>
-                <a onclick="toggle_details(this)"
-                   data-toggle="collapse"
-                   data-target="#pending_adjustment_requests"
-                   class="pointer">
-                    <span class="glyphicon glyphicon-chevron-down pull-left chevron"></span>Pending ({{ pending_adjustment_requests|length }})
-                </a>
-            </h3>
-            <div id="pending_adjustment_requests" class="collapse in">
-                {% include 'requests/adjustment_requests/adjustment_requests_table.html' with request_status='pending' adjustment_request_list=pending_adjustment_requests %}
-            </div>
-        {% endif %}
-        {% if approved_adjustment_requests %}
-            <h3>
-                <a onclick="toggle_details(this)"
-                   data-toggle="collapse"
-                   data-target="#approved_adjustment_requests"
-                   class="pointer">
-                    <span class="glyphicon glyphicon-chevron-down pull-left chevron"></span>Approved
-                </a>
-            </h3>
-            <div id="approved_adjustment_requests" class="collapse in">
-                {% include 'requests/adjustment_requests/adjustment_requests_table.html' with request_status='approved' adjustment_request_list=approved_adjustment_requests %}
-            </div>
-        {% endif %}
-        {% if denied_adjustment_requests %}
-            <h3>
-                <a onclick="toggle_details(this)"
-                   data-toggle="collapse"
-                   data-target="#denied_adjustment_requests"
-                   class="pointer">
-                    <span class="glyphicon glyphicon-chevron-down pull-left chevron"></span>Denied
-                </a>
-            </h3>
-            <div id="denied_adjustment_requests" class="collapse in">
-                {% include 'requests/adjustment_requests/adjustment_requests_table.html' with request_status='denied' adjustment_request_list=denied_adjustment_requests %}
-            </div>
-        {% endif %}
-    </div>
-{% else %}
-    <div class="italic" style="margin-top: 20px">You do not have any current active adjustment requests</div>
 {% endif %}
+<ul class="nav nav-tabs">
+    {% for status in request_statuses %}
+        <li class="nav-item{% if selected_status == status.0 %} active{% endif %}">
+            <a class="nav-link" href="javascript:load_adjustment_requests({{ status.0 }})">
+                {{ status.1 }}
+                {% if status.0 == 0 and adjustment_notification_count %}
+                    <span class="badge badge-tab-top">{{ adjustment_notification_count }}</span>
+                {% endif %}
+            </a>
+        </li>
+    {% endfor %}
+</ul>
+<div class="tab-content panel panel-default panel-tab-content">
+    <div class="panel-body" style="padding: 15px 0">
+        {% block tab_content %}
+            {% if page %}
+                {% if selected_status == 1 or request_tools or request_areas %}
+                    <form class="form-horizontal" style="margin-bottom: -15px">
+                        {% if selected_status == 1 %}
+                            <div class="form-group">
+                                <label class="col-xs-1 control-label" for="applied_status">Applied</label>
+                                <div class="col-xs-9">
+                                    <select class="form-control"
+                                            style="width: auto"
+                                            id="applied_status"
+                                            onchange="load_adjustment_requests({{ selected_status }})">
+                                        <option selected value="">All</option>
+                                        <option value="false" {% if selected_applied_status == 'false' %}selected{% endif %}>No</option>
+                                        <option value="true" {% if selected_applied_status == 'true' %}selected{% endif %}>Yes</option>
+                                    </select>
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if request_tools %}
+                            <div class="form-group">
+                                <label class="col-xs-1 control-label" for="tool">Tool</label>
+                                <div class="col-xs-9">
+                                    <select class="form-control"
+                                            style="width: auto"
+                                            id="tool"
+                                            onchange="load_adjustment_requests({{ selected_status }})">
+                                        <option selected value="">All</option>
+                                        {% for tool in request_tools %}
+                                            <option value="{{ tool.id }}" {% if selected_tool_id|to_int == tool.id %}selected{% endif %}>{{ tool.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if request_areas %}
+                            <div class="form-group">
+                                <label class="col-xs-1 control-label" for="area">Area</label>
+                                <div class="col-xs-9">
+                                    <select class="form-control"
+                                            style="width: auto"
+                                            id="area"
+                                            onchange="load_adjustment_requests({{ selected_status }})">
+                                        <option selected value="">All</option>
+                                        {% for area in request_areas %}
+                                            <option value="{{ area.id }}" {% if selected_area_id|to_int == area.id %}selected{% endif %}>{{ area.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </form>
+                {% endif %}
+                {% with paginator=page.paginator %}
+                    {% block pagination_header %}
+                        <div class="pagination pull-right clearfix" style="padding: 0 15px">
+                            {% include "pagination/pagination_selector.html" %}
+                        </div>
+                    {% endblock %}
+                    <div style="overflow-x: auto; width: 100%; border-right: none; border-left: none">
+                        {% block pagination_content %}
+                            {% for request_obj in page %}
+                                {% include 'requests/adjustment_requests/adjustment_charge_summary_table.html' %}
+                            {% endfor %}
+                        {% endblock %}
+                    </div>
+                    {% block pagination_footer %}
+                        <div class="pagination pull-right" style="padding: 0 15px; margin-bottom: 0">
+                            {% include "pagination/pagination_pages.html" %}
+                        </div>
+                    {% endblock %}
+                {% endwith %}
+            {% else %}
+                <div class="pull-left form-control-static">
+                    <i>
+                        {% block table_empty_content %}
+                            <div class="col-xs-12">
+                                {% for status in request_statuses %}
+                                    {% if status.0 == selected_status %}There are no {{ status.1|lower }} adjustment requests{% endif %}
+                                {% endfor %}
+                            </div>
+                        {% endblock %}
+                    </i>
+                </div>
+            {% endif %}
+            {% block after_pagination %}{% endblock %}
+        {% endblock %}
+    </div>
+</div>
 <script>
     function show_or_send_reply(button_element, form_selector)
     {
@@ -87,12 +147,12 @@
         }
     }
 
-    function apply_adjustment(adjustment_id)
+    function apply_adjustment(element, adjustment_id)
     {
-        if (confirm("Are you sure you want to adjust this charge? This cannot be undone"))
+        if (confirm($(element).data("text")))
         {
-            let apply_url = "{% url "apply_adjustment" 99999 %}".replace("99999", adjustment_id);
-            ajax_get(apply_url, undefined, load_adjustment_requests, ajax_failure_callback("Request update failed", "There was a problem applying this adjustment."));
+            let apply_url = build_django_url("{% url "apply_adjustment" 99999 %}", [99999], [adjustment_id]);
+            ajax_get(apply_url, undefined, function(){load_adjustment_requests({{ selected_status }})}, ajax_failure_callback("Request update failed", "There was a problem applying this adjustment."));
         }
     }
 

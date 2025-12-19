@@ -2,9 +2,9 @@ from NEMO.models import Area, Notification, PhysicalAccessLevel, Tool, User
 from NEMO.utilities import (
     date_input_js_format,
     datetime_input_js_format,
-    time_input_js_format,
     pickadate_date_format,
     pickadate_time_format,
+    time_input_js_format,
 )
 from NEMO.views.customization import CustomizationBase
 from NEMO.views.notifications import get_notification_counts
@@ -20,6 +20,7 @@ def hide_logout_button(request):
 
 def base_context(request):
     user: User = getattr(request, "user", None)
+    customization_values = CustomizationBase.get_all()
     try:
         if "no_header" in request.GET:
             if request.GET["no_header"] == "True":
@@ -77,7 +78,7 @@ def base_context(request):
         facility_managers_exist = User.objects.filter(is_active=True, is_facility_manager=True).exists()
     except:
         facility_managers_exist = False
-    customization_values = CustomizationBase.get_all()
+    adjustment_request_allowed = customization_values.get("adjustment_requests_enabled", "")
     return {
         "customizations": customization_values,
         "facility_name": customization_values.get("facility_name"),
@@ -88,7 +89,10 @@ def base_context(request):
         "areas_exist": areas_exist,
         "buddy_system_areas_exist": buddy_system_areas_exist,
         "access_user_request_allowed_exist": access_user_request_allowed_exist,
-        "adjustment_request_allowed": customization_values.get("adjustment_requests_enabled", "") == "enabled",
+        "adjustment_request_allowed": adjustment_request_allowed == "enabled"
+        or adjustment_request_allowed == "reviewers_only"
+        and user
+        and user.is_adjustment_request_reviewer,
         "staff_assistance_request_allowed": customization_values.get("staff_assistance_requests_enabled", "")
         == "enabled",
         "notification_counts": notification_counts,

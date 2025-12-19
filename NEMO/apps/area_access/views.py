@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.utils.formats import localize
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.decorators import disable_session_expiry_refresh, postpone
+from NEMO.decorators import postpone
 from NEMO.exceptions import (
     InactiveUserError,
     MaximumCapacityReachedError,
@@ -23,7 +23,6 @@ from NEMO.exceptions import (
     UnavailableResourcesUserError,
 )
 from NEMO.models import (
-    Alert,
     Area,
     AreaAccessRecord,
     BadgeReader,
@@ -31,14 +30,12 @@ from NEMO.models import (
     PhysicalAccessLog,
     PhysicalAccessType,
     Project,
-    Resource,
     UsageEvent,
     User,
 )
 from NEMO.policy import policy_class as policy
 from NEMO.views.area_access import log_in_user_to_area, log_out_user
 from NEMO.views.customization import ApplicationCustomization, InterlockCustomization
-from NEMO.views.tool_control import interlock_bypass_allowed
 
 
 @login_required
@@ -237,10 +234,10 @@ def login_to_area(request, door_id):
         # All policy checks passed so open the door for the user.
         if door.interlock:
             if not door.interlock.unlock():
-                if bypass_interlock and interlock_bypass_allowed(user, area):
+                if bypass_interlock and interlock_bypass_allowed(user):
                     pass
                 else:
-                    return interlock_error("Login", user, area)
+                    return interlock_error("Login", user)
 
             delay_lock_door(door.id)
 
@@ -285,7 +282,7 @@ def logout_of_area(request, door_id):
         if ApplicationCustomization.get_bool("area_access_open_door_on_logout"):
             if door.interlock:
                 if not door.interlock.unlock():
-                    return interlock_error(bypass_allowed=True, area=record.area)
+                    return interlock_error(bypass_allowed=True)
                 delay_lock_door(door.id)
         busy_tools = UsageEvent.objects.filter(end=None, user=user)
         staff_charge = user.get_staff_charge()
@@ -312,7 +309,11 @@ def logout_of_area(request, door_id):
         return render(
             request,
             "area_access/not_logged_in.html",
-            {"badge_user": user, "tools_in_use": UsageEvent.objects.filter(end=None, user=user)},
+            {
+                "badge_user": user,
+                "door": door,
+                "tools_in_use": UsageEvent.objects.filter(end=None, user=user),
+            },
         )
 
 
@@ -322,40 +323,57 @@ def logout_of_area(request, door_id):
 def open_door(request, door_id):
     door = get_object_or_404(Door, id=door_id)
     badge_number = request.POST.get("badge_number")
-    area_id = request.POST.get("area_id", 0)
-    area = door.areas.first() if door.areas.count() == 1 else get_object_or_404(Area, id=area_id)
     if not badge_number:
         return render(request, "area_access/badge_not_found.html")
     try:
         user = User.objects.get(badge_number=badge_number)
     except User.DoesNotExist:
         return render(request, "area_access/badge_not_found.html")
-    if user.area_access_record() and user.area_access_record().area == area:
+    area_id = request.POST.get("area_id", 0)
+    if area_id == "":
+        # This can only come from a user wanting to open the door when they are already logged out.
+        area = None
+    else:
+        area = door.areas.first() if door.areas.count() == 1 else get_object_or_404(Area, id=area_id)
+    if not area or (user.area_access_record() and user.area_access_record().area == area):
+        if not area:
+            details = (
+                "The user was permitted to exit this area, but did not have an active area access record for this area."
+            )
+        else:
+            details = (
+                "The user was permitted to enter this area, and already had an active area access record for this area."
+            )
         log = PhysicalAccessLog(
             user=user,
             door=door,
             time=timezone.now(),
             result=PhysicalAccessType.ALLOW,
-            details="The user was permitted to enter this area, and already had an active area access record for this area.",
+            details=details,
         )
         log.save()
         # If we cannot open the door, display message and let them try again,
         # or exit since there is nothing else to do (user is already logged in).
         if door.interlock:
             if not door.interlock.unlock():
-                return interlock_error(bypass_allowed=False, area=area)
+                return interlock_error(bypass_allowed=False)
             delay_lock_door(door.id)
         return render(request, "area_access/door_is_open.html")
-    return render(
-        request,
-        "area_access/not_logged_in.html",
-        {"badge_user": user, "tools_in_use": UsageEvent.objects.filter(end=None, user=user)},
-    )
+    else:
+        return render(
+            request,
+            "area_access/not_logged_in.html",
+            {"badge_user": user, "tools_in_use": UsageEvent.objects.filter(end=None, user=user)},
+        )
 
 
-def interlock_error(action: str = None, user: User = None, bypass_allowed: bool = None, area: Area = None):
+def interlock_bypass_allowed(user: User):
+    return user.is_staff or InterlockCustomization.get_bool("allow_bypass_interlock_on_failure")
+
+
+def interlock_error(action: str = None, user: User = None, bypass_allowed: bool = None):
     error_message = InterlockCustomization.get("door_interlock_failure_message")
-    bypass_allowed = interlock_bypass_allowed(user, area) if bypass_allowed is None else bypass_allowed
+    bypass_allowed = interlock_bypass_allowed(user) if bypass_allowed is None else bypass_allowed
     dictionary = {"message": linebreaksbr(error_message), "bypass_allowed": bypass_allowed, "action": action}
     return JsonResponse(dictionary, status=501)
 
@@ -367,14 +385,3 @@ def get_badge_reader(request) -> BadgeReader:
     except BadgeReader.DoesNotExist:
         badge_reader = BadgeReader.default()
     return badge_reader
-
-
-@login_required
-@disable_session_expiry_refresh
-@require_GET
-def get_alerts(request):
-    dictionary = {
-        "alerts": Alert.objects.filter(user=None, debut_time__lte=timezone.now(), expired=False, deleted=False),
-        "disabled_resources": Resource.objects.filter(available=False),
-    }
-    return render(request, "area_access/alerts.html", dictionary)

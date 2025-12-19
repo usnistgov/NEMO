@@ -18,7 +18,7 @@ def user_requests(request, tab: str = None):
             if Area.objects.filter(buddy_system_allowed=True).exists()
             else (
                 "adjustment"
-                if AdjustmentRequestsCustomization.get("adjustment_requests_enabled")
+                if AdjustmentRequestsCustomization.are_adjustment_requests_enabled_for_user(request.user)
                 else "staff_assistance"
             )
         )

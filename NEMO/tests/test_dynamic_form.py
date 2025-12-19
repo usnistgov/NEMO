@@ -4,11 +4,12 @@ from django.http import QueryDict
 from django.test import TestCase
 
 from NEMO.models import Tool
+from NEMO.tests.test_utilities import NEMOTestCaseMixin
 from NEMO.utilities import EmptyHttpRequest
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageGroupQuestion
 
 
-class TestDynamicForm(TestCase):
+class TestDynamicForm(NEMOTestCaseMixin, TestCase):
 
     def setUp(self):
         self.tool = Tool.objects.create()

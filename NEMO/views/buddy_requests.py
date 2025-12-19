@@ -31,8 +31,10 @@ from NEMO.views.notifications import (
 @require_GET
 def buddy_requests(request):
     mark_requests_expired()
-    buddy_requests = BuddyRequest.objects.filter(expired=False, deleted=False).order_by(
-        "start", "end", "-creation_time"
+    buddy_requests = (
+        BuddyRequest.objects.filter(expired=False, deleted=False)
+        .order_by("start", "end", "-creation_time")
+        .prefetch_related("replies")
     )
     # extend buddy request to add whether the current user can reply
     for buddy_request in buddy_requests:
@@ -128,9 +130,9 @@ def email_interested_parties(reply: RequestMessage, reply_url):
     for user in reply.content_object.creator_and_reply_users():
         if user != reply.author and (user == creator or user.get_preferences().email_new_buddy_request_reply):
             creator_display = f"{creator.get_name()}'s" if creator != user else "your"
-            creator_display_his = creator_display if creator != reply.author else "his"
+            creator_display_their = creator_display if creator != reply.author else "their"
             subject = f"New reply on {creator_display} buddy request"
-            message = f"""{reply.author.get_name()} also replied to {creator_display_his} buddy request:
+            message = f"""{reply.author.get_name()} also replied to {creator_display_their} buddy request:
 <br><br>
 {linebreaksbr(reply.content)}
 <br><br>

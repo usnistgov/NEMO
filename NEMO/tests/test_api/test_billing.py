@@ -7,10 +7,10 @@ from rest_framework import ISO_8601
 from rest_framework.settings import api_settings
 
 from NEMO.models import Account, Area, AreaAccessRecord, Project, Tool, UsageEvent, User
-from NEMO.tests.test_utilities import login_as_staff
+from NEMO.tests.test_utilities import NEMOTestCaseMixin
 
 
-class BillingAPITestCase(TestCase):
+class BillingAPITestCase(NEMOTestCaseMixin, TestCase):
     def setUp(self):
         # create a few usage events etc.
         owner1 = User.objects.create(username="mctest1", first_name="Testy", last_name="McTester")
@@ -80,7 +80,7 @@ class BillingAPITestCase(TestCase):
             "end": datetime.now().strftime("%m/%d/%Y"),
             attribute_name: attribute_value,
         }
-        login_as_staff(self.client)
+        self.login_as_staff()
 
         response = self.client.get("/api/billing", data, follow=True)
         self.assertEqual(response.status_code, 403, "regular user or staff doesn't have permission")

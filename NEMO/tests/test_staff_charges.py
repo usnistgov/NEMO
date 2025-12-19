@@ -3,10 +3,10 @@ from django.test import TestCase
 from NEMO.exceptions import ProjectChargeException
 from NEMO.models import StaffCharge
 from NEMO.policy import policy_class as policy
-from NEMO.tests.test_utilities import create_user_and_project
+from NEMO.tests.test_utilities import NEMOTestCaseMixin, create_user_and_project
 
 
-class StaffChargesTest(TestCase):
+class StaffChargesTest(NEMOTestCaseMixin, TestCase):
     def test_staff_charges_not_allowed(self):
         customer, customer_project = create_user_and_project()
         staff, staff_project = create_user_and_project(is_staff=True)

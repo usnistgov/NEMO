@@ -17,6 +17,19 @@
         <script type="text/javascript" src="{% static "nemo.js" %}"></script>
         <link rel="stylesheet" type="text/css" href="{% static "nemo.css" %}" />
         <title>Jumbotron</title>
+        <style>
+			{# Style for autofit #}
+
+			.content-wrapper-autofit
+			{
+				overflow: hidden;
+			}
+
+			.content-wrapper-autofit .panel, .content-wrapper-autofit .content-autofit
+			{
+				margin-bottom: 0;
+			}
+        </style>
     </head>
     <body class="jumbotron-body"
           style="{% if watermark %}background-image:linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0.5)), url('{{ MEDIA_URL }}jumbotron_watermark.png'){% endif %}">
@@ -32,6 +45,101 @@
         </div>
         {% include 'base/footer.html' %}
         <script>
+		function resize_content_to_fit()
+		{
+            {# No need to do all that if we are not on a large screen, since the items will stack vertically #}
+            const break_point_lg = 1200;
+            if (window.innerWidth < break_point_lg)
+            {
+                return;
+			}
+
+			$.each($(".content-wrapper-autofit"), function (index, wrapper_element)
+			{
+                const autoscroll_id = "autoscroll-" + index;
+
+				if (!wrapper_element) return;
+
+				const rect = wrapper_element.getBoundingClientRect();
+				const top = rect.top; // distance from top of viewport
+				const viewport_height = window.innerHeight;
+
+				// Leave a margin at bottom (70px here)
+				const available = viewport_height - top - 70;
+                const content_height = wrapper_element.scrollHeight;
+
+                // By default, we look for a table, but it could be anything
+                const find_element = $(wrapper_element).data("autofit-element") || "table";
+                let content_element = $(wrapper_element).find(find_element);
+                if (!content_element) return;
+
+				// Add 15 px so the content doesn't flicker (make sure we are not auto-scrolling for just a few px)
+				if (available + 15 < content_height)
+				{
+                    content_element.addClass(`content-autofit content-autofit-${index}`);
+
+                    {# Remove old keyframes before adding new ones #}
+                    const oldStyle = document.getElementById(autoscroll_id + "-keyframes");
+  					if (oldStyle) oldStyle.remove();
+
+                    const overflow = content_height - available; // overflow we need to display
+                    const animation_speed = 15; // px per seconds
+					const duration = overflow / animation_speed;
+
+                    {# Create new keyframes and add them via class #}
+                    const style = document.createElement("style");
+    				style.id = autoscroll_id + "-keyframes";
+    				style.innerHTML = `
+      					@keyframes ${autoscroll_id}
+      					{
+        					0%, 35%   { transform: translateY(0); }
+        					55%, 100% { transform: translateY(-${overflow}px); }
+      					}
+    				`;
+                    if (find_element === "table")
+                    {
+                        style.innerHTML += `
+                        .content-autofit-${index} th
+                        {
+                            position: sticky;
+                            top: 0;
+                            z-index: 11;
+                            opacity: 1 !important;
+                            border: 1px solid transparent;
+                        }
+
+                        .content-autofit-${index} td
+                        {
+                            border: 1px solid transparent;
+                        }
+
+                        .content-autofit-${index} tbody
+                        {
+                            overflow: hidden;
+                            animation: ${autoscroll_id} ${duration}s linear infinite;
+                        }
+                        `
+                    }
+                    else
+                    {
+                        style.innerHTML += `
+                        .content-autofit-${index}
+      					{
+      						animation: ${autoscroll_id} ${duration}s linear infinite;
+      					}
+                        `
+                    }
+    				document.head.appendChild(style);
+				}
+				else
+				{
+					content_element.removeClass(`content-autofit content-autofit-${index}`);
+				}
+
+				wrapper_element.style.maxHeight = available + 'px';
+			});
+		}
+
 		function on_complete(response, status)
 		{
 			if (status === "success")
@@ -44,15 +152,17 @@
 				$("#content").hide();
 				$("#offline-message").show();
 			}
+            resize_content_to_fit();
 		}
 		function refresh_jumbotron()
 		{
-			$("#content").load("{% url 'jumbotron_content' %}", undefined, on_complete);
+			$("#content").load("{% url 'jumbotron_content' %}"+window.location.search, undefined, on_complete);
 		}
 		function on_load()
 		{
 			refresh_jumbotron();
 			set_interval_when_visible(document, refresh_jumbotron, 10000);
+			window.addEventListener('resize', resize_content_to_fit);
 		}
 		$(on_load);
 	

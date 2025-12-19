@@ -158,8 +158,23 @@ def make_withdrawals(request):
 @user_office_or_manager_required
 @require_GET
 def recurring_charges(request):
-    page = SortedPaginator(RecurringConsumableCharge.objects.all(), request, order_by="name").get_current_page()
-    dictionary = {"page": page, "extended_permissions": extended_permissions(request)}
+    consumable_ids = request.GET.getlist("consumable_id", [])
+    invalidity = request.GET.get("invalidity")
+    recurring_consumable_charges = RecurringConsumableCharge.annotate_invalid()
+    if consumable_ids:
+        recurring_consumable_charges = recurring_consumable_charges.filter(consumable_id__in=consumable_ids)
+    if invalidity:
+        recurring_consumable_charges = recurring_consumable_charges.filter(invalid=invalidity == "no")
+    page = SortedPaginator(recurring_consumable_charges, request, order_by="name").get_current_page()
+    dictionary = {
+        "page": page,
+        "extended_permissions": extended_permissions(request),
+        "consumables": Consumable.objects.filter(
+            id__in=RecurringConsumableCharge.objects.values_list("consumable_id", flat=True)
+        ),
+        "selected_consumable_ids": consumable_ids,
+        "invalidity": invalidity,
+    }
     return render(request, "consumables/recurring_charges.html", dictionary)
 
 
@@ -313,12 +328,18 @@ def make_withdrawal(
     withdraw.consumable.save()
     # Only add notification message if request is present
     if request:
-        if request.user.id == customer_id:
-            message = f"Your withdrawal of {withdraw.quantity} of {withdraw.consumable}"
-        else:
-            message = f"The withdrawal of {withdraw.quantity} of {withdraw.consumable} for {withdraw.customer}"
-        message += f" was successfully logged and will be billed to project {withdraw.project}."
+        message = make_withdrawal_success_message(withdraw, request.user)
         messages.success(request, message, extra_tags="data-speed=9000")
+    return withdraw
+
+
+def make_withdrawal_success_message(withdraw, request_user: User):
+    if request_user.id == withdraw.customer_id:
+        message = f"Your withdrawal of {withdraw.quantity} of {withdraw.consumable}"
+    else:
+        message = f"The withdrawal of {withdraw.quantity} of {withdraw.consumable} for {withdraw.customer}"
+    message += f" was successfully logged and will be billed to project {withdraw.project}."
+    return message
 
 
 def send_reorder_supply_reminder_email(consumable: Consumable):

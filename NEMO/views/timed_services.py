@@ -21,7 +21,6 @@ from NEMO.models import (
     ClosureTime,
     EmailNotificationType,
     Interlock,
-    PhysicalAccessLevel,
     Qualification,
     RecurringConsumableCharge,
     RequestStatus,

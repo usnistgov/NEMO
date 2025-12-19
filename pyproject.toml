@@ -1,6 +1,6 @@
 [project]
 name = "NEMO"
-version = "7.2.5"
+version = "7.3.0"
 description = "NEMO is a laboratory logistics web application. Use it to schedule reservations, control tool access, track maintenance issues, and more."
 keywords = ["NEMO"]
 readme = "README.md"
@@ -14,29 +14,29 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Framework :: Django :: 4.2",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
-requires-python = ">=3.9, <4"
+requires-python = ">=3.10, <4"
 dependencies = [
-    "cryptography==45.0.4",
-    "Django==4.2.26",
-    "django-auditlog==3.2.0",
+    "cryptography==46.0.3",
+    "Django==4.2.27",
+    "django-auditlog==3.4.1",
     "django-filter==25.1",
-    "djangorestframework==3.16.0",
+    "djangorestframework==3.16.1",
     "drf-excel==2.5.3",
     "drf-flex-fields==1.0.2",
     "ldap3==2.9.1",
-    "Pillow==11.2.1",
+    "Pillow==12.0.0",
     "python-dateutil==2.9.0",
-    "requests==2.32.3",
-    "packaging==24.2",
-    "django-mptt==0.14.0",
-    "pymodbus==3.8.6",
-    "django-jsonform==2.23.2",
+    "requests==2.32.5",
+    "packaging==25.0",
+    "django-mptt==0.18.0",
+    "pymodbus==3.11.4",
+    "django-jsonform==2.23.2", # remove in NEMO 7.4.0
+    "fastjsonschema==2.21.2",
 ]
 license = {file = "LICENSE"}
 

@@ -27,12 +27,13 @@ def staff_assistance_requests(request):
         return HttpResponseBadRequest("Staff assistance requests are not enabled")
 
     user: User = request.user
+    staff_assistance_requests_qs = StaffAssistanceRequest.objects.prefetch_related("replies")
     if user.is_staff:
-        open_staff_assistance_requests = StaffAssistanceRequest.objects.filter(resolved=False, deleted=False)
-        resolved_staff_assistance_requests = StaffAssistanceRequest.objects.filter(resolved=True, deleted=False)
+        open_staff_assistance_requests = staff_assistance_requests_qs.filter(resolved=False, deleted=False)
+        resolved_staff_assistance_requests = staff_assistance_requests_qs.filter(resolved=True, deleted=False)
     else:
-        open_staff_assistance_requests = StaffAssistanceRequest.objects.filter(user=user, resolved=False, deleted=False)
-        resolved_staff_assistance_requests = StaffAssistanceRequest.objects.filter(
+        open_staff_assistance_requests = staff_assistance_requests_qs.filter(user=user, resolved=False, deleted=False)
+        resolved_staff_assistance_requests = staff_assistance_requests_qs.filter(
             user=user, resolved=True, deleted=False
         )
 
@@ -184,9 +185,9 @@ def send_reply_emails(reply: RequestMessage, reply_url):
     for user in reply.content_object.creator_and_reply_users():
         if user != reply.author:
             creator_display = f"{creator.get_name()}'s" if creator != user else "your"
-            creator_display_his = creator_display if creator != reply.author else "his"
+            creator_display_their = creator_display if creator != reply.author else "their"
             subject = f"New reply on {creator_display} staff assistance request"
-            message = f"""{reply.author.get_name()} also replied to {creator_display_his} staff assistance request:
+            message = f"""{reply.author.get_name()} also replied to {creator_display_their} staff assistance request:
 <br><br>
 {linebreaksbr(reply.content)}
 <br><br>

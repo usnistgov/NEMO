@@ -6,11 +6,11 @@ from django.urls import reverse
 from django.utils import timezone
 
 from NEMO.models import Area, Reservation, ReservationItemType, ScheduledOutage, Tool, User
-from NEMO.tests.test_utilities import login_as_staff, login_as_user, test_response_is_landing_page
+from NEMO.tests.test_utilities import NEMOTestCaseMixin
 from NEMO.utilities import RecurrenceFrequency, localize
 
 
-class OutageTestCase(TestCase):
+class OutageTestCase(NEMOTestCaseMixin, TestCase):
     tool: Tool = None
     area: Area = None
     owner: User = None
@@ -60,11 +60,11 @@ class OutageTestCase(TestCase):
         data = self.get_outage_data(title="Outage", start=start, end=end, item_id=item_id, item_type=item_type)
 
         # regular user should not be able to create outage
-        login_as_user(self.client)
+        self.login_as_user()
         response = self.client.get(reverse("create_outage"), {}, follow=True)
-        test_response_is_landing_page(self, response)
+        self.assert_response_is_landing_page(response)
         # back to staff mode
-        login_as_staff(self.client)
+        self.login_as_staff()
 
         response = self.client.post(reverse("create_outage"), data, follow=True)
         self.assertEqual(response.status_code, 400)
@@ -137,7 +137,7 @@ class OutageTestCase(TestCase):
         start = datetime.now()
         end = start + timedelta(hours=1)
         data = self.get_outage_data(title="Outage", start=start, end=end, item_id=tool.id)
-        login_as_staff(self.client)
+        self.login_as_staff()
         response = self.client.post(reverse("create_outage"), data, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(ScheduledOutage.objects.all().count(), 1)
@@ -149,7 +149,7 @@ class OutageTestCase(TestCase):
         data = self.get_outage_data(
             title="Outage", start=start, end=end, item_id=area.id, item_type=ReservationItemType.AREA
         )
-        login_as_staff(self.client)
+        self.login_as_staff()
         response = self.client.post(reverse("create_outage"), data, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(ScheduledOutage.objects.all().count(), 1)
@@ -164,19 +164,19 @@ class OutageTestCase(TestCase):
         start = datetime.now()
         end = start + timedelta(hours=1)
         data = self.get_outage_data(title="Outage", start=start, end=end, item_id=item_id, item_type=item_type)
-        login_as_staff(self.client)
+        self.login_as_staff()
         response = self.client.post(reverse("create_outage"), data, follow=True)
         self.assertEqual(response.status_code, 200)
         outage = ScheduledOutage.objects.get(title="Outage")
         self.assertTrue(outage.id)
 
         # regular user should not be able to resize outage
-        login_as_user(self.client)
+        self.login_as_user()
         response = self.client.get(reverse("resize_outage"), {}, follow=True)
-        test_response_is_landing_page(self, response)
+        self.assert_response_is_landing_page(response)
         self.assertTrue(ScheduledOutage.objects.get(pk=outage.id).id, outage.id)
         # back to staff mode
-        login_as_staff(self.client)
+        self.login_as_staff()
 
         # test wrong delta
         response = self.client.post(reverse("resize_outage"), {"delta": "asd", "id": outage.id}, follow=True)
@@ -235,19 +235,19 @@ class OutageTestCase(TestCase):
         start = datetime.now()
         end = start + timedelta(hours=1)
         data = self.get_outage_data(title="Outage", start=start, end=end, item_id=item_id, item_type=item_type)
-        login_as_staff(self.client)
+        self.login_as_staff()
         response = self.client.post(reverse("create_outage"), data, follow=True)
         self.assertEqual(response.status_code, 200)
         outage = ScheduledOutage.objects.get(title="Outage")
         self.assertTrue(outage.id)
 
         # regular user should not be able to move outage
-        login_as_user(self.client)
+        self.login_as_user()
         response = self.client.get(reverse("move_outage"), {}, follow=True)
-        test_response_is_landing_page(self, response)
+        self.assert_response_is_landing_page(response)
         self.assertTrue(ScheduledOutage.objects.get(pk=outage.id).id, outage.id)
         # back to staff mode
-        login_as_staff(self.client)
+        self.login_as_staff()
 
         # test wrong delta
         response = self.client.post(reverse("move_outage"), {"delta": "asd", "id": outage.id}, follow=True)
@@ -301,18 +301,18 @@ class OutageTestCase(TestCase):
         start = datetime.now()
         end = start + timedelta(hours=1)
         data = self.get_outage_data(title="Outage", start=start, end=end, item_id=item_id, item_type=item_type)
-        login_as_staff(self.client)
+        self.login_as_staff()
         response = self.client.post(reverse("create_outage"), data, follow=True)
         self.assertEqual(response.status_code, 200)
         outage = ScheduledOutage.objects.get(title="Outage")
         self.assertTrue(outage.id)
 
         # regular user should not be able to delete outage
-        login_as_user(self.client)
+        self.login_as_user()
         response = self.client.get(reverse("cancel_outage", kwargs={"outage_id": 999}), {}, follow=True)
-        test_response_is_landing_page(self, response)
+        self.assert_response_is_landing_page(response)
         self.assertTrue(ScheduledOutage.objects.get(pk=outage.id).id, outage.id)
-        login_as_staff(self.client)
+        self.login_as_staff()
 
         # get should fail
         response = self.client.get(reverse("cancel_outage", kwargs={"outage_id": 999}), {}, follow=True)
@@ -335,14 +335,14 @@ class OutageTestCase(TestCase):
         start = datetime.now()
         end = start + timedelta(hours=1)
         data = self.get_outage_data(title="Outage", start=start, end=end, item_id=item_id, item_type=item_type)
-        login_as_staff(self.client)
+        self.login_as_staff()
         response = self.client.post(reverse("create_outage"), data, follow=True)
         self.assertEqual(response.status_code, 200)
         outage = ScheduledOutage.objects.get(title="Outage")
         self.assertTrue(outage.id)
 
         # anybody that is logged in can see outage details
-        login_as_user(self.client)
+        self.login_as_user()
 
         # post should fail
         response = self.client.post(reverse("outage_details", kwargs={"outage_id": 999}), {}, follow=True)
@@ -366,7 +366,7 @@ class OutageTestCase(TestCase):
             start=start, end=end, outage=True, item_id=-1, frequency=RecurrenceFrequency.DAILY, interval=1, until=until
         )
 
-        login_as_staff(self.client)
+        self.login_as_staff()
         response = self.client.post(reverse("create_outage"), data, follow=True)
         self.assertEqual(response.status_code, 404)
 
@@ -391,7 +391,7 @@ class OutageTestCase(TestCase):
             until=until,
         )
 
-        login_as_staff(self.client)
+        self.login_as_staff()
         response = self.client.post(reverse("create_outage"), data, follow=True)
 
         self.assertEqual(response.status_code, 200)
@@ -425,7 +425,7 @@ class OutageTestCase(TestCase):
             until=until,
         )
 
-        login_as_staff(self.client)
+        self.login_as_staff()
         response = self.client.post(reverse("create_outage"), data, follow=True)
 
         self.assertEqual(response.status_code, 200)
@@ -461,7 +461,7 @@ class OutageTestCase(TestCase):
             until=until,
         )
 
-        login_as_staff(self.client)
+        self.login_as_staff()
         response = self.client.post(reverse("create_outage"), data, follow=True)
 
         self.assertEqual(response.status_code, 200)
@@ -491,7 +491,7 @@ class OutageTestCase(TestCase):
             until=until,
         )
 
-        login_as_staff(self.client)
+        self.login_as_staff()
         response = self.client.post(reverse("create_outage"), data, follow=True)
 
         self.assertEqual(response.status_code, 200)

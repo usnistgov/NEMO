@@ -154,6 +154,13 @@
                     </div>
                 </div>
                 <div class="danger-highlight" style="margin-top: 25px;">{{ number_of_charges }} charges were found:</div>
+                <div>
+                    <input id="result_search"
+                           type="text"
+                           aria-label="Filter charges"
+                           placeholder="Filter charges"
+                           class="form-control">
+                </div>
             {% endwith %}
             <table class="table table-striped" id="selected-charges">
                 <thead>
@@ -162,6 +169,7 @@
                             <input type="checkbox"
                                    onchange="$('#selected-charges :checkbox').prop('checked', $(this).prop('checked'));">
                         </th>
+                        <th>#</th>
                         <th>Date</th>
                         <th>Type</th>
                         <th>Item</th>
@@ -180,6 +188,7 @@
                                    aria-label="charge #{{ forloop.counter }}"
                                    value="{{ charge.item_content_type_id }}_{{ charge.item_id }}" />
                         </td>
+                        <td>{{ forloop.counter }}</td>
                         <td>{{ charge.end|date:"SHORT_DATETIME_FORMAT" }}</td>
                         <td>{{ charge.type }}</td>
                         <td>{{ charge.name }}</td>
@@ -230,6 +239,7 @@
             }
 
             function on_load() {
+                $("#result_search").keyup(table_search("selected-charges", [0]));
                 $("#user_search").autocomplete('users', select_user, '{% url 'user_search' %}', true);
                 $('#project_search').autocomplete('projects', select_project, '{% url "search_project_for_transfer" %}');
                 $('#new_project_search').autocomplete('new_projects', select_project, '{% url "search_project_for_transfer" %}');
@@ -257,6 +267,7 @@
 
             function submit_charges(button)
             {
+                $('#selected-charges :checkbox:not(:visible)').prop("checked", false);
                 const charges_count = $('#selected-charges tbody :checkbox:checked').length;
                 if (button.form.reportValidity())
                 {

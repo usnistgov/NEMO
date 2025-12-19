@@ -3,20 +3,13 @@ from typing import Optional
 
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
-from django.test import Client, TestCase
+from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
 from NEMO.forms import RecurringConsumableChargeForm
 from NEMO.models import Consumable, ConsumableWithdraw, RecurringConsumableCharge, Tool, UsageEvent, User
-from NEMO.tests.test_utilities import (
-    create_user_and_project,
-    login_as,
-    login_as_staff,
-    login_as_user,
-    test_response_is_landing_page,
-    validate_model_error,
-)
+from NEMO.tests.test_utilities import NEMOTestCaseMixin, create_user_and_project
 from NEMO.utilities import RecurrenceFrequency, beginning_of_the_day, format_datetime, get_recurring_rule
 from NEMO.views.consumables import make_withdrawal
 from NEMO.views.customization import (
@@ -28,7 +21,7 @@ consumable: Optional[Consumable] = None
 supply: Optional[Consumable] = None
 
 
-class ConsumableTestCase(TestCase):
+class ConsumableTestCase(NEMOTestCaseMixin, TestCase):
     def setUp(self):
         global consumable, supply
         consumable = Consumable.objects.create(
@@ -37,13 +30,13 @@ class ConsumableTestCase(TestCase):
         supply = Consumable.objects.create(name="Consumable", quantity=1, reusable=True)
 
     def test_get(self):
-        login_as_staff(self.client)
+        self.login_as_staff()
         self.client.get(reverse("consumables"), follow=True)
 
     def test_post(self):
         quantity = consumable.quantity
         data = {}
-        login_as_staff(self.client)
+        self.login_as_staff()
         response = self.client.post(reverse("consumables"), data, follow=True)
         self.assertEqual(response.status_code, 400)
         customer, customer_project = create_user_and_project()
@@ -101,7 +94,7 @@ class ConsumableTestCase(TestCase):
             )
             customer, customer_project = create_user_and_project()
             quantity = consumable_no_self_checkout.quantity
-            login_as(self.client, customer)
+            self.login_as(customer)
             data = {
                 "customer": customer.id,
                 "project": customer_project.id,
@@ -135,7 +128,7 @@ class ConsumableTestCase(TestCase):
             consumable_self_checkout.self_checkout_only_users.set([staff])
             customer, customer_project = create_user_and_project()
             quantity = consumable_self_checkout.quantity
-            login_as(self.client, customer)
+            self.login_as(customer)
             data = {
                 "customer": customer.id,
                 "project": customer_project.id,
@@ -158,7 +151,7 @@ class ConsumableTestCase(TestCase):
             self.assertEqual(response.status_code, 200)
             self.assertEqual(quantity - 1, Consumable.objects.get(pk=consumable_self_checkout.id).quantity)
             # Should also still work for staff
-            login_as(self.client, staff)
+            self.login_as(staff)
             response = self.client.post(reverse("consumables"), data, follow=True)
             self.assertEqual(response.status_code, 200)
             # Checkout, it should go through
@@ -171,7 +164,7 @@ class ConsumableTestCase(TestCase):
 
     def test_clean(self):
         test_consumable = Consumable()
-        validate_model_error(self, test_consumable, ["name", "quantity"])
+        self.validate_model_error(test_consumable, ["name", "quantity"])
         test_consumable.name = "consumable"
         test_consumable.quantity = 10
         # Reusable item doesn't need anything else
@@ -179,7 +172,7 @@ class ConsumableTestCase(TestCase):
         test_consumable.full_clean()
         # Not reusable item requires both reminder threshold and reminder email
         test_consumable.reusable = False
-        validate_model_error(self, test_consumable, ["reminder_threshold", "reminder_email"], strict=True)
+        self.validate_model_error(test_consumable, ["reminder_threshold", "reminder_email"], strict=True)
         test_consumable.reminder_threshold = 5
         test_consumable.reminder_email = "test@test.com"
         test_consumable.full_clean()
@@ -257,7 +250,7 @@ class ConsumableTestCase(TestCase):
         staff, staff_project = create_user_and_project(is_staff=True)
         rec_charge = RecurringConsumableCharge()
         rec_charge: RecurringConsumableCharge = RecurringConsumableChargeForm(instance=rec_charge).save(commit=False)
-        validate_model_error(self, rec_charge, ["name", "consumable", "last_updated_by", "last_updated"])
+        self.validate_model_error(rec_charge, ["name", "consumable", "last_updated_by", "last_updated"])
         rec_charge.name = "rec charge 1"
         rec_charge.consumable = consumable
         rec_charge.last_updated_by = staff
@@ -266,27 +259,27 @@ class ConsumableTestCase(TestCase):
         rec_charge.full_clean()
         # non-empty recurring charge i.e. with customer or project etc. should fail
         rec_charge.customer = user
-        validate_model_error(self, rec_charge, ["project", "rec_start", "rec_frequency"], strict=True)
+        self.validate_model_error(rec_charge, ["project", "rec_start", "rec_frequency"], strict=True)
         rec_charge.project = project
         rec_charge.rec_start = date.today()
-        validate_model_error(self, rec_charge, ["rec_frequency"])
+        self.validate_model_error(rec_charge, ["rec_frequency"])
         rec_charge.rec_frequency = RecurrenceFrequency.DAILY.value
         rec_charge.rec_count = 2
         rec_charge.rec_until = date.today()
-        validate_model_error(self, rec_charge, ["__all__"])
+        self.validate_model_error(rec_charge, ["__all__"])
         rec_charge.rec_until = None
         project.active = False
         project.save()
         user.is_active = False
         user.save()
-        validate_model_error(self, rec_charge, ["project", "customer"])
+        self.validate_model_error(rec_charge, ["project", "customer"])
         project.active = True
         project.save()
         user.is_active = True
         user.save()
         project.allow_consumable_withdrawals = False
         project.save()
-        validate_model_error(self, rec_charge, ["project"])
+        self.validate_model_error(rec_charge, ["project"])
         self.assertRaises(ValidationError, rec_charge.charge)
         project.allow_consumable_withdrawals = True
         project.save()
@@ -312,19 +305,19 @@ class ConsumableTestCase(TestCase):
             "quantity": 1,
             "rec_interval": 1,
         }
-        staff = login_as_user_office(self.client)
+        staff = self.login_as_user_office()
         response = self.client.post(reverse("create_recurring_charge"), data, follow=True)
         # Validation error, Consumable is required
-        self.assertFormError(response, "form", "consumable", "This field is required.")
+        self.assertFormError(response.context["form"], "consumable", "This field is required.")
         data["consumable"] = consumable.id
         response = self.client.post(reverse("create_recurring_charge"), data, follow=True)
         # Validation error. Customer is required when charging
-        self.assertFormError(response, "form", "customer", "This field is required when charging.")
+        self.assertFormError(response.context["form"], "customer", "This field is required when charging.")
         data["customer"] = user.id
         response = self.client.post(reverse("create_recurring_charge"), data, follow=True)
-        self.assertFormError(response, "form", "project", "This field is required.")
-        self.assertFormError(response, "form", "rec_frequency", "This field is required.")
-        self.assertFormError(response, "form", "rec_start", "This field is required.")
+        self.assertFormError(response.context["form"], "project", "This field is required.")
+        self.assertFormError(response.context["form"], "rec_frequency", "This field is required.")
+        self.assertFormError(response.context["form"], "rec_start", "This field is required.")
         data["project"] = project.id
         data["rec_frequency"] = RecurrenceFrequency.DAILY.value
         data["rec_start"] = format_datetime(datetime.now().date() + timedelta(days=5))
@@ -379,11 +372,11 @@ class ConsumableTestCase(TestCase):
             "rec_interval": 1,
         }
         # Cannot edit as regular user
-        login_as_user(self.client)
+        self.login_as_user()
         response = self.client.post(reverse("edit_recurring_charge", args=[charge.id]), data, follow=True)
-        test_response_is_landing_page(self, response)
+        self.assert_response_is_landing_page(response)
         # Login as staff now
-        staff = login_as_user_office(self.client)
+        staff = self.login_as_user_office()
         response = self.client.post(reverse("edit_recurring_charge", args=[charge.id]), data, follow=True)
         self.assertTrue("edit_recurring_charge" not in response.request["PATH_INFO"])
         self.assertEqual(response.status_code, 200)
@@ -422,11 +415,11 @@ class ConsumableTestCase(TestCase):
             "rec_frequency": RecurrenceFrequency.WEEKLY.value,
             "rec_interval": 1,
         }
-        staff = login_as_staff(self.client)
+        staff = self.login_as_staff()
         # Change staff user to facility manager who can edit everything
         staff.is_facility_manager = True
         staff.save()
-        login_as(self.client, staff)
+        self.login_as(staff)
         response = self.client.post(reverse("edit_recurring_charge", args=[charge.id]), data, follow=True)
         self.assertTrue("edit_recurring_charge" not in response.request["PATH_INFO"])
         # Everything should have changed now
@@ -443,21 +436,21 @@ class ConsumableTestCase(TestCase):
 
     def test_create_when_locked(self):
         RecurringChargesCustomization.set("recurring_charges_lock", "enabled")
-        login_as_user(self.client)
+        self.login_as_user()
         response = self.client.get(reverse("create_recurring_charge"), follow=True)
-        test_response_is_landing_page(self, response)
-        login_as_staff(self.client)
+        self.assert_response_is_landing_page(response)
+        self.login_as_staff()
         response = self.client.get(reverse("create_recurring_charge"), follow=True)
-        test_response_is_landing_page(self, response)
+        self.assert_response_is_landing_page(response)
 
     def test_delete_when_locked(self):
         RecurringChargesCustomization.set("recurring_charges_lock", "enabled")
-        login_as_user(self.client)
+        self.login_as_user()
         response = self.client.get(reverse("delete_recurring_charge", args=[1]), follow=True)
-        test_response_is_landing_page(self, response)
-        login_as_staff(self.client)
+        self.assert_response_is_landing_page(response)
+        self.login_as_staff()
         response = self.client.get(reverse("delete_recurring_charge", args=[1]), follow=True)
-        test_response_is_landing_page(self, response)
+        self.assert_response_is_landing_page(response)
 
     def test_clear_recurring_charge(self):
         user, project = create_user_and_project()
@@ -472,17 +465,16 @@ class ConsumableTestCase(TestCase):
         charge = RecurringConsumableCharge.objects.get(pk=charge.pk)
         self.assertIsNotNone(charge.customer)
         self.assertIsNotNone(charge.project)
-        login_as_user_office(self.client)
+        self.login_as_user_office()
         response = self.client.get(reverse("clear_recurring_charge", args=[charge.id]))
         self.assertRedirects(response, reverse("recurring_charges"))
         charge = RecurringConsumableCharge.objects.get(pk=charge.pk)
         self.assertIsNone(charge.customer)
         self.assertIsNone(charge.project)
 
-
-def login_as_user_office(client: Client) -> User:
-    tester, created = User.objects.get_or_create(
-        username="test_staff", first_name="Test", last_name="Staff", is_user_office=True, badge_number=999999
-    )
-    login_as(client, tester)
-    return tester
+    def login_as_user_office(self) -> User:
+        tester, created = User.objects.get_or_create(
+            username="test_staff", first_name="Test", last_name="Staff", is_user_office=True, badge_number=999999
+        )
+        self.login_as(tester)
+        return tester

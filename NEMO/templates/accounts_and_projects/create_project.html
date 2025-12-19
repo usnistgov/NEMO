@@ -128,9 +128,9 @@
                 <div class="col-sm-6 form-control-static danger-highlight">{{ form.start_date.errors|striptags }}</div>
             </div>
             <div class="form-group">
-                <label class="control-label col-sm-2" for="pi_search">PIs</label>
+                <label class="control-label col-sm-2" for="manager_search">PIs</label>
                 <div class="col-sm-4">
-                    <input id="pi_search"
+                    <input id="manager_search"
                            type="text"
                            autocomplete="off"
                            class="form-control"
@@ -138,7 +138,7 @@
                 </div>
             </div>
             <div class="form-group">
-                <div id="pi-list" class="col-sm-offset-2 col-sm-4">This project has no principal investigators.</div>
+                <div id="manager_list" class="col-sm-offset-2 col-sm-4">This project has no principal investigators.</div>
             </div>
             {% if allow_document_upload %}
                 <div class="form-group">
@@ -164,14 +164,14 @@
             </div>
         </form>
         <script>
-            function select_pi(jquery_event, search_selection, dataset_name)
+            function select_manager(jquery_event, search_selection, dataset_name)
             {
-                add_to_list("#pi-list", "remove_pi", search_selection.id, search_selection.name, "remove " + search_selection.name + " as principal investigator", "principal_investigators");
-                $("#pi_search").typeahead('val', '');
+                add_to_list("#manager_list", "remove_manager", search_selection.id, search_selection.name, "remove " + search_selection.name + " as principal investigator", "managers");
+                $("#manager_search").typeahead('val', '');
             }
-            function remove_pi(id)
+            function remove_manager(id)
             {
-                remove_from_list("#pi-list", "#principal_investigators_" + id, "This project has no principal investigators.")
+                remove_from_list("#manager_list", "#managers_" + id, "This project has no principal investigators.")
             }
             function select_project_type(jquery_event, search_selection, dataset_name)
             {
@@ -195,16 +195,16 @@
             window.addEventListener("load", function ()
             {
                 $('#start_date').datetimepicker({format: '{{ date_input_js_format }}'});
-                $('#pi_search').autocomplete('pis', select_pi, {{ user_list|json_search_base }});
+                $('#manager_search').autocomplete('managers', select_manager, {{ form.fields.managers.queryset.all|json_search_base }});
                 $('#account_search').autocomplete('account', select_account, {{ account_list|json_search_base }});
                 {% if form.account.value %}
                     {% for account in account_list %}
                         {% if account.id == form.account.value|to_int %}select_account(null, {"id": "{{ account.id }}", "name": "{{ account.name }}"});{% endif %}
                     {% endfor %}
                 {% endif %}
-                {% for pi in form.principal_investigators.value %}
-                    {% for user in user_list %}
-                        {% if user.id == pi|to_int %}select_pi(null, {"id": "{{ user.id }}", "name": "{{ user }}"});{% endif %}
+                {% for manager_id in form.managers.value %}
+                    {% for user in form.fields.managers.queryset.all %}
+                        {% if user.id == manager_id|to_int %}select_manager(null, {"id": "{{ user.id }}", "name": "{{ user }}"});{% endif %}
                     {% endfor %}
                 {% endfor %}
                 {% if project_types_allow_multiple %}

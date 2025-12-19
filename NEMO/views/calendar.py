@@ -2,9 +2,8 @@ import json
 import re
 from datetime import datetime, timedelta
 from http import HTTPStatus
-from json import dumps, loads
 from logging import getLogger
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
@@ -12,17 +11,11 @@ from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbid
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.safestring import mark_safe
 from django.utils.timezone import make_aware
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
-from NEMO.decorators import (
-    disable_session_expiry_refresh,
-    postpone,
-    staff_member_or_tool_staff_required,
-    synchronized,
-)
+from NEMO.decorators import disable_session_expiry_refresh, postpone, staff_member_or_tool_staff_required, synchronized
 from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
 from NEMO.forms import ScheduledOutageForm, save_scheduled_outage
 from NEMO.models import (
@@ -33,15 +26,15 @@ from NEMO.models import (
     Project,
     Reservation,
     ReservationItemType,
-    ReservationQuestions,
     ScheduledOutage,
     ScheduledOutageCategory,
     Tool,
     UsageEvent,
     User,
+    UserCalendarToolList,
     UserPreferences,
 )
-from NEMO.policy import policy_class as policy
+from NEMO.policy import check_maximum_users_in_overlapping_reservations, policy_class as policy
 from NEMO.utilities import (
     RecurrenceFrequency,
     bootstrap_primary_color,
@@ -64,7 +57,6 @@ from NEMO.views.customization import (
     ToolCustomization,
     get_media_file_contents,
 )
-from NEMO.widgets.dynamic_form import DynamicForm
 
 calendar_logger = getLogger(__name__)
 
@@ -141,6 +133,7 @@ def calendar(request, item_type=None, item_id=None):
         "calendar_all_tools": calendar_all_tools,
         "calendar_all_areas": calendar_all_areas,
         "calendar_all_areastools": calendar_all_areastools,
+        "calendar_user_tool_lists": UserCalendarToolList.objects.filter(user=user),
         "create_reservation_confirmation": create_reservation_confirmation,
         "change_reservation_confirmation": change_reservation_confirmation,
         "reservation_confirmation_date_format": reservation_confirmation_date_format,
@@ -475,7 +468,7 @@ def create_item_reservation(request, current_user: User, start, end, item_type: 
 
     # If the user only has one project then associate it with the reservation.
     # Otherwise, present a dialog box for the user to choose which project to associate.
-    if not user.is_staff and not staff_on_tool:
+    if not user.is_staff_on_tool(item):
         active_projects = user.active_projects()
         if len(active_projects) == 1:
             new_reservation.project = active_projects[0]
@@ -506,21 +499,19 @@ def create_item_reservation(request, current_user: User, start, end, item_type: 
             )
 
     # Reservation questions if applicable
-    reservation_questions = render_reservation_questions(item_type, item_id, new_reservation.project)
-    if reservation_questions:
+    dynamic_forms = item.get_reservation_questions(new_reservation.project)
+    if dynamic_forms:
         if not bool(request.POST.get("reservation_questions", False)):
             # We have not yet asked the questions
             return render(
-                request, "calendar/reservation_questions.html", {"reservation_questions": reservation_questions}
+                request, "calendar/reservation_questions.html", {"reservation_questions": dynamic_forms.render()}
             )
         else:
             # We already asked before, now we need to extract the results
             try:
-                new_reservation.question_data = extract_reservation_questions(
-                    request, item_type, item_id, new_reservation.project
-                )
+                new_reservation.question_data = dynamic_forms.extract(request)
             except RequiredUnansweredQuestionsException as e:
-                dictionary = {"error": str(e), "reservation_questions": reservation_questions}
+                dictionary = {"error": str(e), "reservation_questions": dynamic_forms.render()}
                 return render(request, "calendar/reservation_questions.html", dictionary)
 
     # Configuration rules only apply to tools
@@ -572,14 +563,14 @@ def reservation_success(request, reservation: Reservation):
             )
         elif reservation.reservation_item_type == ReservationItemType.AREA:
             overlapping_reservations_in_same_area = overlapping_reservations_in_same_area.filter(area=area)
-        max_area_overlap, max_area_time = policy.check_maximum_users_in_overlapping_reservations(
+        max_area_overlap, max_area_time = check_maximum_users_in_overlapping_reservations(
             overlapping_reservations_in_same_area
         )
         if location:
             overlapping_reservations_in_same_location = overlapping_reservations_in_same_area.filter(
                 tool__in=Tool.objects.filter(_location=location)
             )
-            max_location_overlap, max_location_time = policy.check_maximum_users_in_overlapping_reservations(
+            max_location_overlap, max_location_time = check_maximum_users_in_overlapping_reservations(
                 overlapping_reservations_in_same_location
             )
     if max_area_overlap and max_area_overlap >= area.warning_capacity():
@@ -667,9 +658,9 @@ def create_outage(request):
         return render(request, "calendar/scheduled_outage_information.html", dictionary)
 
     # If there is a policy problem for the outage then return the error...
-    errors = save_scheduled_outage(form, request.user, item, start=start, end=end)
-    if errors:
-        return HttpResponseBadRequest(errors)
+    response = save_scheduled_outage(form, request.user, item, start=start, end=end)
+    if response and response.status_code != HTTPStatus.OK:
+        return response
 
     return HttpResponse()
 
@@ -792,9 +783,9 @@ def modify_outage(request, start_delta, end_delta):
         outage.start += start_delta
     if end_delta:
         outage.end += end_delta
-    policy_problem = policy.check_to_create_outage(outage)
-    if policy_problem:
-        return HttpResponseBadRequest(policy_problem)
+    response = policy.check_to_create_outage(outage)
+    if response.status_code != HTTPStatus.OK:
+        return response
     else:
         # All policy checks passed, so save the reservation.
         outage.save()
@@ -842,10 +833,25 @@ def cancel_outage(request, outage_id):
 def set_reservation_title(request, reservation_id):
     """Change reservation title for a user."""
     reservation = get_object_or_404(Reservation, id=reservation_id)
-    if not request.user.is_staff and not request.user.is_staff_on_tool(reservation.tool):
+    if not request.user.is_staff_on_tool(reservation.tool):
         return HttpResponseBadRequest("You are not allowed to edit this reservation.")
     reservation.title = request.POST.get("title", "")[: reservation._meta.get_field("title").max_length]
-    reservation.save()
+    reservation.save_and_notify()
+    return HttpResponse()
+
+
+@login_required
+@require_POST
+def change_reservation_note(request, reservation_id):
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+    if (
+        not request.user == reservation.user
+        and not request.user.is_staff
+        and not request.user.is_staff_on_tool(reservation.tool)
+    ):
+        return HttpResponseBadRequest("You are not allowed to edit this reservation.")
+    reservation.note = request.POST.get("note", "")
+    reservation.save_and_notify()
     return HttpResponse()
 
 
@@ -880,7 +886,7 @@ def change_reservation_date(request):
     new_start = request.POST.get("new_start", None)
     if new_start:
         try:
-            new_start = make_aware(datetime.strptime(new_start, datetime_input_format), is_dst=False)
+            new_start = make_aware(datetime.strptime(new_start, datetime_input_format))
             if new_start.time().minute not in [0, 15, 30, 45]:
                 return HttpResponseBadRequest("Reservation time only works with 15 min increments")
         except ValueError:
@@ -889,7 +895,7 @@ def change_reservation_date(request):
     new_end = request.POST.get("new_end", None)
     if new_end:
         try:
-            new_end = make_aware(datetime.strptime(new_end, datetime_input_format), is_dst=False)
+            new_end = make_aware(datetime.strptime(new_end, datetime_input_format))
             if new_end.time().minute not in [0, 15, 30, 45]:
                 return HttpResponseBadRequest("Reservation time only works with 15 min increments")
         except ValueError:
@@ -912,7 +918,7 @@ def change_outage_date(request):
     new_start = request.POST.get("new_start", None)
     if new_start:
         try:
-            new_start = make_aware(datetime.strptime(new_start, datetime_input_format), is_dst=False)
+            new_start = make_aware(datetime.strptime(new_start, datetime_input_format))
             if new_start.time().minute not in [0, 15, 30, 45]:
                 return HttpResponseBadRequest("Outage time only works with 15 min increments")
         except ValueError:
@@ -921,7 +927,7 @@ def change_outage_date(request):
     new_end = request.POST.get("new_end", None)
     if new_end:
         try:
-            new_end = make_aware(datetime.strptime(new_end, datetime_input_format), is_dst=False)
+            new_end = make_aware(datetime.strptime(new_end, datetime_input_format))
             if new_end.time().minute not in [0, 15, 30, 45]:
                 return HttpResponseBadRequest("Outage time only works with 15 min increments")
         except ValueError:
@@ -984,47 +990,6 @@ def get_selected_tool_calendar_info(request, tool_id):
         "snippets/tool_calendar_info.html",
         {"tool": tool, "other_problems": other_problems, "last_problem": last_problem},
     )
-
-
-def get_and_combine_reservation_questions(
-    item_type: ReservationItemType, item_id: int, project: Project = None
-) -> List[ReservationQuestions]:
-    reservation_questions = ReservationQuestions.objects.filter(enabled=True)
-    if item_type == ReservationItemType.TOOL:
-        reservation_questions = reservation_questions.filter(tool_reservations=True)
-        reservation_questions = reservation_questions.filter(Q(only_for_tools=None) | Q(only_for_tools__in=[item_id]))
-    if item_type == ReservationItemType.AREA:
-        reservation_questions = reservation_questions.filter(area_reservations=True)
-        reservation_questions = reservation_questions.filter(Q(only_for_areas=None) | Q(only_for_areas__in=[item_id]))
-    if project:
-        reservation_questions = reservation_questions.filter(
-            Q(only_for_projects=None) | Q(only_for_projects__in=[project.id])
-        )
-    else:
-        reservation_questions = reservation_questions.filter(only_for_projects=None)
-    return reservation_questions
-
-
-def render_reservation_questions(
-    item_type: ReservationItemType, item_id: int, project: Project = None, virtual_inputs: bool = False
-) -> str:
-    reservation_questions = get_and_combine_reservation_questions(item_type, item_id, project)
-    rendered_questions = ""
-    for reservation_question in reservation_questions:
-        rendered_questions += DynamicForm(reservation_question.questions).render(
-            reservation_question, "questions", virtual_inputs
-        )
-    return mark_safe(rendered_questions)
-
-
-def extract_reservation_questions(
-    request, item_type: ReservationItemType, item_id: int, project: Project = None
-) -> str:
-    reservation_questions = get_and_combine_reservation_questions(item_type, item_id, project)
-    reservation_questions_json = []
-    for reservation_question in reservation_questions:
-        reservation_questions_json.extend(loads(reservation_question.questions))
-    return DynamicForm(dumps(reservation_questions_json)).extract(request) if len(reservation_questions_json) else ""
 
 
 def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime = None, force=False):
@@ -1130,7 +1095,14 @@ def send_user_created_reservation_notification(reservation: Reservation):
         # We don't need to check for existence of reservation_created_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
         if user_office_email:
             event_name = reservation.title or f"{reservation.reservation_item.name} Reservation"
-            attachment = create_ics(reservation.id, event_name, reservation.start, reservation.end, reservation.user)
+            attachment = create_ics(
+                reservation.id,
+                event_name,
+                reservation.start,
+                reservation.end,
+                reservation.user,
+                description=reservation.note,
+            )
             send_mail(
                 subject=subject, content=message, from_email=user_office_email, to=recipients, attachments=[attachment]
             )
@@ -1167,6 +1139,37 @@ def send_user_cancelled_reservation_notification(reservation: Reservation):
             calendar_logger.error(
                 "User cancelled reservation notification could not be send because user_office_email_address is not defined"
             )
+
+
+@login_required
+@require_POST
+def delete_tool_list(request, tool_list_id):
+    user_list = get_object_or_404(UserCalendarToolList, id=tool_list_id)
+    if user_list.user == request.user:
+        user_list.delete()
+    else:
+        return HttpResponseBadRequest("You are not authorized to delete this list.")
+    return HttpResponse()
+
+
+@login_required
+@require_POST
+def save_tool_list(request, tool_list_name):
+    user: User = request.user
+    tool_list = request.POST.getlist("tools[]")
+    if not tool_list:
+        return HttpResponseBadRequest("no tool list provided")
+    user_tool_list, created = UserCalendarToolList.objects.get_or_create(user=user, name=tool_list_name)
+    user_tool_list.tools.set(tool_list)
+    return HttpResponse()
+
+
+@login_required
+@require_GET
+def load_tool_lists(request):
+    user: User = request.user
+    user_tool_lists = UserCalendarToolList.objects.filter(user=user)
+    return render(request, "calendar/user_tool_lists.html", {"user_tool_lists": user_tool_lists})
 
 
 @postpone

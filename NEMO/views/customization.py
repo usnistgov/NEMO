@@ -1,10 +1,13 @@
+import time
 from abc import ABC
 from datetime import date, datetime
 from logging import getLogger
+from threading import Lock
 from typing import Dict, Iterable, List, Optional
 
 from dateutil.relativedelta import relativedelta
 from django.apps import apps
+from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
@@ -32,16 +35,31 @@ from NEMO.models import (
     RecurringConsumableCharge,
     Tool,
     TrainingSession,
+    User,
     UserPreferences,
     UserType,
 )
-from NEMO.utilities import RecurrenceFrequency, date_input_format, datetime_input_format, quiet_int
+from NEMO.utilities import (
+    RecurrenceFrequency,
+    beginning_of_next_day,
+    beginning_of_the_day,
+    date_input_format,
+    datetime_input_format,
+    quiet_int,
+)
 
 customization_logger = getLogger(__name__)
 
 
 class CustomizationBase(ABC):
     _instances = {}
+    # Static cache variables
+    _variables_cache = None
+    _cache_expiry = 0
+    _cache_lock = Lock()
+    # Cache expiry time (in seconds, default 30 seconds)
+    CACHE_TTL = quiet_int(getattr(settings, "CUSTOMIZATIONS_CACHE_SECONDS", 30), 30)
+
     # Here we can place variables that we need in NEMO but don't need to be set in UI
     variables = {"weekend_access_notification_last_sent": ""}
     files = []
@@ -49,6 +67,33 @@ class CustomizationBase(ABC):
     def __init__(self, key, title):
         self.key = key
         self.title = title
+
+    @staticmethod
+    def _load_cache():
+        """
+        Private method to load all variables into the cache from the database.
+        Called when the cache is empty or expired.
+        """
+        with CustomizationBase._cache_lock:
+            # Reload from the database only if the cache is empty or expired
+            if CustomizationBase._variables_cache is None or time.time() > CustomizationBase._cache_expiry:
+                # Load default values
+                CustomizationBase._variables_cache = CustomizationBase._all_variables()
+                # Then override with db values
+                CustomizationBase._variables_cache.update(
+                    {cust.name: cust.value for cust in Customization.objects.all()}
+                )
+                # Set the new cache expiration time
+                CustomizationBase._cache_expiry = time.time() + CustomizationBase.CACHE_TTL
+
+    @staticmethod
+    def invalidate_cache():
+        """
+        Invalidate the cache immediately by clearing it.
+        """
+        with CustomizationBase._cache_lock:
+            CustomizationBase._variables_cache = None
+            CustomizationBase._cache_expiry = 0
 
     def template(self) -> Optional[str]:
         # We want to check if there is a customization template file in the app template dir
@@ -116,46 +161,66 @@ class CustomizationBase(ABC):
         except ValueError as e:
             raise ValidationError(str(e))
 
-    @classmethod
-    def add_instance(cls, inst):
-        cls._instances[inst.key] = inst
+    @staticmethod
+    def add_instance(inst):
+        CustomizationBase._instances[inst.key] = inst
 
-    @classmethod
-    def instances(cls) -> Iterable:
-        return cls._instances.values()
+    @staticmethod
+    def instances() -> Iterable:
+        return CustomizationBase._instances.values()
 
-    @classmethod
-    def get_instance(cls, key):
-        return cls._instances.get(key)
+    @staticmethod
+    def get_instance(key):
+        return CustomizationBase._instances.get(key)
 
-    @classmethod
-    def all_variables(cls) -> Dict:
+    @staticmethod
+    def _all_variables() -> Dict:
         all_variables = CustomizationBase.variables
-        for instance in cls.instances():
+        for instance in CustomizationBase.instances():
             all_variables.update(instance.variables)
         return all_variables
 
     @classmethod
-    def get(cls, name: str, raise_exception=True) -> str:
+    def get(cls, name: str, raise_exception=True, use_cache=True) -> str:
         if name not in cls.variables:
             raise InvalidCustomizationException(name)
         default_value = cls.variables[name]
-        try:
-            return Customization.objects.get(name=name).value
-        except Customization.DoesNotExist:
-            # return default value
-            return default_value
-        except Exception:
-            if raise_exception:
-                raise
-            else:
+        if use_cache:
+            # We are using the cache (default behavior)
+            try:
+                CustomizationBase._load_cache()  # Ensure cache is valid
+                with CustomizationBase._cache_lock:
+                    if name in CustomizationBase._variables_cache:
+                        # Return the cached value
+                        return CustomizationBase._variables_cache[name]
+                    else:
+                        # Return default value
+                        return default_value
+            except Exception:
+                if raise_exception:
+                    raise
+                else:
+                    return default_value
+        else:
+            # We are not using the cache, so we need to load the value from the database
+            try:
+                return Customization.objects.get(name=name).value
+            except Customization.DoesNotExist:
                 return default_value
+            except Exception:
+                if raise_exception:
+                    raise
+                else:
+                    return default_value
 
-    @classmethod
-    def get_all(cls) -> Dict:
-        customization_values = cls.all_variables()
-        customization_values.update({cust.name: cust.value for cust in Customization.objects.all() if cust.value})
-        return customization_values
+    @staticmethod
+    def get_all() -> Dict:
+        """
+        Retrieve all variables. Always reloading the cache.
+        """
+        CustomizationBase.invalidate_cache()  # Invalidate the cache
+        CustomizationBase._load_cache()  # Ensure cache is valid
+        return dict(CustomizationBase._variables_cache.copy().items())
 
     @classmethod
     def get_int(cls, name: str, default=None, raise_exception=True) -> int:
@@ -195,19 +260,24 @@ class CustomizationBase(ABC):
     def set(cls, name: str, value):
         if name not in cls.variables:
             raise InvalidCustomizationException(name, value)
-        if value:
-            Customization.objects.update_or_create(name=name, defaults={"value": value})
-        else:
-            try:
-                Customization.objects.get(name=name).delete()
-            except Customization.DoesNotExist:
-                pass
+        with CustomizationBase._cache_lock:
+            if value:
+                Customization.objects.update_or_create(name=name, defaults={"value": value})
+            else:
+                try:
+                    Customization.objects.get(name=name).delete()
+                except Customization.DoesNotExist:
+                    pass
+        # Invalidate the cache
+        CustomizationBase.invalidate_cache()
 
 
 @customization(key="application", title="Application")
 class ApplicationCustomization(CustomizationBase):
     variables = {
         "facility_name": "Facility",
+        "facility_rules_name": "Facility rules tutorial",
+        "facility_rules_required_message": '{% load static %}\n<a href="{% url \'facility_rules\' %}">\n  <div class="well clearfix">\n    <div class="col-lg-2 text-center">\n      <img src="{% static \'icons/caution.png\' %}" alt="Caution image" height="128" width="128">\n    </div>\n    <div class="col-lg-8 text-center">\n      <h2>{{ facility_name }} Rules Tutorial</h2>\n      <p style="text-align: center">\nYou must complete your {{ facility_name }} rules tutorial before you can make reservations or use {{ facility_name }} tools. Click here to begin the tutorial.\n      </p>\n    </div>\n    <div class="col-lg-2 text-center">\n      <img src="{% static \'icons/agreement.png\' %}" alt="Agreement icon" height="128" width="128">\n    </div>\n  </div>\n</a>',
         "site_title": "NEMO",
         "self_log_in": "",
         "self_log_out": "",
@@ -226,6 +296,7 @@ class ApplicationCustomization(CustomizationBase):
         "safety_page_title": "Safety",
         "kiosk_message": "<h1>Scan your badge to control tools</h1>",
         "kiosk_numpad_size": "large",
+        "kiosk_consumable_checkout": "",
         "area_access_kiosk_option_login_success": "",
         "area_access_kiosk_option_logout_warning": "",
         "area_access_kiosk_option_already_logged_out": "",
@@ -255,6 +326,7 @@ class ProjectsAccountsCustomization(CustomizationBase):
         "project_allow_pi_manage_users": "",
         "project_allow_transferring_charges": "",
         "project_type_allow_multiple": "",
+        "account_enable_manager_edit_mode": "",
     }
 
     def validate(self, name, value):
@@ -269,6 +341,7 @@ class ProjectsAccountsCustomization(CustomizationBase):
 class UserCustomization(CustomizationBase):
     variables = {
         "default_user_training_not_required": "",
+        "default_user_is_inactive": "",
         "user_type_required": "",
         "user_list_active_only": "",
         "user_access_expiration_reminder_days": "",
@@ -447,37 +520,65 @@ class AdjustmentRequestsCustomization(CustomizationBase):
         "adjustment_requests_title": "Adjustment requests",
         "adjustment_requests_description": "",
         "adjustment_requests_charges_display_number": "10",
-        "adjustment_requests_display_max": "",
-        "adjustment_requests_time_limit_interval": "2",
-        "adjustment_requests_time_limit_frequency": RecurrenceFrequency.WEEKLY.index,
+        "adjustment_requests_time_limit_interval": "",
+        "adjustment_requests_time_limit_frequency": "",
+        "adjustment_requests_time_limit_monthly_cycle_day": "",
         "adjustment_requests_edit_charge_button": "",
         "adjustment_requests_apply_button": "",
     }
 
     @classmethod
-    def get_date_limit(cls) -> datetime:
+    def get_date_limit(cls) -> Optional[datetime]:
         try:
+            monthly_billing_day: int = cls.get_int("adjustment_requests_time_limit_monthly_cycle_day")
             interval = cls.get_int("adjustment_requests_time_limit_interval")
-            freq = RecurrenceFrequency(cls.get_int("adjustment_requests_time_limit_frequency"))
-            if interval and freq:
-                delta = (
-                    relativedelta(months=interval)
-                    if freq == RecurrenceFrequency.MONTHLY
-                    else (
-                        relativedelta(weeks=interval)
-                        if freq == RecurrenceFrequency.WEEKLY
-                        else relativedelta(days=interval)
+            freq = None
+            if cls.get_int("adjustment_requests_time_limit_frequency"):
+                freq = RecurrenceFrequency(cls.get_int("adjustment_requests_time_limit_frequency"))
+            now_local = timezone.localtime()
+            if interval and freq or monthly_billing_day:
+                delta = relativedelta()
+                if interval and freq:
+                    delta = (
+                        relativedelta(months=interval)
+                        if freq == RecurrenceFrequency.MONTHLY
+                        else (
+                            relativedelta(weeks=interval)
+                            if freq == RecurrenceFrequency.WEEKLY
+                            else relativedelta(days=interval)
+                        )
                     )
-                )
-                return timezone.now() - delta
+                period_cutoff = beginning_of_next_day(now_local - delta) if delta else None
+                cycle_cutoff = None
+                if monthly_billing_day:
+                    if now_local.day > monthly_billing_day:
+                        # After cutoff → return 1st of this month
+                        cycle_cutoff = now_local.replace(day=1)
+                    else:
+                        # Before cutoff → return 1st of last month
+                        cycle_cutoff = now_local.replace(day=1) - relativedelta(months=1)
+                    cycle_cutoff = beginning_of_the_day(cycle_cutoff)
+                if period_cutoff and cycle_cutoff:
+                    return max(period_cutoff, cycle_cutoff)
+                else:
+                    return period_cutoff or cycle_cutoff
         except:
             pass
 
     @classmethod
+    def are_adjustment_requests_enabled_for_user(cls, user: User) -> bool:
+        adjustment_requests_enabled = cls.get("adjustment_requests_enabled")
+        if adjustment_requests_enabled == "enabled":
+            return True
+        elif adjustment_requests_enabled == "reviewers_only":
+            return user.is_adjustment_request_reviewer
+        return False
+
+    @classmethod
     def set(cls, name: str, value):
-        if name == "adjustment_requests_enabled" and value != "enabled":
+        if name == "adjustment_requests_enabled" and not value:
             # If adjustment requests are being disabled, remove all notifications
-            previously_enabled = cls.get_bool("adjustment_requests_enabled")
+            previously_enabled = cls.get("adjustment_requests_enabled")
             if previously_enabled:
                 Notification.objects.filter(
                     notification_type__in=[
@@ -490,6 +591,7 @@ class AdjustmentRequestsCustomization(CustomizationBase):
     def context(self) -> Dict:
         context_dict = super().context()
         context_dict["frequency_choices"] = [(freq.index, freq.display_value) for freq in self.frequencies]
+        context_dict["date_limit"] = self.get_date_limit()
         return context_dict
 
     def validate(self, name, value):
@@ -511,6 +613,8 @@ class RecurringChargesCustomization(CustomizationBase):
         "recurring_charges_category": "",
         "recurring_charges_force_quantity": "",
         "recurring_charges_skip_customer_validation": "",
+        "recurring_charges_default_send_reminder_emails": "enabled",
+        "recurring_charges_default_reminder_days": "60,7",
     }
 
     def __init__(self, key, title):
@@ -524,7 +628,7 @@ class RecurringChargesCustomization(CustomizationBase):
         return dictionary
 
     def update_title(self):
-        self.title = self.get("recurring_charges_name", raise_exception=False)
+        self.title = self.get("recurring_charges_name", raise_exception=False, use_cache=False)
         meta_class = RecurringConsumableCharge._meta
         meta_class.verbose_name = self.title
         meta_class.verbose_name_plural = self.title if self.title.endswith("s") else self.title + "s"
@@ -554,6 +658,13 @@ class ToolCustomization(CustomizationBase):
         "tool_control_show_tool_credentials": "enabled",
         "tool_control_show_next_reservation_user": "",
         "tool_control_prefill_post_usage_with_pre_usage_answers": "",
+        "tool_control_use_self": "Use this tool for my own project",
+        "tool_control_use_self_training": "Use this tool for my own project for training",
+        "tool_control_use_for_other": "Use this tool on behalf of another user",
+        "tool_control_use_for_other_training": "Use this tool on behalf of another user for training",
+        "tool_control_use_for_other_remote": "Use this tool for a remote project",
+        "tool_control_note_show": "",
+        "tool_control_note_copy_reservation": "",
         "tool_qualification_reminder_days": "",
         "tool_qualification_expiration_days": "",
         "tool_qualification_expiration_never_used_days": "",
@@ -563,6 +674,7 @@ class ToolCustomization(CustomizationBase):
         "tool_problem_allow_regular_user_preferences": "",
         "tool_problem_safety_hazard_automatic_shutdown": "",
         "tool_configuration_near_future_days": "1",
+        "tool_configuration_change_while_in_use": "",
         "tool_reservation_policy_superusers_bypass": "",
         "tool_wait_list_spot_expiration": "15",
         "tool_wait_list_reservation_buffer": "15",
@@ -741,7 +853,7 @@ def store_media_file(content, file_name):
 
 # This method should not be used anymore. Instead, use XCustomization.get(name)
 def get_customization(name, raise_exception=True):
-    customizable_key_values = CustomizationBase.all_variables()
+    customizable_key_values = CustomizationBase._all_variables()
     if name not in customizable_key_values.keys():
         raise InvalidCustomizationException(name)
     default_value = customizable_key_values[name]
@@ -759,7 +871,7 @@ def get_customization(name, raise_exception=True):
 
 # This method should not be used anymore. Instead, use XCustomization.set(name, value)
 def set_customization(name, value):
-    customizable_key_values = CustomizationBase.all_variables()
+    customizable_key_values = CustomizationBase._all_variables()
     if name not in customizable_key_values:
         raise InvalidCustomizationException(name, value)
     if value:

@@ -12,6 +12,8 @@ ROOT_URLCONF = "NEMO.urls"
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "login"
 
+LANGUAGE_CODE = "custom"
+
 DATETIME_FORMAT = "l, F jS, Y @ g:i A"
 DATE_FORMAT = "m/d/Y"
 TIME_FORMAT = "g:i A"
@@ -92,7 +94,7 @@ EMAIL_PORT = 25
 
 EMAIL_FILE_PATH = "./email_logs"
 
-TIME_ZONE = "US/Eastern"
+TIME_ZONE = "America/New_York"
 
 DATABASES = {
     "default": {

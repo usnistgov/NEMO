@@ -3,7 +3,7 @@ from typing import List, Set
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import F, Q
+from django.db.models import F, Q, QuerySet
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
@@ -33,8 +33,8 @@ from NEMO.utilities import (
     EmailCategory,
     bootstrap_primary_color,
     export_format_datetime,
+    get_django_view_name_from_url,
     get_full_url,
-    quiet_int,
     render_email_template,
     send_mail,
 )
@@ -45,42 +45,74 @@ from NEMO.views.notifications import (
     delete_notification,
     get_notifications,
 )
+from NEMO.views.pagination import SortedPaginator
 
 
 @login_required
 @require_GET
-def adjustment_requests(request):
-    if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_enabled"):
+def adjustment_requests(request, status: int):
+    user: User = request.user
+
+    if not AdjustmentRequestsCustomization.are_adjustment_requests_enabled_for_user(user):
         return HttpResponseBadRequest("Adjustment requests are not enabled")
 
-    user: User = request.user
-    max_requests = quiet_int(AdjustmentRequestsCustomization.get("adjustment_requests_display_max"), None)
-    adj_requests = (
-        AdjustmentRequest.objects.filter(deleted=False).select_related("creator", "item_type").prefetch_related("item")
+    status = status if status in [0, 1, 2] else 0
+    status = RequestStatus(status)
+    selected_applied_status = request.GET.get("applied_status", "")
+    selected_tool_id = request.GET.get("tool_id", "")
+    selected_area_id = request.GET.get("area_id", "")
+
+    adj_requests = AdjustmentRequest.objects.filter(deleted=False, status=status)
+    if selected_applied_status:
+        adj_requests = adj_requests.filter(applied=bool(selected_applied_status == "true"))
+    if selected_tool_id:
+        adj_requests = adj_requests.filter(item_tool_id=selected_tool_id)
+    if selected_area_id:
+        adj_requests = adj_requests.filter(item_area_id=selected_area_id)
+    adj_requests = adj_requests.select_related("creator", "item_type", "reviewer").prefetch_related(
+        "item", "original_project", "new_project", "item_tool", "item_area", "replies"
     )
     my_requests = adj_requests.filter(creator=user)
 
-    user_is_reviewer = is_user_a_reviewer(user)
+    user_is_reviewer = user.is_adjustment_request_reviewer
     user_is_staff = user.is_facility_manager or user.is_user_office or user.is_accounting_officer
     if not user_is_reviewer and not user_is_staff:
         # only show own requests
         adj_requests = my_requests
     elif user_is_reviewer:
         # show all requests the user can review, exclude the rest
-        exclude = []
-        for adj in adj_requests:
-            if user != adj.creator and user not in adj.reviewers():
-                exclude.append(adj.pk)
-        adj_requests = adj_requests.exclude(pk__in=exclude)
+        adj_requests = for_reviewer(adj_requests, user)
+
+    js_callback = f"load_adjustment_requests_" + status.name.lower()
+
+    order_by = "-last_updated" if status == RequestStatus.APPROVED else "-creation_time"
+    page = SortedPaginator(adj_requests, request, order_by=order_by, js_callback=js_callback).get_current_page()
 
     dictionary = {
-        "pending_adjustment_requests": adj_requests.filter(status=RequestStatus.PENDING),
-        "approved_adjustment_requests": adj_requests.filter(status=RequestStatus.APPROVED)[:max_requests],
-        "denied_adjustment_requests": adj_requests.filter(status=RequestStatus.DENIED)[:max_requests],
+        "page": page,
         "adjustment_requests_description": AdjustmentRequestsCustomization.get("adjustment_requests_description"),
         "request_notifications": get_notifications(request.user, Notification.Types.ADJUSTMENT_REQUEST, delete=False),
         "reply_notifications": get_notifications(request.user, Notification.Types.ADJUSTMENT_REQUEST_REPLY),
         "user_is_reviewer": user_is_reviewer,
+        "request_statuses": RequestStatus.choices_without_expired(),
+        "selected_status": status.value,
+        "selected_applied_status": selected_applied_status,
+        "selected_tool_id": selected_tool_id,
+        "selected_area_id": selected_area_id,
+        "request_tools": set(
+            Tool.objects.filter(
+                id__in=AdjustmentRequest.objects.filter(deleted=False, status=status).values_list(
+                    "item_tool_id", flat=True
+                )
+            )
+        ),
+        "request_areas": set(
+            Area.objects.filter(
+                id__in=AdjustmentRequest.objects.filter(deleted=False, status=status).values_list(
+                    "item_area_id", flat=True
+                )
+            )
+        ),
     }
 
     # Delete notifications for seen requests
@@ -93,10 +125,9 @@ def adjustment_requests(request):
 @login_required
 @require_http_methods(["GET", "POST"])
 def create_adjustment_request(request, request_id=None, item_type_id=None, item_id=None):
-    if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_enabled"):
-        return HttpResponseBadRequest("Adjustment requests are not enabled")
-
     user: User = request.user
+    if not AdjustmentRequestsCustomization.are_adjustment_requests_enabled_for_user(user):
+        return HttpResponseBadRequest("Adjustment requests are not enabled")
 
     try:
         adjustment_request = AdjustmentRequest.objects.get(id=request_id)
@@ -111,13 +142,15 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
 
     edit = bool(adjustment_request.id)
     initial_data = {"creator": adjustment_request.creator if edit else user}
-    # set those initial properties on the form if we just changed the item
+    # set those initial properties on the form if we just changed the charge
     item_changed = bool(item_type_id)
     if item_changed and adjustment_request.item and adjustment_request.item.can_times_be_changed():
         initial_data["new_start"] = adjustment_request.item.start
         initial_data["new_end"] = adjustment_request.item.end
     if item_changed and adjustment_request.item and adjustment_request.item.can_quantity_be_changed():
         initial_data["new_quantity"] = adjustment_request.item.quantity
+    if item_changed and adjustment_request.item:
+        initial_data["new_project"] = adjustment_request.item.project
     description = request.GET.get("description")
     if description:
         initial_data["description"] = description
@@ -131,16 +164,27 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
     item_type = form.data.get("item_type") if form.is_bound else None
     item_id = form.data.get("item_id") if form.is_bound else None
 
-    # item from the form always has priority
-    item = (
+    # charge from the form always has priority
+    charge: BillableItemMixin = (
         ContentType.objects.get_for_id(item_type).get_object_for_this_type(pk=item_id)
         if item_type and item_id
         else adjustment_request.item
     )
 
-    dictionary = {"item": item, "form": form}
+    # Find the customer:
+    # 1. We have a charge, the customer is the customer of the charge
+    # 2. We have an adjustment request, the customer is the creator of the adjustment request (if we have a creator)
+    # 3. Otherwise, the person making the request is the customer
+    customer = user
+    if charge:
+        customer = charge.get_customer()
+    elif adjustment_request and adjustment_request.creator_id:
+        customer = adjustment_request.creator
+    dictionary = {"item": charge, "form": form, "customer_projects": customer.projects.order_by("-active", "name")}
+    if get_django_view_name_from_url(request.META.get("HTTP_REFERER", "")) == "create_adjustment_request":
+        dictionary["select_not_required"] = True
     if not edit:
-        dictionary["eligible_items"] = adjustment_eligible_items(user, current_item=item)
+        dictionary["eligible_items"] = adjustment_eligible_items(user, current_item=charge)
 
     if request.method == "POST":
         # some extra validation needs to be done here because it depends on the user
@@ -202,11 +246,11 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
 @login_required
 @require_POST
 def adjustment_request_reply(request, request_id):
-    if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_enabled"):
+    user: User = request.user
+    if not AdjustmentRequestsCustomization.are_adjustment_requests_enabled_for_user(user):
         return HttpResponseBadRequest("Adjustment requests are not enabled")
 
     adjustment_request = get_object_or_404(AdjustmentRequest, id=request_id)
-    user: User = request.user
     message_content = request.POST["reply_content"]
     expiration = timezone.now() + timedelta(days=30)  # 30 days for adjustment requests replies to expire
 
@@ -230,7 +274,7 @@ def adjustment_request_reply(request, request_id):
 @login_required
 @require_GET
 def delete_adjustment_request(request, request_id):
-    if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_enabled"):
+    if not AdjustmentRequestsCustomization.are_adjustment_requests_enabled_for_user(request.user):
         return HttpResponseBadRequest("Adjustment requests are not enabled")
 
     adjustment_request = get_object_or_404(AdjustmentRequest, id=request_id)
@@ -250,7 +294,7 @@ def delete_adjustment_request(request, request_id):
 @require_GET
 def mark_adjustment_as_applied(request, request_id):
     user: User = request.user
-    if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_enabled"):
+    if not AdjustmentRequestsCustomization.are_adjustment_requests_enabled_for_user(user):
         return HttpResponseBadRequest("Adjustment requests are not enabled")
 
     adjustment_request = get_object_or_404(AdjustmentRequest, id=request_id)
@@ -271,7 +315,7 @@ def mark_adjustment_as_applied(request, request_id):
 @login_required
 @require_GET
 def apply_adjustment(request, request_id):
-    if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_enabled"):
+    if not AdjustmentRequestsCustomization.are_adjustment_requests_enabled_for_user(request.user):
         return HttpResponseBadRequest("Adjustment requests are not enabled")
     if not AdjustmentRequestsCustomization.get_bool("adjustment_requests_apply_button"):
         return HttpResponseBadRequest("Applying adjustments is not allowed")
@@ -313,23 +357,34 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
             "user_office": False,
         }
         message = render_email_template(adjustment_request_notification_email, dictionary)
+        cc = None
+        enabled_for_creator = AdjustmentRequestsCustomization.are_adjustment_requests_enabled_for_user(
+            adjustment_request.creator
+        )
         creator_notification = adjustment_request.creator.get_preferences().email_send_adjustment_request_updates
+        if enabled_for_creator:
+            cc = adjustment_request.creator.get_emails(creator_notification)
         if status in ["received", "updated"]:
             send_mail(
                 subject=f"Adjustment request {status}",
                 content=message,
                 from_email=adjustment_request.creator.email,
                 to=reviewer_emails,
-                cc=adjustment_request.creator.get_emails(creator_notification),
+                cc=cc,
                 email_category=EmailCategory.ADJUSTMENT_REQUESTS,
             )
         else:
+            to = reviewer_emails
+            cc = None
+            if enabled_for_creator:
+                to = adjustment_request.creator.get_emails(creator_notification)
+                cc = reviewer_emails
             send_mail(
                 subject=f"Your adjustment request has been {status}",
                 content=message,
                 from_email=adjustment_request.reviewer.email,
-                to=adjustment_request.creator.get_emails(creator_notification),
-                cc=reviewer_emails,
+                to=to,
+                cc=cc,
                 email_category=EmailCategory.ADJUSTMENT_REQUESTS,
             )
 
@@ -351,24 +406,26 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
 
 def email_interested_parties(reply: RequestMessage, reply_url):
     creator: User = reply.content_object.creator
+    enabled_for_creator = AdjustmentRequestsCustomization.are_adjustment_requests_enabled_for_user(creator)
     for user in reply.content_object.creator_and_reply_users():
-        if user != reply.author and (user == creator or user.get_preferences().email_new_adjustment_request_reply):
-            creator_display = f"{creator.get_name()}'s" if creator != user else "your"
-            creator_display_his = creator_display if creator != reply.author else "his"
-            subject = f"New reply on {creator_display} adjustment request"
-            message = f"""{reply.author.get_name()} also replied to {creator_display_his} adjustment request:
+        if user != creator or enabled_for_creator:
+            if user != reply.author and (user == creator or user.get_preferences().email_new_adjustment_request_reply):
+                creator_display = f"{creator.get_name()}'s" if creator != user else "your"
+                creator_display_their = creator_display if creator != reply.author else "their"
+                subject = f"New reply on {creator_display} adjustment request"
+                message = f"""{reply.author.get_name()} also replied to {creator_display_their} adjustment request:
 <br><br>
 {linebreaksbr(reply.content)}
 <br><br>
 Please visit {reply_url} to reply"""
-            email_notification = user.get_preferences().email_send_adjustment_request_updates
-            user.email_user(
-                subject=subject,
-                message=message,
-                from_email=reply.author.email,
-                email_notification=email_notification,
-                email_category=EmailCategory.ADJUSTMENT_REQUESTS,
-            )
+                email_notification = user.get_preferences().email_send_adjustment_request_updates
+                user.email_user(
+                    subject=subject,
+                    message=message,
+                    from_email=reply.author.email,
+                    email_notification=email_notification,
+                    email_category=EmailCategory.ADJUSTMENT_REQUESTS,
+                )
 
 
 def adjustment_eligible_items(user: User, current_item=None) -> List[BillableItemMixin]:
@@ -461,9 +518,16 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
     table_result.add_header(("last_updated", "Last updated"))
     table_result.add_header(("creator", "Creator"))
     table_result.add_header(("item", "Item"))
+    table_result.add_header(("tool", "tool"))
+    table_result.add_header(("area", "area"))
+    table_result.add_header(("original_start", "Original start"))
+    table_result.add_header(("original_end", "Original end"))
+    table_result.add_header(("original_quantity", "Original quantity"))
+    table_result.add_header(("original_project", "Original project"))
     table_result.add_header(("new_start", "New start"))
     table_result.add_header(("new_end", "New end"))
-    table_result.add_header(("difference", "Difference"))
+    table_result.add_header(("new_quantity", "New quantity"))
+    table_result.add_header(("new_project", "New project"))
     table_result.add_header(("waived", "Waive requested"))
     table_result.add_header(("reviewer", "Reviewer"))
     table_result.add_header(("applied", "Applied"))
@@ -477,10 +541,16 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
                 "last_updated": req.last_updated,
                 "creator": req.creator,
                 "item": req.item.get_display() if req.item else "",
+                "tool": req.item_tool,
+                "area": req.item_area,
+                "original_start": req.original_start,
+                "original_end": req.original_end,
+                "original_quantity": req.original_quantity,
+                "original_project": req.original_project,
                 "new_start": req.new_start,
                 "new_end": req.new_end,
                 "new_quantity": req.new_quantity,
-                "difference": req.get_time_difference() or req.get_quantity_difference(),
+                "new_project": req.new_project,
                 "waived": req.waive,
                 "reviewer": req.reviewer,
                 "applied": req.applied,
@@ -494,7 +564,21 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
     return response
 
 
-def is_user_a_reviewer(user: User) -> bool:
-    is_reviewer_on_any_tool = Tool.objects.filter(_adjustment_request_reviewers__in=[user]).exists()
-    is_reviewer_on_any_area = Area.objects.filter(adjustment_request_reviewers__in=[user]).exists()
-    return user.is_facility_manager or is_reviewer_on_any_tool or is_reviewer_on_any_area
+def for_reviewer(adjustment_request_qs: QuerySet[AdjustmentRequest], user: User) -> QuerySet[AdjustmentRequest]:
+    # Start with the base conditions: the user is an explicit reviewer.
+    can_review_tool = Q(item_tool___adjustment_request_reviewers=user)
+    can_review_area = Q(item_area__adjustment_request_reviewers=user)
+
+    # If the user is a facility manager, add the new condition.
+    if user.is_facility_manager:
+        # Condition for tool/area with an empty reviewer list.
+        tool_has_no_reviewers = Q(item_tool___adjustment_request_reviewers=None)
+        area_has_no_reviewers = Q(item_area__adjustment_request_reviewers=None)
+
+        # Now, the logic is: "user is a reviewer OR tool has no reviewers".
+        can_review_tool |= tool_has_no_reviewers
+        can_review_area |= area_has_no_reviewers
+
+    final_query = can_review_tool | can_review_area
+
+    return adjustment_request_qs.select_related("item_tool", "item_area").filter(final_query).distinct()

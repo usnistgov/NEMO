@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.http import HttpResponseBadRequest, HttpResponseForbidden, QueryDict
+from django.http import HttpResponseBadRequest, HttpResponseForbidden, JsonResponse, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
@@ -69,7 +69,11 @@ class ProjectTransferForm(BillingFilterForm):
 @require_GET
 def accounts_and_projects(request):
     active_only = ProjectsAccountsCustomization.get_bool("account_list_active_only")
-    all_accounts = Account.objects.all().order_by("name").prefetch_related("project_set")
+    all_accounts = (
+        Account.objects.all()
+        .order_by("name")
+        .prefetch_related("project_set", "project_set__manager_set", "manager_set", "type")
+    )
     if active_only:
         all_accounts = all_accounts.filter(active=True)
 
@@ -82,6 +86,7 @@ def accounts_and_projects(request):
         "accounts_and_projects": get_accounts_and_projects(),
         "project_list_active_only": ProjectsAccountsCustomization.get_bool("project_list_active_only"),
         "account_list_collapse": ProjectsAccountsCustomization.get_bool("account_list_collapse"),
+        "users": User.objects.filter(is_active=True),
     }
     return render(request, "accounts_and_projects/accounts_and_projects.html", dictionary)
 
@@ -140,7 +145,6 @@ def create_project(request):
     form = ProjectForm(request.POST or None)
     dictionary = {
         "account_list": Account.objects.all(),
-        "user_list": User.objects.filter(is_active=True),
         "allow_document_upload": ProjectsAccountsCustomization.get_bool("project_allow_document_upload"),
         "form": form,
     }
@@ -222,6 +226,27 @@ def add_user_to_project(request):
     return render(request, "accounts_and_projects/users_for_project.html", dictionary)
 
 
+@require_POST
+@accounting_or_user_office_or_manager_required
+def add_or_remove_manager_from_account_project(request, action: str, kind: str, identifier: int):
+    users = User.objects.filter(id__in=request.POST.getlist("user_id[]"))
+    if kind == "account":
+        project_or_account = get_object_or_404(Account, id=identifier)
+    else:
+        project_or_account = get_object_or_404(Project, id=identifier)
+    if action == "remove":
+        for user in users:
+            if project_or_account.manager_set.filter(id=user.id).exists():
+                project_or_account.manager_set.remove(user)
+    else:
+        for user in users:
+            if user not in project_or_account.manager_set.all():
+                project_or_account.manager_set.add(user)
+    return JsonResponse(
+        {"managers": {manager.id: manager.get_name() for manager in project_or_account.manager_set.all()}}
+    )
+
+
 @accounting_or_user_office_or_manager_required
 @require_POST
 def remove_document_from_project(request, project_id: int, document_id: int):
@@ -271,7 +296,7 @@ def is_user_allowed(user: User, project):
     if not allow_pi_manage:
         return is_active and accounting_or_user_office_or_manager
     else:
-        project_manager = user in project.manager_set.all()
+        project_manager = user in project.manager_set.all() or user in project.account.manager_set.all()
         return is_active and (project_manager or accounting_or_user_office_or_manager)
 
 
@@ -302,21 +327,22 @@ def transfer_charges(request):
             if confirm:
                 if not new_project_id:
                     form.add_error("new_project_id", _("This field is required"))
-                    # Reload all charges to use when showing next
-                    dictionary["charges"] = get_charges_for_project_and_user(
-                        form, request.POST, customer.username if customer else None, filter_selected=False
-                    )
                 else:
-                    do_transfer_charges(charges, new_project.id)
-                    messages.success(
-                        request,
-                        f"{len(charges)} charges were transferred from {project} to {new_project}",
-                        extra_tags="data-speed=25000",
-                    )
-                    # Reload all charges to use when showing next
-                    dictionary["charges"] = get_charges_for_project_and_user(
-                        form, request.POST, customer.username if customer else None, filter_selected=False
-                    )
+                    try:
+                        do_transfer_charges(charges, new_project.id)
+                        messages.success(
+                            request,
+                            f"{len(charges)} charges were transferred from {project} to {new_project}",
+                            extra_tags="data-speed=25000",
+                        )
+                    except ValidationError as e:
+                        form.add_error(None, e)
+                    except Exception as e:
+                        form.add_error(None, str(e))
+                # Reload all charges to use when showing next
+                dictionary["charges"] = get_charges_for_project_and_user(
+                    form, request.POST, customer.username if customer else None, filter_selected=False
+                )
             else:
                 dictionary["charges"] = charges
 

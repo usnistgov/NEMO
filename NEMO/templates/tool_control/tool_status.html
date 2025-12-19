@@ -16,7 +16,7 @@
                         History</a>
                     </li>
                 {% endif %}
-                {% if has_usage_questions and not hide_data_history or has_usage_questions and user.is_any_part_of_staff %}
+                {% if show_usage_data_tab and not hide_data_history or show_usage_data_tab and user.is_any_part_of_staff %}
                     <li style="width: 48%; text-align: center">
                         <a href="#usage_data" style="padding: 10px 5px;" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a>
                     </li>
@@ -49,9 +49,9 @@
                         <a href="#config" onclick="load_config_history('{{ tool.id }}');">Config History</a>
                     </li>
                 {% endif %}
-                {% if has_usage_questions and not hide_data_history or has_usage_questions and user.is_any_part_of_staff %}
+                {% if show_usage_data_tab and not hide_data_history or show_usage_data_tab and user.is_any_part_of_staff %}
                     <li>
-                        <a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a>
+                        <a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Run Data History</a>
                     </li>
                 {% endif %}
                 <li>
@@ -88,7 +88,7 @@
                             {% if current_usage_event.operator.id != current_usage_event.user.id %}
                                 on behalf of {{ current_usage_event.user }}
                             {% endif %}
-                            for the project named {{ current_usage_event.project.name }} since {{ current_usage_event.start|date:"MONTH_DAY_FORMAT" }} @ {{ current_usage_event.start|time }}.
+                            for the project named {{ current_usage_event.project.name }} since {{ current_usage_event.start|date:"MONTH_DAY_FORMAT" }} @ {{ current_usage_event.start|time }}  (#{{ current_usage_event.id }}).
                         </h2>
                     {% endwith %}
                 </div>
@@ -403,6 +403,13 @@
         <form id="tool_control">
             {% if tool.in_use %}
                 {% if tool.get_current_usage_event.operator.id == user.id or tool.get_current_usage_event.user.id == user.id %}
+                    {% if customizations|get_item:"tool_control_note_show" %}
+                        {# Disable tool note #}
+                        <div class="form-group">
+                            <label for="note">Note:</label>
+                            <textarea name="note" id="note" class="form-control" oninput="auto_size_textarea(this)">{{ tool.get_current_usage_event.note|default_if_none:"" }}</textarea>
+                        </div>
+                    {% endif %}
                     {{ post_usage_questions }}
                     {% if tool.max_delayed_logoff is not None and not tool.delayed_logoff_in_progress %}
                         <div class="form-group">
@@ -471,40 +478,43 @@
                         <input type="hidden" id="training" name="training" value="">
                         <div class="radio" role="group" aria-labelledby="what_to_do_label">
                             <label>
-                                <input type="radio" onchange="use_tool_for_self()" name="staff_charge" value="false">
-                                Use this tool for my own project
+                                <input type="radio" onchange="use_tool_for_self('{{ tool.id }}')" name="staff_charge" value="false">
+                                {{ customizations|get_item:"tool_control_use_self" }}
                             </label>
                             {% if user|is_staff_on_tool:tool %}
                                 {% if customizations|get_item:"training_show_self_option_in_tool_control" == "enabled" %}
                                     <br>
                                     <label>
-                                        <input type="radio" onchange="use_tool_for_self(true)" name="staff_charge" value="false">
-                                        Use this tool for my own project for training
+                                        <input type="radio" onchange="use_tool_for_self('{{ tool.id }}', true)" name="staff_charge" value="false">
+                                        {{ customizations|get_item:"tool_control_use_self_training" }}
                                     </label>
                                 {% endif %}
                                 {% if customizations|get_item:"training_show_behalf_option_in_tool_control" == "enabled" %}
                                     <br>
                                     <label>
-                                        <input type="radio" onchange="use_tool_for_other('', true)" name="staff_charge" value="false">
-                                        Use this tool on behalf of another user for training
+                                        <input type="radio"
+                                               onchange="use_tool_for_other('{{ tool.id }}', '', true)"
+                                               name="staff_charge"
+                                               value="false">
+                                        {{ customizations|get_item:"tool_control_use_for_other_training" }}
                                     </label>
                                 {% endif %}
                                 <br>
                                 <label>
-                                    <input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="false">
+                                    <input type="radio" onchange="use_tool_for_other('{{ tool.id }}')" name="staff_charge" value="false">
                                     {% if customizations|get_item:"remote_work_on_behalf_of_user" == "always" %}
-                                        Use this tool for a remote project
+                                        {{ customizations|get_item:"tool_control_use_for_other_remote" }}
                                     {% elif customizations|get_item:"remote_work_on_behalf_of_user" == "ask" %}
-                                        Use this tool on behalf of another user (no remote)
+                                        {{ customizations|get_item:"tool_control_use_for_other" }}
                                     {% else %}
-                                        Use this tool on behalf of another user
+                                        {{ customizations|get_item:"tool_control_use_for_other" }}
                                     {% endif %}
                                 </label>
                                 {% if customizations|get_item:"remote_work_on_behalf_of_user" == "ask" %}
                                     <br>
                                     <label>
-                                        <input type="radio" onchange="use_tool_for_other(true)" name="staff_charge" value="false">
-                                        Use this tool for a remote project
+                                        <input type="radio" onchange="use_tool_for_other('{{ tool.id }}', true)" name="staff_charge" value="false">
+                                        {{ customizations|get_item:"tool_control_use_for_other_remote" }}
                                     </label>
                                 {% endif %}
                                 {% if user.charging_staff_time %}
@@ -515,8 +525,8 @@
                                                data-toggle="tooltip"
                                                data-placement="right"
                                                title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.">
-                                            <input type="radio" onchange="use_tool_for_other()" disabled>
-                                            <span id="staff_charge_tooltip_location">Use this tool for a remote project
+                                            <input type="radio" onchange="use_tool_for_other('{{ tool.id }}')" disabled>
+                                            <span id="staff_charge_tooltip_location">{{ customizations|get_item:"tool_control_use_for_other_remote" }}
                                                 {% if customizations|get_item:"remote_work_on_behalf_of_user" == "ask" or customizations|get_item:"remote_work_on_behalf_of_user" == "always" %}
                                                     {% if tool.requires_area_access and customizations|get_item:"remote_work_start_area_access_automatically" == "enabled" %}
                                                         (start staff time & {{ tool.requires_area_access|lower }} time)
@@ -531,8 +541,8 @@
                                 {% elif customizations|get_item:"remote_work_on_behalf_of_user" != "never" %}
                                     <br>
                                     <label>
-                                        <input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="true">
-                                        Use this tool for a remote project
+                                        <input type="radio" onchange="use_tool_for_other('{{ tool.id }}')" name="staff_charge" value="true">
+                                        {{ customizations|get_item:"tool_control_use_for_other_remote" }}
                                         {% if customizations|get_item:"remote_work_on_behalf_of_user" == "ask" or customizations|get_item:"remote_work_on_behalf_of_user" == "always" %}
                                             {% if tool.requires_area_access and customizations|get_item:"remote_work_start_area_access_automatically" == "enabled" %}
                                                 (start staff time & {{ tool.requires_area_access|lower }} time)
@@ -551,22 +561,31 @@
                         <input type="hidden" id="training" name="training" value="">
                         <div class="radio" role="group" aria-labelledby="what_to_do_label_superuser">
                             <label>
-                                <input type="radio" onchange="use_tool_for_self()" name="staff_charge" value="false">
-                                Use this tool for my own project
+                                <input type="radio" onchange="use_tool_for_self('{{ tool.id }}')" name="staff_charge" value="false">
+                                {{ customizations|get_item:"tool_control_use_self" }}
                             </label>
                             {% if customizations|get_item:"training_show_self_option_in_tool_control" == "enabled" %}
                                 <br>
                                 <label>
-                                    <input type="radio" onchange="use_tool_for_self(true)" name="staff_charge" value="false">
-                                    Use this tool for my own project for training
+                                    <input type="radio" onchange="use_tool_for_self('{{ tool.id }}', true)" name="staff_charge" value="false">
+                                    {{ customizations|get_item:"tool_control_use_self_training" }}
                                 </label>
                             {% endif %}
                         </div>
                         <div id="project_choice"></div>
                     {% elif tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress and not tool.scheduled_outage_in_progress %}
-                        {% include 'tool_control/get_projects.html' with active_projects=user.active_projects user_id=user.id %}
+                        {% include 'tool_control/get_projects.html' with active_projects=user.active_projects customer_id=user.id tool_id=tool.id %}
                     {% endif %}
-                    <div id="pre_usage_questions" style="display:none">{{ pre_usage_questions }}</div>
+                    {% if customizations|get_item:"tool_control_note_show" %}
+                        <div id="usage_note" style="display: none">
+                            {# Enable tool note #}
+                            <div class="form-group">
+                                <label for="note">Note:</label>
+                                <textarea name="note" id="note" class="form-control" oninput="auto_size_textarea(this)">{% if reservation_note %}{{ reservation_note|default_if_none:"" }}{% endif %}</textarea>
+                            </div>
+                        </div>
+                    {% endif %}
+                    <div id="pre_usage_questions" style="display:none"></div>
                     {% if user|is_staff_on_tool:tool or user.is_service_personnel and tool in user.qualifications.all or tool.ready_to_use %}
                         <div id="start" style="display:none">
                             {% if tool.is_parent_tool %}
@@ -1031,12 +1050,22 @@
                         This problem represents a <b>safety hazard</b> to the {{ facility_name }} and should be regarded as urgent. Notify the {{ facility_name }} safety officer of this issue.
                     </label>
                 </div>
-                <div class="checkbox">
-                    <label>
-                        <input name="force_shutdown" type="checkbox" />
-                        Shut down the tool so that it may not be used until this problem is resolved.
-                    </label>
-                </div>
+                {% if tool.problem_shutdown_enabled %}
+                    <div class="checkbox">
+                        <label>
+                            <input name="force_shutdown" id="force_shutdown" type="checkbox" />
+                            Shut down the tool so that it may not be used until this problem is resolved.
+                        </label>
+                    </div>
+                    {% if user|is_staff_on_tool:tool and tool.interlock %}
+                        <div class="checkbox" id="tool_problem_lock">
+                            <label>
+                                <input name="lock" type="checkbox" checked />
+                                Also lock the tool when shutting it down.
+                            </label>
+                        </div>
+                    {% endif %}
+                {% endif %}
             </div>
             <div class="form-group">
                 <input aria-label="File upload" id="fileupload" type="file" name="image" multiple>
@@ -1056,9 +1085,19 @@
                 You may remove the comment at any time because you are its author.
             </p>
             <div class="form-group">
-                <label class="form-inline">
-                    How many days would you like the comment to be visible?
-                    <select name="expiration" class="form-control" style="width:250px" required>
+                <label class="form-inline" for="expiration">How many days would you like the comment to be visible?</label>
+                <div style="display: inline-block;vertical-align: middle; margin-left: 10px">
+                    <div class="input-group" style="max-width: 150px">
+                        <input type="number"
+                               list="expiration_days"
+                               id="expiration"
+                               name="expiration"
+                               class="form-control text-right"
+                               max="999"
+                               required>
+                        <span class="input-group-addon">Days</span>
+                    </div>
+                    <datalist id="expiration_days">
                         <option value="" disabled selected></option>
                         <option value="1">1 day</option>
                         <option value="7">7 days</option>
@@ -1067,8 +1106,8 @@
                         <option value="90">90 days</option>
                         <option value="-1">Indefinitely</option>
                         {% if user.is_any_part_of_staff %}<option value="0">Not visible</option>{% endif %}
-                    </select>
-                </label>
+                    </datalist>
+                </div>
             </div>
             <div class="form-group">
                 <label for="content-area">What would you like to say?</label>
@@ -1112,47 +1151,24 @@
 	$('#task_and_comment_end').datetimepicker({format: '{{ date_input_js_format }}', 'widgetParent': '#task_and_comment_end_form_group'});
 	$('#delayed_logoff_help').popover();
 
-	function update_stop_button()
+    const shutdown_jq = $("#force_shutdown");
+    function toggle_lock_field()
 	{
-		if(document.querySelector('#tool_control').checkValidity())
-		{
-			$('#stop_wrapper').tooltip('disable');
-			$("#stop_wrapper button").prop("disabled", false);
-		}
-		else
-		{
-			$('#stop_wrapper').tooltip('enable');
-			$("#stop_wrapper button").prop("disabled", true);
-		}
-	}
+    	const checked = shutdown_jq.is(":checked");
+    	$("#tool_problem_lock").toggle(checked); // show if checked, hide if not
+  	}
 
-    function update_start_button()
-	{
-        if ({{ tool.pre_usage_questions|yesno:"true,false" }}){
-            if(document.querySelector('#tool_control').checkValidity())
-            {
-                $("#start button").prop("disabled", false);
-            }
-            else
-            {
-                $("#start button").prop("disabled", true);
-            }
-        }
-	}
+    shutdown_jq.on("change", toggle_lock_field);
+  	toggle_lock_field();
+
 
     show_alerts();
 	update_stop_button();
     update_start_button();
-	$('body').on('dynamic-form-group-changed dynamic-form-field-changed', function (event, event_data)
-    {
-        if (event_data.field_name === "pre_usage_questions")
-        {
-            update_start_button();
-        }
-        else if (event_data.field_name === "post_usage_questions")
-        {
-            update_stop_button();
-        }
-    });
+    {% if tool.in_use %}
+	$('body').on('dynamic-form-group-changed dynamic-form-field-changed', update_stop_button);
+    {% else %}
+	$('body').on('dynamic-form-group-changed dynamic-form-field-changed', update_start_button);
+    {% endif %}
 	$('body').on('change keyup', '#downtime', update_stop_button);
 </script>

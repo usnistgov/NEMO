@@ -28,8 +28,8 @@
             <tr>
                 <td colspan="4" style="border: none">
                     <div style="color: rgb(128,128,128)">
-                        {% if staff_assistance_request.replies %}
-                            {% for message in staff_assistance_request.replies %}
+                        {% if staff_assistance_request.replies.all %}
+                            {% for message in staff_assistance_request.replies.all %}
                                 <div>
                                     <div class="adjustment-request-message">
                                         {{ message.content|linebreaksbr }}

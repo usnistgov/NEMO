@@ -6,6 +6,76 @@ from django.test import Client, TestCase
 from requests import Response
 
 from NEMO.models import Account, Project, User
+from NEMO.views.customization import CustomizationBase
+
+
+class NEMOTestCaseMixin:
+    """
+    A mixin class providing utilities and common functionalities for testing in the NEMO framework.
+
+    This class is intended to be used as a mixin alongside test cases to streamline repetitive tasks
+    often encountered in testing, such as authentication, model validation, and response assertion.
+    It provides helper methods for managing test states, user logins, and validating responses.
+
+    Methods
+    -------
+    tearDown():
+        Clears cached data and cleans up resources after each test case execution.
+
+    login_as(user):
+        Logs in a specified user for testing.
+
+    login_as_staff() -> User:
+        Logs in a staff user and returns the authenticated user object.
+
+    login_as_user():
+        Logs in a general user for testing.
+
+    login_as_user_with_permissions(permissions):
+        Logs in a user with specified permissions for testing.
+
+    validate_model_error(model, error_fields, strict):
+        Validates model errors given specific fields and strictness.
+
+    assert_response_is_login_page(response):
+        Asserts that the provided response corresponds to the login page.
+
+    assert_response_is_failed_login(response):
+        Asserts that the provided response corresponds to a failed login attempt.
+
+    assert_response_is_landing_page(response):
+        Asserts that the provided response corresponds to the landing page.
+    """
+
+    def tearDown(self):
+        # Clear the cache after each test case execution
+        CustomizationBase.invalidate_cache()
+        # Make sure to call the parent tearDown method to preserve functionality
+        super().tearDown()
+
+    def login_as(self, user: User):
+        login_as(self.client, user)
+
+    def login_as_staff(self) -> User:
+        return login_as_staff(self.client)
+
+    def login_as_user(self):
+        return login_as_user(self.client)
+
+    def login_as_user_with_permissions(self, permissions: List[str]):
+        return login_as_user_with_permissions(self.client, permissions)
+
+    def validate_model_error(self, model, error_fields, strict=False):
+        validate_model_error(self, model, error_fields, strict)
+
+    def assert_response_is_login_page(self, response: Response):
+        test_response_is_login_page(self, response)
+
+    def assert_response_is_failed_login(self, response: Response):
+        test_response_is_failed_login(self, response)
+
+    def assert_response_is_landing_page(self, response: Response):
+        test_response_is_landing_page(self, response)
 
 
 def login_as(client: Client, user: User):

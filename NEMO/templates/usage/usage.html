@@ -157,6 +157,10 @@
                                 <br>
                             {% endif %}
                         {% endif %}
+                        {% if u.note %}
+                            Note: {{ u.note|linebreaksbr }}
+                            <br>
+                        {% endif %}
                         {{ u.start }}
                         <br>
                         {{ u.end }}

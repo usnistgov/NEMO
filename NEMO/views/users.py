@@ -8,7 +8,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Max
-from django.http import HttpResponseBadRequest
+from django.http import Http404, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
@@ -76,7 +76,7 @@ def create_or_modify_user(request, user_id):
 
     readonly = readonly_users(request)
     dictionary = {
-        "projects": Project.objects.filter(active=True, account__active=True),
+        "projects": Project.objects.filter(active=True, account__active=True).prefetch_related("manager_set"),
         "tools": Tool.objects.filter(visible=True),
         "area_access_dict": dict_area,
         "area_access_levels": area_access_levels,
@@ -86,10 +86,12 @@ def create_or_modify_user(request, user_id):
         "allow_document_upload": UserCustomization.get_bool("user_allow_document_upload"),
         "readonly": readonly,
     }
-    try:
-        user = User.objects.get(id=user_id)
-    except:
-        user = None
+
+    user = None
+    if user_id != "new":
+        user = (
+            User.objects.filter(id=user_id).prefetch_related("projects__manager_set", "physical_access_levels").first()
+        )
 
     last_access = AreaAccessRecord.objects.filter(customer=user).values("area_id").annotate(max_date=Max("start"))
     dictionary["last_access"] = {item["area_id"]: item["max_date"] for item in last_access}
@@ -120,10 +122,16 @@ def create_or_modify_user(request, user_id):
         )
 
     if readonly or request.method == "GET":
-        training_not_required = UserCustomization.get("default_user_training_not_required", raise_exception=False)
+        training_not_required = UserCustomization.get_bool("default_user_training_not_required", raise_exception=False)
+        inactive_by_default = UserCustomization.get_bool("default_user_is_inactive", raise_exception=False)
         # Only set training required initial value on new users
         dictionary["form"] = UserForm(
-            instance=user, initial={"training_required": not training_not_required} if not user else None
+            instance=user,
+            initial=(
+                {"training_required": not training_not_required, "is_active": not inactive_by_default}
+                if not user
+                else None
+            ),
         )
         try:
             if dictionary["identity_service_available"] and user and user.is_active and user.domain:
@@ -459,7 +467,7 @@ def user_preferences(request):
     user_view_options = StatusDashboardCustomization.get("dashboard_staff_status_user_view")
     staff_view_options = StatusDashboardCustomization.get("dashboard_staff_status_staff_view")
     user_view = user_view_options if not user.is_staff else staff_view_options if not user.is_facility_manager else ""
-    form = UserPreferencesForm(data=request.POST or None, instance=user.preferences)
+    form = UserPreferencesForm(data=request.POST or None, instance=user.get_preferences())
     if not show_staff_status(request) or user_view == "day":
         form.fields["staff_status_view"].disabled = True
     if request.method == "POST":
@@ -470,7 +478,6 @@ def user_preferences(request):
             messages.error(request, "Please correct the errors below:")
     dictionary = {
         "form": form,
-        "user_preferences": user.get_preferences(),
         "user_view": user_view,
         "tool_list": (
             user.qualifications.all()
@@ -485,7 +492,24 @@ def user_preferences(request):
 @require_GET
 def view_user(request, user_id):
     if UserCustomization.get_bool("user_allow_profile_view"):
-        user = get_object_or_404(User, pk=user_id)
+        user = (
+            User.objects.filter(pk=user_id)
+            .prefetch_related(
+                "qualifications",
+                "groups",
+                "physical_access_levels",
+                "primary_tool_owner",
+                "backup_for_tools",
+                "staff_for_tools",
+                "superuser_for_tools",
+                "adjustment_request_reviewer_on_tools",
+                "managed_projects",
+                "managed_accounts",
+            )
+            .first()
+        )
+        if not user:
+            raise Http404("No user matches the given query")
 
         if request.user.id != user_id:
             return HttpResponseBadRequest("You are not allowed to view this user's profile")

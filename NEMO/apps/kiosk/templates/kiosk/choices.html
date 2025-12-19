@@ -40,6 +40,34 @@
         {% endfor %}
     </div>
 {% endif %}
+{% if show_consumable_self_checkout %}
+    <h1>Supplies/Consumables</h1>
+    <div class="row">
+        <div class="col-xs-6" onclick="open_checkout('{% url 'kiosk_checkout' customer.id %}')">
+            <div class="panel panel-default">
+                <div class="panel-body"
+                     style="display: flex;
+                            flex-wrap: wrap;
+                            align-items: center;
+                            justify-content: space-between">
+                    <div style="display: flex; flex-wrap: wrap; align-items: center; flex: 1; gap: 20px;">
+                        <i style="font-size:x-large;" class="glyphicon glyphicon-shopping-cart"></i>
+                        <span style="font-size:x-large;">Checkout</span>
+                    </div>
+                    <span class="badge" style="background-color: blue; font-size: medium;">
+                        {% with customer.id|stringformat:"d" as customer_id %}
+                            {% if request.session.kiosk_withdrawals and customer_id in request.session.kiosk_withdrawals %}
+                                {{ request.session.kiosk_withdrawals|get_item:customer_id|length }}
+                            {% else %}
+                                0
+                            {% endif %}
+                        {% endwith %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
 <h1>Find a tool</h1>
 {% include 'kiosk/tool_categories.html' %}
 {% if upcoming_reservations %}

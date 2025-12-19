@@ -1,112 +1,119 @@
 <div class="row" style="background:transparent">
-    {% if areas_exist %}
-        <div class="{% if alerts or disabled_resources %}{% if tools_exist %}col-lg-4{% else %}col-lg-6{% endif %}{% else %}{% if tools_exist %}col-lg-6{% else %}col-lg-12{% endif %}{% endif %}"
-             style="text-align:center;
-                    background:transparent">
-            {% if not facility_occupants %}
-                <h2>
-                    Nobody is in an access controlled
-                    <br>
-                    {{ facility_name }} area
-                </h2>
-            {% else %}
-                {% regroup facility_occupants by area as area_occupants %}
-                <h2>Area occupancy</h2>
-                <p>
-                    Staff members are highlighted in <span class="bg-success">&nbsp;green&nbsp;</span>
-                    <br>
-                    Service personnel are highlighted in <span class="bg-warning">&nbsp;orange&nbsp;</span>
-                    <br>
-                    {% if reservations_can_expire %}
-                        Users with expired reservations are highlighted in <span class="bg-danger">&nbsp;red&nbsp;</span>
-                    {% endif %}
-                    Users logged in outside of their allowed schedule are highlighted in <span class="bg-danger">&nbsp;red&nbsp;</span>
-                </p>
-                {% for area in area_occupants %}
-                    {% include 'occupancy/occupancy_content.html' with area=area.grouper occupants=area.list transparent_bg=True center_th=True %}
-                {% endfor %}
-            {% endif %}
-        </div>
-    {% endif %}
-    {% if tools_exist %}
-        <div class="{% if alerts or disabled_resources %}{% if areas_exist %}col-lg-4{% else %}col-lg-6{% endif %}{% else %}{% if areas_exist %}col-lg-6{% else %}col-lg-12{% endif %}{% endif %}"
-             style="text-align:center;
-                    background:transparent">
-            {% if usage_events %}
-                <h2>Tool usage</h2>
-                <p>
-                    {% if usage_events|length > 1 %}{{ usage_events|length }} tools are in use{% endif %}
-                    &nbsp;
-                </p>
-                {# Panel is used to make table borders rounded. #}
-                <div class="panel panel-default" style="background:transparent">
-                    <table class="table table-bordered table-condensed" style="background:transparent">
-                        <thead>
+    {% with three_column_class="col-lg-4" two_column_class="col-lg-6" one_column_class="col-md-12 col-lg-offset-3 col-lg-6" %}
+        {% if areas_exist and display_occupancy %}
+            <div class="{% if alerts and display_alerts or disabled_resources and display_alerts %}{% if tools_exist and display_usage %}{{ three_column_class }}{% else %}{{ two_column_class }}{% endif %}{% else %}{% if tools_exist and display_usage %}{{ two_column_class }}{% else %}{{ one_column_class }}{% endif %}{% endif %}"
+                 style="text-align:center;
+                        background:transparent">
+                {% if not facility_occupants %}
+                    <h2>
+                        Nobody is in an access controlled
+                        <br>
+                        {{ facility_name }} area
+                    </h2>
+                {% else %}
+                    {% regroup facility_occupants by area as area_occupants %}
+                    <h2>Area occupancy</h2>
+                    <p>
+                        Staff members are highlighted in <span class="bg-success">&nbsp;green&nbsp;</span>
+                        <br>
+                        Service personnel are highlighted in <span class="bg-warning">&nbsp;orange&nbsp;</span>
+                        <br>
+                        {% if reservations_can_expire %}
+                            Users with expired reservations are highlighted in <span class="bg-danger">&nbsp;red&nbsp;</span>
+                            <br>
+                        {% endif %}
+                        Users logged in outside their allowed schedule are highlighted in <span class="bg-danger">&nbsp;red&nbsp;</span>
+                    </p>
+                    <div class="content-wrapper-autofit" data-autofit-element=".panel">
+                        {% for area in area_occupants %}
+                            {% include 'occupancy/occupancy_content.html' with area=area.grouper occupants=area.list transparent_bg=True center_th=True %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+        {% if tools_exist and display_usage %}
+            <div class="{% if alerts and display_alerts or disabled_resources and display_alerts %}{% if areas_exist and display_occupancy %}{{ three_column_class }}{% else %}{{ two_column_class }}{% endif %}{% else %}{% if areas_exist and display_occupancy %}{{ two_column_class }}{% else %}{{ one_column_class }}{% endif %}{% endif %}"
+                 style="text-align:center;
+                        background:transparent">
+                {% if usage_events %}
+                    <h2>Tool usage</h2>
+                    <p>
+                        {% if usage_events|length > 1 %}{{ usage_events|length }} tools are in use{% endif %}
+                        &nbsp;
+                    </p>
+                    {# Panel is used to make table borders rounded. #}
+                    <div class="content-wrapper-autofit">
+                        <div class="panel panel-default" style="background:transparent">
+                            <table class="table table-bordered table-condensed" style="background:transparent">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align: center">Tool</th>
+                                        <th style="text-align: center">User</th>
+                                        <th style="text-align: center">In use since...</th>
+                                    </tr>
+                                </thead>
+                                <tbody style="background:transparent">
+                                    {% for u in usage_events %}
+                                        <tr {% if u.operator.is_any_part_of_staff %}class="success"{% elif u.operator.is_service_personnel %}class="warning"{% elif u.tool.in_use_without_reservation or u.tool.in_use_outside_schedule %}class="danger"{% else %} style="background:transparent"{% endif %}>
+                                            <td>{{ u.tool }}</td>
+                                            <td>
+                                                <span>{{ u.operator.first_name }} {{ u.operator.last_name }}
+                                                    {% if u.user != u.operator %}on behalf of {{ u.user.first_name }} {{ u.user.last_name }}{% endif %}
+                                                </span>
+                                            </td>
+                                            <td>{{ u.start|date:"MONTH_DAY_FORMAT" }} @ {{ u.start|time }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% else %}
+                    <h2>No {{ facility_name }} tools are in use</h2>
+                {% endif %}
+            </div>
+        {% endif %}
+        {% if alerts and display_alerts or disabled_resources and display_alerts %}
+            <div class="{% if areas_exist and display_occupancy and tools_exist and display_usage %}{{ three_column_class }}{% elif areas_exist and display_occupancy or tools_exist and display_usage %}{{ two_column_class }}{% else %}{{ one_column_class }}{% endif %}"
+                 style="text-align:center">
+                <h2>Alerts and outages</h2>
+                <p>{# For spacing #}&nbsp;</p>
+                {% for a in alerts %}
+                    <div class="alert alert-danger">
+                        <table style="width:100%">
                             <tr>
-                                <th style="text-align: center">Tool</th>
-                                <th style="text-align: center">User</th>
-                                <th style="text-align: center">In use since...</th>
+                                <td style="width:100px">
+                                    <span class="glyphicon glyphicon-alert danger-highlight" style="font-size:64px"></span>
+                                </td>
+                                <td>
+                                    {% if a.title %}
+                                        <span style="font-weight:bold">{{ a.title }}</span>
+                                        <br>
+                                    {% endif %}
+                                    {{ a.contents|safe|linebreaksbr }}
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody style="background:transparent">
-                            {% for u in usage_events %}
-                                <tr {% if u.operator.is_any_part_of_staff %}class="success" {% elif u.operator.is_service_personnel %}class="warning" {% else %}style="background:transparent"{% endif %}>
-                                    <td>{{ u.tool }}</td>
-                                    <td>
-                                        <span>{{ u.operator.first_name }} {{ u.operator.last_name }}
-                                            {% if u.user != u.operator %}on behalf of {{ u.user.first_name }} {{ u.user.last_name }}{% endif %}
-                                        </span>
-                                    </td>
-                                    <td>{{ u.start|date:"MONTH_DAY_FORMAT" }} @ {{ u.start|time }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <h2>No {{ facility_name }} tools are in use</h2>
-            {% endif %}
-        </div>
-    {% endif %}
-    {% if alerts or disabled_resources %}
-        <div class="{% if areas_exist and tools_exist %}col-lg-4{% else %}col-lg-6{% endif %}"
-             style="text-align:center">
-            <h2>Alerts and outages</h2>
-            <p>{# For spacing #}&nbsp;</p>
-            {% for a in alerts %}
-                <div class="alert alert-danger">
-                    <table style="width:100%">
-                        <tr>
-                            <td style="width:100px">
-                                <span class="glyphicon glyphicon-alert danger-highlight" style="font-size:64px"></span>
-                            </td>
-                            <td>
-                                {% if a.title %}
-                                    <span style="font-weight:bold">{{ a.title }}</span>
+                        </table>
+                    </div>
+                {% endfor %}
+                {% for r in disabled_resources %}
+                    <div class="alert alert-danger">
+                        <table style="width:100%">
+                            <tr>
+                                <td style="width:100px">
+                                    <span class="glyphicon glyphicon-leaf danger-highlight" style="font-size:64px"></span>
+                                </td>
+                                <td>
+                                    <span style="font-weight:bold">Resource outage: {{ r }}</span>
                                     <br>
-                                {% endif %}
-                                {{ a.contents|safe|linebreaksbr }}
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            {% endfor %}
-            {% for r in disabled_resources %}
-                <div class="alert alert-danger">
-                    <table style="width:100%">
-                        <tr>
-                            <td style="width:100px">
-                                <span class="glyphicon glyphicon-leaf danger-highlight" style="font-size:64px"></span>
-                            </td>
-                            <td>
-                                <span style="font-weight:bold">Resource outage: {{ r }}</span>
-                                <br>
-                                {{ r.restriction_message }}
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
+                                    {{ r.restriction_message }}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
 </div>

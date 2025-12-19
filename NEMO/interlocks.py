@@ -451,7 +451,7 @@ class ProXrInterlock(Interlock):
                 bank = interlock.unit_id if interlock.unit_id is not None else 1
                 # Try to read the state
                 try:
-                    self._get_state(relay_socket, interlock.channel, bank)
+                    self._get_state(relay_socket, interlock.card, interlock.channel, bank)
                 except Exception as error:
                     return INTERLOCK_STATUS_ERROR + f": {str(error)}"
         except:
@@ -608,7 +608,7 @@ class ModbusTcpInterlock(Interlock):
                 raise Exception(
                     f"Connection to server {interlock.card.server}:{interlock.card.port} could not be established"
                 )
-            kwargs = {"slave": interlock.unit_id} if interlock.unit_id is not None else {}
+            kwargs = {"device_id": interlock.unit_id} if interlock.unit_id is not None else {}
             write_reply = client.write_coil(coil, state, **kwargs)
             if write_reply.isError():
                 raise Exception(str(write_reply))
@@ -631,7 +631,7 @@ class ModbusTcpInterlock(Interlock):
                 if not valid_connection:
                     return INTERLOCK_STATUS_NO_CONNECTION
                 else:
-                    kwargs = {"slave": interlock.unit_id} if interlock.unit_id is not None else {}
+                    kwargs = {"device_id": interlock.unit_id} if interlock.unit_id is not None else {}
                     read_reply = client.read_coils(interlock.channel, count=1, **kwargs)
                     if read_reply.isError():
                         return INTERLOCK_STATUS_ERROR + f": {str(read_reply)}"

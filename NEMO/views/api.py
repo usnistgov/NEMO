@@ -10,7 +10,7 @@ from django.db import transaction
 from django.http import FileResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound
 from django.utils.safestring import mark_safe
 from drf_excel.mixins import XLSXFileMixin
-from rest_framework import status, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import BrowsableAPIRenderer
@@ -38,6 +38,7 @@ from NEMO.models import (
     Interlock,
     InterlockCard,
     InterlockCardCategory,
+    MembershipHistory,
     PhysicalAccessLevel,
     Project,
     ProjectDiscipline,
@@ -45,6 +46,7 @@ from NEMO.models import (
     Qualification,
     RecurringConsumableCharge,
     Reservation,
+    ReservationQuestions,
     Resource,
     ScheduledOutage,
     StaffAssistanceRequest,
@@ -53,9 +55,12 @@ from NEMO.models import (
     TemporaryPhysicalAccessRequest,
     Tool,
     ToolCredentials,
+    ToolUsageCounter,
+    ToolUsageQuestions,
     TrainingSession,
     UsageEvent,
     User,
+    UserCalendarToolList,
     UserDocuments,
     UserPreferences,
 )
@@ -81,6 +86,7 @@ from NEMO.serializers import (
     InterlockCardCategorySerializer,
     InterlockCardSerializer,
     InterlockSerializer,
+    MembershipHistorySerializer,
     PermissionSerializer,
     PhysicalAccessLevelSerializer,
     ProjectDisciplineSerializer,
@@ -88,6 +94,7 @@ from NEMO.serializers import (
     ProjectTypeSerializer,
     QualificationSerializer,
     RecurringConsumableChargeSerializer,
+    ReservationQuestionsSerializer,
     ReservationSerializer,
     ResourceSerializer,
     ScheduledOutageSerializer,
@@ -99,8 +106,11 @@ from NEMO.serializers import (
     ToolCredentialsSerializer,
     ToolSerializer,
     ToolStatusSerializer,
+    ToolUsageCounterSerializer,
+    ToolUsageQuestionsSerializer,
     TrainingSessionSerializer,
     UsageEventSerializer,
+    UserCalendarToolListSerializer,
     UserDocumentSerializer,
     UserPreferenceSerializer,
     UserSerializer,
@@ -138,11 +148,9 @@ class SingleInstanceHTMLFormBrowsableAPIRenderer(BrowsableAPIRenderer):
             return super().render_form_for_serializer(serializer)
 
 
-class ModelViewSet(XLSXFileMixin, viewsets.ModelViewSet):
+class XLSXFileListModelMixin(XLSXFileMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     """
-    An extension of the model view set, which accepts a json list of objects
-    to create multiple instances at once.
-    Also allows XLSX retrieval
+    Adds pagination bypass and also allows XLSX retrieval
     """
 
     # Bypass pagination when exporting into any format that's not the browsable API
@@ -154,6 +162,16 @@ class ModelViewSet(XLSXFileMixin, viewsets.ModelViewSet):
         if page_size_override is not None or not renderer or isinstance(renderer, BrowsableAPIRenderer):
             return super().paginate_queryset(queryset)
         return None
+
+    def get_filename(self, *args, **kwargs):
+        return f"{self.filename}-{export_format_datetime()}.xlsx"
+
+
+class ModelViewSet(XLSXFileListModelMixin, viewsets.ModelViewSet):
+    """
+    An extension of the model view set, which accepts a json list of objects
+    to create multiple instances at once.
+    """
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
@@ -176,9 +194,6 @@ class ModelViewSet(XLSXFileMixin, viewsets.ModelViewSet):
             else:
                 new_renderers.append(renderer())
         return new_renderers
-
-    def get_filename(self, *args, **kwargs):
-        return f"{self.filename}-{export_format_datetime()}.xlsx"
 
 
 class AlertCategoryViewSet(viewsets.ModelViewSet):
@@ -251,6 +266,13 @@ class UserDocumentsViewSet(ModelViewSet):
         "display_order": number_filters,
         "uploaded_at": datetime_filters,
     }
+
+
+class UserCalendarToolListViewSet(ModelViewSet):
+    filename = "user_calendar_tool_lists"
+    queryset = UserCalendarToolList.objects.all()
+    serializer_class = UserCalendarToolListSerializer
+    filterset_fields = {"id": key_filters, "name": string_filters, "user": key_filters, "tools": manykey_filters}
 
 
 class UserPreferencesViewSet(ModelViewSet):
@@ -354,7 +376,14 @@ class AccountViewSet(ModelViewSet):
     filename = "accounts"
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
-    filterset_fields = {"id": key_filters, "name": string_filters, "active": boolean_filters}
+    filterset_fields = {
+        "id": key_filters,
+        "type": key_filters,
+        "name": string_filters,
+        "note": string_filters,
+        "start_date": date_filters,
+        "active": boolean_filters,
+    }
 
 
 class ToolViewSet(ModelViewSet):
@@ -370,8 +399,9 @@ class ToolViewSet(ModelViewSet):
         "_operational": boolean_filters,
         "_location": string_filters,
         "_requires_area_access": key_filters,
-        "_post_usage_questions": string_filters,
-        "_pre_usage_questions": string_filters,
+        "_requires_area_occupancy_minimum": number_filters,
+        "_problem_shutdown_enabled": boolean_filters,
+        "_qualifications_never_expire": boolean_filters,
     }
 
 
@@ -502,6 +532,24 @@ class ReservationViewSet(ModelViewSet):
         "waived": boolean_filters,
         "waived_on": datetime_filters,
         "waived_by": key_filters,
+        "note": string_filters,
+    }
+
+
+class ReservationQuestionsViewSet(ModelViewSet):
+    filename = "reservation_questions"
+    queryset = ReservationQuestions.objects.all()
+    serializer_class = ReservationQuestionsSerializer
+    filterset_fields = {
+        "id": key_filters,
+        "name": string_filters,
+        "enabled": boolean_filters,
+        "tool_reservations": boolean_filters,
+        "only_for_tools": manykey_filters,
+        "area_reservations": boolean_filters,
+        "only_for_areas": manykey_filters,
+        "only_for_projects": manykey_filters,
+        "questions": string_filters,
     }
 
 
@@ -527,6 +575,7 @@ class UsageEventViewSet(ModelViewSet):
         "waived": boolean_filters,
         "waived_on": datetime_filters,
         "waived_by": key_filters,
+        "note": string_filters,
     }
 
 
@@ -663,6 +712,7 @@ class ConsumableViewSet(ModelViewSet):
     serializer_class = ConsumableSerializer
     filterset_fields = {
         "id": key_filters,
+        "name": string_filters,
         "category_id": key_filters,
         "category": key_filters,
         "quantity": number_filters,
@@ -833,11 +883,61 @@ class AdjustmentRequestViewSet(ModelViewSet):
         "manager_note": string_filters,
         "new_start": datetime_filters,
         "new_end": datetime_filters,
+        "new_quantity": number_filters,
+        "new_project": key_filters,
+        "item_tool": key_filters,
+        "item_area": key_filters,
         "status": number_filters,
         "reviewer": key_filters,
         "applied": boolean_filters,
         "applied_by": key_filters,
         "deleted": boolean_filters,
+    }
+
+
+class ToolUsageQuestionsViewSet(ModelViewSet):
+    filename = "tool_usage_questions"
+    queryset = ToolUsageQuestions.objects.all()
+    serializer_class = ToolUsageQuestionsSerializer
+    filterset_fields = {
+        "id": key_filters,
+        "name": string_filters,
+        "enabled": boolean_filters,
+        "display_order": number_filters,
+        "only_for_tools": manykey_filters,
+        "only_for_projects": manykey_filters,
+        "only_for_users": manykey_filters,
+        "only_for_groups": manykey_filters,
+        "questions_type": string_filters,
+        "questions": string_filters,
+    }
+
+
+class ToolUsageCounterViewSet(ModelViewSet):
+    filename = "tool_usage_counters"
+    queryset = ToolUsageCounter.objects.all()
+    serializer_class = ToolUsageCounterSerializer
+    filterset_fields = {
+        "id": key_filters,
+        "tool": key_filters,
+        "name": string_filters,
+        "description": string_filters,
+        "value": number_filters,
+        "default_value": number_filters,
+        "counter_direction": number_filters,
+        "tool_pre_usage_question": string_filters,
+        "tool_post_usage_question": string_filters,
+        "staff_members_can_reset": boolean_filters,
+        "superusers_can_reset": boolean_filters,
+        "qualified_users_can_reset": boolean_filters,
+        "last_reset_value": number_filters,
+        "last_reset": datetime_filters,
+        "last_reset_by": key_filters,
+        "email_facility_managers_when_reset": boolean_filters,
+        "warning_threshold": number_filters,
+        "warning_email": string_filters,
+        "warning_threshold_reached": boolean_filters,
+        "is_active": boolean_filters,
     }
 
 
@@ -885,6 +985,22 @@ class StaffAssistanceRequestViewSet(ModelViewSet):
         "description": string_filters,
         "resolved": boolean_filters,
         "deleted": boolean_filters,
+    }
+
+
+class MembershipHistoryViewSet(XLSXFileListModelMixin, mixins.RetrieveModelMixin):
+    filename = "membership_history"
+    queryset = MembershipHistory.objects.all()
+    serializer_class = MembershipHistorySerializer
+    filterset_fields = {
+        "id": key_filters,
+        "parent_content_type": key_filters,
+        "parent_object_id": key_filters,
+        "child_content_type": key_filters,
+        "child_object_id": key_filters,
+        "date": datetime_filters,
+        "authorizer": key_filters,
+        "action": boolean_filters,
     }
 
 

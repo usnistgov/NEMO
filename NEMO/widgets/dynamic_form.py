@@ -5,7 +5,7 @@ import re
 import sys
 from collections import Counter
 from copy import copy
-from json import dumps, loads
+from json import JSONDecodeError, dumps, loads
 from logging import getLogger
 from typing import Any, Callable, Dict, List, Optional, Type, Union
 
@@ -21,7 +21,8 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.evaluators import evaluate_expression, get_expression_variables
 from NEMO.exceptions import RequiredUnansweredQuestionsException
-from NEMO.models import Consumable, Task, ToolUsageCounter, UsageEvent
+from NEMO.models import Consumable, Task, ToolUsageCounter, ToolUsageQuestions, UsageEvent
+from NEMO.typing import QuerySetType
 from NEMO.utilities import EmptyHttpRequest, quiet_int, slugify_underscore, strtobool
 from NEMO.views.consumables import make_withdrawal
 
@@ -165,13 +166,13 @@ class PostUsageQuestion:
     def load_questions(questions: Optional[List[Dict]], index: int = None, initial_data: Union[Dict, str] = None):
         user_inputs = get_submitted_user_inputs(initial_data)
         questions_to_load = questions or []
-        post_usage_questions: List[PostUsageQuestion] = []
+        usage_questions: List[PostUsageQuestion] = []
         for question in questions_to_load:
             question_initial_data = user_inputs[question["name"]] if question["name"] in user_inputs else None
-            post_usage_questions.append(
+            usage_questions.append(
                 question_types.get(question["type"], PostUsageQuestion)(question, index, question_initial_data)
             )
-        return post_usage_questions
+        return usage_questions
 
 
 class PostUsageRadioQuestion(PostUsageQuestion):
@@ -589,6 +590,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
         if self.initial_data:
             for index, data in enumerate(self.initial_data):
                 self.load_sub_questions(index, data)
+                self.index = index
                 result += self.render_group_question(virtual_inputs, item, dynamic_field_name)
                 result += "</div>"
         else:
@@ -642,7 +644,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 
 
 class DynamicForm:
-    def __init__(self, questions, initial_data=None):
+    def __init__(self, questions, initial_data: dict = None):
         self.untreated_questions = []
         self.questions = []
         if questions:
@@ -756,7 +758,7 @@ class DynamicForm:
             question.validate()
         # Test the rendering
         self.render(item, dynamic_field_name)
-        # Check for duplicate names, and that if consumable exists they are linked to a number question
+        # Check for duplicate names, and that if consumable exists, they are linked to a number question
         names = []
         for question in self.questions:
             names.append(question.name)
@@ -812,14 +814,15 @@ class DynamicForm:
         return results
 
     def process_run_data(self, usage_event: UsageEvent, run_data: str, request=None):
-        try:
-            run_data_json = loads(run_data)
-        except Exception as error:
-            dynamic_form_logger.debug(error)
-            return
-        self._charge_for_consumables(usage_event, run_data_json, request)
-        self._update_tool_counters(usage_event, run_data_json)
-        self._report_problems(usage_event, run_data_json, request)
+        if run_data:
+            try:
+                run_data_json = loads(run_data)
+            except Exception:
+                dynamic_form_logger.debug(exc_info=True)
+                return
+            self._charge_for_consumables(usage_event, run_data_json, request)
+            self._update_tool_counters(usage_event, run_data_json)
+            self._report_problems(usage_event, run_data_json, request)
 
     def _charge_for_consumables(self, usage_event, run_data_json: Dict, request=None):
         customer = usage_event.user
@@ -884,6 +887,48 @@ class DynamicForm:
                     save_task(request, task, usage_event.operator)
                     message = f"A problem report was automatically send to staff{' and the tool was shutdown' if task.force_shutdown else ''}"
                     messages.success(request, message, extra_tags="data-speed=9000")
+
+
+class MultiDynamicForms:
+    def __init__(
+        self,
+        items: QuerySetType[ToolUsageQuestions],
+        dynamic_field_name: str = "questions",
+        initial_data: dict = None,
+    ):
+        self.items = items
+        self.dynamic_field_name = dynamic_field_name
+        self.initial_data = initial_data
+        forms_json = []
+        for item in self.items:
+            forms_json.extend(loads(getattr(item, self.dynamic_field_name)))
+        self.merged_json_questions = dumps(forms_json) if len(forms_json) else ""
+        self.merged_dynamic_forms = DynamicForm(self.merged_json_questions) if len(forms_json) else None
+
+    def render(self, virtual_inputs: bool = False) -> str:
+        rendered_forms = ""
+        for item in self.items:
+            rendered_forms += DynamicForm(getattr(item, self.dynamic_field_name), self.initial_data).render(
+                item, self.dynamic_field_name, virtual_inputs
+            )
+        return mark_safe(rendered_forms)
+
+    def extract(self, request):
+        return self.merged_dynamic_forms.extract(request) if self.merged_dynamic_forms else ""
+
+    def process_run_data(self, usage_event: UsageEvent, run_data: str, request=None):
+        if run_data:
+            try:
+                run_data_json = loads(run_data)
+            except Exception:
+                dynamic_form_logger.debug(exc_info=True)
+                return
+            self.merged_dynamic_forms._charge_for_consumables(usage_event, run_data_json, request)
+            self.merged_dynamic_forms._update_tool_counters(usage_event, run_data_json)
+            self.merged_dynamic_forms._report_problems(usage_event, run_data_json, request)
+
+    def __bool__(self) -> bool:
+        return bool(self.items)
 
 
 def get_submitted_user_inputs(user_data: Union[str, dict]) -> Dict:
@@ -991,18 +1036,28 @@ def get_counter_value_for_question(question, input_data, counter_question):
 def validate_dynamic_form_model(dynamic_form_json: str, item, dynamic_field_name: str) -> List[str]:
     errors = []
     if dynamic_form_json:
+        exceptions = []
         try:
             loads(dynamic_form_json)
-        except ValueError:
-            errors.append("This field needs to be a valid JSON string")
+        except JSONDecodeError as e:
+            exceptions.append(str(e))
+            line = e.lineno
+            col = e.colno
+            # Extract the error line for context
+            lines = dynamic_form_json.splitlines()
+            bad_line = lines[line - 1] if 0 < line <= len(lines) else ""
+            pointer = "&nbsp" * (col - 1) + "^"
+            snippet = f"Line {line}, column {col}:<br><div style='white-space: pre; font-family: monospace'>{bad_line}<br>{pointer}</pre>"
+            errors.append(mark_safe(f"Invalid JSON string. {e.msg}<br>{snippet}"))
         try:
             dynamic_form = DynamicForm(dynamic_form_json)
             dynamic_form.validate(item, dynamic_field_name)
         except KeyError as e:
             errors.append(f"{e} property is required")
-        except:
-            error_info = sys.exc_info()
-            errors.append(error_info[0].__name__ + ": " + str(error_info[1]))
+        except Exception as e:
+            if str(e) not in exceptions:
+                error_info = sys.exc_info()
+                errors.append(error_info[0].__name__ + ": " + str(error_info[1]))
     return errors
 
 

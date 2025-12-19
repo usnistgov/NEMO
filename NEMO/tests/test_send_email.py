@@ -1,12 +1,13 @@
-from smtplib import SMTPConnectError, SMTPServerDisconnected
+from smtplib import SMTPConnectError, SMTPDataError, SMTPServerDisconnected, SMTPHeloError
 from unittest.mock import patch
 
 from django.test import TestCase
 
+from NEMO.tests.test_utilities import NEMOTestCaseMixin
 from NEMO.utilities import send_mail
 
 
-class TestSendMailRetries(TestCase):
+class TestSendMailRetries(NEMOTestCaseMixin, TestCase):
     def setUp(self):
         self.subject = "Retry Test"
         self.content = "<p>Testing retry logic</p>"
@@ -22,6 +23,18 @@ class TestSendMailRetries(TestCase):
 
     @patch("NEMO.utilities.EmailMessage.send", side_effect=[SMTPConnectError(451, "Temporary error"), 1])
     def test_send_mail_retries_on_connect_error(self, mock_send):
+        result = send_mail(self.subject, self.content, self.from_email, self.to, fail_silently=True)
+        self.assertEqual(result, 1)
+        self.assertEqual(mock_send.call_count, 2)
+
+    @patch("NEMO.utilities.EmailMessage.send", side_effect=[SMTPHeloError(451, "Helo error"), 1])
+    def test_send_mail_retries_on_helo_error(self, mock_send):
+        result = send_mail(self.subject, self.content, self.from_email, self.to, fail_silently=True)
+        self.assertEqual(result, 1)
+        self.assertEqual(mock_send.call_count, 2)
+
+    @patch("NEMO.utilities.EmailMessage.send", side_effect=[SMTPDataError(451, "Data error"), 1])
+    def test_send_mail_retries_on_data_error(self, mock_send):
         result = send_mail(self.subject, self.content, self.from_email, self.to, fail_silently=True)
         self.assertEqual(result, 1)
         self.assertEqual(mock_send.call_count, 2)

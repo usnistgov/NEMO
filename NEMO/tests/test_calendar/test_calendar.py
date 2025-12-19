@@ -1,11 +1,11 @@
 from django.test import TestCase
 from django.urls import reverse
 
-from NEMO.models import User, Tool
-from NEMO.tests.test_utilities import login_as_user, test_response_is_failed_login
+from NEMO.models import Tool, User
+from NEMO.tests.test_utilities import NEMOTestCaseMixin
 
 
-class CalendarTestCase(TestCase):
+class CalendarTestCase(NEMOTestCaseMixin, TestCase):
     tool = None
     owner = None
 
@@ -17,9 +17,9 @@ class CalendarTestCase(TestCase):
     def test_calendar_urls(self):
         # if not logged in, it should send an error message
         response = self.client.get(reverse("calendar"), follow=True)
-        test_response_is_failed_login(self, response)
+        self.assert_response_is_failed_login(response)
 
-        login_as_user(self.client)
+        self.login_as_user()
         response = self.client.get(reverse("calendar"), follow=True)
         self.assertEqual(response.status_code, 200)
 

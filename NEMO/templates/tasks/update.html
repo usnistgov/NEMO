@@ -78,12 +78,14 @@
                     </script>
                 </div>
                 <div class="form-group">
-                    <div class="checkbox">
-                        <label>
-                            <input type="checkbox" name="force_shutdown" {% if task.force_shutdown %}checked{% endif %}>
-                            This task requires the {{ task.tool.name }} to be shutdown
-                        </label>
-                    </div>
+                    {% if task.tool.problem_shutdown_enabled %}
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" name="force_shutdown" {% if task.force_shutdown %}checked{% endif %}>
+                                This task requires the {{ task.tool.name }} to be shutdown
+                            </label>
+                        </div>
+                    {% endif %}
                     <div class="checkbox">
                         <label>
                             <input type="checkbox" name="safety_hazard" {% if task.safety_hazard %}checked{% endif %}>
