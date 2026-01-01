@@ -240,7 +240,7 @@ class AdjustmentRequestTestCase(NEMOTestCaseMixin, TestCase):
                 beginning_of_the_day(today),
                 test_date_limit_dates(today.day + 1, str(RecurrenceFrequency.DAILY.index), "1"),
             )
-        if today.day != monthrange(today.year, today.month)[0]:
+        if today.weekday() != monthrange(today.year, today.month)[0]:
             # if we are not the first day of the month
             # set billing day as yesterday, so we are after it. in that case cutoff should be 1 of this month
             self.assertEqual(beginning_of_the_day(today.replace(day=1)), test_date_limit_dates(today.day - 1))
