@@ -91,7 +91,7 @@ def base_context(request):
         "access_user_request_allowed_exist": access_user_request_allowed_exist,
         "adjustment_request_allowed": adjustment_request_allowed == "enabled"
         or adjustment_request_allowed == "reviewers_only"
-        and user
+        and isinstance(user, User)
         and user.is_adjustment_request_reviewer,
         "staff_assistance_request_allowed": customization_values.get("staff_assistance_requests_enabled", "")
         == "enabled",
