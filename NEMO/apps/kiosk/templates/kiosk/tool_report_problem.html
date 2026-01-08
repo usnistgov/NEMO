@@ -90,7 +90,7 @@
                 <span style="padding-left:10px;">This problem represents a safety hazard to the {{ facility_name }} and should be regarded as urgent.Notify the {{ facility_name }} safety officer of this issue.</span>
             </label>
         </div>
-        {% if tool.problem_shutdown_enabled %}
+        {% if tool.problem_shutdown_enabled or customer|is_staff_on_tool:tool %}
             <div class="checkbox">
                 <label>
                     <input name="force_shutdown"

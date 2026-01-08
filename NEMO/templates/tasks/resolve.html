@@ -23,7 +23,7 @@
                 <input type="hidden"
                        name="estimated_resolution_time"
                        value="{{ estimated_resolution_time|input_date_format }}">
-                {% if task.tool.problem_shutdown_enabled %}
+                {% if task.tool.problem_shutdown_enabled or user|is_staff_on_tool:task.tool %}
                     <input type="hidden" name="force_shutdown" value="{{ task.force_shutdown }}">
                 {% endif %}
                 <input type="hidden" name="safety_hazard" value="{{ task.safety_hazard }}">

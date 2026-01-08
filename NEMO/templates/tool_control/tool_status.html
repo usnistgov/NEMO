@@ -1050,7 +1050,7 @@
                         This problem represents a <b>safety hazard</b> to the {{ facility_name }} and should be regarded as urgent. Notify the {{ facility_name }} safety officer of this issue.
                     </label>
                 </div>
-                {% if tool.problem_shutdown_enabled %}
+                {% if tool.problem_shutdown_enabled or user|is_staff_on_tool:tool %}
                     <div class="checkbox">
                         <label>
                             <input name="force_shutdown" id="force_shutdown" type="checkbox" />

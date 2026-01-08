@@ -49,6 +49,7 @@ from NEMO.models import (
     UserPreferences,
 )
 from NEMO.policy import policy_class as policy
+from NEMO.templatetags.custom_tags_and_filters import is_staff_on_tool
 from NEMO.utilities import (
     RecurrenceFrequency,
     bootstrap_primary_color,
@@ -178,7 +179,7 @@ class TaskForm(ModelForm):
                     "This task can't be resolved because it is marked as 'cancelled' or 'resolved' already."
                 )
         tool = cleaned_data.get("tool")
-        if tool and not tool.problem_shutdown_enabled:
+        if tool and not tool.problem_shutdown_enabled and not is_staff_on_tool(self.user, tool):
             cleaned_data["force_shutdown"] = False
         return cleaned_data
 
