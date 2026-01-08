@@ -78,7 +78,7 @@
                     </script>
                 </div>
                 <div class="form-group">
-                    {% if task.tool.problem_shutdown_enabled %}
+                    {% if task.tool.problem_shutdown_enabled or user|is_staff_on_tool:task.tool %}
                         <div class="checkbox">
                             <label>
                                 <input type="checkbox" name="force_shutdown" {% if task.force_shutdown %}checked{% endif %}>
