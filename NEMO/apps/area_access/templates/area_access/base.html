@@ -145,9 +145,9 @@
 		function revert_to_default_content()
 		{
 			$('body').removeClass();
-			fetch_occupancy();
-			fetch_usage();
-            fetch_alerts();
+            if (occupancy) fetch_occupancy();
+            if (usage) fetch_usage();
+            if (alerts) fetch_alerts();
 			clear_timeout();
 			status_element.hide();
 			error_element.hide();
