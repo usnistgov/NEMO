@@ -382,7 +382,8 @@ function create(start, end, jsEvent, view)
 	let all_tools = item.hasClass('all_tools');
 	let all_areas = item.hasClass('all_areas');
 	let all_areastools = item.hasClass('all_areastools');
-	if(!item_selected || !reservation_view || personal_schedule || all_tools || all_areas || all_areastools)
+	let user_list = item.parent().hasClass('user-tool-list');
+	if(!item_selected || !reservation_view || personal_schedule || all_tools || all_areas || all_areastools || user_list)
 	{
 		$("#calendar").fullCalendar("unselect");
 		return;
