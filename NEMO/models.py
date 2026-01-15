@@ -2544,6 +2544,8 @@ class StaffCharge(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
     def clean(self):
         errors = validate_waive_information(self)
+        if self.end and self.start and self.end < self.start:
+            raise ValidationError({"end": "The end must be on or after the start"})
         if errors:
             raise ValidationError(errors)
 
@@ -2864,6 +2866,8 @@ class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
     def clean(self):
         errors = validate_waive_information(self)
+        if self.end and self.start and self.end < self.start:
+            raise ValidationError({"end": "The end must be on or after the start"})
         if errors:
             raise ValidationError(errors)
 
@@ -3188,6 +3192,8 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
     def clean(self):
         errors = validate_waive_information(self)
+        if self.end and self.start and self.end < self.start:
+            raise ValidationError({"end": "The end must be on or after the start"})
         if errors:
             raise ValidationError(errors)
 
@@ -3264,6 +3270,8 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
     def clean(self):
         errors = validate_waive_information(self)
+        if self.end and self.start and self.end < self.start:
+            raise ValidationError({"end": "The end must be on or after the start"})
         if errors:
             raise ValidationError(errors)
 
