@@ -472,6 +472,7 @@ class InterlockCustomization(CustomizationBase):
         "allow_bypass_interlock_on_failure": "",
         "tool_interlock_failure_message": "Communication with the interlock failed",
         "door_interlock_failure_message": "Communication with the interlock failed",
+        "tool_interlock_ask_when_shutting_down_problem": "",
     }
 
 
