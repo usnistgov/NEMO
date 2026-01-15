@@ -3458,7 +3458,7 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
         if self.quantity is not None and self.quantity < 1:
             errors["quantity"] = "Please specify a valid quantity of items to withdraw."
         if self.consumable_id:
-            if not self.consumable.reusable and self.quantity > self.consumable.quantity:
+            if not self.consumable.reusable and self.quantity is not None and self.quantity > self.consumable.quantity:
                 errors[NON_FIELD_ERRORS] = (
                     f'There are not enough "{self.consumable.name}". (The current quantity in stock is {str(self.consumable.quantity)}). Please order more as soon as possible.'
                 )
