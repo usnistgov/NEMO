@@ -811,7 +811,7 @@ class ReservationAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.M
         "project",
         "start",
         "end",
-        "duration",
+        "duration_rounded",
         "cancelled",
         "missed",
         "shortened",

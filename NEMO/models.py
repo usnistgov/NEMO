@@ -3116,6 +3116,9 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     def duration(self):
         return self.end - self.start
 
+    def duration_rounded(self):
+        return timedelta(seconds=round(self.duration().total_seconds()))
+
     def duration_for_policy(self):
         # This method returns the duration that counts for policy checks.
         # i.e. reservation duration minus any time when the policy is off
