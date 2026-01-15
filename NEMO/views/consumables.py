@@ -210,10 +210,10 @@ def export_recurring_charges(request):
         errors = []
         if not charge.is_empty() and not next_charge:
             errors.append("This item expired")
-        if charge.invalid_customer():
-            errors.append(charge.invalid_customer())
-        if charge.invalid_project():
-            errors.append(charge.invalid_project())
+        if charge.invalid_customer_text():
+            errors.append(charge.invalid_customer_text())
+        if charge.invalid_project_text():
+            errors.append(charge.invalid_project_text())
         table.add_row(
             {
                 "name": charge.name,

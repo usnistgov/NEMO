@@ -4,7 +4,6 @@ import datetime
 import json
 import os
 import sys
-from collections import Counter
 from datetime import timedelta
 from enum import Enum
 from html import escape
@@ -502,7 +501,7 @@ class PhysicalAccessLevel(BaseModel):
     def accessible_at(self, time):
         return self.accessible(time)
 
-    def accessible(self, time: datetime = None):
+    def accessible(self, time: datetime.datetime = None):
         if time is not None:
             accessible_time = timezone.localtime(time)
         else:
@@ -532,7 +531,7 @@ class PhysicalAccessLevel(BaseModel):
                 return True
         return False
 
-    def ongoing_closure_time(self, time: datetime = None):
+    def ongoing_closure_time(self, time: datetime.datetime = None):
         if time is not None:
             accessible_time = timezone.localtime(time)
         else:
@@ -565,7 +564,7 @@ class TemporaryPhysicalAccess(BaseModel):
     def accessible_at(self, time):
         return self.accessible(time)
 
-    def accessible(self, time: datetime = None):
+    def accessible(self, time: datetime.datetime = None):
         if time is not None:
             accessible_time = timezone.localtime(time)
         else:
@@ -575,7 +574,7 @@ class TemporaryPhysicalAccess(BaseModel):
             and self.start_time <= accessible_time <= self.end_time
         )
 
-    def ongoing_closure_time(self, time: datetime = None):
+    def ongoing_closure_time(self, time: datetime.datetime = None):
         return self.physical_access_level.ongoing_closure_time(time)
 
     def display(self):
@@ -2251,7 +2250,7 @@ class ToolUsageQuestions(models.Model):
     questions = models.TextField(help_text=_("This field will only accept JSON format"))
 
     def clean(self):
-        from NEMO.widgets.dynamic_form import validate_dynamic_form_model, PostUsageGroupQuestion, DynamicForm
+        from NEMO.widgets.dynamic_form import validate_dynamic_form_model
 
         # Validate questions JSON format
         if self.questions:
@@ -3596,10 +3595,10 @@ class RecurringConsumableCharge(BaseModel, RecurrenceMixin):
             )
         )
 
-    def next_charge(self, inc=False) -> datetime:
+    def next_charge(self, inc=False) -> datetime.datetime:
         return self.next_recurrence(inc)
 
-    def invalid_customer(self):
+    def invalid_customer_text(self):
         from NEMO.views.customization import RecurringChargesCustomization
 
         skip_customer = RecurringChargesCustomization.get_bool("recurring_charges_skip_customer_validation")
@@ -3611,7 +3610,7 @@ class RecurringConsumableCharge(BaseModel, RecurrenceMixin):
                     f"The facility access for this user expired on {format_datetime(self.customer.access_expiration)}"
                 )
 
-    def invalid_project(self):
+    def invalid_project_text(self):
         if self.project:
             if not self.project.active:
                 return "This project is inactive"
