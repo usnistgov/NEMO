@@ -35,13 +35,7 @@
         <div id="area-container">
             <div id="default_content">
                 {% block default_content %}{% endblock %}
-                <div id="occupancy"></div>
-                <div id="usage_title"></div>
-                <div class="tab-pane{% if tools_exist and tab == 'tools' %} active{% endif %} info-tooltip-container"
-                     id="tools">
-                    <div id="usage"></div>
-                </div>
-                <div id="alerts"></div>
+                <div id="dynamic_content"></div>
             </div>
             <div id="error" style="display: none">
                 <h1>There was a problem communicating with the web server. Please visit the user office for assistance.</h1>
@@ -82,12 +76,26 @@
         {% with show_badge_number=customizations|get_item:"show_badge_number" %}
 		let area_access_badge_reader = new BadgeReader(send_badge_number, "{{ badge_reader.send_key }}", {% if badge_reader.record_key %}"{{ badge_reader.record_key }}",{% else %}undefined,{% endif %} {{ show_badge_number|yesno:"true,false" }});
         {% endwith %}
-		let timeout_handle = null;
+        let timeout_handle = null;
 		let countdown_handle = null;
+
+        // Reorder divs based on URL parameter order
+        const dynamic_container = $("#dynamic_content");
         const current_url_parameters = new URLSearchParams(window.location.search);
+
+        for (const [key, value] of current_url_parameters.entries()) {
+            if (key === 'occupancy') {
+                dynamic_container.append('<div id="occupancy"></div>');
+            } else if (key === 'usage') {
+                dynamic_container.append('<div id="usage_title"></div><div class="info-tooltip-container" id="tools"><div id="usage"></div></div>');
+            } else if (key === 'alerts') {
+                dynamic_container.append('<div id="alerts"></div>');
+            }
+        }
+
 		let occupancy = current_url_parameters.get('occupancy');
-		let usage = new URLSearchParams(window.location.search).get('usage') !== null;
-        let alerts = new URLSearchParams(window.location.search).get('alerts') !== null;
+		let usage = current_url_parameters.get('usage') !== null;
+        let alerts = current_url_parameters.get('alerts') !== null;
 
 		let default_content_element = $("#default_content");
 		let status_element = $("#status");
