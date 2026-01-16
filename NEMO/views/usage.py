@@ -108,16 +108,32 @@ def user_usage(request):
     trainee_filter = Q(trainee=user) | Q(project__in=user_managed_projects)
     show_only_my_usage = user_managed_projects and request.GET.get("show_only_my_usage", "enabled") == "enabled"
     csv_export = bool(request.GET.get("csv", False))
+    all_managed_users = request.GET.get("managed_user") == "all"
     managed_user_id = quiet_int(request.GET.get("managed_user"))
-    if managed_user_id and not managed_user_id in user.managed_users.values_list("id", flat=True):
+    if (
+        not all_managed_users
+        and managed_user_id
+        and not managed_user_id in user.managed_users.values_list("id", flat=True)
+    ):
         return HttpResponseBadRequest("You are not allowed to see this user's usage.")
-    if show_only_my_usage or managed_user_id:
-        # Forcing to be user only (either current user or the one selected)
-        forced_user_id = managed_user_id or user.id
-        customer_filter = Q(customer_id=forced_user_id)
-        user_filter = Q(user_id=forced_user_id)
-        trainee_filter = Q(trainee_id=forced_user_id)
-        show_only_my_usage = not managed_user_id
+    if show_only_my_usage or managed_user_id or all_managed_users:
+        if all_managed_users:
+            # forcing to be current user and managed users
+            customer_filter = Q(customer_id=user.id)
+            user_filter = Q(user_id=user.id)
+            trainee_filter = Q(trainee_id=user.id)
+            for managed_user_id in user.managed_users.values_list("id", flat=True):
+                customer_filter |= Q(customer_id=managed_user_id)
+                user_filter |= Q(user_id=managed_user_id)
+                trainee_filter |= Q(trainee_id=managed_user_id)
+                show_only_my_usage = False
+        else:
+            # Forcing to be user only (either current user or the one selected)
+            forced_user_id = managed_user_id or user.id
+            customer_filter = Q(customer_id=forced_user_id)
+            user_filter = Q(user_id=forced_user_id)
+            trainee_filter = Q(trainee_id=forced_user_id)
+            show_only_my_usage = not managed_user_id
     return usage(
         request,
         usage_filter=user_filter,
@@ -136,16 +152,36 @@ def user_usage(request):
 @require_GET
 def staff_usage(request):
     csv_export = bool(request.GET.get("csv", False))
+    all_managed_users = request.GET.get("managed_user") == "all"
     managed_user_id = quiet_int(request.GET.get("managed_user"))
-    if managed_user_id and not managed_user_id in request.user.managed_users.values_list("id", flat=True):
+    if (
+        not all_managed_users
+        and managed_user_id
+        and not managed_user_id in request.user.managed_users.values_list("id", flat=True)
+    ):
         return HttpResponseBadRequest("You are not allowed to see this user's usage.")
-    user_id = managed_user_id or request.user.id
-    usage_filter = Q(operator_id=user_id) & ~Q(user=F("operator"))
-    area_access_filter = Q(staff_charge__staff_member_id=user_id)
-    staff_charges_filter = Q(staff_member_id=user_id)
-    consumable_filter = Q(merchant_id=user_id)
-    user_filter = Q(pk__in=[])
-    trainee_filter = Q(trainer_id=user_id)
+    if all_managed_users:
+        usage_filter = Q(operator_id=request.user.id) & ~Q(user=F("operator"))
+        area_access_filter = Q(staff_charge__staff_member_id=request.user.id)
+        staff_charges_filter = Q(staff_member_id=request.user.id)
+        consumable_filter = Q(merchant_id=request.user.id)
+        user_filter = Q(pk__in=[])
+        trainee_filter = Q(trainer_id=request.user.id)
+        for managed_user_id in request.user.managed_users.values_list("id", flat=True):
+            usage_filter |= Q(operator_id=managed_user_id) & ~Q(user=F("operator"))
+            area_access_filter |= Q(staff_charge__staff_member_id=managed_user_id)
+            staff_charges_filter |= Q(staff_member_id=managed_user_id)
+            consumable_filter |= Q(merchant_id=managed_user_id)
+            user_filter |= Q(pk__in=[])
+            trainee_filter |= Q(trainer_id=managed_user_id)
+    else:
+        user_id = managed_user_id or request.user.id
+        usage_filter = Q(operator_id=user_id) & ~Q(user=F("operator"))
+        area_access_filter = Q(staff_charge__staff_member_id=user_id)
+        staff_charges_filter = Q(staff_member_id=user_id)
+        consumable_filter = Q(merchant_id=user_id)
+        user_filter = Q(pk__in=[])
+        trainee_filter = Q(trainer_id=user_id)
     return usage(
         request,
         usage_filter=usage_filter,
