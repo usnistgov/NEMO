@@ -14,6 +14,9 @@
             {% if missed_reservation_threshold %}
                 A fee will be charged to that project if you miss your reservation by more than {{ missed_reservation_threshold }} minutes.
             {% endif %}
+            {% if late_cancellation_reservation_threshold %}
+                A fee will be charged to that project if you cancel your reservation less than {{ late_cancellation_reservation_threshold }} minutes before its start time.
+            {% endif %}
         </p>
         <input type="hidden" id="project_id" name="project_id">
         {% for project in active_projects %}

@@ -10,6 +10,11 @@
                 <b><u>Missed threshold</u></b>: Reservations will be marked as missed <b>{{ tool.missed_reservation_threshold }} minutes</b> after the start if there is no usage (any usage)
             </li>
         {% endif %}
+        {% if tool.late_cancellation_reservation_threshold %}
+            <li>
+                <b><u>Late cancellation threshold</u></b>: Reservations will be marked as missed if canceled less than <b>{{ tool.late_cancellation_reservation_threshold }} minutes</b> before its start time
+            </li>
+        {% endif %}
     </ul>
     {% if tool.has_reservation_usage_rules %}<br>{% endif %}
 {% endif %}

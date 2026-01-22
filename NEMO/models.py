@@ -1400,6 +1400,12 @@ class Tool(SerializationByNameModel):
         blank=True,
         help_text='The amount of time (in minutes) that a tool reservation may go unused before it is automatically marked as "missed" and hidden from the calendar. Usage can be from any user, regardless of who the reservation was originally created for. The cancellation process is triggered by a timed job on the web server.',
     )
+    _late_cancellation_reservation_threshold = models.PositiveIntegerField(
+        db_column="late_cancellation_reservation_threshold",
+        null=True,
+        blank=True,
+        help_text='The amount of time (in minutes) before its start time that a tool reservation may be canceled before it is automatically marked as "missed" and hidden from the calendar.',
+    )
     _max_delayed_logoff = models.PositiveIntegerField(
         null=True,
         blank=True,
@@ -1763,6 +1769,19 @@ class Tool(SerializationByNameModel):
         self._missed_reservation_threshold = value
 
     @property
+    def late_cancellation_reservation_threshold(self):
+        return (
+            self.parent_tool.late_cancellation_reservation_threshold
+            if self.is_child_tool()
+            else self._late_cancellation_reservation_threshold
+        )
+
+    @late_cancellation_reservation_threshold.setter
+    def late_cancellation_reservation_threshold(self, value):
+        self.raise_setter_error_if_child_tool("late_cancellation_reservation_threshold")
+        self._late_cancellation_reservation_threshold = value
+
+    @property
     def max_delayed_logoff(self):
         return self.parent_tool.max_delayed_logoff if self.is_child_tool() else self._max_delayed_logoff
 
@@ -2109,7 +2128,9 @@ class Tool(SerializationByNameModel):
         return content
 
     def has_reservation_rules(self):
-        return any([self.reservation_horizon, self.missed_reservation_threshold])
+        return any(
+            [self.reservation_horizon, self.missed_reservation_threshold, self.late_cancellation_reservation_threshold]
+        )
 
     def has_reservation_usage_rules(self):
         return any(
@@ -2657,6 +2678,12 @@ class Area(MPTTModel):
         blank=True,
         help_text='The amount of time (in minutes) that a area reservation may go unused before it is automatically marked as "missed" and hidden from the calendar. Usage can be from any user, regardless of who the reservation was originally created for. The cancellation process is triggered by a timed job on the web server.',
     )
+    late_cancellation_reservation_threshold = models.PositiveIntegerField(
+        db_column="late_cancellation_reservation_threshold",
+        null=True,
+        blank=True,
+        help_text='The amount of time (in minutes) before its start time that a area reservation may be canceled before it is automatically marked as "missed" and hidden from the calendar. Usage can be from any user, regardless of who the reservation was originally created for. The cancellation process is triggered by a timed job on the web server.',
+    )
     minimum_usage_block_time = models.PositiveIntegerField(
         db_column="minimum_usage_block_time",
         null=True,
@@ -2746,6 +2773,7 @@ class Area(MPTTModel):
             self.requires_reservation = False
             self.reservation_horizon = None
             self.missed_reservation_threshold = None
+            self.late_cancellation_reservation_threshold = None
             self.minimum_usage_block_time = None
             self.maximum_usage_block_time = None
             self.maximum_reservations_per_day = None

@@ -482,6 +482,7 @@ def create_item_reservation(request, current_user: User, start, end, item_type: 
                     {
                         "active_projects": active_projects,
                         "missed_reservation_threshold": new_reservation.reservation_item.missed_reservation_threshold,
+                        "late_cancellation_reservation_threshold": new_reservation.reservation_item.late_cancellation_reservation_threshold,
                     },
                 )
 
@@ -745,6 +746,14 @@ def modify_reservation(request, current_user, start_delta, end_delta):
     reservation_to_cancel.cancelled = True
     reservation_to_cancel.cancellation_time = now
     reservation_to_cancel.cancelled_by = current_user
+
+    # Mark the reservation as missed if it was canceled late by non-staff users
+    late_cancellation_threshold = reservation_to_cancel.reservation_item.late_cancellation_reservation_threshold
+    if late_cancellation_threshold and not current_user.is_staff_on_tool(reservation_to_cancel.tool):
+        different_start_time = reservation_to_cancel.start != new_reservation.start
+        late_deletion = (reservation_to_cancel.start - now).total_seconds() < late_cancellation_threshold * 60
+        if different_start_time and late_deletion:
+            reservation_to_cancel.missed = True
 
     policy_problems, overridable = policy.check_to_save_reservation(
         cancelled_reservation=reservation_to_cancel,
@@ -1033,6 +1042,13 @@ def cancel_the_reservation(
         reservation.cancelled = True
         reservation.cancellation_time = timezone.now()
         reservation.cancelled_by = user_cancelling_reservation
+
+        # Mark the reservation as missed if it was canceled late by non-staff users
+        late_cancellation_threshold = reservation.reservation_item.late_cancellation_reservation_threshold
+        if late_cancellation_threshold and not user_cancelling_reservation.is_staff_on_tool(reservation.tool):
+            late_deletion = (reservation.start - timezone.now()).total_seconds() < late_cancellation_threshold * 60
+            if late_deletion:
+                reservation.missed = True
 
         if reason:
             """don't notify (just save) in this case since we are sending a specific email for the cancellation"""
