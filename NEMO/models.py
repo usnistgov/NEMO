@@ -4590,6 +4590,27 @@ class ScheduledOutage(BaseModel):
         return str(self.title)
 
 
+class UnplannedOutage(BaseModel):
+    tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
+    start = models.DateTimeField()
+    end = models.DateTimeField(blank=True, null=True)
+
+    def clean(self):
+        if self.start and self.end and self.start >= self.end:
+            raise ValidationError(
+                {
+                    "start": "Outage start time ("
+                    + format_datetime(self.start)
+                    + ") must be before the end time ("
+                    + format_datetime(self.end)
+                    + ")."
+                }
+            )
+
+    def __str__(self):
+        return f"{self.tool} unplanned outage"
+
+
 class News(BaseModel):
     title = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
     pinned = models.BooleanField(
@@ -5384,6 +5405,16 @@ def auto_delete_file_on_chemical_delete(sender, instance: Chemical, **kwargs):
 def auto_update_file_on_chemical_change(sender, instance: Chemical, **kwargs):
     """Updates old file from filesystem when corresponding `Chemical` object is updated with new file."""
     return update_media_file_on_model_update(instance, "document")
+
+
+@receiver(models.signals.post_save, sender=Tool)
+def track_tool_operational_status(sender, instance: Tool, **kwargs):
+    tool_down = UnplannedOutage.objects.filter(tool=instance, end__isnull=True).first()
+    if not instance.operational and not tool_down:
+        UnplannedOutage.objects.create(tool=instance, start=timezone.now())
+    if instance.operational and tool_down:
+        tool_down.end = timezone.now()
+        tool_down.save()
 
 
 class StaffKnowledgeBaseCategory(BaseCategory):

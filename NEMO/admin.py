@@ -115,6 +115,7 @@ from NEMO.models import (
     ToolUsageQuestions,
     ToolWaitList,
     TrainingSession,
+    UnplannedOutage,
     UsageEvent,
     User,
     UserDocuments,
@@ -1821,6 +1822,24 @@ class ScheduledOutageAdmin(admin.ModelAdmin):
         ("creator", admin.RelatedOnlyFieldListFilter),
     )
     autocomplete_fields = ["tool", "creator"]
+    date_hierarchy = "start"
+
+
+@register(UnplannedOutage)
+class UnplannedOutageAdmin(admin.ModelAdmin):
+    list_display = ("id", "tool", "start", "end")
+    list_filter = (("tool", admin.RelatedOnlyFieldListFilter),)
+    autocomplete_fields = ["tool"]
+    date_hierarchy = "start"
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
 
 
 @register(News)

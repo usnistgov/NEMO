@@ -58,6 +58,7 @@ from NEMO.models import (
     ToolUsageCounter,
     ToolUsageQuestions,
     TrainingSession,
+    UnplannedOutage,
     UsageEvent,
     User,
     UserCalendarToolList,
@@ -109,6 +110,7 @@ from NEMO.serializers import (
     ToolUsageCounterSerializer,
     ToolUsageQuestionsSerializer,
     TrainingSessionSerializer,
+    UnplannedOutageSerializer,
     UsageEventSerializer,
     UserCalendarToolListSerializer,
     UserDocumentSerializer,
@@ -645,6 +647,19 @@ class ScheduledOutageViewSet(ModelViewSet):
         "area": key_filters,
         "resource_id": key_filters,
         "resource": key_filters,
+    }
+
+
+class UnplannedOutageViewSet(ModelViewSet):
+    filename = "unplanned_outages"
+    queryset = UnplannedOutage.objects.all()
+    serializer_class = UnplannedOutageSerializer
+    filterset_fields = {
+        "id": key_filters,
+        "start": datetime_filters,
+        "end": datetime_filters,
+        "tool_id": key_filters,
+        "tool": key_filters,
     }
 
 
