@@ -1162,6 +1162,7 @@ class User(BaseModel, PermissionsMixin):
         permissions = (
             ("trigger_timed_services", "Can trigger timed services"),
             ("use_billing_api", "Can use billing API"),
+            ("use_project_billing", "Can use project billing"),
             ("kiosk", "Kiosk services"),
             ("can_impersonate_users", "Can impersonate other users"),
         )

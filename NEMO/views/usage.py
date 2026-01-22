@@ -305,12 +305,21 @@ def billing(request):
         return render(request, "usage/billing.html", base_dictionary)
 
 
-@accounting_or_user_office_or_manager_required
+@login_required
 @require_GET
 def project_usage(request):
+    user: User = request.user
+    if not user.is_active or not (
+        user.is_accounting_officer
+        or user.is_user_office
+        or user.is_facility_manager
+        or user.is_superuser
+        or user.has_perm("NEMO.use_project_billing")
+    ):
+        return redirect("login")
     base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request, get_day_timeframe)
     # Preloading user's managed projects'
-    base_dictionary["user"] = User.objects.filter(id=request.user.id).prefetch_related("managed_projects").first()
+    base_dictionary["user"] = User.objects.filter(id=user.id).prefetch_related("managed_projects").first()
 
     area_access, consumables, missed_reservations, staff_charges, training_sessions, usage_events = (
         None,
@@ -431,9 +440,19 @@ def project_usage(request):
     return render(request, "usage/usage.html", {**base_dictionary, **dictionary})
 
 
-@accounting_or_user_office_or_manager_required
+@login_required
 @require_GET
 def project_billing(request):
+    user: User = request.user
+    if not user.is_active or not (
+        user.is_accounting_officer
+        or user.is_user_office
+        or user.is_facility_manager
+        or user.is_superuser
+        or user.has_perm("NEMO.use_project_billing")
+    ):
+        return redirect("login")
+
     base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request, get_day_timeframe)
     if not base_dictionary["billing_service"]:
         return redirect("project_usage")
