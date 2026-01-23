@@ -3,7 +3,7 @@ from logging import getLogger
 from typing import Callable, List, Set
 
 from django.conf import settings
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import F, Q
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_GET
 from requests import get
 
-from NEMO.decorators import accounting_or_user_office_or_manager_required, any_staff_required
+from NEMO.decorators import any_staff_required
 from NEMO.models import (
     Account,
     AccountType,
@@ -48,6 +48,16 @@ from NEMO.views.api_billing import (
 from NEMO.views.customization import AdjustmentRequestsCustomization, ProjectsAccountsCustomization, ToolCustomization
 
 logger = getLogger(__name__)
+
+
+def project_billing_permissions(user):
+    return user.is_active and (
+        user.is_accounting_officer
+        or user.is_user_office
+        or user.is_facility_manager
+        or user.is_superuser
+        or user.has_perm("NEMO.use_project_billing")
+    )
 
 
 def get_project_applications():
@@ -305,21 +315,12 @@ def billing(request):
         return render(request, "usage/billing.html", base_dictionary)
 
 
-@login_required
+@user_passes_test(project_billing_permissions)
 @require_GET
 def project_usage(request):
-    user: User = request.user
-    if not user.is_active or not (
-        user.is_accounting_officer
-        or user.is_user_office
-        or user.is_facility_manager
-        or user.is_superuser
-        or user.has_perm("NEMO.use_project_billing")
-    ):
-        return redirect("login")
     base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request, get_day_timeframe)
     # Preloading user's managed projects'
-    base_dictionary["user"] = User.objects.filter(id=user.id).prefetch_related("managed_projects").first()
+    base_dictionary["user"] = User.objects.filter(id=request.user.id).prefetch_related("managed_projects").first()
 
     area_access, consumables, missed_reservations, staff_charges, training_sessions, usage_events = (
         None,
@@ -440,19 +441,9 @@ def project_usage(request):
     return render(request, "usage/usage.html", {**base_dictionary, **dictionary})
 
 
-@login_required
+@user_passes_test(project_billing_permissions)
 @require_GET
 def project_billing(request):
-    user: User = request.user
-    if not user.is_active or not (
-        user.is_accounting_officer
-        or user.is_user_office
-        or user.is_facility_manager
-        or user.is_superuser
-        or user.has_perm("NEMO.use_project_billing")
-    ):
-        return redirect("login")
-
     base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request, get_day_timeframe)
     if not base_dictionary["billing_service"]:
         return redirect("project_usage")
