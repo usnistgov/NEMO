@@ -4,7 +4,6 @@ import datetime
 import json
 import os
 import sys
-from collections import Counter
 from datetime import timedelta
 from enum import Enum
 from html import escape
@@ -502,7 +501,7 @@ class PhysicalAccessLevel(BaseModel):
     def accessible_at(self, time):
         return self.accessible(time)
 
-    def accessible(self, time: datetime = None):
+    def accessible(self, time: datetime.datetime = None):
         if time is not None:
             accessible_time = timezone.localtime(time)
         else:
@@ -532,7 +531,7 @@ class PhysicalAccessLevel(BaseModel):
                 return True
         return False
 
-    def ongoing_closure_time(self, time: datetime = None):
+    def ongoing_closure_time(self, time: datetime.datetime = None):
         if time is not None:
             accessible_time = timezone.localtime(time)
         else:
@@ -565,7 +564,7 @@ class TemporaryPhysicalAccess(BaseModel):
     def accessible_at(self, time):
         return self.accessible(time)
 
-    def accessible(self, time: datetime = None):
+    def accessible(self, time: datetime.datetime = None):
         if time is not None:
             accessible_time = timezone.localtime(time)
         else:
@@ -575,7 +574,7 @@ class TemporaryPhysicalAccess(BaseModel):
             and self.start_time <= accessible_time <= self.end_time
         )
 
-    def ongoing_closure_time(self, time: datetime = None):
+    def ongoing_closure_time(self, time: datetime.datetime = None):
         return self.physical_access_level.ongoing_closure_time(time)
 
     def display(self):
@@ -1163,6 +1162,7 @@ class User(BaseModel, PermissionsMixin):
         permissions = (
             ("trigger_timed_services", "Can trigger timed services"),
             ("use_billing_api", "Can use billing API"),
+            ("use_project_billing", "Can use project billing"),
             ("kiosk", "Kiosk services"),
             ("can_impersonate_users", "Can impersonate other users"),
         )
@@ -1400,6 +1400,12 @@ class Tool(SerializationByNameModel):
         null=True,
         blank=True,
         help_text='The amount of time (in minutes) that a tool reservation may go unused before it is automatically marked as "missed" and hidden from the calendar. Usage can be from any user, regardless of who the reservation was originally created for. The cancellation process is triggered by a timed job on the web server.',
+    )
+    _late_cancellation_reservation_threshold = models.PositiveIntegerField(
+        db_column="late_cancellation_reservation_threshold",
+        null=True,
+        blank=True,
+        help_text='The amount of time (in minutes) before its start time that a tool reservation may be canceled before it is automatically marked as "missed" and hidden from the calendar.',
     )
     _max_delayed_logoff = models.PositiveIntegerField(
         null=True,
@@ -1764,6 +1770,19 @@ class Tool(SerializationByNameModel):
         self._missed_reservation_threshold = value
 
     @property
+    def late_cancellation_reservation_threshold(self):
+        return (
+            self.parent_tool.late_cancellation_reservation_threshold
+            if self.is_child_tool()
+            else self._late_cancellation_reservation_threshold
+        )
+
+    @late_cancellation_reservation_threshold.setter
+    def late_cancellation_reservation_threshold(self, value):
+        self.raise_setter_error_if_child_tool("late_cancellation_reservation_threshold")
+        self._late_cancellation_reservation_threshold = value
+
+    @property
     def max_delayed_logoff(self):
         return self.parent_tool.max_delayed_logoff if self.is_child_tool() else self._max_delayed_logoff
 
@@ -2110,7 +2129,9 @@ class Tool(SerializationByNameModel):
         return content
 
     def has_reservation_rules(self):
-        return any([self.reservation_horizon, self.missed_reservation_threshold])
+        return any(
+            [self.reservation_horizon, self.missed_reservation_threshold, self.late_cancellation_reservation_threshold]
+        )
 
     def has_reservation_usage_rules(self):
         return any(
@@ -2251,7 +2272,7 @@ class ToolUsageQuestions(models.Model):
     questions = models.TextField(help_text=_("This field will only accept JSON format"))
 
     def clean(self):
-        from NEMO.widgets.dynamic_form import validate_dynamic_form_model, PostUsageGroupQuestion, DynamicForm
+        from NEMO.widgets.dynamic_form import validate_dynamic_form_model
 
         # Validate questions JSON format
         if self.questions:
@@ -2544,6 +2565,8 @@ class StaffCharge(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
     def clean(self):
         errors = validate_waive_information(self)
+        if self.end and self.start and self.end < self.start:
+            raise ValidationError({"end": "The end must be on or after the start"})
         if errors:
             raise ValidationError(errors)
 
@@ -2656,6 +2679,12 @@ class Area(MPTTModel):
         blank=True,
         help_text='The amount of time (in minutes) that a area reservation may go unused before it is automatically marked as "missed" and hidden from the calendar. Usage can be from any user, regardless of who the reservation was originally created for. The cancellation process is triggered by a timed job on the web server.',
     )
+    late_cancellation_reservation_threshold = models.PositiveIntegerField(
+        db_column="late_cancellation_reservation_threshold",
+        null=True,
+        blank=True,
+        help_text='The amount of time (in minutes) before its start time that a area reservation may be canceled before it is automatically marked as "missed" and hidden from the calendar. Usage can be from any user, regardless of who the reservation was originally created for. The cancellation process is triggered by a timed job on the web server.',
+    )
     minimum_usage_block_time = models.PositiveIntegerField(
         db_column="minimum_usage_block_time",
         null=True,
@@ -2745,6 +2774,7 @@ class Area(MPTTModel):
             self.requires_reservation = False
             self.reservation_horizon = None
             self.missed_reservation_threshold = None
+            self.late_cancellation_reservation_threshold = None
             self.minimum_usage_block_time = None
             self.maximum_usage_block_time = None
             self.maximum_reservations_per_day = None
@@ -2864,6 +2894,8 @@ class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
     def clean(self):
         errors = validate_waive_information(self)
+        if self.end and self.start and self.end < self.start:
+            raise ValidationError({"end": "The end must be on or after the start"})
         if errors:
             raise ValidationError(errors)
 
@@ -3112,6 +3144,9 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     def duration(self):
         return self.end - self.start
 
+    def duration_rounded(self):
+        return timedelta(seconds=round(self.duration().total_seconds()))
+
     def duration_for_policy(self):
         # This method returns the duration that counts for policy checks.
         # i.e. reservation duration minus any time when the policy is off
@@ -3188,6 +3223,8 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
     def clean(self):
         errors = validate_waive_information(self)
+        if self.end and self.start and self.end < self.start:
+            raise ValidationError({"end": "The end must be on or after the start"})
         if errors:
             raise ValidationError(errors)
 
@@ -3264,6 +3301,8 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
     def clean(self):
         errors = validate_waive_information(self)
+        if self.end and self.start and self.end < self.start:
+            raise ValidationError({"end": "The end must be on or after the start"})
         if errors:
             raise ValidationError(errors)
 
@@ -3448,7 +3487,7 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
         if self.quantity is not None and self.quantity < 1:
             errors["quantity"] = "Please specify a valid quantity of items to withdraw."
         if self.consumable_id:
-            if not self.consumable.reusable and self.quantity > self.consumable.quantity:
+            if not self.consumable.reusable and self.quantity is not None and self.quantity > self.consumable.quantity:
                 errors[NON_FIELD_ERRORS] = (
                     f'There are not enough "{self.consumable.name}". (The current quantity in stock is {str(self.consumable.quantity)}). Please order more as soon as possible.'
                 )
@@ -3585,10 +3624,10 @@ class RecurringConsumableCharge(BaseModel, RecurrenceMixin):
             )
         )
 
-    def next_charge(self, inc=False) -> datetime:
+    def next_charge(self, inc=False) -> datetime.datetime:
         return self.next_recurrence(inc)
 
-    def invalid_customer(self):
+    def invalid_customer_text(self):
         from NEMO.views.customization import RecurringChargesCustomization
 
         skip_customer = RecurringChargesCustomization.get_bool("recurring_charges_skip_customer_validation")
@@ -3600,7 +3639,7 @@ class RecurringConsumableCharge(BaseModel, RecurrenceMixin):
                     f"The facility access for this user expired on {format_datetime(self.customer.access_expiration)}"
                 )
 
-    def invalid_project(self):
+    def invalid_project_text(self):
         if self.project:
             if not self.project.active:
                 return "This project is inactive"
@@ -4552,6 +4591,27 @@ class ScheduledOutage(BaseModel):
         return str(self.title)
 
 
+class UnplannedOutage(BaseModel):
+    tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
+    start = models.DateTimeField()
+    end = models.DateTimeField(blank=True, null=True)
+
+    def clean(self):
+        if self.start and self.end and self.start >= self.end:
+            raise ValidationError(
+                {
+                    "start": "Outage start time ("
+                    + format_datetime(self.start)
+                    + ") must be before the end time ("
+                    + format_datetime(self.end)
+                    + ")."
+                }
+            )
+
+    def __str__(self):
+        return f"{self.tool} unplanned outage"
+
+
 class News(BaseModel):
     title = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
     pinned = models.BooleanField(
@@ -5346,6 +5406,16 @@ def auto_delete_file_on_chemical_delete(sender, instance: Chemical, **kwargs):
 def auto_update_file_on_chemical_change(sender, instance: Chemical, **kwargs):
     """Updates old file from filesystem when corresponding `Chemical` object is updated with new file."""
     return update_media_file_on_model_update(instance, "document")
+
+
+@receiver(models.signals.post_save, sender=Tool)
+def track_tool_operational_status(sender, instance: Tool, **kwargs):
+    tool_down = UnplannedOutage.objects.filter(tool=instance, end__isnull=True).first()
+    if not instance.operational and not tool_down:
+        UnplannedOutage.objects.create(tool=instance, start=timezone.now())
+    if instance.operational and tool_down:
+        tool_down.end = timezone.now()
+        tool_down.save()
 
 
 class StaffKnowledgeBaseCategory(BaseCategory):

@@ -482,6 +482,7 @@ def create_item_reservation(request, current_user: User, start, end, item_type: 
                     {
                         "active_projects": active_projects,
                         "missed_reservation_threshold": new_reservation.reservation_item.missed_reservation_threshold,
+                        "late_cancellation_reservation_threshold": new_reservation.reservation_item.late_cancellation_reservation_threshold,
                     },
                 )
 
@@ -745,6 +746,10 @@ def modify_reservation(request, current_user, start_delta, end_delta):
     reservation_to_cancel.cancelled = True
     reservation_to_cancel.cancellation_time = now
     reservation_to_cancel.cancelled_by = current_user
+
+    if reservation_to_cancel.start != new_reservation.start:
+        # Only check if it has a different time, since penalties for extending a reservation
+        check_for_late_cancellation(current_user, reservation_to_cancel)
 
     policy_problems, overridable = policy.check_to_save_reservation(
         cancelled_reservation=reservation_to_cancel,
@@ -1034,6 +1039,8 @@ def cancel_the_reservation(
         reservation.cancellation_time = timezone.now()
         reservation.cancelled_by = user_cancelling_reservation
 
+        check_for_late_cancellation(user_cancelling_reservation, reservation)
+
         if reason:
             """don't notify (just save) in this case since we are sending a specific email for the cancellation"""
             reservation.save()
@@ -1076,6 +1083,22 @@ def cancel_the_reservation(
             reservation.save_and_notify()
 
     return response
+
+
+# Mark the reservation as missed if it was canceled late by non-staff users
+def check_for_late_cancellation(user, reservation):
+    tool = reservation.tool
+    if tool and (
+        not tool.operational or tool.required_resource_is_unavailable() or tool.scheduled_outage_in_progress()
+    ):
+        # If the tool is down, do not mark as missed
+        return
+
+    late_cancellation_threshold = reservation.reservation_item.late_cancellation_reservation_threshold
+    if late_cancellation_threshold and not user.is_staff_on_tool(reservation.tool):
+        late_deletion = (reservation.start - timezone.now()).total_seconds() < late_cancellation_threshold * 60
+        if late_deletion:
+            reservation.missed = True
 
 
 def send_user_created_reservation_notification(reservation: Reservation):

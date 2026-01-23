@@ -95,10 +95,10 @@
                     <td>{{ recurring_charge.name }}</td>
                     {% if different_quantities|length != 1 or page.0.quantity != 1 %}<td>{{ recurring_charge.quantity }}</td>{% endif %}
                     <td>{{ recurring_charge.consumable }}</td>
-                    <td {% if recurring_charge.invalid_customer %}class="danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_customer|default:'' }}"{% endif %}>
+                    <td {% if recurring_charge.invalid_customer_text %}class="danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_customer_text|default:'' }}"{% endif %}>
                         {{ recurring_charge.customer|default_if_none:"" }}
                     </td>
-                    <td {% if recurring_charge.invalid_project %}class="danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_project|default:'' }}"{% endif %}>
+                    <td {% if recurring_charge.invalid_project_text %}class="danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_project_text|default:'' }}"{% endif %}>
                         {{ recurring_charge.project|default_if_none:"" }}
                     </td>
                     <td style="white-space: nowrap;">

@@ -38,6 +38,21 @@
                 </div>
             </div>
         </div>
+        <div class="form-group">
+            <label class="control-label col-md-2">Lock tool on problem shutdown</label>
+            <div class="col-md-10">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="tool_interlock_ask_when_shutting_down_problem"
+                               {% if tool_interlock_ask_when_shutting_down_problem %}checked{% endif %}
+                               value="enabled">
+                        Check this box to offer staff members (not regular users) the option to lock a tool when reporting a shutdown problem.
+                    </label>
+                    <br />
+                </div>
+            </div>
+        </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <div class="text-center">{% button type="save" value="Save settings" %}</div>
     </form>

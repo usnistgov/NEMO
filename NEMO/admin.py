@@ -115,6 +115,7 @@ from NEMO.models import (
     ToolUsageQuestions,
     ToolWaitList,
     TrainingSession,
+    UnplannedOutage,
     UsageEvent,
     User,
     UserDocuments,
@@ -271,7 +272,17 @@ class ToolAdmin(admin.ModelAdmin):
             },
         ),
         ("Approval", {"fields": ("_adjustment_request_reviewers",)}),
-        ("Reservation", {"fields": ("_reservation_horizon", "_missed_reservation_threshold", "_abuse_weight")}),
+        (
+            "Reservation",
+            {
+                "fields": (
+                    "_reservation_horizon",
+                    "_missed_reservation_threshold",
+                    "_late_cancellation_reservation_threshold",
+                    "_abuse_weight",
+                )
+            },
+        ),
         (
             "Usage policy",
             {
@@ -514,7 +525,17 @@ class AreaAdmin(DraggableMPTTAdmin):
             },
         ),
         ("Approval", {"fields": ("adjustment_request_reviewers", "access_request_reviewers")}),
-        ("Reservation", {"fields": ("reservation_horizon", "missed_reservation_threshold", "abuse_weight")}),
+        (
+            "Reservation",
+            {
+                "fields": (
+                    "reservation_horizon",
+                    "missed_reservation_threshold",
+                    "late_cancellation_reservation_threshold",
+                    "abuse_weight",
+                )
+            },
+        ),
         (
             "Policy",
             {
@@ -811,7 +832,7 @@ class ReservationAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.M
         "project",
         "start",
         "end",
-        "duration",
+        "duration_rounded",
         "cancelled",
         "missed",
         "shortened",
@@ -1801,6 +1822,24 @@ class ScheduledOutageAdmin(admin.ModelAdmin):
         ("creator", admin.RelatedOnlyFieldListFilter),
     )
     autocomplete_fields = ["tool", "creator"]
+    date_hierarchy = "start"
+
+
+@register(UnplannedOutage)
+class UnplannedOutageAdmin(admin.ModelAdmin):
+    list_display = ("id", "tool", "start", "end")
+    list_filter = (("tool", admin.RelatedOnlyFieldListFilter),)
+    autocomplete_fields = ["tool"]
+    date_hierarchy = "start"
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
 
 
 @register(News)

@@ -45,13 +45,7 @@
             <div class="container-fluid">
                 <div id="default_content">
                     {{ customizations|get_item:"kiosk_message"|default_if_none:"<h1>Scan your badge to control tools</h1>"|safe }}
-                    <div id="occupancy"></div>
-                    <div id="usage_title"></div>
-                    <div class="tab-pane{% if tools_exist and tab == 'tools' %} active{% endif %} info-tooltip-container"
-                         id="tools">
-                        <div id="usage"></div>
-                    </div>
-                    <div id="alerts"></div>
+                    <div id="dynamic_content"></div>
                 </div>
                 <div id="error" style="display: none">
                     <h1>There was a problem communicating with the web server. Please visit the user office for assistance.</h1>
@@ -100,7 +94,21 @@
         {% endwith %}
 		let timeout_handle = null;
 		let countdown_handle = null;
+
+        // Reorder divs based on URL parameter order
+        const dynamic_container = $("#dynamic_content");
         const current_url_parameters = new URLSearchParams(window.location.search);
+
+        for (const [key, value] of current_url_parameters.entries()) {
+            if (key === 'occupancy') {
+                dynamic_container.append('<div id="occupancy"></div>');
+            } else if (key === 'usage') {
+                dynamic_container.append('<div id="usage_title"></div><div class="info-tooltip-container" id="tools"><div id="usage"></div></div>');
+            } else if (key === 'alerts') {
+                dynamic_container.append('<div id="alerts"></div>');
+            }
+        }
+
 		const occupancy = current_url_parameters.get("occupancy");
         const usage = current_url_parameters.get("usage") !== null;
         const alerts = current_url_parameters.get("alerts") !== null;
@@ -184,9 +192,9 @@
 		}
 		function revert_to_default_content()
 		{
-			fetch_occupancy();
-            fetch_usage();
-            fetch_alerts();
+			if (occupancy) fetch_occupancy();
+            if (usage) fetch_usage();
+            if (alerts) fetch_alerts();
 			clear_timeout();
 			close_numpads();
 			close_keyboards();
@@ -487,10 +495,7 @@
 		}
 		function fetch_occupancy()
 		{
-            if(occupancy)
-            {
-			    ajax_get('{% url 'kiosk_occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
-            }
+            ajax_get('{% url 'kiosk_occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
 		}
         function logout_user(tool_id, badge_number)
 		{
@@ -499,25 +504,19 @@
 		}
         function fetch_usage()
 		{
-            if(usage)
-            {
-                $("#usage_title").html("<h2>Tools in use</h2>")
-                ajax_get('{% url 'kiosk_usage' %}', {'interest': 'tools'},
-                    function(response) {
-                        $("#usage").html(response);
-                        $(".in_use").css("display", "table-row");
-                        $(".idle").hide();
-                        $(".glyphicon-remove-circle").hide();
-                    }
-                );
-            }
+            $("#usage_title").html("<h2>Tools in use</h2>")
+            ajax_get('{% url 'kiosk_usage' %}', {'interest': 'tools'},
+                function(response) {
+                    $("#usage").html(response);
+                    $(".in_use").css("display", "table-row");
+                    $(".idle").hide();
+                    $(".glyphicon-remove-circle").hide();
+                }
+            );
         }
         function fetch_alerts()
         {
-            if(alerts)
-            {
-                $("#alerts").load("{% url 'kiosk_alerts' %}");
-            }
+            $("#alerts").load("{% url 'kiosk_alerts' %}");
         }
 		function close_numpads()
 		{

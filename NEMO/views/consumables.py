@@ -39,11 +39,19 @@ consumables_logger = getLogger(__name__)
 
 def consumable_permissions(user):
     user_allowed = ApplicationCustomization.get_bool("consumable_user_self_checkout")
-    return user.is_active and (user_allowed or user.is_staff or user.is_user_office or user.is_superuser)
+    return user.is_active and (
+        user_allowed
+        or user.is_staff
+        or user.is_user_office
+        or user.is_superuser
+        or user.has_perm("NEMO.add_consumablewithdraw")
+    )
 
 
 def self_checkout(user) -> bool:
-    return user.is_active and not (user.is_staff or user.is_user_office or user.is_superuser)
+    return user.is_active and not (
+        user.is_staff or user.is_user_office or user.is_superuser or user.has_perm("NEMO.add_consumablewithdraw")
+    )
 
 
 @login_required
@@ -210,10 +218,10 @@ def export_recurring_charges(request):
         errors = []
         if not charge.is_empty() and not next_charge:
             errors.append("This item expired")
-        if charge.invalid_customer():
-            errors.append(charge.invalid_customer())
-        if charge.invalid_project():
-            errors.append(charge.invalid_project())
+        if charge.invalid_customer_text():
+            errors.append(charge.invalid_customer_text())
+        if charge.invalid_project_text():
+            errors.append(charge.invalid_project_text())
         table.add_row(
             {
                 "name": charge.name,

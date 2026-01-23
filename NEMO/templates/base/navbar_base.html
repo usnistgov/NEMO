@@ -59,7 +59,7 @@
                 {% endblock %}
                 {% if user.is_any_part_of_staff or user.is_tool_superuser or user.is_tool_staff or user.is_project_pi or user.get_all_permissions and "django.contrib.admin"|app_installed %}
                     <li class="dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Administration <b class="caret"></b></a>
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Administration<b class="caret"></b></a>
                         <ul id="admin-nav" class="dropdown-menu">
                             {% block navbar_admin %}
                                 {# The navigation_url tag will display the item if the URL name can be reversed. #}
@@ -85,7 +85,7 @@
                                     {% endif %}
                                     {% navigation_url 'customization' 'Customization' user.is_superuser %}
                                     {% navigation_url 'email_broadcast' 'Email' %}
-                                    {% navigation_url 'project_billing' 'Project billing' user.is_accounting_officer user.is_user_office user.is_facility_manager user.is_superuser %}
+                                    {% navigation_url 'project_billing' 'Project billing' user.is_accounting_officer user.is_user_office user.is_facility_manager user.is_superuser perms.NEMO.use_project_billing %}
                                     {% navigation_url 'recurring_charges' recurring_charges_name user.is_user_office user.is_facility_manager user.is_superuser %}
                                     {% navigation_url 'staff_charges' 'Remote work' user.is_staff user.is_superuser %}
                                     {% navigation_url 'resources' 'Resources' user.is_staff user.is_superuser %}
@@ -114,6 +114,14 @@
                                 {% endif %}
                                 {% if perms.NEMO.can_impersonate_users %}
                                     {% navigation_url 'impersonate' 'Impersonate' %}
+                                {% endif %}
+                                {% if not user.is_any_part_of_staff %}
+                                    {% if perms.NEMO.use_project_billing %}
+                                        {% navigation_url 'project_billing' 'Project billing' %}
+                                    {% endif %}
+                                    {% if perms.NEMO.add_consumablewithdraw %}
+                                        {% navigation_url 'consumables' 'Supplies' %}
+                                    {% endif %}
                                 {% endif %}
                             {% endblock %}
                         </ul>

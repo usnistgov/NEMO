@@ -63,6 +63,7 @@ class ToolTestCase(NEMOTestCaseMixin, TestCase):
             "_minimum_time_between_reservations": 10,
             "_maximum_future_reservation_time": 20,
             "_missed_reservation_threshold": 30,
+            "_late_cancellation_reservation_threshold": 5,
             "_max_delayed_logoff": 120,
             "_policy_off_between_times": True,
             "_policy_off_start_time": "5:00 PM",
@@ -120,6 +121,9 @@ class ToolTestCase(NEMOTestCaseMixin, TestCase):
         self.assertEqual(tool.minimum_time_between_reservations, alternate_tool.minimum_time_between_reservations)
         self.assertEqual(tool.maximum_future_reservation_time, alternate_tool.maximum_future_reservation_time)
         self.assertEqual(tool.missed_reservation_threshold, alternate_tool.missed_reservation_threshold)
+        self.assertEqual(
+            tool.late_cancellation_reservation_threshold, alternate_tool.late_cancellation_reservation_threshold
+        )
         self.assertEqual(tool.max_delayed_logoff, alternate_tool.max_delayed_logoff)
         self.assertEqual(tool.policy_off_between_times, alternate_tool.policy_off_between_times)
         self.assertEqual(tool.policy_off_start_time, alternate_tool.policy_off_start_time)

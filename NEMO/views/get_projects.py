@@ -1,11 +1,15 @@
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET
 
-from NEMO.decorators import any_staff_required, staff_member_or_tool_superuser_or_tool_staff_required
+from NEMO.decorators import staff_member_or_tool_superuser_or_tool_staff_required
 from NEMO.models import Tool, User
+
+
+def projects_for_consumable_permissions(user):
+    return user.is_active and (user.is_any_part_of_staff or user.has_perm("NEMO.add_consumablewithdraw"))
 
 
 @staff_member_or_tool_superuser_or_tool_staff_required
@@ -14,7 +18,7 @@ def get_projects_for_training(request):
     return get_projects(request)
 
 
-@any_staff_required
+@user_passes_test(projects_for_consumable_permissions)
 @require_GET
 def get_projects_for_consumables(request):
     # Only return project for which consumable withdrawals are allowed

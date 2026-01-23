@@ -148,6 +148,7 @@
                                 style="text-align-last:center"
                                 title="Select a user to see usage for only that user">
                             <option selected value=""></option>
+                            <option value="all" {% if selected_managed_user == "all" %}selected{% endif %}>All users</option>
                             {% for managed_user in user.managed_users.all %}
                                 <option value="{{ managed_user.id }}"
                                         {% if selected_managed_user and selected_managed_user == managed_user.id|stringformat:'s' %}selected{% endif %}>

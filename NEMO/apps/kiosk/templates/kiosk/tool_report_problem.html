@@ -100,7 +100,7 @@
                     <span style="padding-left:10px;">Shut down the tool so that it may not be used until this problem is resolved.</span>
                 </label>
             </div>
-            {% if customer|is_staff_on_tool:tool and tool.interlock %}
+            {% if customer|is_staff_on_tool:tool and tool.interlock and customizations|get_item:"tool_interlock_ask_when_shutting_down_problem" == "enabled" %}
                 <div class="checkbox" id="tool_problem_lock">
                     <label>
                         <input name="lock" type="checkbox" {% if form.lock.value %}checked{% endif %} />
