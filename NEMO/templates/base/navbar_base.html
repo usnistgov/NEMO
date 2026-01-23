@@ -115,8 +115,13 @@
                                 {% if perms.NEMO.can_impersonate_users %}
                                     {% navigation_url 'impersonate' 'Impersonate' %}
                                 {% endif %}
-                                {% if not user.is_any_part_of_staff and perms.NEMO.use_project_billing %}
-                                    {% navigation_url 'project_billing' 'Project billing' %}
+                                {% if not user.is_any_part_of_staff %}
+                                    {% if perms.NEMO.use_project_billing %}
+                                        {% navigation_url 'project_billing' 'Project billing' %}
+                                    {% endif %}
+                                    {% if perms.NEMO.add_consumablewithdraw %}
+                                        {% navigation_url 'consumables' 'Supplies' %}
+                                    {% endif %}
                                 {% endif %}
                             {% endblock %}
                         </ul>
