@@ -666,10 +666,6 @@ class ToolCustomization(CustomizationBase):
         "tool_control_use_for_other_remote": "Use this tool for a remote project",
         "tool_control_note_show": "",
         "tool_control_note_copy_reservation": "",
-        "tool_qualification_reminder_days": "",
-        "tool_qualification_expiration_days": "",
-        "tool_qualification_expiration_never_used_days": "",
-        "tool_qualification_cc": "",
         "tool_problem_max_image_size_pixels": "750",
         "tool_problem_send_to_all_qualified_users": "",
         "tool_problem_allow_regular_user_preferences": "",
@@ -690,20 +686,12 @@ class ToolCustomization(CustomizationBase):
         if (
             name
             in [
-                "tool_qualification_expiration_days",
                 "tool_problem_max_image_size_pixels",
                 "tool_configuration_near_future_days",
             ]
             and value
         ):
             validate_integer(value)
-        if name == "tool_qualification_reminder_days" and value:
-            # Check that we have an integer or a list of integers
-            validate_comma_separated_integer_list(value)
-        elif name == "tool_qualification_cc":
-            recipients = tuple([e for e in value.split(",") if e])
-            for email in recipients:
-                validate_email(email)
         if name == "tool_control_configuration_setting_template" and value:
             try:
                 Template(value).render(Context({"current_setting": "setting"}))

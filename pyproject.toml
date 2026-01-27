@@ -1,6 +1,6 @@
 [project]
 name = "NEMO"
-version = "7.3.3"
+version = "7.3.4.dev"
 description = "NEMO is a laboratory logistics web application. Use it to schedule reservations, control tool access, track maintenance issues, and more."
 keywords = ["NEMO"]
 readme = "README.md"

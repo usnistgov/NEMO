@@ -55,6 +55,7 @@ from NEMO.models import (
     TemporaryPhysicalAccessRequest,
     Tool,
     ToolCredentials,
+    ToolQualificationExpiration,
     ToolUsageCounter,
     ToolUsageQuestions,
     TrainingSession,
@@ -105,6 +106,7 @@ from NEMO.serializers import (
     TemporaryPhysicalAccessRequestSerializer,
     ToolCommentSerializer,
     ToolCredentialsSerializer,
+    ToolQualificationExpirationSerializer,
     ToolSerializer,
     ToolStatusSerializer,
     ToolUsageCounterSerializer,
@@ -403,7 +405,20 @@ class ToolViewSet(ModelViewSet):
         "_requires_area_access": key_filters,
         "_requires_area_occupancy_minimum": number_filters,
         "_problem_shutdown_enabled": boolean_filters,
-        "_qualifications_never_expire": boolean_filters,
+    }
+
+
+class ToolQualificationExpirationViewSet(ModelViewSet):
+    filename = "tool_qualification_expirations"
+    queryset = ToolQualificationExpiration.objects.all()
+    serializer_class = ToolQualificationExpirationSerializer
+    filterset_fields = {
+        "id": key_filters,
+        "tool": key_filters,
+        "reminder_days": string_filters,
+        "expiration_days": number_filters,
+        "expiration_never_used_days": number_filters,
+        "notification_email": string_filters,
     }
 
 

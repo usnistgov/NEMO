@@ -1310,11 +1310,6 @@ class Tool(SerializationByNameModel):
     _interlock = models.OneToOneField(
         "Interlock", db_column="interlock_id", blank=True, null=True, on_delete=models.SET_NULL
     )
-    _qualifications_never_expire = models.BooleanField(
-        default=False,
-        db_column="qualifications_never_expire",
-        help_text="Check this box if qualifications for this tool should never expire (even if the tool qualification expiration feature is enabled).",
-    )
     # Policy fields:
     _requires_area_access = TreeForeignKey(
         "Area",
@@ -1458,17 +1453,6 @@ class Tool(SerializationByNameModel):
     def category(self, value):
         self.raise_setter_error_if_child_tool("category")
         self._category = value
-
-    @property
-    def qualifications_never_expire(self):
-        return (
-            self.parent_tool.qualifications_never_expire if self.is_child_tool() else self._qualifications_never_expire
-        )
-
-    @qualifications_never_expire.setter
-    def qualifications_never_expire(self, value):
-        self.raise_setter_error_if_child_tool("qualifications_never_expire")
-        self._qualifications_never_expire = value
 
     @property
     def description(self):
@@ -2315,6 +2299,40 @@ class ToolDocuments(BaseDocumentModel):
 
     class Meta(BaseDocumentModel.Meta):
         verbose_name_plural = "Tool documents"
+
+
+class ToolQualificationExpiration(BaseModel):
+    tool = models.OneToOneField(Tool, on_delete=models.CASCADE)
+    reminder_days = models.CharField(
+        null=True,
+        blank=True,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
+        validators=[validate_comma_separated_integer_list],
+        help_text="The (optional) number of days to send a reminder prior to the user's tool qualification expiration (below). A comma-separated list can be used for multiple reminders. This applies to both expiration cases.",
+    )
+    expiration_days = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="The number of days from the user’s last tool use until the qualification expires.",
+    )
+    expiration_never_used_days = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Number of days from the user's first qualification until the qualification expires.",
+    )
+    notification_email = fields.MultiEmailField(
+        null=True,
+        blank=True,
+        help_text="The email addresses to cc on tool qualification expiration and on reminders. Separate multiple emails with commas.",
+    )
+
+    def get_reminder_days(self) -> List[int]:
+        if not self.reminder_days:
+            return []
+        return [int(days) for days in self.reminder_days.split(",") if days]
+
+    class Meta:
+        ordering = ["tool_id"]
 
 
 class ToolQualificationGroup(SerializationByNameModel):

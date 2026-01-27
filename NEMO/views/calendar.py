@@ -389,7 +389,6 @@ def configuration_agenda_event_feed(request, start, end):
         if item_id and not all_tools:
             events = events.filter(**{f"{item_type.value}__id": item_id})
 
-    # TODO: Filter events that only have to do with the current user's primary, backup and superuser tools.
     personal_schedule = request.GET.get("personal_schedule")
 
     dictionary = {

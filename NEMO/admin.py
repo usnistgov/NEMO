@@ -110,6 +110,7 @@ from NEMO.models import (
     Tool,
     ToolCredentials,
     ToolDocuments,
+    ToolQualificationExpiration,
     ToolQualificationGroup,
     ToolUsageCounter,
     ToolUsageQuestions,
@@ -203,13 +204,20 @@ class ToolAdminForm(forms.ModelForm):
         return cleaned_data
 
 
+class ToolQualificationExpirationInline(admin.StackedInline):
+    model = ToolQualificationExpiration
+    can_delete = False
+    min_num = 1
+    verbose_name_plural = "qualification expiration"
+
+
 class ToolDocumentsInline(DocumentModelAdmin):
     model = ToolDocuments
 
 
 @register(Tool)
 class ToolAdmin(admin.ModelAdmin):
-    inlines = [ToolDocumentsInline]
+    inlines = [ToolQualificationExpirationInline, ToolDocumentsInline]
     list_display = (
         "name_display",
         "_category",
@@ -247,7 +255,6 @@ class ToolAdmin(admin.ModelAdmin):
                     "_category",
                     "_operation_mode",
                     "qualified_users",
-                    "_qualifications_never_expire",
                     "_problem_shutdown_enabled",
                 )
             },
