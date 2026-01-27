@@ -1310,6 +1310,33 @@ class Tool(SerializationByNameModel):
     _interlock = models.OneToOneField(
         "Interlock", db_column="interlock_id", blank=True, null=True, on_delete=models.SET_NULL
     )
+    # Qualification expiration fields
+    _qualification_reminder_days = models.CharField(
+        db_column="qualification_reminder_days",
+        null=True,
+        blank=True,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
+        validators=[validate_comma_separated_integer_list],
+        help_text="The (optional) number of days to send a reminder prior to the user's tool qualification expiration (below). A comma-separated list can be used for multiple reminders. This applies to both expiration cases.",
+    )
+    _qualification_expiration_days = models.PositiveIntegerField(
+        db_column="qualification_expiration_days",
+        null=True,
+        blank=True,
+        help_text="The number of days from the user’s last tool use until the qualification expires.",
+    )
+    _qualification_expiration_never_used_days = models.PositiveIntegerField(
+        db_column="qualification_expiration_never_used_days",
+        null=True,
+        blank=True,
+        help_text="Number of days from the user's first qualification until the qualification expires (if the user never used the tool).",
+    )
+    _qualification_notification_email = fields.MultiEmailField(
+        db_column="qualification_notification_email",
+        null=True,
+        blank=True,
+        help_text="The email addresses to cc on tool qualification expiration and on reminders. Separate multiple emails with commas.",
+    )
     # Policy fields:
     _requires_area_access = TreeForeignKey(
         "Area",
@@ -1601,6 +1628,56 @@ class Tool(SerializationByNameModel):
     def interlock(self, value):
         self.raise_setter_error_if_child_tool("interlock")
         self._interlock = value
+
+    @property
+    def qualification_reminder_days(self):
+        return (
+            self.parent_tool.qualification_reminder_days if self.is_child_tool() else self._qualification_reminder_days
+        )
+
+    @qualification_reminder_days.setter
+    def qualification_reminder_days(self, value):
+        self.raise_setter_error_if_child_tool("qualification_reminder_days")
+        self._qualification_reminder_days = value
+
+    @property
+    def qualification_expiration_days(self):
+        return (
+            self.parent_tool.qualification_expiration_days
+            if self.is_child_tool()
+            else self._qualification_expiration_days
+        )
+
+    @qualification_expiration_days.setter
+    def qualification_expiration_days(self, value):
+        self.raise_setter_error_if_child_tool("qualification_expiration_days")
+        self._qualification_expiration_days = value
+
+    @property
+    def qualification_expiration_never_used_days(self):
+        return (
+            self.parent_tool.qualification_expiration_never_used_days
+            if self.is_child_tool()
+            else self._qualification_expiration_never_used_days
+        )
+
+    @qualification_expiration_never_used_days.setter
+    def qualification_expiration_never_used_days(self, value):
+        self.raise_setter_error_if_child_tool("qualification_expiration_never_used_days")
+        self._qualification_expiration_never_used_days = value
+
+    @property
+    def qualification_notification_email(self):
+        return (
+            self.parent_tool.qualification_notification_email
+            if self.is_child_tool()
+            else self._qualification_notification_email
+        )
+
+    @qualification_notification_email.setter
+    def qualification_notification_email(self, value):
+        self.raise_setter_error_if_child_tool("qualification_notification_email")
+        self._qualification_notification_email = value
 
     @property
     def requires_area_access(self):
@@ -2178,6 +2255,11 @@ class Tool(SerializationByNameModel):
         else:
             raise ValueError(f"A {'project' if user else 'user'} must be provided for usage questions")
 
+    def get_qualification_reminder_days(self) -> List[int]:
+        if not self.qualification_reminder_days:
+            return []
+        return [int(days) for days in self.qualification_reminder_days.split(",") if days]
+
     def clean(self):
         errors = {}
         if self.parent_tool_id:
@@ -2299,40 +2381,6 @@ class ToolDocuments(BaseDocumentModel):
 
     class Meta(BaseDocumentModel.Meta):
         verbose_name_plural = "Tool documents"
-
-
-class ToolQualificationExpiration(BaseModel):
-    tool = models.OneToOneField(Tool, on_delete=models.CASCADE)
-    reminder_days = models.CharField(
-        null=True,
-        blank=True,
-        max_length=CHAR_FIELD_MEDIUM_LENGTH,
-        validators=[validate_comma_separated_integer_list],
-        help_text="The (optional) number of days to send a reminder prior to the user's tool qualification expiration (below). A comma-separated list can be used for multiple reminders. This applies to both expiration cases.",
-    )
-    expiration_days = models.PositiveIntegerField(
-        null=True,
-        blank=True,
-        help_text="The number of days from the user’s last tool use until the qualification expires.",
-    )
-    expiration_never_used_days = models.PositiveIntegerField(
-        null=True,
-        blank=True,
-        help_text="Number of days from the user's first qualification until the qualification expires.",
-    )
-    notification_email = fields.MultiEmailField(
-        null=True,
-        blank=True,
-        help_text="The email addresses to cc on tool qualification expiration and on reminders. Separate multiple emails with commas.",
-    )
-
-    def get_reminder_days(self) -> List[int]:
-        if not self.reminder_days:
-            return []
-        return [int(days) for days in self.reminder_days.split(",") if days]
-
-    class Meta:
-        ordering = ["tool_id"]
 
 
 class ToolQualificationGroup(SerializationByNameModel):

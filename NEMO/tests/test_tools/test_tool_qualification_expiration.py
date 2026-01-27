@@ -5,7 +5,7 @@ from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.utils import timezone
 
-from NEMO.models import Account, EmailLog, Project, Qualification, Tool, ToolQualificationExpiration, UsageEvent, User
+from NEMO.models import Account, EmailLog, Project, Qualification, Tool, UsageEvent, User
 from NEMO.tests.test_utilities import NEMOTestCaseMixin
 from NEMO.views.customization import EmailsCustomization
 from NEMO.views.timed_services import do_manage_tool_qualifications
@@ -45,7 +45,8 @@ class ToolQualificationTestCase(NEMOTestCaseMixin, TestCase):
         )
 
         # Never used days set but not regular days
-        ToolQualificationExpiration.objects.create(tool=self.tool, expiration_never_used_days=3)
+        self.tool.qualification_expiration_never_used_days = 3
+        self.tool.save()
         EmailsCustomization.set("user_office_email_address", "user_office@example.com")
         # Trigger the expiration timed service
         do_manage_tool_qualifications()
@@ -59,7 +60,8 @@ class ToolQualificationTestCase(NEMOTestCaseMixin, TestCase):
         Qualification.objects.create(tool=self.tool, user=self.user, qualified_on=qualification_date)
 
         # Expiration days are set but never used days are not
-        ToolQualificationExpiration.objects.create(tool=self.tool, expiration_days=3)
+        self.tool.qualification_expiration_days = 3
+        self.tool.save()
         EmailsCustomization.set("user_office_email_address", "user_office@example.com")
         # Trigger the expiration timed service
         do_manage_tool_qualifications()
@@ -72,7 +74,9 @@ class ToolQualificationTestCase(NEMOTestCaseMixin, TestCase):
         qualification_date = datetime.today() - timedelta(days=3)
         Qualification.objects.create(tool=self.tool, user=self.user, qualified_on=qualification_date)
 
-        ToolQualificationExpiration.objects.create(tool=self.tool, expiration_days=3, expiration_never_used_days=3)
+        self.tool.qualification_expiration_days = 3
+        self.tool.qualification_expiration_never_used_days = 3
+        self.tool.save()
         # Trigger the expiration timed service
         do_manage_tool_qualifications()
         # Qualification was NOT removed
@@ -83,7 +87,9 @@ class ToolQualificationTestCase(NEMOTestCaseMixin, TestCase):
         qualification_date = datetime.today() - timedelta(days=3)
         Qualification.objects.create(tool=self.tool, user=self.user, qualified_on=qualification_date)
 
-        ToolQualificationExpiration.objects.create(tool=self.tool, expiration_days=3, expiration_never_used_days=3)
+        self.tool.qualification_expiration_days = 3
+        self.tool.qualification_expiration_never_used_days = 3
+        self.tool.save()
         EmailsCustomization.set("user_office_email_address", "user_office@example.com")
         # Trigger the expiration timed service
         do_manage_tool_qualifications()
@@ -97,8 +103,7 @@ class ToolQualificationTestCase(NEMOTestCaseMixin, TestCase):
         qualification_date = datetime.today() - timedelta(days=3)
         Qualification.objects.create(tool=self.tool, user=self.user, qualified_on=qualification_date)
 
-        # Tool is exempt, meaning no qualification expiration. Commented out on purpose
-        # ToolQualificationExpiration.objects.create(tool=self.tool, expiration_days=3, expiration_never_used_days=3)
+        # Tool is exempt, meaning no qualification expiration need to be added
         EmailsCustomization.set("user_office_email_address", "user_office@example.com")
         # Trigger the expiration timed service
         do_manage_tool_qualifications()
@@ -115,7 +120,8 @@ class ToolQualificationTestCase(NEMOTestCaseMixin, TestCase):
             user=self.user, operator=self.user, tool=self.tool, project=self.project, start=usage_date
         )
 
-        ToolQualificationExpiration.objects.create(tool=self.tool, expiration_days=3)
+        self.tool.qualification_expiration_days = 3
+        self.tool.save()
         EmailsCustomization.set("user_office_email_address", "user_office@example.com")
         # Trigger the expiration timed service
         do_manage_tool_qualifications()
@@ -128,7 +134,8 @@ class ToolQualificationTestCase(NEMOTestCaseMixin, TestCase):
         qualification_date = datetime.today() - timedelta(days=2)
         Qualification.objects.create(tool=self.tool, user=self.user, qualified_on=qualification_date)
 
-        ToolQualificationExpiration.objects.create(tool=self.tool, expiration_never_used_days=3)
+        self.tool.qualification_expiration_never_used_days = 3
+        self.tool.save()
         EmailsCustomization.set("user_office_email_address", "user_office@example.com")
         # Trigger the expiration timed service
         do_manage_tool_qualifications()
@@ -145,7 +152,8 @@ class ToolQualificationTestCase(NEMOTestCaseMixin, TestCase):
             user=self.user, operator=self.user, tool=self.tool, project=self.project, start=usage_date
         )
 
-        ToolQualificationExpiration.objects.create(tool=self.tool, expiration_days=3)
+        self.tool.qualification_expiration_days = 3
+        self.tool.save()
         EmailsCustomization.set("user_office_email_address", "user_office@example.com")
         # Trigger the expiration timed service
         do_manage_tool_qualifications()
@@ -166,7 +174,8 @@ class ToolQualificationTestCase(NEMOTestCaseMixin, TestCase):
             user=self.user, operator=self.user, tool=self.tool, project=self.project, start=usage_date
         )
 
-        ToolQualificationExpiration.objects.create(tool=self.tool, expiration_days=3)
+        self.tool.qualification_expiration_days = 3
+        self.tool.save()
         EmailsCustomization.set("user_office_email_address", "user_office@example.com")
         # Trigger the expiration timed service
         do_manage_tool_qualifications()
@@ -183,7 +192,8 @@ class ToolQualificationTestCase(NEMOTestCaseMixin, TestCase):
         qualification_date = datetime.today() - timedelta(days=3)
         Qualification.objects.create(tool=self.tool, user=self.user, qualified_on=qualification_date)
 
-        ToolQualificationExpiration.objects.create(tool=self.tool, expiration_never_used_days=3)
+        self.tool.qualification_expiration_never_used_days = 3
+        self.tool.save()
         EmailsCustomization.set("user_office_email_address", "user_office@example.com")
         # Trigger the expiration timed service
         do_manage_tool_qualifications()
@@ -204,9 +214,9 @@ class ToolQualificationTestCase(NEMOTestCaseMixin, TestCase):
             user=self.user, operator=self.user, tool=self.tool, project=self.project, start=usage_date
         )
 
-        ToolQualificationExpiration.objects.create(
-            tool=self.tool, expiration_days=3, notification_email="qualif_cc@example.com"
-        )
+        self.tool.qualification_expiration_days = 3
+        self.tool.qualification_notification_email = "qualif_cc@example.com"
+        self.tool.save()
         EmailsCustomization.set("user_office_email_address", "user_office@example.com")
         # Set alternate email for user
         prefs = self.user.get_preferences()
@@ -234,9 +244,9 @@ class ToolQualificationTestCase(NEMOTestCaseMixin, TestCase):
         qualification_date = datetime.today() - timedelta(days=20)
         Qualification.objects.create(tool=self.tool, user=self.user, qualified_on=qualification_date)
 
-        ToolQualificationExpiration.objects.create(
-            tool=self.tool, expiration_never_used_days=3, notification_email="qualif_cc@example.com"
-        )
+        self.tool.qualification_expiration_never_used_days = 3
+        self.tool.qualification_notification_email = "qualif_cc@example.com"
+        self.tool.save()
         EmailsCustomization.set("user_office_email_address", "user_office@example.com")
         # Set alternate email for user
         prefs = self.user.get_preferences()
@@ -270,7 +280,9 @@ class ToolQualificationTestCase(NEMOTestCaseMixin, TestCase):
         )
 
         # Set reminder 2 days before expiration
-        ToolQualificationExpiration.objects.create(tool=self.tool, expiration_days=3, reminder_days="3,2")
+        self.tool.qualification_expiration_days = 3
+        self.tool.qualification_reminder_days = "3,2"
+        self.tool.save()
         # Trigger the expiration timed service
         do_manage_tool_qualifications()
         # Qualification was NOT removed (3 days disqualified, but only 2 days since qualification)
@@ -288,7 +300,9 @@ class ToolQualificationTestCase(NEMOTestCaseMixin, TestCase):
         EmailsCustomization.set("user_office_email_address", "user_office@example.com")
 
         # Set reminder 2 days before expiration
-        ToolQualificationExpiration.objects.create(tool=self.tool, reminder_days="3,2", expiration_never_used_days=3)
+        self.tool.qualification_expiration_never_used_days = 3
+        self.tool.qualification_reminder_days = "3,2"
+        self.tool.save()
         # Trigger the expiration timed service
         do_manage_tool_qualifications()
         # Qualification was NOT removed (3 days disqualified, but only 2 days since qualification)
@@ -310,7 +324,9 @@ class ToolQualificationTestCase(NEMOTestCaseMixin, TestCase):
         )
 
         # Set reminder 1 day before expiration
-        ToolQualificationExpiration.objects.create(tool=self.tool, expiration_days=3, reminder_days="1")
+        self.tool.qualification_expiration_days = 3
+        self.tool.qualification_reminder_days = "1"
+        self.tool.save()
         # Trigger the expiration timed service
         do_manage_tool_qualifications()
         # Qualification was NOT removed (3 days disqualified, but only 2 days since qualification)
@@ -328,7 +344,9 @@ class ToolQualificationTestCase(NEMOTestCaseMixin, TestCase):
         EmailsCustomization.set("user_office_email_address", "user_office@example.com")
 
         # Set reminder 1 day before expiration
-        ToolQualificationExpiration.objects.create(tool=self.tool, reminder_days=1, expiration_never_used_days=3)
+        self.tool.qualification_expiration_never_used_days = 3
+        self.tool.qualification_reminder_days = "1"
+        self.tool.save()
         # Trigger the expiration timed service
         do_manage_tool_qualifications()
         # Qualification was NOT removed (3 days disqualified, but only 2 days since qualification)

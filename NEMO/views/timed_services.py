@@ -30,7 +30,6 @@ from NEMO.models import (
     StaffCharge,
     TemporaryPhysicalAccessRequest,
     Tool,
-    ToolQualificationExpiration,
     ToolWaitList,
     UsageEvent,
     User,
@@ -836,13 +835,12 @@ def do_manage_tool_qualifications(request=None):
     user_office_email = EmailsCustomization.get("user_office_email_address")
     template = get_media_file_contents("tool_qualification_expiration_email.html")
     if user_office_email and template:
-        for qualification in Qualification.objects.filter(
-            user__is_active=True, user__is_staff=False, tool__toolqualificationexpiration__isnull=False
-        ).prefetch_related("tool", "user", "tool__toolqualificationexpiration"):
+        for qualification in Qualification.objects.filter(user__is_active=True, user__is_staff=False).prefetch_related(
+            "tool", "user"
+        ):
             user = qualification.user
             tool = qualification.tool
-            expiration: ToolQualificationExpiration = qualification.tool.toolqualificationexpiration
-            if expiration.expiration_days or expiration.expiration_never_used_days:
+            if tool.qualification_expiration_days or tool.qualification_expiration_never_used_days:
                 last_tool_use = None
                 try:
                     # Last tool use cannot be before the last time they qualified
@@ -851,15 +849,15 @@ def do_manage_tool_qualifications(request=None):
                         qualification.qualified_on,
                     )
                     expiration_date: date = (
-                        last_tool_use + timedelta(days=expiration.expiration_days)
-                        if expiration.expiration_days
+                        last_tool_use + timedelta(days=tool.qualification_expiration_days)
+                        if tool.qualification_expiration_days
                         else None
                     )
                 except UsageEvent.DoesNotExist:
                     # User never used the tool, use the qualification date
                     expiration_date: date = (
-                        qualification.qualified_on + timedelta(days=expiration.expiration_never_used_days)
-                        if expiration.expiration_never_used_days
+                        qualification.qualified_on + timedelta(days=tool.qualification_expiration_never_used_days)
+                        if tool.qualification_expiration_never_used_days
                         else None
                     )
                 # Check for staff on tools
@@ -870,17 +868,17 @@ def do_manage_tool_qualifications(request=None):
                             qualification,
                             last_tool_use,
                             expiration_date,
-                            expiration.notification_email,
+                            tool.qualification_notification_email,
                             request=request,
                         )
-                    if expiration.get_reminder_days():
-                        for remaining_days in expiration.get_reminder_days():
+                    if tool.get_qualification_reminder_days():
+                        for remaining_days in tool.get_qualification_reminder_days():
                             if expiration_date - timedelta(days=remaining_days) == date.today():
                                 send_tool_qualification_expiring_email(
                                     qualification,
                                     last_tool_use,
                                     expiration_date,
-                                    expiration.notification_email,
+                                    tool.qualification_notification_email,
                                     remaining_days,
                                     request=request,
                                 )

@@ -6,11 +6,10 @@ import django.core.validators
 import django.db.models.deletion
 from django.db import migrations, models
 
-from NEMO import fields
+import NEMO.fields
 
 
 def migrate_tool_qualification_expiration_forward(apps, schema_editor):
-    ToolQualificationExpiration = apps.get_model("NEMO", "ToolQualificationExpiration")
     Tool = apps.get_model("NEMO", "Tool")
     Customization = apps.get_model("NEMO", "Customization")
     tool_qualification_reminder_days = Customization.objects.filter(name="tool_qualification_reminder_days").first()
@@ -21,16 +20,15 @@ def migrate_tool_qualification_expiration_forward(apps, schema_editor):
     tool_qualification_notification = Customization.objects.filter(name="tool_qualification_cc").first()
     for tool in Tool.objects.filter(_qualifications_never_expire=False, parent_tool__isnull=True):
         if tool_qualification_expiration_days or tool_qualification_expiration_never_used_days:
-            tool_exp = ToolQualificationExpiration(tool=tool)
             if tool_qualification_reminder_days and tool_qualification_reminder_days.value:
-                tool_exp.reminder_days = tool_qualification_reminder_days.value
+                tool._qualification_reminder_days = tool_qualification_reminder_days.value
             if tool_qualification_expiration_days and tool_qualification_expiration_days.value:
-                tool_exp.expiration_days = tool_qualification_expiration_days.value
+                tool._qualification_expiration_days = tool_qualification_expiration_days.value
             if tool_qualification_expiration_never_used_days and tool_qualification_expiration_never_used_days.value:
-                tool_exp.expiration_never_used_days = tool_qualification_expiration_never_used_days.value
+                tool._qualification_expiration_never_used_days = tool_qualification_expiration_never_used_days.value
             if tool_qualification_notification and tool_qualification_notification.value:
-                tool_exp.notification_email = tool_qualification_notification.value
-            tool_exp.save()
+                tool._qualification_notification_email = tool_qualification_notification.value
+            tool.save()
     if tool_qualification_reminder_days:
         tool_qualification_reminder_days.delete()
     if tool_qualification_expiration_days:
@@ -48,56 +46,54 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name="ToolQualificationExpiration",
-            fields=[
-                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
-                (
-                    "reminder_days",
-                    models.CharField(
-                        blank=True,
-                        help_text="The (optional) number of days to send a reminder prior to the user's tool qualification expiration (below). A comma-separated list can be used for multiple reminders. This applies to both expiration cases.",
-                        max_length=255,
-                        null=True,
-                        validators=[
-                            django.core.validators.RegexValidator(
-                                re.compile("^\\d+(?:,\\d+)*\\Z"),
-                                code="invalid",
-                                message="Enter only digits separated by commas.",
-                            )
-                        ],
-                    ),
-                ),
-                (
-                    "expiration_days",
-                    models.PositiveIntegerField(
-                        blank=True,
-                        help_text="The number of days from the user’s last tool use until the qualification expires.",
-                        null=True,
-                    ),
-                ),
-                (
-                    "expiration_never_used_days",
-                    models.PositiveIntegerField(
-                        blank=True,
-                        help_text="Number of days from the user's first qualification until the qualification expires.",
-                        null=True,
-                    ),
-                ),
-                (
-                    "notification_email",
-                    fields.MultiEmailField(
-                        blank=True,
-                        null=True,
-                        help_text="The email addresses to cc on tool qualification expiration and on reminders. Separate multiple emails with commas.",
-                    ),
-                ),
-                ("tool", models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to="NEMO.tool")),
-            ],
-            options={
-                "abstract": False,
-                "ordering": ["tool_id"],
-            },
+        migrations.AddField(
+            model_name="tool",
+            name="_qualification_expiration_days",
+            field=models.PositiveIntegerField(
+                db_column="qualification_expiration_days",
+                blank=True,
+                help_text="The number of days from the user’s last tool use until the qualification expires.",
+                null=True,
+            ),
+        ),
+        migrations.AddField(
+            model_name="tool",
+            name="_qualification_expiration_never_used_days",
+            field=models.PositiveIntegerField(
+                db_column="qualification_expiration_never_used_days",
+                blank=True,
+                help_text="Number of days from the user's first qualification until the qualification expires (if the user never used the tool).",
+                null=True,
+            ),
+        ),
+        migrations.AddField(
+            model_name="tool",
+            name="_qualification_notification_email",
+            field=NEMO.fields.MultiEmailField(
+                db_column="qualification_notification_email",
+                blank=True,
+                help_text="The email addresses to cc on tool qualification expiration and on reminders. Separate multiple emails with commas.",
+                max_length=2000,
+                null=True,
+            ),
+        ),
+        migrations.AddField(
+            model_name="tool",
+            name="_qualification_reminder_days",
+            field=models.CharField(
+                db_column="qualification_reminder_days",
+                blank=True,
+                help_text="The (optional) number of days to send a reminder prior to the user's tool qualification expiration (below). A comma-separated list can be used for multiple reminders. This applies to both expiration cases.",
+                max_length=255,
+                null=True,
+                validators=[
+                    django.core.validators.RegexValidator(
+                        re.compile("^\\d+(?:,\\d+)*\\Z"),
+                        code="invalid",
+                        message="Enter only digits separated by commas.",
+                    )
+                ],
+            ),
         ),
         migrations.RunPython(migrate_tool_qualification_expiration_forward, migrations.RunPython.noop),
         migrations.RemoveField(
