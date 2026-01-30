@@ -232,7 +232,7 @@ def usage_data_history(request, tool_id):
     if not last and not start and not end:
         # Default to last 25 records
         last = 25
-    usage_events = UsageEvent.objects.filter(tool_id=tool_id)
+    usage_events = UsageEvent.objects.filter(tool_id__in=Tool.objects.get(pk=tool_id).get_family_tool_ids())
 
     if start:
         usage_events = usage_events.filter(end__gte=start)
