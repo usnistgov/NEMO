@@ -746,8 +746,8 @@ def modify_reservation(request, current_user, start_delta, end_delta):
     reservation_to_cancel.cancellation_time = now
     reservation_to_cancel.cancelled_by = current_user
 
-    if reservation_to_cancel.start != new_reservation.start:
-        # Only check if it has a different time, since penalties for extending a reservation
+    if reservation_to_cancel.start < new_reservation.start:
+        # Only check if it has a different time that is later. If moved earlier, it's fine
         check_for_late_cancellation(current_user, reservation_to_cancel)
 
     policy_problems, overridable = policy.check_to_save_reservation(
