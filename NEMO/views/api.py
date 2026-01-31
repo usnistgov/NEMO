@@ -400,6 +400,8 @@ class ToolViewSet(ModelViewSet):
         "_category": string_filters,
         "_operational": boolean_filters,
         "_location": string_filters,
+        "_missed_reservation_threshold": number_filters,
+        "_late_cancellation_reservation_threshold": number_filters,
         "_qualification_reminder_days": string_filters,
         "_qualification_expiration_days": number_filters,
         "_qualification_expiration_never_used_days": number_filters,
