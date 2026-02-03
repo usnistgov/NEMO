@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Exit if any of following commands fails
 set -e
 
@@ -10,11 +9,23 @@ else
     echo "No additional Python packages to install."
 fi
 
+# Set the PUID and PGID environment variables
+PUID=${PUID:-963}
+PGID=${PGID:-963}
+# Change the user and group IDs
+groupmod -o -g "$PGID" nemo
+usermod -o -u "$PUID" -g "$PGID" nemo
+if [ -n "$PUID" ]; then
+    # Change the ownership of the application directory
+    chown -R nemo:nemo /nemo
+fi
+echo "Running NEMO as user '$(id nemo)'"
+
 # Collect static files
-django-admin collectstatic --no-input --clear
+su nemo -c "django-admin collectstatic --no-input --clear"
 
 # Run migrations to create or update the database
-django-admin migrate
+su nemo -c "django-admin migrate"
 
 # Run NEMO
-exec gunicorn --config=/etc/gunicorn_configuration.py NEMO.wsgi:application
+exec su nemo -c "gunicorn --config=/etc/gunicorn_configuration.py NEMO.wsgi:application"

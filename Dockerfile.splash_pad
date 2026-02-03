@@ -43,5 +43,24 @@ WORKDIR /nemo
 ENV REMOTE_USER="captain"
 EXPOSE 8000/tcp
 
+# Non-root user
+RUN addgroup --system --gid 963 nemo && \
+    adduser --system --home /home/nemo --shell /usr/bin/bash --gid 963 --uid 963  --comment "NEMO user" nemo
+RUN chown -R nemo:nemo /nemo
+RUN chown -R nemo:nemo /var/run/
+ENV PGID=963
+ENV PUID=963
+
+COPY --chmod=755 <<EOT /splash.sh
+#!/bin/bash
+set -e
 # We have to start systemd jobs manually here unfortunately
-CMD (cd /nemo/systemd && ls *.timer) | sed -e 's/\.timer$//' | xargs -t -I % systemctl start % ; exec django-admin runserver 0.0.0.0:8000
+(cd /nemo/systemd && ls *.timer) | sed -e 's/\.timer$//' | xargs -t -I % systemctl start %
+# Setting User and Group id
+groupmod -o -g "$PGID" nemo
+usermod -o -u "$PUID" -g "$PGID" nemo
+# Starting NEMO
+echo "Running NEMO as user '$(id nemo)'"
+exec su nemo -c "django-admin runserver 0.0.0.0:8000"
+EOT
+CMD ["/splash.sh"]
