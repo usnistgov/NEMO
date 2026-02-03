@@ -389,7 +389,6 @@ def configuration_agenda_event_feed(request, start, end):
         if item_id and not all_tools:
             events = events.filter(**{f"{item_type.value}__id": item_id})
 
-    # TODO: Filter events that only have to do with the current user's primary, backup and superuser tools.
     personal_schedule = request.GET.get("personal_schedule")
 
     dictionary = {
@@ -747,8 +746,8 @@ def modify_reservation(request, current_user, start_delta, end_delta):
     reservation_to_cancel.cancellation_time = now
     reservation_to_cancel.cancelled_by = current_user
 
-    if reservation_to_cancel.start != new_reservation.start:
-        # Only check if it has a different time, since penalties for extending a reservation
+    if reservation_to_cancel.start < new_reservation.start:
+        # Only check if it has a different time that is later. If moved earlier, it's fine
         check_for_late_cancellation(current_user, reservation_to_cancel)
 
     policy_problems, overridable = policy.check_to_save_reservation(

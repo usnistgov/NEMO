@@ -833,19 +833,14 @@ def manage_tool_qualifications(request):
 
 def do_manage_tool_qualifications(request=None):
     user_office_email = EmailsCustomization.get("user_office_email_address")
-    qualification_reminder_days = ToolCustomization.get("tool_qualification_reminder_days")
-    qualification_expiration_days = ToolCustomization.get("tool_qualification_expiration_days")
-    qualification_expiration_never_used = ToolCustomization.get("tool_qualification_expiration_never_used_days")
     template = get_media_file_contents("tool_qualification_expiration_email.html")
     if user_office_email and template:
-        if qualification_expiration_days or qualification_expiration_never_used:
-            qualification_expiration_days = quiet_int(qualification_expiration_days, None)
-            qualification_expiration_never_used = quiet_int(qualification_expiration_never_used, None)
-            for qualification in Qualification.objects.filter(
-                user__is_active=True, user__is_staff=False, tool___qualifications_never_expire=False
-            ).prefetch_related("tool", "user"):
-                user = qualification.user
-                tool = qualification.tool
+        for qualification in Qualification.objects.filter(user__is_active=True, user__is_staff=False).prefetch_related(
+            "tool", "user"
+        ):
+            user = qualification.user
+            tool = qualification.tool
+            if tool.qualification_expiration_days or tool.qualification_expiration_never_used_days:
                 last_tool_use = None
                 try:
                     # Last tool use cannot be before the last time they qualified
@@ -854,15 +849,15 @@ def do_manage_tool_qualifications(request=None):
                         qualification.qualified_on,
                     )
                     expiration_date: date = (
-                        last_tool_use + timedelta(days=qualification_expiration_days)
-                        if qualification_expiration_days
+                        last_tool_use + timedelta(days=tool.qualification_expiration_days)
+                        if tool.qualification_expiration_days
                         else None
                     )
                 except UsageEvent.DoesNotExist:
                     # User never used the tool, use the qualification date
                     expiration_date: date = (
-                        qualification.qualified_on + timedelta(days=qualification_expiration_never_used)
-                        if qualification_expiration_never_used
+                        qualification.qualified_on + timedelta(days=tool.qualification_expiration_never_used_days)
+                        if tool.qualification_expiration_never_used_days
                         else None
                     )
                 # Check for staff on tools
@@ -870,25 +865,37 @@ def do_manage_tool_qualifications(request=None):
                     if expiration_date <= date.today():
                         qualification.delete()
                         send_tool_qualification_expiring_email(
-                            qualification, last_tool_use, expiration_date, request=request
+                            qualification,
+                            last_tool_use,
+                            expiration_date,
+                            tool.qualification_notification_email,
+                            request=request,
                         )
-                    if qualification_reminder_days:
-                        for remaining_days in [int(days) for days in qualification_reminder_days.split(",")]:
+                    if tool.get_qualification_reminder_days():
+                        for remaining_days in tool.get_qualification_reminder_days():
                             if expiration_date - timedelta(days=remaining_days) == date.today():
                                 send_tool_qualification_expiring_email(
-                                    qualification, last_tool_use, expiration_date, remaining_days, request=request
+                                    qualification,
+                                    last_tool_use,
+                                    expiration_date,
+                                    tool.qualification_notification_email,
+                                    remaining_days,
+                                    request=request,
                                 )
     return HttpResponse()
 
 
 def send_tool_qualification_expiring_email(
-    qualification: Qualification, last_tool_use: date, expiration_date: date, remaining_days: int = None, request=None
+    qualification: Qualification,
+    last_tool_use: date,
+    expiration_date: date,
+    cc_email: List[str],
+    remaining_days: int = None,
+    request=None,
 ):
     user_office_email = EmailsCustomization.get("user_office_email_address")
     template = get_media_file_contents("tool_qualification_expiration_email.html")
     # Add extra cc emails
-    tool_qualification_cc = ToolCustomization.get("tool_qualification_cc")
-    ccs = [e for e in tool_qualification_cc.split(",") if e]
     if remaining_days:
         subject_expiration = f" expires in {remaining_days} days!"
     else:
@@ -905,7 +912,11 @@ def send_tool_qualification_expiring_email(
     message = render_email_template(template, dictionary, request)
     email_notification = qualification.user.get_preferences().email_send_tool_qualification_expiration_emails
     qualification.user.email_user(
-        subject=subject, message=message, from_email=user_office_email, cc=ccs, email_notification=email_notification
+        subject=subject,
+        message=message,
+        from_email=user_office_email,
+        cc=cc_email,
+        email_notification=email_notification,
     )
 
 

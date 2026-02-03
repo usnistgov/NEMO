@@ -98,21 +98,61 @@
         </div>
     </div>
 </form>
-{% if run_data_table.rows or pre_run_data_table.rows %}
+{% if data_table.rows or run_data_table.rows or pre_run_data_table.rows %}
     <ul class="nav nav-tabs" id="usage-tabs">
+        {% if data_table.rows %}
+            <li class="active">
+                <a data-toggle="tab" href="#run-data-tab">Usage history</a>
+            </li>
+        {% endif %}
         {% if pre_run_data_table.rows %}
-            <li class="{% if pre_run_data_table.rows %}active{% endif %}">
+            <li>
                 <a data-toggle="tab" href="#pre-run-data-tab">Pre-Run Data</a>
             </li>
         {% endif %}
         {% if run_data_table.rows %}
-            <li class="{% if not pre_run_data_table.rows %}active{% endif %}">
-                <a data-toggle="tab" href="#run-data-tab">Run Data</a>
+            <li>
+                <a data-toggle="tab" href="#post-run-data-tab">Post-Run Data</a>
             </li>
         {% endif %}
     </ul>
     <div class="tab-content" style="margin-bottom: 0;">
-        <div class="tab-pane {% if pre_run_data_table.rows %}active{% endif %}" id="pre-run-data-tab">
+        <div class="tab-pane active" id="run-data-tab">
+            <div class="col-md-12">
+                <div class="form-group pull-right extra-side-padding" style="padding-top: 10px">
+                    {% button type="export" value="Export" onclick="load_usage_data('"|concat:tool_id|concat:"', 'all');" %}
+                </div>
+            </div>
+            <div class="panel-body">
+                {% if data_table.rows %}
+                    <table class="table table-bordered table-condensed" style="margin-top: 10px">
+                        <thead>
+                            <tr>
+                                {% for header in data_table.flat_headers %}<th>{{ header }}</th>{% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in data_table.flat_rows %}
+                                <tr>
+                                    {% for item in row %}
+                                        <td>
+                                            {% if item|class_name == "list" %}
+                                                {{ item|join:", " }}
+                                            {% else %}
+                                                {{ item|default_if_none:"" }}
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <span class="italic">No run data was found between these dates</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="tab-pane" id="pre-run-data-tab">
             <div class="col-md-12">
                 <div class="form-group pull-right extra-side-padding" style="padding-top: 10px">
                     {% button type="export" value="Export" onclick="load_usage_data('"|concat:tool_id|concat:"', 'pre-run');" %}
@@ -147,7 +187,7 @@
                 {% endif %}
             </div>
         </div>
-        <div class="tab-pane {% if not pre_run_data_table.rows %}active{% endif %}" id="run-data-tab">
+        <div class="tab-pane" id="post-run-data-tab">
             <div class="col-md-12">
                 <div class="form-group pull-right extra-side-padding" style="padding-top: 10px">
                     {% button type="export" value="Export" onclick="load_usage_data('"|concat:tool_id|concat:"', 'run');" %}

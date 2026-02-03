@@ -16,7 +16,7 @@
                         History</a>
                     </li>
                 {% endif %}
-                {% if show_usage_data_tab and not hide_data_history or show_usage_data_tab and user.is_any_part_of_staff %}
+                {% if not hide_data_history or user.is_any_part_of_staff %}
                     <li style="width: 48%; text-align: center">
                         <a href="#usage_data" style="padding: 10px 5px;" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a>
                     </li>
@@ -49,7 +49,7 @@
                         <a href="#config" onclick="load_config_history('{{ tool.id }}');">Config History</a>
                     </li>
                 {% endif %}
-                {% if show_usage_data_tab and not hide_data_history or show_usage_data_tab and user.is_any_part_of_staff %}
+                {% if not hide_data_history or user.is_any_part_of_staff %}
                     <li>
                         <a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Run Data History</a>
                     </li>

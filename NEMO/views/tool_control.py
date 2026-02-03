@@ -133,9 +133,6 @@ def tool_status(request, tool_id):
         or (user_is_qualified and broadcast_upcoming_reservation == "qualified")
         or broadcast_upcoming_reservation == "all",
         "tool_control_show_task_details": ToolCustomization.get_bool("tool_control_show_task_details"),
-        "show_usage_data_tab": ToolUsageQuestions.objects.filter(enabled=True)
-        .filter(Q(only_for_tools=None) | Q(only_for_tools__in=[tool_id]))
-        .exists(),
         "user_can_see_documents": user.is_any_part_of_staff
         or not ToolCustomization.get_bool("tool_control_show_documents_only_qualified_users")
         or user_is_qualified,
@@ -232,7 +229,7 @@ def usage_data_history(request, tool_id):
     if not last and not start and not end:
         # Default to last 25 records
         last = 25
-    usage_events = UsageEvent.objects.filter(tool_id=tool_id)
+    usage_events = UsageEvent.objects.filter(tool_id__in=Tool.objects.get(pk=tool_id).get_family_tool_ids())
 
     if start:
         usage_events = usage_events.filter(end__gte=start)
@@ -244,6 +241,7 @@ def usage_data_history(request, tool_id):
         except ValueError:
             pass
 
+    all_usage_events = usage_events.order_by("-end")
     pre_usage_events = usage_events.order_by("-start")
     post_usage_events = usage_events.filter(end__isnull=False).order_by("-end")
     if last:
@@ -252,22 +250,34 @@ def usage_data_history(request, tool_id):
                 last = int(last)
             except ValueError:
                 last = 25
+            all_usage_events = all_usage_events[:last]
             pre_usage_events = pre_usage_events[:last]
             post_usage_events = post_usage_events[:last]
+
+    table_data = BasicDisplayTable()
+    table_data.add_header(("user", "User"))
+    table_data.add_header(("operator", "Operator"))
+    if show_project_info:
+        table_data.add_header(("project", "Project"))
+    table_data.add_header(("start_date", "Start date"))
+    table_data.add_header(("end_date", "End date"))
 
     table_pre_run_data = BasicDisplayTable()
     table_pre_run_data.add_header(("user", "User"))
     table_pre_run_data.add_header(("operator", "Operator"))
     if show_project_info:
         table_pre_run_data.add_header(("project", "Project"))
-    table_pre_run_data.add_header(("date", "Start date"))
+    table_pre_run_data.add_header(("start_date", "Start date"))
 
-    table_run_data = BasicDisplayTable()
-    table_run_data.add_header(("user", "User"))
-    table_run_data.add_header(("operator", "Operator"))
+    table_post_run_data = BasicDisplayTable()
+    table_post_run_data.add_header(("user", "User"))
+    table_post_run_data.add_header(("operator", "Operator"))
     if show_project_info:
-        table_run_data.add_header(("project", "Project"))
-    table_run_data.add_header(("date", "End date"))
+        table_post_run_data.add_header(("project", "Project"))
+    table_post_run_data.add_header(("end_date", "End date"))
+
+    for usage_event in all_usage_events:
+        format_usage_data(table_data, usage_event, None, show_project_info, csv_export, True)
 
     for usage_event in pre_usage_events:
         if usage_event.pre_run_data:
@@ -275,20 +285,21 @@ def usage_data_history(request, tool_id):
                 table_pre_run_data,
                 usage_event,
                 usage_event.pre_run_data,
-                usage_event.start,
                 show_project_info,
                 csv_export,
             )
 
     for usage_event in post_usage_events:
         if usage_event.run_data:
-            format_usage_data(
-                table_run_data, usage_event, usage_event.run_data, usage_event.end, show_project_info, csv_export
-            )
+            format_usage_data(table_post_run_data, usage_event, usage_event.run_data, show_project_info, csv_export)
 
     if csv_export:
-        response = table_run_data.to_csv() if csv_export == "run" else table_pre_run_data.to_csv()
-        filename = f"tool{'' if csv_export == 'run' else '_pre'}_usage_data_export_{export_format_datetime()}.csv"
+        response = (
+            table_data.to_csv()
+            if csv_export == "all"
+            else table_post_run_data.to_csv() if csv_export == "run" else table_pre_run_data.to_csv()
+        )
+        filename = f"tool{'' if csv_export == 'all' else 'post' if csv_export == 'run' else '_pre'}_usage_data_export_{export_format_datetime()}.csv"
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
     else:
@@ -297,7 +308,8 @@ def usage_data_history(request, tool_id):
             "data_history_start": start.date() if start else None,
             "data_history_end": end.date() if end else None,
             "data_history_last": str(last),
-            "run_data_table": table_run_data,
+            "data_table": table_data,
+            "run_data_table": table_post_run_data,
             "pre_run_data_table": table_pre_run_data,
             "data_history_user": User.objects.get(id=user_id) if user_id else None,
             "show_project_info": show_project_info or False,
@@ -834,17 +846,16 @@ def format_usage_data(
     table_result: BasicDisplayTable,
     usage_event: UsageEvent,
     usage_run_data: str,
-    date_field: datetime,
     show_project_info: str,
     csv_export: str,
+    all_data: bool = False,
 ):
     usage_data = {}
-    date_data = format_datetime(date_field, "SHORT_DATETIME_FORMAT")
 
     try:
         user_data = f"{usage_event.user.first_name} {usage_event.user.last_name}"
         operator_data = f"{usage_event.operator.first_name} {usage_event.operator.last_name}"
-        run_data: Dict = loads(usage_run_data)
+        run_data: Dict = loads(usage_run_data) if usage_run_data else {}
         for question_key, question in run_data.items():
             if "user_input" in question and not question.get("readonly", False):
                 if question["type"] == "group":
@@ -880,7 +891,10 @@ def format_usage_data(
                             if group_usage_data:
                                 group_usage_data["user"] = user_data
                                 group_usage_data["operator"] = operator_data
-                                group_usage_data["date"] = date_data
+                                group_usage_data["start_date"] = format_datetime(
+                                    usage_event.start, "SHORT_DATETIME_FORMAT"
+                                )
+                                group_usage_data["end_date"] = format_datetime(usage_event.end, "SHORT_DATETIME_FORMAT")
                                 if show_project_info:
                                     group_usage_data["project"] = usage_event.project.name
                                 table_result.add_row(group_usage_data)
@@ -890,10 +904,13 @@ def format_usage_data(
                     usage_data[question_key] = (
                         table_result.formatted_value(question["user_input"]) + suffix if question["user_input"] else ""
                     )
-        if usage_data:
+        if usage_data or all_data:
             usage_data["user"] = user_data
             usage_data["operator"] = operator_data
-            usage_data["date"] = date_data
+            usage_data["start_date"] = format_datetime(usage_event.start, "SHORT_DATETIME_FORMAT")
+            usage_data["end_date"] = (
+                format_datetime(usage_event.end, "SHORT_DATETIME_FORMAT") if usage_event.end else ""
+            )
             if show_project_info:
                 usage_data["project"] = usage_event.project.name
             table_result.add_row(usage_data)

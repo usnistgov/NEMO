@@ -247,7 +247,6 @@ class ToolAdmin(admin.ModelAdmin):
                     "_category",
                     "_operation_mode",
                     "qualified_users",
-                    "_qualifications_never_expire",
                     "_problem_shutdown_enabled",
                 )
             },
@@ -297,6 +296,17 @@ class ToolAdmin(admin.ModelAdmin):
                     "_maximum_future_reservations",
                     "_minimum_time_between_reservations",
                     "_maximum_future_reservation_time",
+                )
+            },
+        ),
+        (
+            "Qualification expiration",
+            {
+                "fields": (
+                    "_qualification_reminder_days",
+                    "_qualification_expiration_days",
+                    "_qualification_expiration_never_used_days",
+                    "_qualification_notification_email",
                 )
             },
         ),
