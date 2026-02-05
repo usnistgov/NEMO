@@ -1112,6 +1112,7 @@ def get_js_event_data(item, dynamic_field_name: str, extra_data=None) -> str:
             "item_type_id": ContentType.objects.get_for_model(item).id,
             "item_id": item.id,
             "field_name": dynamic_field_name,
+            "questions_type": getattr(item, "questions_type", None),
             **extra_data,
         }
     )
