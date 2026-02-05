@@ -51,6 +51,7 @@ from NEMO.views.tool_control import (
     interlock_error,
     save_comment,
     tool_configuration,
+    tool_usage_questions,
 )
 
 
@@ -361,6 +362,15 @@ def kiosk_tool_configuration(request):
     # Use the badged-in user as the user making the request and call the configuration directly
     request.user = User.objects.get(badge_number=request.GET["badge_number"])
     return tool_configuration(request)
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_GET
+def kiosk_tool_usage_questions(
+    request, tool_id: int, question_type: str, user_id: int, project_id: int, virtual_inputs: str = None
+):
+    return tool_usage_questions(request, tool_id, question_type, user_id, project_id, virtual_inputs)
 
 
 @login_required

@@ -1,5 +1,6 @@
 from django.urls import include, path, re_path
 from NEMO.apps.kiosk import views
+from NEMO.urls import tool_usage_question_types
 from NEMO.views import area_access, status_dashboard
 
 urlpatterns = [
@@ -38,6 +39,13 @@ urlpatterns = [
                     name="kiosk_tool_reservation",
                 ),
                 path("tool_configuration/", views.kiosk_tool_configuration, name="kiosk_tool_configuration"),
+                re_path(
+                    r"^tool_usage_questions/(?P<tool_id>\d+)/"
+                    + tool_usage_question_types
+                    + "/(?P<user_id>\d+)/(?P<project_id>\d+)/(?P<virtual_inputs>(true|false))/$",
+                    views.kiosk_tool_usage_questions,
+                    name="kiosk_tool_usage_questions",
+                ),
                 path("enter_wait_list/", views.enter_wait_list, name="enter_wait_list_from_kiosk"),
                 path("exit_wait_list/", views.exit_wait_list, name="exit_wait_list_from_kiosk"),
                 path("logout_user/<int:tool_id>", views.logout_user, name="kiosk_logout_user"),
