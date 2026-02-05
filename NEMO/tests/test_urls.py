@@ -35,6 +35,9 @@ url_kwargs_get_post = {
     "kiosk_tool_information": {"kwargs": {"tool_id": 1, "user_id": 1, "back": "back_to_start"}},
     "kiosk_tool_post_comment": {"kwargs": {"tool_id": 1, "user_id": 1, "back": "back_to_start"}},
     "kiosk_tool_report_problem": {"kwargs": {"tool_id": 1, "user_id": 1, "back": "back_to_start"}},
+    "kiosk_tool_usage_questions": {
+        "kwargs": {"tool_id": 3, "user_id": 1, "project_id": 1, "question_type": "pre", "virtual_inputs": "false"}
+    },
     "enable_tool_from_kiosk": {"post": {"tool_id": 1, "customer_id": 1, "project_id": 1}},
     "disable_tool_from_kiosk": {"post": {"tool_id": 1, "customer_id": 1}},
     "reserve_tool_from_kiosk": {"post": {"tool_id": 1, "customer_id": 1, "project_id": 1, "back": ""}},
