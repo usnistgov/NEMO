@@ -226,7 +226,7 @@
         function load_pre_usage_questions(tool_id, customer_id, project_id)
         {
             let failure_dialog = ajax_complete_callback("Unable to load pre usage questions", "There was a problem loading pre usage questions.");
-            const resolved_url = build_django_url("{% url 'tool_usage_questions' 999 'pre' 888 777 'true' %}", ['999', '888', '777', 'true'], [tool_id, customer_id, project_id, virtual_inputs]);
+            const resolved_url = build_django_url("{% url 'kiosk_tool_usage_questions' 999 'pre' 888 777 'true' %}", ['999', '888', '777', 'true'], [tool_id, customer_id, project_id, virtual_inputs]);
             const note = $("#note");
             note.prop("disabled", false).parents("#usage_note").show();
             auto_size_textarea(note[0], 3);
