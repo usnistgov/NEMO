@@ -4,6 +4,7 @@ from logging import getLogger
 from typing import Optional
 
 from django.conf import settings
+from django.contrib.auth import SESSION_KEY
 from django.contrib.auth.middleware import RemoteUserMiddleware
 from django.http import Http404, HttpResponseForbidden
 from django.urls import NoReverseMatch, resolve, reverse
@@ -76,7 +77,11 @@ class SessionTimeout:
         #
         # If the request is normal (instead of AJAX) and the user's session has expired
         # then the @login_required decorator will redirect them to the login page.
-        if not request.user.is_authenticated:
+        #
+        # IMPORTANT: Only do this if the session indicates the user *was* logged in.
+        # Anonymous/public users can have sessions too (CSRF, messages), and should not be blocked.
+        session_had_login = SESSION_KEY in request.session
+        if session_had_login and not request.user.is_authenticated:
             return HttpResponseForbidden() if is_ajax(request) else None
 
         # If the view is regularly polled by the webpage to update information then expiry refresh should be disabled.

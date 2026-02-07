@@ -5,6 +5,7 @@ ENV PIP_ROOT_USER_ACTION=ignore
 RUN apt-get update && apt-get upgrade -y && apt-get install -y systemctl rsync vim less
 
 COPY . /nemo/
+RUN python3 -m pip install --upgrade pip
 RUN python3 -m pip install /nemo/
 RUN rm --recursive --force /nemo
 

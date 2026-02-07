@@ -558,12 +558,19 @@
 	update_stop_button();
 	{% if customer.active_projects|length == 1 %}update_start_button();{% endif %}
 
-	{% if tool.in_use %}
-		$('body').on('dynamic-form-group-changed dynamic-form-field-changed', update_stop_button);
-		$('body').on('change keyup', '#downtime', update_stop_button);
-	{% else %}
-    	$('body').on('dynamic-form-group-changed dynamic-form-field-changed', update_start_button);
-	{% endif %}
+	$('body').on('dynamic-form-group-changed dynamic-form-field-changed', function (event, event_data)
+    {
+        if (event_data.questions_type === "pre")
+        {
+            update_start_button();
+        }
+        else if (event_data.questions_type === "post")
+        {
+            update_stop_button();
+        }
+    });
+	$('body').on('change keyup', '#downtime', update_stop_button);
+
     if (virtual_inputs)
     {
 	    $('#downtime').numpad({'readonly': false, 'hidePlusMinusButton': true, 'hideDecimalButton': true});
