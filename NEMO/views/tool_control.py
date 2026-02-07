@@ -229,7 +229,8 @@ def usage_data_history(request, tool_id):
     if not last and not start and not end:
         # Default to last 25 records
         last = 25
-    usage_events = UsageEvent.objects.filter(tool_id__in=Tool.objects.get(pk=tool_id).get_family_tool_ids())
+    tool_family_ids = Tool.objects.get(pk=tool_id).get_family_tool_ids()
+    usage_events = UsageEvent.objects.filter(tool_id__in=tool_family_ids)
 
     if start:
         usage_events = usage_events.filter(end__gte=start)
@@ -241,7 +242,7 @@ def usage_data_history(request, tool_id):
         except ValueError:
             pass
 
-    all_usage_events = usage_events.order_by("-end")
+    all_usage_events = usage_events.order_by("-start")
     pre_usage_events = usage_events.order_by("-start")
     post_usage_events = usage_events.filter(end__isnull=False).order_by("-end")
     if last:
@@ -255,6 +256,8 @@ def usage_data_history(request, tool_id):
             post_usage_events = post_usage_events[:last]
 
     table_data = BasicDisplayTable()
+    if len(tool_family_ids) > 1:
+        table_data.add_header(("tool", "Tool"))
     table_data.add_header(("user", "User"))
     table_data.add_header(("operator", "Operator"))
     if show_project_info:
@@ -263,6 +266,8 @@ def usage_data_history(request, tool_id):
     table_data.add_header(("end_date", "End date"))
 
     table_pre_run_data = BasicDisplayTable()
+    if len(tool_family_ids) > 1:
+        table_data.add_header(("tool", "Tool"))
     table_pre_run_data.add_header(("user", "User"))
     table_pre_run_data.add_header(("operator", "Operator"))
     if show_project_info:
@@ -270,6 +275,8 @@ def usage_data_history(request, tool_id):
     table_pre_run_data.add_header(("start_date", "Start date"))
 
     table_post_run_data = BasicDisplayTable()
+    if len(tool_family_ids) > 1:
+        table_data.add_header(("tool", "Tool"))
     table_post_run_data.add_header(("user", "User"))
     table_post_run_data.add_header(("operator", "Operator"))
     if show_project_info:
@@ -856,6 +863,7 @@ def format_usage_data(
         user_data = f"{usage_event.user.first_name} {usage_event.user.last_name}"
         operator_data = f"{usage_event.operator.first_name} {usage_event.operator.last_name}"
         run_data: Dict = loads(usage_run_data) if usage_run_data else {}
+        tool_name = usage_event.tool.name
         for question_key, question in run_data.items():
             if "user_input" in question and not question.get("readonly", False):
                 if question["type"] == "group":
@@ -889,6 +897,7 @@ def format_usage_data(
                                     table_result.formatted_value(user_input) + suffix if user_input else ""
                                 )
                             if group_usage_data:
+                                group_usage_data["tool"] = tool_name
                                 group_usage_data["user"] = user_data
                                 group_usage_data["operator"] = operator_data
                                 group_usage_data["start_date"] = format_datetime(
@@ -905,6 +914,7 @@ def format_usage_data(
                         table_result.formatted_value(question["user_input"]) + suffix if question["user_input"] else ""
                     )
         if usage_data or all_data:
+            usage_data["tool"] = tool_name
             usage_data["user"] = user_data
             usage_data["operator"] = operator_data
             usage_data["start_date"] = format_datetime(usage_event.start, "SHORT_DATETIME_FORMAT")
