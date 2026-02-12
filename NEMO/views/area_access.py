@@ -26,6 +26,7 @@ from NEMO.exceptions import (
     ReservationRequiredUserError,
     ScheduledOutageInProgressError,
     UnavailableResourcesUserError,
+    UserAccessError,
 )
 from NEMO.models import Area, AreaAccessRecord, Project, User
 from NEMO.policy import policy_class as policy
@@ -120,6 +121,9 @@ def new_area_access_record(request):
 
             dictionary["user_accessible_areas"], dictionary["areas"] = load_areas_for_use_in_template(customer)
             return render(request, "area_access/new_area_access_record_details.html", dictionary)
+        except UserAccessError as e:
+            dictionary["error_message"] = e.msg
+            return render(request, "area_access/new_area_access_record.html", dictionary)
         except:
             pass
         return render(request, "area_access/new_area_access_record.html", dictionary)
@@ -183,6 +187,9 @@ def new_area_access_record(request):
                     record.area.name
                 )
             )
+            return render(request, "area_access/new_area_access_record.html", dictionary)
+        except UserAccessError as e:
+            dictionary["error_message"] = e.msg
             return render(request, "area_access/new_area_access_record.html", dictionary)
         if record.customer.billing_to_project():
             dictionary["error_message"] = (
@@ -335,6 +342,9 @@ def self_log_in(request, load_areas=True):
         dictionary["error_message"] = (
             f"You have not been granted physical access to any {facility_name} area. Please visit the User Office if you believe this is an error."
         )
+        return render(request, "area_access/self_login.html", dictionary)
+    except UserAccessError as e:
+        dictionary["error_message"] = e.msg
         return render(request, "area_access/self_login.html", dictionary)
 
     if load_areas:

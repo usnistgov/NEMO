@@ -21,6 +21,7 @@ from NEMO.exceptions import (
     ReservationRequiredUserError,
     ScheduledOutageInProgressError,
     UnavailableResourcesUserError,
+    UserAccessError,
 )
 from NEMO.models import (
     Area,
@@ -121,6 +122,11 @@ def login_to_area(request, door_id):
         log.save()
         message = f"You have not been granted physical access to any {facility_name} area. Please visit the User Office if you believe this is an error."
         return render(request, "area_access/physical_access_denied.html", {"message": message})
+
+    except UserAccessError as e:
+        log.details = f"This user raised the following error: {e.msg}"
+        log.save()
+        return render(request, "area_access/physical_access_denied.html", {"message": e.msg})
 
     max_capacity_reached = False
     reservation_requirement_failed = False
