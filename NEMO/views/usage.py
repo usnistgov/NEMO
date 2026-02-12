@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_GET
 from requests import get
 
-from NEMO.decorators import any_staff_required
+from NEMO.decorators import staff_member_or_tool_staff_required
 from NEMO.models import (
     Account,
     AccountType,
@@ -158,7 +158,7 @@ def user_usage(request):
     )
 
 
-@any_staff_required
+@staff_member_or_tool_staff_required
 @require_GET
 def staff_usage(request):
     csv_export = bool(request.GET.get("csv", False))
