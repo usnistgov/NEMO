@@ -5230,7 +5230,10 @@ class AdjustmentRequest(BaseModel):
         # list of reviewers is empty, send/show to all facility managers
         facility_managers = User.objects.filter(is_active=True, is_facility_manager=True)
         if self.item_tool:
-            tool_reviewers = self.item_tool._adjustment_request_reviewers.filter(is_active=True)
+            tool = self.item_tool
+            if self.item_tool.parent_tool_id:
+                tool = self.item_tool.parent_tool
+            tool_reviewers = tool._adjustment_request_reviewers.filter(is_active=True)
             return tool_reviewers or facility_managers
         if self.item_area:
             area_reviewers = self.item_area.adjustment_request_reviewers.filter(is_active=True)

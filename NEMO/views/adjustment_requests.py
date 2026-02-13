@@ -70,7 +70,7 @@ def adjustment_requests(request, status: int):
     if selected_area_id:
         adj_requests = adj_requests.filter(item_area_id=selected_area_id)
     adj_requests = adj_requests.select_related("creator", "item_type", "reviewer").prefetch_related(
-        "item", "original_project", "new_project", "item_tool", "item_area", "replies"
+        "item", "original_project", "new_project", "item_tool", "item_tool__parent_tool", "item_area", "replies"
     )
     my_requests = adj_requests.filter(creator=user)
 
@@ -565,20 +565,25 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
 
 
 def for_reviewer(adjustment_request_qs: QuerySet[AdjustmentRequest], user: User) -> QuerySet[AdjustmentRequest]:
-    # Start with the base conditions: the user is an explicit reviewer.
-    can_review_tool = Q(item_tool___adjustment_request_reviewers=user)
+    # Start with the base conditions: the user is an explicit reviewer, or he created the adjustment request
+    can_review_tool = Q(item_tool___adjustment_request_reviewers=user) | Q(
+        item_tool__parent_tool___adjustment_request_reviewers=user
+    )
     can_review_area = Q(item_area__adjustment_request_reviewers=user)
+    created_request = Q(creator=user)
 
     # If the user is a facility manager, add the new condition.
     if user.is_facility_manager:
         # Condition for tool/area with an empty reviewer list.
-        tool_has_no_reviewers = Q(item_tool___adjustment_request_reviewers=None)
+        tool_has_no_reviewers = Q(item_tool___adjustment_request_reviewers=None) & Q(
+            item_tool__parent_tool___adjustment_request_reviewers=None
+        )
         area_has_no_reviewers = Q(item_area__adjustment_request_reviewers=None)
 
         # Now, the logic is: "user is a reviewer OR tool has no reviewers".
         can_review_tool |= tool_has_no_reviewers
         can_review_area |= area_has_no_reviewers
 
-    final_query = can_review_tool | can_review_area
+    final_query = created_request | can_review_tool | can_review_area
 
     return adjustment_request_qs.select_related("item_tool", "item_area").filter(final_query).distinct()
