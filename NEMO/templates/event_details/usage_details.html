@@ -46,6 +46,35 @@
                 </tr>
             {% endif %}
         {% endif %}
+        {% if user|is_staff_on_tool:event.tool or user == event.user or user == event.operator %}
+            {% if event.consumablewithdraw_set.exists %}
+                <tr>
+                    <td>Consumables:</td>
+                    <td style="padding: 0;">
+                        <table class="table" style="margin-bottom: 0;">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for consumablewithdraw in event.consumablewithdraw_set.all %}
+                                    <tr>
+                                        <td {% if consumablewithdraw.waived %}title="Waived" style="text-decoration: line-through"{% endif %}>
+                                            {{ consumablewithdraw.consumable.name }}
+                                        </td>
+                                        <td {% if consumablewithdraw.waived %}title="Waived" style="text-decoration: line-through"{% endif %}>
+                                            {{ consumablewithdraw.quantity }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+            {% endif %}
+        {% endif %}
         {% if customizations|get_item:"tool_control_hide_data_history_users" != "enabled" or user|is_staff_on_tool:event.tool or user == event.user or user == event.operator %}
             {% if event.pre_run_data_json.items %}
                 <tr>
