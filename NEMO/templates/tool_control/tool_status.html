@@ -79,13 +79,13 @@
                     <span class="glyphicon glyphicon-user pull-left notification-icon"></span>
                     {% with tool.get_current_usage_event as current_usage_event %}
                         <h2>
-                            {% if current_usage_event.operator.id == user.id %}
+                            {% if current_usage_event.operator_id == user.id %}
                                 You are using this tool
                             {% else %}
                                 <a title="Click to email this user"
-                                   href="{% url 'get_email_form_for_user' current_usage_event.operator.id %}">{{ current_usage_event.operator }}</a> is using this tool
+                                   href="{% url 'get_email_form_for_user' current_usage_event.operator_id %}">{{ current_usage_event.operator }}</a> is using this tool
                             {% endif %}
-                            {% if current_usage_event.operator.id != current_usage_event.user.id %}
+                            {% if current_usage_event.operator_id != current_usage_event.user_id %}
                                 on behalf of {{ current_usage_event.user }}
                             {% endif %}
                             for the project named {{ current_usage_event.project.name }} since {{ current_usage_event.start|date:"MONTH_DAY_FORMAT" }} @ {{ current_usage_event.start|time }}  (#{{ current_usage_event.id }}).
@@ -136,7 +136,7 @@
                 {% else %}
                     on {{ next_reservation.start }}
                 {% endif %}
-                for <a href="{% url 'get_email_form_for_user' next_reservation.user.id %}">{{ next_reservation.user }}</a>
+                for <a href="{% url 'get_email_form_for_user' next_reservation.user_id %}">{{ next_reservation.user }}</a>
             {% endif %}
         </div>
         {% if tool_rate %}
@@ -402,7 +402,7 @@
         {# Display tool control... #}
         <form id="tool_control">
             {% if tool.in_use %}
-                {% if tool.get_current_usage_event.operator.id == user.id or tool.get_current_usage_event.user.id == user.id %}
+                {% if tool.get_current_usage_event.operator_id == user.id or tool.get_current_usage_event.user_id == user.id %}
                     {% if customizations|get_item:"tool_control_note_show" %}
                         {# Disable tool note #}
                         <div class="form-group">
@@ -437,6 +437,10 @@
                         </div>
                     {% endif %}
                     <div id="stop_wrapper">
+                        {% if tool.get_current_usage_event.staff_charge_id and not tool.get_current_usage_event.staff_charge.end and tool.get_current_usage_event.staff_charge.staff_member == user %}
+                            {% url "end_staff_charge" as end_staff_charge_url %}
+                            {% button type="export" icon="glyphicon-stop" onclick="ajax_post('"|concat:end_staff_charge_url|concat:"', undefined, undefined, undefined, function() {location.reload()})" value="Stop charging staff time but keep using the tool" %}
+                        {% endif %}
                         <div style="display:inline-block"
                              data-toggle="tooltip"
                              data-placement="bottom"
@@ -643,7 +647,7 @@
                                 </thead>
                                 <tbody>
                                     {% for entry in wait_list %}
-                                        <tr class="{% if user.id == entry.user.id %}success{% endif %}">
+                                        <tr class="{% if user.id == entry.user_id %}success{% endif %}">
                                             <td>{{ forloop.counter }}</td>
                                             <td>{{ entry.user.get_full_name }}</td>
                                         </tr>
