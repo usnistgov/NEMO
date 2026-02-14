@@ -482,6 +482,7 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
         except ProjectChargeException as e:
             return HttpResponseBadRequest(e.msg)
         new_staff_charge.save()
+        new_usage_event.staff_charge = new_staff_charge
         # If the tool requires area access, start charging area access time
         if tool.requires_area_access and RemoteWorkCustomization.get_bool(
             "remote_work_start_area_access_automatically"

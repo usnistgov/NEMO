@@ -3401,6 +3401,7 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     end = models.DateTimeField(null=True, blank=True)
     has_ended = models.PositiveBigIntegerField(default=0)
     note = models.TextField(null=True, blank=True)
+    staff_charge = models.ForeignKey(StaffCharge, blank=True, null=True, on_delete=models.CASCADE)
     validated = models.BooleanField(default=False)
     validated_by = models.ForeignKey(
         User, null=True, blank=True, related_name="usage_event_validated_set", on_delete=models.CASCADE

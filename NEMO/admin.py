@@ -133,6 +133,32 @@ from NEMO.views.customization import ApplicationCustomization, ProjectsAccountsC
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageGroupQuestion, admin_render_dynamic_form_preview
 
 
+def has_fk_filter(fk_field_name: str, title: str):
+    filter_title = title
+    param = f"has_{fk_field_name}"
+
+    class HasForeignKeyFilter(admin.SimpleListFilter):
+        title = filter_title
+        parameter_name = param
+
+        def lookups(self, request, model_admin):
+            return (
+                ("yes", f"Has {title}"),
+                ("no", f"No {title}"),
+            )
+
+        def queryset(self, request, queryset):
+            value = self.value()
+            if value == "yes":
+                return queryset.filter(**{f"{fk_field_name}__isnull": False})
+            if value == "no":
+                return queryset.filter(**{f"{fk_field_name}__isnull": True})
+            return queryset
+
+    HasForeignKeyFilter.__name__ = f"Has{title.replace(" ","")}Filter"
+    return HasForeignKeyFilter
+
+
 # Formset to require at least one inline form
 class AtLeastOneRequiredInlineFormSet(BaseInlineFormSet):
     def clean(self):
@@ -218,6 +244,7 @@ class ToolAdmin(admin.ModelAdmin):
         "_operation_mode",
         "problematic",
         "is_configurable",
+        "has_staff_charge",
         "id",
     )
     filter_horizontal = ("_backup_owners", "_staff", "_superusers", "_adjustment_request_reviewers")
@@ -229,6 +256,7 @@ class ToolAdmin(admin.ModelAdmin):
         "_category",
         "_location",
         ("_requires_area_access", admin.RelatedOnlyFieldListFilter),
+        has_fk_filter("staff_charge", "Staff Charge"),
     )
     autocomplete_fields = [
         "_primary_owner",
@@ -326,6 +354,10 @@ class ToolAdmin(admin.ModelAdmin):
         ),
         ("Dependencies", {"fields": ("required_resources", "nonrequired_resources")}),
     )
+
+    @admin.display(boolean=True, description="Staff Charge")
+    def has_staff_charge(self, obj) -> bool:
+        return obj.staff_charge_id is not None
 
     def save_model(self, request, obj, form, change):
         """
@@ -628,26 +660,45 @@ class TrainingSessionAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, adm
 
 @register(StaffCharge)
 class StaffChargeAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
-    list_display = ("id", "staff_member", "customer", "start", "end", "waived")
+    list_display = ("id", "staff_member", "customer", "start", "end", "waived", "has_area_record", "has_usage_event")
     list_filter = (
         "start",
         "waived",
         ("customer", admin.RelatedOnlyFieldListFilter),
         ("staff_member", admin.RelatedOnlyFieldListFilter),
+        has_fk_filter("areaaccessrecord", "Area Record"),
+        has_fk_filter("usageevent", "Usage Event"),
     )
     date_hierarchy = "start"
     autocomplete_fields = ["staff_member", "customer", "project", "validated_by", "waived_by"]
     actions = [waive_selected_charges]
 
+    @admin.display(boolean=True, description="Usage Event")
+    def has_usage_event(self, obj) -> bool:
+        return obj.usageevent_set.exists()
+
+    @admin.display(boolean=True, description="Area Record")
+    def has_area_record(self, obj) -> bool:
+        return obj.areaaccessrecord_set.exists()
+
 
 @register(AreaAccessRecord)
 class AreaAccessRecordAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
-    list_display = ("id", "customer", "area", "project", "start", "end", "waived")
-    list_filter = (("area", TreeRelatedFieldListFilter), "start", "waived")
+    list_display = ("id", "customer", "area", "project", "start", "end", "waived", "has_staff_charge")
+    list_filter = (
+        ("area", TreeRelatedFieldListFilter),
+        "start",
+        "waived",
+        has_fk_filter("staff_charge", "Staff Charge"),
+    )
     date_hierarchy = "start"
     autocomplete_fields = ["customer", "project", "validated_by", "waived_by"]
     readonly_fields = ["has_ended"]
     actions = [waive_selected_charges]
+
+    @admin.display(boolean=True, description="Staff Charge")
+    def has_staff_charge(self, obj) -> bool:
+        return obj.staff_charge_id is not None
 
 
 @register(Configuration)
