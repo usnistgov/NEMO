@@ -12,6 +12,8 @@ from django.shortcuts import render
 from packaging.requirements import Requirement
 from packaging.version import InvalidVersion, Version
 
+from NEMO.constants import EXTRA_POLICIES_SETTING
+
 utils_logger = getLogger(__name__)
 
 
@@ -148,3 +150,19 @@ def add_dynamic_choices_to_choice_field(field: Field, new_choices: List[Tuple[Un
         field.choices = original_choices
     except FieldDoesNotExist:
         utils_logger.exception("Error adding dynamic choices: {}".format(new_choices))
+
+
+def add_extra_policy_class(policy_class_name: str):
+    from NEMO import policy
+
+    current_policies = list(getattr(settings, EXTRA_POLICIES_SETTING, []))
+
+    # Append only if not already present (prevents duplicates on reload)
+    if policy_class_name not in current_policies:
+        # We must re-assign the list to settings to ensure it persists
+        # (Modifying the list in place usually works, but reassignment is safer)
+        current_policies.append(policy_class_name)
+        setattr(settings, EXTRA_POLICIES_SETTING, list(current_policies) + [policy_class_name])
+
+    # Force reload of policies
+    policy.policy_class = policy.NEMOPolicyChain(policy.get_policy_classes())
