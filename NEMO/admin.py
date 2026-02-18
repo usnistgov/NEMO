@@ -155,7 +155,7 @@ def has_fk_filter(fk_field_name: str, title: str):
                 return queryset.filter(**{f"{fk_field_name}__isnull": True})
             return queryset
 
-    HasForeignKeyFilter.__name__ = f"Has{title.replace(" ","")}Filter"
+    HasForeignKeyFilter.__name__ = f"Has{title.replace(' ', '')}Filter"
     return HasForeignKeyFilter
 
 
