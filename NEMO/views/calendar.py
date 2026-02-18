@@ -61,6 +61,10 @@ from NEMO.views.customization import (
 calendar_logger = getLogger(__name__)
 
 
+def _is_on_slot_boundary(dt: datetime, resolution_minutes: int) -> bool:
+    return dt.time().minute % resolution_minutes == 0
+
+
 @login_required
 @require_GET
 def calendar(request, item_type=None, item_id=None):
@@ -98,6 +102,8 @@ def calendar(request, item_type=None, item_id=None):
     calendar_all_tools = CalendarCustomization.get("calendar_all_tools")
     calendar_all_areas = CalendarCustomization.get("calendar_all_areas")
     calendar_all_areastools = CalendarCustomization.get("calendar_all_areastools")
+    calendar_slot_duration = CalendarCustomization.get_slot_duration()
+    calendar_slot_label_interval = CalendarCustomization.get_slot_label_interval()
 
     # Create reservation confirmation setting
     create_reservation_confirmation_default = CalendarCustomization.get_bool("create_reservation_confirmation")
@@ -133,6 +139,8 @@ def calendar(request, item_type=None, item_id=None):
         "calendar_all_tools": calendar_all_tools,
         "calendar_all_areas": calendar_all_areas,
         "calendar_all_areastools": calendar_all_areastools,
+        "calendar_slot_duration": calendar_slot_duration,
+        "calendar_slot_label_interval": calendar_slot_label_interval,
         "calendar_user_tool_lists": UserCalendarToolList.objects.filter(user=user),
         "create_reservation_confirmation": create_reservation_confirmation,
         "change_reservation_confirmation": change_reservation_confirmation,
@@ -887,12 +895,13 @@ def change_reservation_date(request):
     """Change a reservation's start or end date for a user."""
     reservation = get_object_or_404(Reservation, id=request.POST["id"])
     start_delta, end_delta = None, None
+    resolution_minutes = CalendarCustomization.get_slot_resolution_minutes()
     new_start = request.POST.get("new_start", None)
     if new_start:
         try:
             new_start = make_aware(datetime.strptime(new_start, datetime_input_format))
-            if new_start.time().minute not in [0, 15, 30, 45]:
-                return HttpResponseBadRequest("Reservation time only works with 15 min increments")
+            if not _is_on_slot_boundary(new_start, resolution_minutes):
+                return HttpResponseBadRequest(f"Reservation time only works with {resolution_minutes} min increments")
         except ValueError:
             return HttpResponseBadRequest("Invalid date format for start date")
         start_delta = new_start - reservation.start
@@ -900,8 +909,8 @@ def change_reservation_date(request):
     if new_end:
         try:
             new_end = make_aware(datetime.strptime(new_end, datetime_input_format))
-            if new_end.time().minute not in [0, 15, 30, 45]:
-                return HttpResponseBadRequest("Reservation time only works with 15 min increments")
+            if not _is_on_slot_boundary(new_end, resolution_minutes):
+                return HttpResponseBadRequest(f"Reservation time only works with {resolution_minutes} min increments")
         except ValueError:
             return HttpResponseBadRequest("Invalid date format for end date")
         end_delta = (new_end - reservation.end) if new_end else None
@@ -919,12 +928,13 @@ def change_outage_date(request):
     if not request.user.is_staff and not request.user.is_staff_on_tool(outage.tool):
         return HttpResponseBadRequest("You are not allowed to edit this outage.")
     start_delta, end_delta = None, None
+    resolution_minutes = CalendarCustomization.get_slot_resolution_minutes()
     new_start = request.POST.get("new_start", None)
     if new_start:
         try:
             new_start = make_aware(datetime.strptime(new_start, datetime_input_format))
-            if new_start.time().minute not in [0, 15, 30, 45]:
-                return HttpResponseBadRequest("Outage time only works with 15 min increments")
+            if not _is_on_slot_boundary(new_start, resolution_minutes):
+                return HttpResponseBadRequest(f"Outage time only works with {resolution_minutes} min increments")
         except ValueError:
             return HttpResponseBadRequest("Invalid date format for start date")
         start_delta = new_start - outage.start
@@ -932,8 +942,8 @@ def change_outage_date(request):
     if new_end:
         try:
             new_end = make_aware(datetime.strptime(new_end, datetime_input_format))
-            if new_end.time().minute not in [0, 15, 30, 45]:
-                return HttpResponseBadRequest("Outage time only works with 15 min increments")
+            if not _is_on_slot_boundary(new_end, resolution_minutes):
+                return HttpResponseBadRequest(f"Outage time only works with {resolution_minutes} min increments")
         except ValueError:
             return HttpResponseBadRequest("Invalid date format for end date")
         end_delta = (new_end - outage.end) if new_end else None

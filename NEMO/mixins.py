@@ -31,10 +31,13 @@ class CalendarDisplayMixin:
     end = None
 
     def get_visual_end(self):
+        from NEMO.views.customization import CalendarCustomization
+
+        min_minutes = CalendarCustomization.get_slot_resolution_minutes()
         if self.end is None:
-            return max(self.start + timedelta(minutes=15), timezone.now())
+            return max(self.start + timedelta(minutes=min_minutes), timezone.now())
         else:
-            return max(self.start + timedelta(minutes=15), self.end)
+            return max(self.start + timedelta(minutes=min_minutes), self.end)
 
 
 class BillableItemMixin:

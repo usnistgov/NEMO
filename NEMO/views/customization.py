@@ -412,6 +412,8 @@ class CalendarCustomization(CustomizationBase):
         "calendar_month_column_format": "ddd",
         "calendar_month_time_format": "h(:mm)t",
         "calendar_start_of_the_day": "07:00:00",
+        "calendar_slot_resolution_minutes": "15",
+        "calendar_slot_label_interval_minutes": "60",
         "calendar_now_indicator": "",
         "calendar_display_not_qualified_areas": "",
         "calendar_all_tools": "",
@@ -430,8 +432,26 @@ class CalendarCustomization(CustomizationBase):
         "reservation_confirmation_time_format": "h:mma",
     }
 
+    def validate(self, name, value):
+        if name in ("calendar_slot_resolution_minutes", "calendar_slot_label_interval_minutes") and value:
+            validate_integer(value)
+            minutes = int(value)
+            if minutes < 1:
+                raise ValidationError("Value must be at least 1 minute.")
+            if name == "calendar_slot_resolution_minutes" and minutes > 60:
+                raise ValidationError("Value must be 60 (1h) or less.")
+            if name == "calendar_slot_resolution_minutes" and 60 % minutes != 0:
+                raise ValidationError("Value must be a divisor of 60 (1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60).")
+
     @classmethod
     def set(cls, name: str, value):
+        if name == "calendar_slot_label_interval_minutes" and value:
+            minutes = quiet_int(value, None)
+            if minutes and minutes > 0:
+                resolution = cls.get_slot_resolution_minutes()
+                # Silent normalization on write: snap to nearest multiple of current resolution.
+                minutes = max(resolution, ((minutes + resolution // 2) // resolution) * resolution)
+                value = str(minutes)
         if name == "create_reservation_confirmation" or name == "change_reservation_confirmation":
             value_changed = value != cls.get(name)
             if value_changed:
@@ -444,6 +464,39 @@ class CalendarCustomization(CustomizationBase):
                         change_reservation_confirmation_override=False
                     )
         super().set(name, value)
+
+    @classmethod
+    def get_slot_resolution_minutes(cls, default=15) -> int:
+        minutes = cls.get_int("calendar_slot_resolution_minutes", default)
+        if not minutes or minutes < 1 or minutes > 60 or 60 % minutes != 0:
+            return default
+        return minutes
+
+    @classmethod
+    def get_slot_label_interval_minutes(cls, default=60) -> int:
+        resolution = cls.get_slot_resolution_minutes()
+        minutes = cls.get_int("calendar_slot_label_interval_minutes", default)
+        if not minutes or minutes < 1:
+            minutes = default
+        if minutes < resolution:
+            minutes = resolution
+        # snap to nearest multiple of the configured resolution if bypassed on save.
+        minutes = max(resolution, ((minutes + resolution // 2) // resolution) * resolution)
+        return minutes
+
+    @classmethod
+    def get_slot_duration(cls) -> str:
+        minutes = cls.get_slot_resolution_minutes()
+        hours = minutes // 60
+        mins = minutes % 60
+        return f"{hours:02d}:{mins:02d}:00"
+
+    @classmethod
+    def get_slot_label_interval(cls) -> str:
+        minutes = cls.get_slot_label_interval_minutes()
+        hours = minutes // 60
+        mins = minutes % 60
+        return f"{hours}:{mins:02d}"
 
 
 @customization(key="dashboard", title="Status dashboard")
