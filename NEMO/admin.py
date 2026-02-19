@@ -244,7 +244,6 @@ class ToolAdmin(admin.ModelAdmin):
         "_operation_mode",
         "problematic",
         "is_configurable",
-        "has_staff_charge",
         "id",
     )
     filter_horizontal = ("_backup_owners", "_staff", "_superusers", "_adjustment_request_reviewers")
@@ -354,10 +353,6 @@ class ToolAdmin(admin.ModelAdmin):
         ),
         ("Dependencies", {"fields": ("required_resources", "nonrequired_resources")}),
     )
-
-    @admin.display(boolean=True, description="Staff Charge")
-    def has_staff_charge(self, obj) -> bool:
-        return obj.staff_charge_id is not None
 
     def save_model(self, request, obj, form, change):
         """
@@ -984,13 +979,29 @@ class ReservationQuestionsAdmin(admin.ModelAdmin):
 
 @register(UsageEvent)
 class UsageEventAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
-    list_display = ("id", "tool", "user", "operator", "project", "start", "end", "duration", "remote_work", "waived")
+    list_display = (
+        "id",
+        "tool",
+        "user",
+        "operator",
+        "project",
+        "start",
+        "end",
+        "duration",
+        "remote_work",
+        "waived",
+        "has_staff_charge",
+    )
     list_filter = ("remote_work", "training", "start", "end", "waived", ("tool", admin.RelatedOnlyFieldListFilter))
     date_hierarchy = "start"
     autocomplete_fields = ["tool", "user", "operator", "project", "validated_by", "waived_by"]
     readonly_fields = ["has_ended"]
     actions = [waive_selected_charges]
     search_fields = ["user__username", "user__first_name", "user__last_name", "tool__name"]
+
+    @admin.display(boolean=True, description="Staff Charge")
+    def has_staff_charge(self, obj) -> bool:
+        return obj.staff_charge_id is not None
 
 
 @register(Consumable)
