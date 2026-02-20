@@ -4,6 +4,46 @@
     <form method="POST" action="{% url 'customize' 'calendar' %}" class="form-horizontal">
         {% csrf_token %}
         <div class="form-group">
+            <label class="control-label col-md-3">Default event view</label>
+            <div class="col-md-9">
+                <div class="radio">
+                    <label>
+                        <input type="radio"
+                               id="calendar_default_event_view"
+                               name="calendar_default_event_view"
+                               {% if not calendar_default_event_view or calendar_default_event_view == 'reservations' %}checked{% endif %}
+                               value="reservations">
+                        Reservations
+                    </label>
+                    <label>
+                        <input type="radio"
+                               id="calendar_default_event_view"
+                               name="calendar_default_event_view"
+                               {% if calendar_default_event_view == 'usage' %}checked{% endif %}
+                               value="usage">
+                        {{ facility_name }} use
+                    </label>
+                    <br>
+                    <label>
+                        <input type="radio"
+                               id="calendar_default_event_view"
+                               name="calendar_default_event_view"
+                               {% if calendar_default_event_view == 'reservations_and_usage' %}checked{% endif %}
+                               value="reservations_and_usage">
+                        Reservations and use
+                    </label>
+                    <label>
+                        <input type="radio"
+                               id="calendar_default_event_view"
+                               name="calendar_default_event_view"
+                               {% if calendar_default_event_view == 'configuration_agenda' %}checked{% endif %}
+                               value="configuration_agenda">
+                        Configuration agenda
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-md-3">Default view</label>
             <div class="col-md-9">
                 <div class="radio">

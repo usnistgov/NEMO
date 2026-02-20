@@ -11,7 +11,17 @@
         <div id="sidebar" class="application-sidebar">
             <div class="btn-group sidebar-item">
                 <button type="button" class="btn btn-default dropdown-toggle" style="width:100%" data-toggle="dropdown">
-                    <span id="event_type">Reservations</span>
+                    <span id="event_type">
+                        {% if customizations|get_item:"calendar_default_event_view" == "reservations_and_usage" %}
+                            Reservations and use
+                        {% elif customizations|get_item:"calendar_default_event_view" == "usage" %}
+                            {{ facility_name }} use
+                        {% elif customizations|get_item:"calendar_default_event_view" == "configuration_agenda" %}
+                            Configuration agenda
+                        {% else %}
+                            Reservations
+                        {% endif %}
+                    </span>
                     <span class="caret"></span>
                 </button>
                 <ul class="dropdown-menu">

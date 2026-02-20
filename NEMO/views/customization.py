@@ -426,6 +426,7 @@ class CalendarCustomization(CustomizationBase):
         "calendar_status_bar_show_tool_pinned_comments": "enabled",
         "calendar_status_bar_show_tool_latest_problem": "enabled",
         "calendar_status_bar_tool_max_width": "400",
+        "calendar_default_event_view": "reservations",
         "create_reservation_confirmation": "",
         "change_reservation_confirmation": "",
         "reservation_confirmation_date_format": "MMMM D, yyyy",
