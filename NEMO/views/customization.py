@@ -719,6 +719,7 @@ class ToolCustomization(CustomizationBase):
         "tool_control_use_for_other_remote": "Use this tool for a remote project",
         "tool_control_note_show": "",
         "tool_control_note_copy_reservation": "",
+        "tool_control_hide_tool_owners": "",
         "tool_problem_max_image_size_pixels": "750",
         "tool_problem_send_to_all_qualified_users": "",
         "tool_problem_allow_regular_user_preferences": "",
