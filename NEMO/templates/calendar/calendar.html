@@ -375,8 +375,8 @@ function create(start, end, jsEvent, view)
 	let item = $(".selected");
 	{# Only allow reservations to be created when a item has been selected. #}
 	let item_selected = (item != null);
-	{# Only allow selection to proceed when we're in reservation view (instead of use view). #}
-	let reservation_view = get_event_type() === 'reservations';
+	{# Only allow selection to proceed when we're in one of the reservation views (instead of use view). #}
+	let reservation_view = get_event_type() === 'reservations' || get_event_type() === 'reservations and use';
 	{# Users may not create reservations when viewing their personal schedule. #}
 	let personal_schedule = item.hasClass('personal_schedule');
 	let all_tools = item.hasClass('all_tools');
