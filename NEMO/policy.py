@@ -193,7 +193,7 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
             return HttpResponseBadRequest("You must be a staff member to use a tool on another user's behalf.")
 
         # All required resources must be available to operate a tool except for staff or service personnel.
-        unavailable_rss = tool.required_resource_set.filter(available=False).exists()
+        unavailable_rss = tool.required_resources.filter(available=False).exists()
         if unavailable_rss and not operator.is_staff_on_tool(tool) and not operator.is_service_personnel:
             return HttpResponseBadRequest("A resource that is required to operate this tool is unavailable.")
 

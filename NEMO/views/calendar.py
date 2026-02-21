@@ -1013,7 +1013,9 @@ def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime =
         current_reservation_qs = Reservation.objects.filter(
             start__lt=timezone.now(), end__gt=timezone.now(), cancelled=False, missed=False, shortened=False, user=user
         )
-        current_reservation = current_reservation_qs.get(**{ReservationItemType.from_item(item).value: item})
+        reservation_item_type = ReservationItemType.from_item(item)
+        reservation_item_id = item.tool_or_parent_id() if reservation_item_type == ReservationItemType.TOOL else item.id
+        current_reservation = current_reservation_qs.get(**{reservation_item_type.value: reservation_item_id})
         # Staff are exempt from mandatory reservation shortening.
         if (user.is_staff is False and user.is_staff_on_tool(item) is False) or force:
             new_reservation = current_reservation.copy(new_end=new_end)
