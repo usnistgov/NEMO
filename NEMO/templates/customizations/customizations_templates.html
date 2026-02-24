@@ -31,7 +31,7 @@
 </div>
 <div class="panel-body">
     <h3 class="customization-section-title" id="facility_rules_tutorial_id">
-        &quot;<a href="{% url 'facility_rules' %}" target="_blank">{{ facility_name }} rules tutorial</a>&quot; page
+        &quot;<a href="{% url 'facility_rules' %}" target="_blank">{{ customizations|get_item:"facility_rules_name" }}</a>&quot; page
     </h3>
     <p>
         The {{ customizations|get_item:"facility_rules_name"|lower }} is an opportunity to provide new users with a tutorial to your facility operating procedures and rules.
