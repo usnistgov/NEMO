@@ -823,13 +823,13 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
             if item.policy_off_between_times:
                 if item.policy_off_start_time < item.policy_off_end_time:
                     reservations_for_that_day = reservations_for_that_day.exclude(
-                        start__gte=datetime.combine(start_of_day.date(), item.policy_off_start_time),
-                        end__lte=datetime.combine(start_of_day.date(), item.policy_off_end_time),
+                        start__gte=datetime.combine(start_of_day.date(), item.policy_off_start_time).astimezone(),
+                        end__lte=datetime.combine(start_of_day.date(), item.policy_off_end_time).astimezone(),
                     )
                 else:
                     reservations_for_that_day = reservations_for_that_day.exclude(
-                        start__gte=datetime.combine(start_of_day.date(), item.policy_off_start_time),
-                        end__lte=datetime.combine(end_of_day.date(), item.policy_off_end_time),
+                        start__gte=datetime.combine(start_of_day.date(), item.policy_off_start_time).astimezone(),
+                        end__lte=datetime.combine(end_of_day.date(), item.policy_off_end_time).astimezone(),
                     )
             reservations_for_that_day = reservations_for_that_day.filter(**new_reservation.reservation_item_filter)
             # Exclude any reservation that is being cancelled.
