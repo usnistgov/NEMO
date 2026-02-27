@@ -42,7 +42,12 @@ from NEMO.views.consumables import (
     make_withdrawal_success_message,
     self_checkout,
 )
-from NEMO.views.customization import ApplicationCustomization, ToolCustomization, UserCustomization
+from NEMO.views.customization import (
+    ApplicationCustomization,
+    CalendarCustomization,
+    ToolCustomization,
+    UserCustomization,
+)
 from NEMO.views.get_projects import get_projects
 from NEMO.views.tasks import save_task
 from NEMO.views.tool_control import (
@@ -387,6 +392,7 @@ def tool_reservation(request, tool_id, user_id, back):
         "project": project,
         "customer": customer,
         "back": back,
+        "calendar_slot_duration": CalendarCustomization.get_slot_resolution_minutes(),
         "tool_reservation_times": list(
             Reservation.objects.filter(
                 cancelled=False, missed=False, shortened=False, tool=tool, start__gte=timezone.now()

@@ -67,6 +67,7 @@ def new_reservation(request, item_type, item_id, date=None):
         "item": item,
         "item_type": item_type.value,
         "date": parse_date(date) if date else None,
+        "calendar_slot_duration": CalendarCustomization.get_slot_resolution_minutes(),
         "item_reservation_times": list(
             Reservation.objects.filter(**{item_type.value: item}).filter(
                 cancelled=False, missed=False, shortened=False, start__gte=timezone.now()
