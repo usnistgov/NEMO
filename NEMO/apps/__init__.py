@@ -53,6 +53,8 @@ class NEMOConfig(AppConfig):
     def ready(self):
         from NEMO.plugins import utils  # needed for checks
 
+        monkey_patch_json_field_for_oracle()
+
         if "migrate" in sys.argv or "makemigrations" in sys.argv:
             return
         from django.apps import apps
@@ -60,4 +62,3 @@ class NEMOConfig(AppConfig):
         if apps.is_installed("django.contrib.admin"):
             init_admin_site()
         init_rates()
-        monkey_patch_json_field_for_oracle()
