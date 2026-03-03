@@ -1037,7 +1037,7 @@ class ConsumableWithdrawAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, 
     list_display = ("id", "customer", "merchant", "consumable", "quantity", "project", "date", "waived")
     list_filter = ("date", "waived", ("consumable", admin.RelatedOnlyFieldListFilter))
     date_hierarchy = "date"
-    autocomplete_fields = ["customer", "merchant", "consumable", "project", "validated_by", "waived_by"]
+    autocomplete_fields = ["customer", "merchant", "consumable", "project", "validated_by", "waived_by", "usage_event"]
     actions = [waive_selected_charges]
 
 
