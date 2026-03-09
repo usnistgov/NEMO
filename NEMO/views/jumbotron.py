@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
@@ -20,6 +21,8 @@ def jumbotron(request):
 @require_GET
 def jumbotron_content(request):
     mark_alerts_as_expired()
+    area_names = request.GET.getlist("area", [])
+    tool_categories = request.GET.getlist("category", [])
     display_alerts = request.GET.get("alerts", True) != "false"
     display_occupancy = request.GET.get("occupancy", True) != "false"
     display_usage = request.GET.get("usage", True) != "false"
@@ -36,11 +39,22 @@ def jumbotron_content(request):
         )
         dictionary["disabled_resources"] = Resource.objects.filter(available=False)
     if display_occupancy:
+        area_name_filter = Q()
+        if area_names:
+            for area_name in area_names:
+                area_name_filter |= Q(area__name__iexact=area_name)
         dictionary["facility_occupants"] = (
             AreaAccessRecord.objects.filter(end=None, staff_charge=None)
+            .filter(area_name_filter)
             .prefetch_related("customer", "project")
             .order_by("area__name", "start")
         )
     if display_usage:
-        dictionary["usage_events"] = UsageEvent.objects.filter(end=None).prefetch_related("operator", "user", "tool")
+        category_filter = Q()
+        if tool_categories:
+            for category in tool_categories:
+                category_filter |= Q(tool___category__istartswith=category)
+        dictionary["usage_events"] = (
+            UsageEvent.objects.filter(end=None).filter(category_filter).prefetch_related("operator", "user", "tool")
+        )
     return render(request, "jumbotron/jumbotron_content.html", dictionary)

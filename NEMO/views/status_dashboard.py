@@ -75,18 +75,20 @@ def status_dashboard(request, tab=None):
     elif interest == "staff":
         return render(request, "status_dashboard/staff.html", get_staff_status(request))
     elif interest == "tools":
-        return render(request, "status_dashboard/tools.html", get_tools_dictionary())
+        return render(request, "status_dashboard/tools.html", get_tools_dictionary(request))
     elif interest == "occupancy":
         return render(request, "status_dashboard/occupancy.html", get_occupancy_dictionary(request))
 
 
-def get_tools_dictionary():
-    return {"tool_summary": create_tool_summary(tooltip_info=True)}
+def get_tools_dictionary(request):
+    tool_categories = request.GET.getlist("category", [])
+    return {"tool_summary": create_tool_summary(tooltip_info=True, tool_categories=tool_categories)}
 
 
 def get_occupancy_dictionary(request):
+    area_names = request.GET.getlist("area", [])
     reservations_can_expire = Area.objects.filter(requires_reservation=True)
-    area_items, no_occupants = process_area_access_record_with_parents(request.user)
+    area_items, no_occupants = process_area_access_record_with_parents(request.user, area_names)
     return {"area_items": area_items, "no_occupants": no_occupants, "reservations_can_expire": reservations_can_expire}
 
 
@@ -298,9 +300,14 @@ def show_staff_status(request):
     )
 
 
-def process_area_access_record_with_parents(user: User):
+def process_area_access_record_with_parents(user: User, area_names=None):
     show_not_qualified_areas = StatusDashboardCustomization.get("dashboard_display_not_qualified_areas")
     records = AreaAccessRecord.objects.filter(end=None, staff_charge=None)
+    if area_names:
+        area_name_filter = Q()
+        for area_name in area_names:
+            area_name_filter |= Q(area__name__iexact=area_name)
+        records = records.filter(area_name_filter)
     if not user.is_any_part_of_staff and show_not_qualified_areas != "enabled":
         records = records.filter(area__in=user.accessible_areas())
     records = records.prefetch_related("customer", "project", "area")
@@ -346,21 +353,35 @@ def area_tree_helper(
     yield "out"
 
 
-def create_tool_summary(tooltip_info=False):
-    tools = Tool.objects.filter(visible=True).prefetch_related(
-        "_primary_owner",
-        "_backup_owners",
-        "_superusers",
-        Prefetch("_requires_area_access", queryset=Area.objects.all().only("name")),
+def create_tool_summary(tooltip_info=False, tool_categories=None):
+    category_filter = Q()
+    if tool_categories:
+        for category in tool_categories:
+            category_filter |= Q(_category__istartswith=category)
+    tools = (
+        Tool.objects.filter(visible=True)
+        .filter(category_filter)
+        .prefetch_related(
+            "_primary_owner",
+            "_backup_owners",
+            "_superusers",
+            Prefetch("_requires_area_access", queryset=Area.objects.all().only("name")),
+        )
     )
     tasks = Task.objects.filter(cancelled=False, resolved=False, tool__visible=True).prefetch_related("tool")
     unavailable_resources = Resource.objects.filter(available=False).prefetch_related(
         "fully_dependent_tools", "partially_dependent_tools"
     )
     # also check for visibility on the parent if there is one (alternate tool are hidden)
-    usage_events = UsageEvent.objects.filter(
-        Q(end=None, tool__visible=True) | Q(end=None, tool__parent_tool__visible=True)
-    ).prefetch_related("operator", "user", "tool")
+    category_filter = Q()
+    if tool_categories:
+        for category in tool_categories:
+            category_filter |= Q(tool___category__istartswith=category)
+    usage_events = (
+        UsageEvent.objects.filter(Q(end=None, tool__visible=True) | Q(end=None, tool__parent_tool__visible=True))
+        .filter(category_filter)
+        .prefetch_related("operator", "user", "tool")
+    )
     scheduled_outages = ScheduledOutage.objects.filter(
         start__lte=timezone.now(), end__gt=timezone.now(), area__isnull=True
     )

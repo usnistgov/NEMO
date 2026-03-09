@@ -226,7 +226,7 @@ def usage(
     )
     selected_managed_user_id = request.GET.get("managed_user")
     base_dictionary["selected_managed_user"] = selected_managed_user_id
-    if selected_managed_user_id:
+    if selected_managed_user_id or not show_only_my_usage:
         base_dictionary["explicitly_display_customer"] = True
     project_id = request.GET.get("project") or request.GET.get("pi_project")
     if user_managed_projects:

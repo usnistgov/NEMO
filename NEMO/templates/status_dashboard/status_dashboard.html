@@ -70,7 +70,7 @@
 	function on_load()
 	{
         {# load everything asynchronously. especially tools tab since it takes a bit longer to load #}
-        $("#tool_status_table").load("{% url 'status_dashboard' %}?interest=tools", hide_spinner);
+        $("#tool_status_table").load("{% url 'status_dashboard' %}?interest=tools" + window.location.search.replace('?', '&'), hide_spinner);
         refresh_staff_status_dashboard();
         refresh_status_dashboard();
 		filter('tools in use');
@@ -98,11 +98,11 @@
     {
         {# Set permanent url so we can refresh specific tab #}
         let title = "Area occupancy";
-        let new_url = "{% url 'status_dashboard_tab' 'occupancy' %}";
+        let new_url = "{% url 'status_dashboard_tab' 'occupancy' %}" + window.location.search;
         if ($("#tools").hasClass("active"))
         {
             title = "Tool status";
-            new_url = "{% url 'status_dashboard_tab' 'tools' %}";
+            new_url = "{% url 'status_dashboard_tab' 'tools' %}" + window.location.search;
         }
         else if ($("#staff").hasClass("active"))
         {
@@ -115,8 +115,8 @@
 	function refresh_status_dashboard()
 	{
 		let occupancy_tab = $("#occupancy");
-		if(occupancy_tab.hasClass("active")) occupancy_tab.load("{% url 'status_dashboard' %}?interest=occupancy", hide_spinner);
-		if($("#tools").hasClass("active")) $("#tool_status_table").load("{% url 'status_dashboard' %}?interest=tools", hide_spinner);
+		if(occupancy_tab.hasClass("active")) occupancy_tab.load("{% url 'status_dashboard' %}?interest=occupancy" + window.location.search.replace('?', '&'), hide_spinner);
+		if($("#tools").hasClass("active")) $("#tool_status_table").load("{% url 'status_dashboard' %}?interest=tools" + window.location.search.replace('?', '&'), hide_spinner);
 	}
 
     function refresh_staff_status_dashboard(parameters)
