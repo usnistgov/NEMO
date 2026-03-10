@@ -40,6 +40,11 @@ body.impersonating .application-sidebar, body.impersonating .application-content
 	top: 95px;
 }
 
+#calendar
+{
+	margin-bottom: 50px;
+}
+
 #calendar th
 {
 	font-weight: normal;

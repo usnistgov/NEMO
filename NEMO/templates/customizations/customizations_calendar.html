@@ -4,6 +4,46 @@
     <form method="POST" action="{% url 'customize' 'calendar' %}" class="form-horizontal">
         {% csrf_token %}
         <div class="form-group">
+            <label class="control-label col-md-3">Default event view</label>
+            <div class="col-md-9">
+                <div class="radio">
+                    <label>
+                        <input type="radio"
+                               id="calendar_default_event_view"
+                               name="calendar_default_event_view"
+                               {% if not calendar_default_event_view or calendar_default_event_view == 'reservations' %}checked{% endif %}
+                               value="reservations">
+                        Reservations
+                    </label>
+                    <label>
+                        <input type="radio"
+                               id="calendar_default_event_view"
+                               name="calendar_default_event_view"
+                               {% if calendar_default_event_view == 'usage' %}checked{% endif %}
+                               value="usage">
+                        {{ facility_name }} use
+                    </label>
+                    <br>
+                    <label>
+                        <input type="radio"
+                               id="calendar_default_event_view"
+                               name="calendar_default_event_view"
+                               {% if calendar_default_event_view == 'reservations_and_usage' %}checked{% endif %}
+                               value="reservations_and_usage">
+                        Reservations and use
+                    </label>
+                    <label>
+                        <input type="radio"
+                               id="calendar_default_event_view"
+                               name="calendar_default_event_view"
+                               {% if calendar_default_event_view == 'configuration_agenda' %}checked{% endif %}
+                               value="configuration_agenda">
+                        Configuration agenda
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-md-3">Default view</label>
             <div class="col-md-9">
                 <div class="radio">
@@ -68,6 +108,44 @@
                        placeholder="07:00:00">
             </div>
             <div class="col-md-6 help-block light-grey">The time the day starts in the calendar view (24h format).</div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="calendar_slot_resolution_minutes">Calendar resolution</label>
+            <div class="col-md-3">
+                <div class="input-group">
+                    {% with selected_resolution=calendar_slot_resolution_minutes|default:"15" %}
+                        <select id="calendar_slot_resolution_minutes" name="calendar_slot_resolution_minutes" class="form-control">
+                            <option value="5" {% if selected_resolution == "5" %}selected{% endif %}>5</option>
+                            <option value="10" {% if selected_resolution == "10" %}selected{% endif %}>10</option>
+                            <option value="15" {% if selected_resolution == "15" %}selected{% endif %}>15</option>
+                            <option value="20" {% if selected_resolution == "20" %}selected{% endif %}>20</option>
+                            <option value="30" {% if selected_resolution == "30" %}selected{% endif %}>30</option>
+                            <option value="60" {% if selected_resolution == "60" %}selected{% endif %}>60</option>
+                        </select>
+                    {% endwith %}
+                    <span class="input-group-addon">minutes</span>
+                </div>
+            </div>
+            <div class="col-md-6 help-block light-grey">Acts as global minimum reservation time.</div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="calendar_slot_label_interval_minutes">Time label interval</label>
+            <div class="col-md-3">
+                <div class="input-group">
+                    <input type="number"
+                           id="calendar_slot_label_interval_minutes"
+                           name="calendar_slot_label_interval_minutes"
+                           class="form-control"
+                           min="1"
+                           value="{{ calendar_slot_label_interval_minutes|default:60 }}">
+                    <span class="input-group-addon">minutes</span>
+                </div>
+            </div>
+            <div class="col-md-6 help-block light-grey">
+                Time label spacing is rounded to the nearest multiple of calendar resolution when saved.
+                <br>
+                Adjust axis time format if &lt; 60.
+            </div>
         </div>
         <div class="form-group">
             <label class="control-label col-md-3" for="calendar_outage_recurrence_limit">Outage recurrence limit</label>

@@ -114,7 +114,7 @@ class ImpersonateMiddleware(MiddlewareMixin):
 
 class NEMOAuditlogMiddleware:
     """
-    Middleware to couple the request's user to log items. This is accomplished by currying the
+    Middleware to couple the request's user to log items. This is carried out by currying the
     signal receiver with the user from the request (or None if the user is not authenticated).
     """
 

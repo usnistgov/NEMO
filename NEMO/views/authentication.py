@@ -30,7 +30,7 @@ auth_logger = getLogger(__name__)
 
 
 def get_full_class_name(clas):
-    return clas.__module__ + "." + clas.__name__
+    return f"{clas.__module__}.{clas.__qualname__}"
 
 
 def get_auth_backends():

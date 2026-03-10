@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_GET
 from requests import get
 
-from NEMO.decorators import any_staff_required
+from NEMO.decorators import staff_member_or_tool_staff_required
 from NEMO.models import (
     Account,
     AccountType,
@@ -158,7 +158,7 @@ def user_usage(request):
     )
 
 
-@any_staff_required
+@staff_member_or_tool_staff_required
 @require_GET
 def staff_usage(request):
     csv_export = bool(request.GET.get("csv", False))
@@ -226,7 +226,7 @@ def usage(
     )
     selected_managed_user_id = request.GET.get("managed_user")
     base_dictionary["selected_managed_user"] = selected_managed_user_id
-    if selected_managed_user_id:
+    if selected_managed_user_id or not show_only_my_usage:
         base_dictionary["explicitly_display_customer"] = True
     project_id = request.GET.get("project") or request.GET.get("pi_project")
     if user_managed_projects:

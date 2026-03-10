@@ -39,6 +39,7 @@ from django.urls import NoReverseMatch, resolve, reverse
 from django.utils import timezone as django_timezone
 from django.utils.formats import date_format, get_format, time_format
 from django.utils.html import format_html
+from django.utils.module_loading import import_string
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
@@ -908,12 +909,7 @@ def get_classes_from_settings(setting_name: str, default_value: Iterable) -> Lis
         setting_classes = [setting_classes]
     assert isinstance(setting_classes, Iterable)
     assert not isinstance(setting_classes, str)
-    classes = []
-    for setting_class in setting_classes:
-        pkg, attr = setting_class.rsplit(".", 1)
-        ret = getattr(importlib.import_module(pkg), attr)
-        classes.append(ret())
-    return classes
+    return [import_string(path)() for path in setting_classes]
 
 
 def create_ics(

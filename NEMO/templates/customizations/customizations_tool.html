@@ -267,54 +267,62 @@
             <div class="col-md-offset-3 col-md-9 help-block light-grey">
                 <label for="tool_control_use_self">This label if used when a user is using a tool for himself</label>
             </div>
-            <div class="col-md-offset-3 col-md-7">
-                <input type="text"
-                       id="tool_control_use_self_training"
-                       name="tool_control_use_self_training"
-                       class="form-control"
-                       value="{{ tool_control_use_self_training }}" />
-            </div>
-            <div class="col-md-offset-3 col-md-9 help-block light-grey">
-                <label for="tool_control_use_self_training">
-                    This label if used when a user is using a tool form himself for a training
-                </label>
-            </div>
-            <div class="col-md-offset-3 col-md-7">
-                <input type="text"
-                       id="tool_control_use_for_other"
-                       name="tool_control_use_for_other"
-                       class="form-control"
-                       value="{{ tool_control_use_for_other }}" />
-            </div>
-            <div class="col-md-offset-3 col-md-9 help-block light-grey">
-                <label for="tool_control_use_for_other">
-                    This label if used when a user is using a tool on behalf of someone else
-                </label>
-            </div>
-            <div class="col-md-offset-3 col-md-7">
-                <input type="text"
-                       id="tool_control_use_for_other_training"
-                       name="tool_control_use_for_other_training"
-                       class="form-control"
-                       value="{{ tool_control_use_for_other_training }}" />
-            </div>
-            <div class="col-md-offset-3 col-md-9 help-block light-grey">
-                <label for="tool_control_use_for_other_training">
-                    This label if used when a user is using a tool on behalf of someone else for training
-                </label>
-            </div>
-            <div class="col-md-offset-3 col-md-7">
-                <input type="text"
-                       id="tool_control_use_for_other_remote"
-                       name="tool_control_use_for_other_remote"
-                       class="form-control"
-                       value="{{ tool_control_use_for_other_remote }}" />
-            </div>
-            <div class="col-md-offset-3 col-md-9 help-block light-grey">
-                <label for="tool_control_use_for_other_remote">
-                    This label if used when a user is using a tool on behalf of someone else for a remote project
-                </label>
-            </div>
+            {% if customizations|get_item:"training_show_self_option_in_tool_control" == "enabled" %}
+                <div class="col-md-offset-3 col-md-7">
+                    <input type="text"
+                           id="tool_control_use_self_training"
+                           name="tool_control_use_self_training"
+                           class="form-control"
+                           value="{{ tool_control_use_self_training }}" />
+                </div>
+                <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                    <label for="tool_control_use_self_training">
+                        This label if used when a user is using a tool for himself for a training
+                    </label>
+                </div>
+            {% endif %}
+            {% if customizations|get_item:"remote_work_on_behalf_of_user" == "ask" or customizations|get_item:"remote_work_on_behalf_of_user" == "never" %}
+                <div class="col-md-offset-3 col-md-7">
+                    <input type="text"
+                           id="tool_control_use_for_other"
+                           name="tool_control_use_for_other"
+                           class="form-control"
+                           value="{{ tool_control_use_for_other }}" />
+                </div>
+                <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                    <label for="tool_control_use_for_other">
+                        This label if used when a user is using a tool on behalf of someone else
+                    </label>
+                </div>
+            {% endif %}
+            {% if customizations|get_item:"training_show_behalf_option_in_tool_control" == "enabled" %}
+                <div class="col-md-offset-3 col-md-7">
+                    <input type="text"
+                           id="tool_control_use_for_other_training"
+                           name="tool_control_use_for_other_training"
+                           class="form-control"
+                           value="{{ tool_control_use_for_other_training }}" />
+                </div>
+                <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                    <label for="tool_control_use_for_other_training">
+                        This label if used when a user is using a tool on behalf of someone else for training
+                    </label>
+                </div>
+            {% endif %}
+            {% if customizations|get_item:"remote_work_on_behalf_of_user" == "ask" or customizations|get_item:"remote_work_on_behalf_of_user" == "always" %}
+                <div class="col-md-offset-3 col-md-7">
+                    <input type="text"
+                           id="tool_control_use_for_other_remote"
+                           name="tool_control_use_for_other_remote"
+                           class="form-control"
+                           value="{{ tool_control_use_for_other_remote }}" />
+                </div>
+                <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                    <label for="tool_control_use_for_other_remote">
+                        This label if used when a user is using a tool on behalf of someone else for a remote project
+                    </label>
+                </div>
+            {% endif %}
         </div>
         <div class="form-group">
             <label class="control-label col-sm-4 col-md-3">Run data history</label>
@@ -327,6 +335,21 @@
                                {% if tool_control_hide_data_history_users %}checked{% endif %}
                                value="enabled">
                         Check to only show run data history tab for staff members
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Hide tool owners</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               id="tool_control_hide_tool_owners"
+                               name="tool_control_hide_tool_owners"
+                               {% if tool_control_hide_tool_owners %}checked{% endif %}
+                               value="enabled">
+                        Check to hide tool owners information (primary, backup and superusers) from the details page
                     </label>
                 </div>
             </div>

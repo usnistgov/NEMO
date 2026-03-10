@@ -1,6 +1,7 @@
 from abc import ABC
 from collections import defaultdict
 from datetime import datetime, time, timedelta
+from logging import getLogger
 from typing import Any, Callable, Iterable, List, Optional, Tuple, Union
 
 from django.conf import settings
@@ -8,6 +9,7 @@ from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils import timezone
 
+from NEMO.constants import EXTRA_POLICIES_SETTING, MAIN_POLICY_SETTING
 from NEMO.exceptions import (
     InactiveUserError,
     ItemNotAllowedForProjectException,
@@ -56,6 +58,8 @@ from NEMO.views.customization import (
     ToolCustomization,
     get_media_file_contents,
 )
+
+policy_logger = getLogger(__name__)
 
 
 class BaseNEMOPolicy(ABC):
@@ -189,7 +193,7 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
             return HttpResponseBadRequest("You must be a staff member to use a tool on another user's behalf.")
 
         # All required resources must be available to operate a tool except for staff or service personnel.
-        unavailable_rss = tool.required_resource_set.filter(available=False).exists()
+        unavailable_rss = tool.required_resources.filter(available=False).exists()
         if unavailable_rss and not operator.is_staff_on_tool(tool) and not operator.is_service_personnel:
             return HttpResponseBadRequest("A resource that is required to operate this tool is unavailable.")
 
@@ -819,13 +823,13 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
             if item.policy_off_between_times:
                 if item.policy_off_start_time < item.policy_off_end_time:
                     reservations_for_that_day = reservations_for_that_day.exclude(
-                        start__gte=datetime.combine(start_of_day.date(), item.policy_off_start_time),
-                        end__lte=datetime.combine(start_of_day.date(), item.policy_off_end_time),
+                        start__gte=datetime.combine(start_of_day.date(), item.policy_off_start_time).astimezone(),
+                        end__lte=datetime.combine(start_of_day.date(), item.policy_off_end_time).astimezone(),
                     )
                 else:
                     reservations_for_that_day = reservations_for_that_day.exclude(
-                        start__gte=datetime.combine(start_of_day.date(), item.policy_off_start_time),
-                        end__lte=datetime.combine(end_of_day.date(), item.policy_off_end_time),
+                        start__gte=datetime.combine(start_of_day.date(), item.policy_off_start_time).astimezone(),
+                        end__lte=datetime.combine(end_of_day.date(), item.policy_off_end_time).astimezone(),
                     )
             reservations_for_that_day = reservations_for_that_day.filter(**new_reservation.reservation_item_filter)
             # Exclude any reservation that is being cancelled.
@@ -1291,33 +1295,58 @@ class NEMOPolicyChain:
 
 def get_policy_classes() -> List[BaseNEMOPolicy]:
     """
-    Returns policy class instances in order.
+    Returns unique policy class instances in order.
+    Checks MAIN_POLICY_CLASS/EXTRA_POLICY_CLASSES first,
+    falls back to POLICY_CLASS/POLICY_CLASSES for backward compatibility.
     """
-    policies = []
+    default_policy_path = f"{DefaultNEMOPolicy.__module__}.{DefaultNEMOPolicy.__qualname__}"
 
-    # If the legacy single-policy setting exists, always put it first
-    if hasattr(settings, "NEMO_POLICY_CLASS"):
-        legacy = get_class_from_settings("NEMO_POLICY_CLASS", None)
-        if legacy:
-            policies.append(legacy)
-
-    # Then append the configured list
-    if hasattr(settings, "NEMO_POLICY_CLASSES"):
-        policies.extend(get_classes_from_settings("NEMO_POLICY_CLASSES", ["NEMO.policy.DefaultNEMOPolicy"]))
+    # ---------------------------------------------------------
+    # 1. Resolve Main Policy (Prioritize New -> Old -> Default)
+    # ---------------------------------------------------------
+    if hasattr(settings, MAIN_POLICY_SETTING):
+        # New setting found
+        main_policy = get_class_from_settings(MAIN_POLICY_SETTING, default_policy_path)
+    elif hasattr(settings, "NEMO_POLICY_CLASS"):
+        # Fallback to the old setting
+        policy_logger.warning(
+            f"NEMO_POLICY_CLASS is deprecated. Please rename it to {MAIN_POLICY_SETTING} in settings.py",
+        )
+        main_policy = get_class_from_settings("NEMO_POLICY_CLASS", default_policy_path)
     else:
-        policies.extend(get_classes_from_settings("NEMO_POLICY_CLASSES", ["NEMO.policy.DefaultNEMOPolicy"]))
+        # Neither exists, use default
+        # (We call the getter on the new name, knowing it defaults to 'default_policy_path')
+        main_policy = get_class_from_settings(MAIN_POLICY_SETTING, default_policy_path)
 
-    # De-duplicate by instance type, preserving order
-    unique_classes = []
+    # ---------------------------------------------------------
+    # 2. Resolve Extra Policies (Prioritize New -> Old -> Empty)
+    # ---------------------------------------------------------
+    if hasattr(settings, EXTRA_POLICIES_SETTING):
+        extra_policies = get_classes_from_settings(EXTRA_POLICIES_SETTING, [])
+    elif hasattr(settings, "NEMO_POLICY_CLASSES"):
+        policy_logger.warning(
+            f"NEMO_POLICY_CLASSES is deprecated. Please rename it to {EXTRA_POLICIES_SETTING} in settings.py",
+        )
+        extra_policies = get_classes_from_settings("NEMO_POLICY_CLASSES", [])
+    else:
+        extra_policies = []
+
+    # ---------------------------------------------------------
+    # 3. Combine & Deduplicate
+    # ---------------------------------------------------------
+    # Construct list (handling explicitly set None for main_policy)
+    all_policies = ([main_policy] if main_policy else []) + extra_policies
+
+    # 4. Deduplicate by type, preserving order
+    unique_policies = []
     seen_types = set()
-    for policy in policies:
-        t = type(policy)
-        if t in seen_types:
-            continue
-        seen_types.add(t)
-        unique_classes.append(policy)
 
-    return unique_classes
+    for policy in all_policies:
+        if type(policy) not in seen_types:
+            seen_types.add(type(policy))
+            unique_policies.append(policy)
+
+    return unique_policies
 
 
 NEMOPolicy = DefaultNEMOPolicy

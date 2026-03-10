@@ -4,6 +4,25 @@ from django.apps import AppConfig
 from django.contrib.auth.decorators import login_required
 
 
+def monkey_patch_json_field_for_oracle():
+    from django.db.models.fields.json import JSONField
+
+    # Save the original method
+    original_from_db_value = JSONField.from_db_value
+
+    # Define a wrapper that checks the type first
+    def patched_from_db_value(self, value, expression, connection):
+        # If the driver already parsed it into a native Python type, just return it
+        if isinstance(value, (dict, list)):
+            return value
+
+        # Otherwise, let Django handle it as usual (string/bytes parsing)
+        return original_from_db_value(self, value, expression, connection)
+
+    # Apply the patch
+    JSONField.from_db_value = patched_from_db_value
+
+
 def init_admin_site():
     from NEMO.views.customization import ApplicationCustomization, ProjectsAccountsCustomization
     from NEMO.admin import ProjectAdmin
@@ -33,6 +52,8 @@ class NEMOConfig(AppConfig):
 
     def ready(self):
         from NEMO.plugins import utils  # needed for checks
+
+        monkey_patch_json_field_for_oracle()
 
         if "migrate" in sys.argv or "makemigrations" in sys.argv:
             return

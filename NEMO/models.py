@@ -1242,7 +1242,7 @@ class Tool(SerializationByNameModel):
     )
     _tool_calendar_color = models.CharField(
         db_column="tool_calendar_color",
-        verbose_name="tool_calendar_color",
+        verbose_name="tool calendar color",
         max_length=9,
         default="#33ad33",
         help_text="Color for tool reservations in calendar overviews",
@@ -1264,7 +1264,7 @@ class Tool(SerializationByNameModel):
     )
     _problem_shutdown_enabled = models.BooleanField(
         db_column="problem_shutdown_enabled",
-        verbose_name="problem_shutdown_enabled",
+        verbose_name="problem shutdown enabled",
         default=True,
         help_text="Whether or not users can shut down the tool when reporting a problem.",
     )
@@ -1275,7 +1275,7 @@ class Tool(SerializationByNameModel):
     _primary_owner = models.ForeignKey(
         User,
         db_column="primary_owner_id",
-        verbose_name="primary_owner",
+        verbose_name="primary owner",
         null=True,
         blank=True,
         related_name="primary_tool_owner",
@@ -1285,7 +1285,7 @@ class Tool(SerializationByNameModel):
     _backup_owners = models.ManyToManyField(
         User,
         db_table="NEMO_tool_backup_owners",
-        verbose_name="backup_owners",
+        verbose_name="backup owners",
         blank=True,
         related_name="backup_for_tools",
         help_text="Alternate staff members who are responsible for administration of this tool when the primary owner is unavailable.",
@@ -1309,7 +1309,7 @@ class Tool(SerializationByNameModel):
     _adjustment_request_reviewers = models.ManyToManyField(
         User,
         db_table="NEMO_tool_adjustment_request_reviewers",
-        verbose_name="adjustment_request_reviewers",
+        verbose_name="adjustment request reviewers",
         blank=True,
         related_name="adjustment_request_reviewer_on_tools",
         help_text="Users who can approve/deny adjustment requests for this tool. Defaults to facility managers if left blank.",
@@ -1319,11 +1319,11 @@ class Tool(SerializationByNameModel):
         db_column="location", verbose_name="location", null=True, blank=True, max_length=CHAR_FIELD_SMALL_LENGTH
     )
     _phone_number = models.CharField(
-        db_column="phone_number", verbose_name="phone_number", null=True, blank=True, max_length=CHAR_FIELD_SMALL_LENGTH
+        db_column="phone_number", verbose_name="phone number", null=True, blank=True, max_length=CHAR_FIELD_SMALL_LENGTH
     )
     _notification_email_address = models.EmailField(
         db_column="notification_email_address",
-        verbose_name="notification_email_address",
+        verbose_name="notification email address",
         blank=True,
         null=True,
         help_text="Messages that relate to this tool (such as comments, problems, and shutdowns) will be forwarded to this email address. This can be a normal email address or a mailing list address.",
@@ -1339,7 +1339,7 @@ class Tool(SerializationByNameModel):
     # Qualification expiration fields
     _qualification_reminder_days = models.CharField(
         db_column="qualification_reminder_days",
-        verbose_name="qualification_reminder_days",
+        verbose_name="qualification reminder days",
         null=True,
         blank=True,
         max_length=CHAR_FIELD_MEDIUM_LENGTH,
@@ -1348,21 +1348,21 @@ class Tool(SerializationByNameModel):
     )
     _qualification_expiration_days = models.PositiveIntegerField(
         db_column="qualification_expiration_days",
-        verbose_name="qualification_expiration_days",
+        verbose_name="qualification expiration days",
         null=True,
         blank=True,
         help_text="The number of days from the user’s last tool use until the qualification expires.",
     )
     _qualification_expiration_never_used_days = models.PositiveIntegerField(
         db_column="qualification_expiration_never_used_days",
-        verbose_name="qualification_expiration_never_used_days",
+        verbose_name="qualification expiration never used days",
         null=True,
         blank=True,
         help_text="Number of days from the user's first qualification until the qualification expires (if the user never used the tool).",
     )
     _qualification_notification_email = fields.MultiEmailField(
         db_column="qualification_notification_email",
-        verbose_name="qualification_notification_email",
+        verbose_name="qualification notification email",
         null=True,
         blank=True,
         help_text="The email addresses to cc on tool qualification expiration and on reminders. Separate multiple emails with commas.",
@@ -1371,7 +1371,7 @@ class Tool(SerializationByNameModel):
     _requires_area_access = TreeForeignKey(
         "Area",
         db_column="requires_area_access_id",
-        verbose_name="Requires_area_access_id",
+        verbose_name="Requires area access id",
         null=True,
         blank=True,
         help_text="Indicates that this tool is physically located in a billable area and requires an active area access record in order to be operated.",
@@ -1379,7 +1379,7 @@ class Tool(SerializationByNameModel):
     )
     _requires_area_occupancy_minimum = models.PositiveIntegerField(
         db_column="requires_area_occupancy_minimum",
-        verbose_name="requires_area_occupancy_minimum",
+        verbose_name="requires area occupancy minimum",
         null=True,
         blank=True,
         help_text=_(
@@ -1389,13 +1389,13 @@ class Tool(SerializationByNameModel):
     _ask_to_leave_area_when_done_using = models.BooleanField(
         default=False,
         db_column="ask_to_leave_area_when_done_using",
-        verbose_name="ask_to_leave_area_when_done_using",
+        verbose_name="ask to leave area when done using",
         help_text="Check this box to ask the user if they want to log out of the area when they are done using the tool.",
     )
     _grant_physical_access_level_upon_qualification = models.ForeignKey(
         "PhysicalAccessLevel",
         db_column="grant_physical_access_level_upon_qualification_id",
-        verbose_name="grant_physical_access_level_upon_qualification",
+        verbose_name="grant physical access level upon qualification",
         null=True,
         blank=True,
         help_text="The designated physical access level is granted to the user upon qualification for this tool.",
@@ -1403,7 +1403,7 @@ class Tool(SerializationByNameModel):
     )
     _grant_badge_reader_access_upon_qualification = models.CharField(
         db_column="grant_badge_reader_access_upon_qualification",
-        verbose_name="grant_badge_reader_access_upon_qualification",
+        verbose_name="grant badge reader access upon qualification",
         max_length=CHAR_FIELD_SMALL_LENGTH,
         null=True,
         blank=True,
@@ -1411,7 +1411,7 @@ class Tool(SerializationByNameModel):
     )
     _reservation_horizon = models.PositiveIntegerField(
         db_column="reservation_horizon",
-        verbose_name="reservation_horizon",
+        verbose_name="reservation horizon",
         default=14,
         null=True,
         blank=True,
@@ -1419,56 +1419,56 @@ class Tool(SerializationByNameModel):
     )
     _minimum_usage_block_time = models.PositiveIntegerField(
         db_column="minimum_usage_block_time",
-        verbose_name="minimum_usage_block_time",
+        verbose_name="minimum usage block time",
         null=True,
         blank=True,
         help_text="The minimum amount of time (in minutes) that a user must reserve this tool for a single reservation. Leave this field blank to indicate that no minimum usage block time exists for this tool.",
     )
     _maximum_usage_block_time = models.PositiveIntegerField(
         db_column="maximum_usage_block_time",
-        verbose_name="maximum_usage_block_time",
+        verbose_name="maximum usage block time",
         null=True,
         blank=True,
         help_text="The maximum amount of time (in minutes) that a user may reserve this tool for a single reservation. Leave this field blank to indicate that no maximum usage block time exists for this tool.",
     )
     _maximum_reservations_per_day = models.PositiveIntegerField(
         db_column="maximum_reservations_per_day",
-        verbose_name="maximum_reservations_per_day",
+        verbose_name="maximum reservations per day",
         null=True,
         blank=True,
         help_text="The maximum number of reservations a user may make per day for this tool.",
     )
     _maximum_future_reservations = models.PositiveIntegerField(
         db_column="maximum_future_reservations",
-        verbose_name="maximum_future_reservations",
+        verbose_name="maximum future reservations",
         null=True,
         blank=True,
         help_text="The maximum number of reservations a user may make in the future for this tool.",
     )
     _minimum_time_between_reservations = models.PositiveIntegerField(
         db_column="minimum_time_between_reservations",
-        verbose_name="minimum_time_between_reservations",
+        verbose_name="minimum time between reservations",
         null=True,
         blank=True,
         help_text="The minimum amount of time (in minutes) that the same user must have between any two reservations for this tool.",
     )
     _maximum_future_reservation_time = models.PositiveIntegerField(
         db_column="maximum_future_reservation_time",
-        verbose_name="maximum_future_reservation_time",
+        verbose_name="maximum future reservation time",
         null=True,
         blank=True,
         help_text="The maximum amount of time (in minutes) that a user may reserve from the current time onwards.",
     )
     _missed_reservation_threshold = models.PositiveIntegerField(
         db_column="missed_reservation_threshold",
-        verbose_name="missed_reservation_threshold",
+        verbose_name="missed reservation threshold",
         null=True,
         blank=True,
         help_text='The amount of time (in minutes) that a tool reservation may go unused before it is automatically marked as "missed" and hidden from the calendar. Usage can be from any user, regardless of who the reservation was originally created for. The cancellation process is triggered by a timed job on the web server.',
     )
     _late_cancellation_reservation_threshold = models.PositiveIntegerField(
         db_column="late_cancellation_reservation_threshold",
-        verbose_name="late_cancellation_reservation_threshold",
+        verbose_name="late cancellation reservation threshold",
         null=True,
         blank=True,
         help_text='The amount of time (in minutes) before its start time that a tool reservation may be canceled before it is automatically marked as "missed" and hidden from the calendar.',
@@ -1477,37 +1477,37 @@ class Tool(SerializationByNameModel):
         null=True,
         blank=True,
         db_column="max_delayed_logoff",
-        verbose_name="max_delayed_logoff",
+        verbose_name="max delayed logoff",
         help_text='[Optional] Maximum delay in minutes that users may enter upon logging off before another user may use the tool. Some tools require "spin-down" or cleaning time after use. Leave blank to disable.',
     )
     _policy_off_between_times = models.BooleanField(
         db_column="policy_off_between_times",
-        verbose_name="policy_off_between_times",
+        verbose_name="policy off between times",
         default=False,
         help_text="Check this box to disable policy rules every day between the given times",
     )
     _policy_off_start_time = models.TimeField(
         db_column="policy_off_start_time",
-        verbose_name="policy_off_start_time",
+        verbose_name="policy off start time",
         null=True,
         blank=True,
         help_text="The start time when policy rules should NOT be enforced",
     )
     _policy_off_end_time = models.TimeField(
         db_column="policy_off_end_time",
-        verbose_name="policy_off_end_time",
+        verbose_name="policy off end time",
         null=True,
         blank=True,
         help_text="The end time when policy rules should NOT be enforced",
     )
     _policy_off_weekend = models.BooleanField(
         db_column="policy_off_weekend",
-        verbose_name="policy_off_weekend",
+        verbose_name="policy off weekend",
         default=False,
         help_text="Whether or not policy rules should be enforced on weekends",
     )
     _operation_mode = models.IntegerField(
-        verbose_name="operation_mode",
+        verbose_name="operation mode",
         choices=OperationMode.Choices,
         default=OperationMode.REGULAR,
         help_text="The operation mode of the tool, which determines if reservations and wait list are allowed.",
@@ -1607,28 +1607,13 @@ class Tool(SerializationByNameModel):
     def backup_owners(self) -> QuerySetType[User]:
         return self.parent_tool.backup_owners if self.is_child_tool() else self._backup_owners
 
-    @backup_owners.setter
-    def backup_owners(self, value):
-        self.raise_setter_error_if_child_tool("backup_owners")
-        self._backup_owners = value
-
     @property
     def superusers(self) -> QuerySetType[User]:
         return self.parent_tool.superusers if self.is_child_tool() else self._superusers
 
-    @superusers.setter
-    def superusers(self, value):
-        self.raise_setter_error_if_child_tool("superusers")
-        self._superusers = value
-
     @property
     def staff(self) -> QuerySetType[User]:
         return self.parent_tool.staff if self.is_child_tool() else self._staff
-
-    @staff.setter
-    def staff(self, value):
-        self.raise_setter_error_if_child_tool("staff")
-        self._staff = value
 
     @property
     def adjustment_request_reviewers(self) -> QuerySetType[User]:
@@ -1637,11 +1622,6 @@ class Tool(SerializationByNameModel):
             if self.is_child_tool()
             else self._adjustment_request_reviewers
         )
-
-    @adjustment_request_reviewers.setter
-    def adjustment_request_reviewers(self, value):
-        self.raise_setter_error_if_child_tool("_adjustment_request_reviewers")
-        self._adjustment_request_reviewers = value
 
     @property
     def location(self):
@@ -1728,6 +1708,10 @@ class Tool(SerializationByNameModel):
     def qualification_notification_email(self, value):
         self.raise_setter_error_if_child_tool("qualification_notification_email")
         self._qualification_notification_email = value
+
+    @property
+    def required_resources(self) -> QuerySetType[Resource]:
+        return self.parent_tool.required_resources if self.is_child_tool() else self.required_resource_set
 
     @property
     def requires_area_access(self):
@@ -3401,6 +3385,7 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     end = models.DateTimeField(null=True, blank=True)
     has_ended = models.PositiveBigIntegerField(default=0)
     note = models.TextField(null=True, blank=True)
+    staff_charge = models.ForeignKey(StaffCharge, blank=True, null=True, on_delete=models.CASCADE)
     validated = models.BooleanField(default=False)
     validated_by = models.ForeignKey(
         User, null=True, blank=True, related_name="usage_event_validated_set", on_delete=models.CASCADE
@@ -5230,7 +5215,10 @@ class AdjustmentRequest(BaseModel):
         # list of reviewers is empty, send/show to all facility managers
         facility_managers = User.objects.filter(is_active=True, is_facility_manager=True)
         if self.item_tool:
-            tool_reviewers = self.item_tool._adjustment_request_reviewers.filter(is_active=True)
+            tool = self.item_tool
+            if self.item_tool.parent_tool_id:
+                tool = self.item_tool.parent_tool
+            tool_reviewers = tool._adjustment_request_reviewers.filter(is_active=True)
             return tool_reviewers or facility_managers
         if self.item_area:
             area_reviewers = self.item_area.adjustment_request_reviewers.filter(is_active=True)

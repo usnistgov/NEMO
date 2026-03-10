@@ -79,13 +79,13 @@
                     <span class="glyphicon glyphicon-user pull-left notification-icon"></span>
                     {% with tool.get_current_usage_event as current_usage_event %}
                         <h2>
-                            {% if current_usage_event.operator.id == user.id %}
+                            {% if current_usage_event.operator_id == user.id %}
                                 You are using this tool
                             {% else %}
                                 <a title="Click to email this user"
-                                   href="{% url 'get_email_form_for_user' current_usage_event.operator.id %}">{{ current_usage_event.operator }}</a> is using this tool
+                                   href="{% url 'get_email_form_for_user' current_usage_event.operator_id %}">{{ current_usage_event.operator }}</a> is using this tool
                             {% endif %}
-                            {% if current_usage_event.operator.id != current_usage_event.user.id %}
+                            {% if current_usage_event.operator_id != current_usage_event.user_id %}
                                 on behalf of {{ current_usage_event.user }}
                             {% endif %}
                             for the project named {{ current_usage_event.project.name }} since {{ current_usage_event.start|date:"MONTH_DAY_FORMAT" }} @ {{ current_usage_event.start|time }}  (#{{ current_usage_event.id }}).
@@ -136,7 +136,7 @@
                 {% else %}
                     on {{ next_reservation.start }}
                 {% endif %}
-                for <a href="{% url 'get_email_form_for_user' next_reservation.user.id %}">{{ next_reservation.user }}</a>
+                for <a href="{% url 'get_email_form_for_user' next_reservation.user_id %}">{{ next_reservation.user }}</a>
             {% endif %}
         </div>
         {% if tool_rate %}
@@ -208,7 +208,9 @@
                     <div class="media">
                         <span class="glyphicon glyphicon-leaf pull-left notification-icon danger-highlight"></span>
                         <div class="media-body">
-                            <span class="media-heading">A required resource is unavailable: {{ r.name }} <span class="light-grey">({{ r.category }})</span></span>
+                            <span class="media-heading">A required resource is unavailable: {{ r.name }}
+                                {% if r.category %}<span class="light-grey">({{ r.category }})</span>{% endif %}
+                            </span>
                             <span class="media-middle">{{ r.restriction_message }}</span>
                         </div>
                     </div>
@@ -402,7 +404,7 @@
         {# Display tool control... #}
         <form id="tool_control">
             {% if tool.in_use %}
-                {% if tool.get_current_usage_event.operator.id == user.id or tool.get_current_usage_event.user.id == user.id %}
+                {% if tool.get_current_usage_event.operator_id == user.id or tool.get_current_usage_event.user_id == user.id %}
                     {% if customizations|get_item:"tool_control_note_show" %}
                         {# Disable tool note #}
                         <div class="form-group">
@@ -437,6 +439,10 @@
                         </div>
                     {% endif %}
                     <div id="stop_wrapper">
+                        {% if tool.get_current_usage_event.staff_charge_id and not tool.get_current_usage_event.staff_charge.end and tool.get_current_usage_event.staff_charge.staff_member == user %}
+                            {% url "end_staff_charge" as end_staff_charge_url %}
+                            {% button type="export" icon="glyphicon-stop" onclick="ajax_post('"|concat:end_staff_charge_url|concat:"', undefined, undefined, undefined, function() {location.reload()})" value="Stop charging staff time but keep using the tool" %}
+                        {% endif %}
                         <div style="display:inline-block"
                              data-toggle="tooltip"
                              data-placement="bottom"
@@ -525,7 +531,7 @@
                                                data-toggle="tooltip"
                                                data-placement="right"
                                                title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.">
-                                            <input type="radio" onchange="use_tool_for_other('{{ tool.id }}')" disabled>
+                                            <input type="radio" disabled>
                                             <span id="staff_charge_tooltip_location">{{ customizations|get_item:"tool_control_use_for_other_remote" }}
                                                 {% if customizations|get_item:"remote_work_on_behalf_of_user" == "ask" or customizations|get_item:"remote_work_on_behalf_of_user" == "always" %}
                                                     {% if tool.requires_area_access and customizations|get_item:"remote_work_start_area_access_automatically" == "enabled" %}
@@ -643,7 +649,7 @@
                                 </thead>
                                 <tbody>
                                     {% for entry in wait_list %}
-                                        <tr class="{% if user.id == entry.user.id %}success{% endif %}">
+                                        <tr class="{% if user.id == entry.user_id %}success{% endif %}">
                                             <td>{{ forloop.counter }}</td>
                                             <td>{{ entry.user.get_full_name }}</td>
                                         </tr>
@@ -715,44 +721,46 @@
             <div class="media-body">
                 <h4 class="media-heading">Tool information</h4>
                 <div id="tool_details" class="collapse in">
-                    <p>
-                        {{ tool.primary_owner.get_contact_info_html|safe }} is primarily responsible for this tool and can be contacted with any questions or concerns about the tool.
-                    </p>
-                    {% if tool.backup_owners.all.count == 1 %}
-                        {% with tool.backup_owners.all|first as backup %}
-                            <p>
-                                If you are unable to reach {{ tool.primary_owner.get_name }} then please contact the backup tool owner, {{ backup.get_contact_info_html|safe }}.
-                            </p>
-                        {% endwith %}
-                    {% elif tool.backup_owners.all.count > 1 %}
+                    {% if not customizations|get_item:"tool_control_hide_tool_owners" == "enabled" %}
                         <p>
-                            If you are unable to reach {{ tool.primary_owner.get_name }} then please contact
-                            {% for x in tool.backup_owners.all %}
-                                {% if not forloop.last %}
-                                    {{ x.get_contact_info_html|safe }},
-                                {% else %}
-                                    or {{ x.get_contact_info_html|safe }}.
-                                {% endif %}
-                            {% endfor %}
+                            {{ tool.primary_owner.get_contact_info_html|safe }} is primarily responsible for this tool and can be contacted with any questions or concerns about the tool.
                         </p>
-                    {% endif %}
-                    {% if tool.superusers.all.count == 1 %}
-                        {% with tool.superusers.all|first as superuser %}
+                        {% if tool.backup_owners.all.count == 1 %}
+                            {% with tool.backup_owners.all|first as backup %}
+                                <p>
+                                    If you are unable to reach {{ tool.primary_owner.get_name }} then please contact the backup tool owner, {{ backup.get_contact_info_html|safe }}.
+                                </p>
+                            {% endwith %}
+                        {% elif tool.backup_owners.all.count > 1 %}
                             <p>
-                                For equipment training, you can contact the primary, backup or the superuser, {{ superuser.get_contact_info_html|safe }}.
+                                If you are unable to reach {{ tool.primary_owner.get_name }} then please contact
+                                {% for x in tool.backup_owners.all %}
+                                    {% if not forloop.last %}
+                                        {{ x.get_contact_info_html|safe }},
+                                    {% else %}
+                                        or {{ x.get_contact_info_html|safe }}.
+                                    {% endif %}
+                                {% endfor %}
                             </p>
-                        {% endwith %}
-                    {% elif tool.superusers.all.count > 1 %}
-                        <p>
-                            For equipment training, you can contact the primary, backup or one of the superusers
-                            {% for x in tool.superusers.all %}
-                                {% if not forloop.last %}
-                                    {{ x.get_contact_info_html|safe }},
-                                {% else %}
-                                    or {{ x.get_contact_info_html|safe }}.
-                                {% endif %}
-                            {% endfor %}
-                        </p>
+                        {% endif %}
+                        {% if tool.superusers.all.count == 1 %}
+                            {% with tool.superusers.all|first as superuser %}
+                                <p>
+                                    For equipment training, you can contact the primary, backup or the superuser, {{ superuser.get_contact_info_html|safe }}.
+                                </p>
+                            {% endwith %}
+                        {% elif tool.superusers.all.count > 1 %}
+                            <p>
+                                For equipment training, you can contact the primary, backup or one of the superusers
+                                {% for x in tool.superusers.all %}
+                                    {% if not forloop.last %}
+                                        {{ x.get_contact_info_html|safe }},
+                                    {% else %}
+                                        or {{ x.get_contact_info_html|safe }}.
+                                    {% endif %}
+                                {% endfor %}
+                            </p>
+                        {% endif %}
                     {% endif %}
                     {% if tool.notification_email_address %}
                         <p>

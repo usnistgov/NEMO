@@ -302,10 +302,12 @@
                 <a class="usage_tab_link"
                    href="{% if project_autocomplete %}{{ project_usage_url }}{% else %}{{ usage_url }}{% endif %}">Usage</a>
             </li>
-            {% if user.is_any_part_of_staff and not project_autocomplete %}
-                <li class="{% if staff_usage_url in request.path %}active{% endif %}">
-                    <a class="usage_tab_link" href="{{ staff_usage_url }}">Staff usage</a>
-                </li>
+            {% if not project_autocomplete %}
+                {% if user.is_staff or user.is_tool_staff or user.is_superuser %}
+                    <li class="{% if staff_usage_url in request.path %}active{% endif %}">
+                        <a class="usage_tab_link" href="{{ staff_usage_url }}">Staff usage</a>
+                    </li>
+                {% endif %}
             {% endif %}
             {% if billing_service %}
                 <li class="{% if billing_url in request.path or project_billing_url in request.path %}active{% endif %}">

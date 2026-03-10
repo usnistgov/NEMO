@@ -14,7 +14,7 @@
 		{% endif %}
 		"id": {{ x.id }},
 		"start": "{{ x.start|date:"c" }}",
-		{# Usage events that are less than 15 minutes are artificially lengthened for display purposes. #}
+		{# Usage events that are less than the configured minimum display length are artificially lengthened for display purposes. #}
 		"end": "{{ x.get_visual_end|date:"c" }}",
 		"details_url": "{% url 'usage_details' x.id %}",
 		"color": "{{ x.tool.tool_calendar_color|default:'#33ad33'|escapejs }}"
@@ -27,7 +27,7 @@
 		"tooltip": "{{ x.area }} access for {{ x.customer }} billed to project {{ x.project }} {% if x.staff_charge %}by {{ x.staff_charge.staff_member }}{% endif %}",
 		"id": {{ x.id }},
 		"start": "{{ x.start|date:"c" }}",
-		{# Area access events that are less than 15 minutes are artificially lengthened for display purposes. #}
+		{# Area access events that are less than the configured minimum display length are artificially lengthened for display purposes. #}
 		"end": "{{ x.get_visual_end|date:"c" }}",
 		"details_url": "{% url 'area_access_details' x.id %}",
 		"color": "{{ x.area.area_calendar_color|default:'#e68a00'|escapejs }}"

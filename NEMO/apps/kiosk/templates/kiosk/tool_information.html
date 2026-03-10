@@ -121,7 +121,9 @@
             <div class="media">
                 <span class="glyphicon glyphicon-leaf pull-left notification-icon danger-highlight"></span>
                 <div class="media-body">
-                    <span class="media-heading">A required resource is unavailable: {{ r.name }} <span class="light-grey">({{ r.category }})</span></span>
+                    <span class="media-heading">A required resource is unavailable: {{ r.name }}
+                        {% if r.category %}<span class="light-grey">({{ r.category }})</span>{% endif %}
+                    </span>
                     <span class="media-middle">{{ r.restriction_message }}</span>
                 </div>
             </div>

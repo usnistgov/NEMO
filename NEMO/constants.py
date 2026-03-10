@@ -16,3 +16,7 @@ NEXT_PARAMETER_NAME = "next"
 
 # Name of the media folder under which only staff can see files
 MEDIA_PROTECTED = "protected"
+
+# Policy setting names
+MAIN_POLICY_SETTING = "MAIN_NEMO_POLICY_CLASS"
+EXTRA_POLICIES_SETTING = "EXTRA_NEMO_POLICY_CLASSES"

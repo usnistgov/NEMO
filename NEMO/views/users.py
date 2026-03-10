@@ -125,14 +125,19 @@ def create_or_modify_user(request, user_id):
         training_not_required = UserCustomization.get_bool("default_user_training_not_required", raise_exception=False)
         inactive_by_default = UserCustomization.get_bool("default_user_is_inactive", raise_exception=False)
         # Only set training required initial value on new users
-        dictionary["form"] = UserForm(
-            instance=user,
-            initial=(
-                {"training_required": not training_not_required, "is_active": not inactive_by_default}
-                if not user
-                else None
-            ),
-        )
+        initial_data = {}
+        if not user:
+            # set correlation id to be used later on when saving the user
+            request.session["user_correlation_id"] = request.GET.get("correlation_id", "")
+            initial_data: dict = {
+                "training_required": not training_not_required,
+                "is_active": not inactive_by_default,
+                "first_name": request.GET.get("first_name", ""),
+                "last_name": request.GET.get("last_name", ""),
+                "email": request.GET.get("email", ""),
+            }
+
+        dictionary["form"] = UserForm(instance=user, initial=initial_data)
         try:
             if dictionary["identity_service_available"] and user and user.is_active and user.domain:
                 parameters = {
@@ -257,7 +262,14 @@ def create_or_modify_user(request, user_id):
         # See this web page for more information:
         # https://docs.djangoproject.com/en/dev/topics/forms/modelforms/#the-save-method
         user = form.save(commit=False)
+        # Retrieve correlation ID from the session and set it on the new user.
+        # This allows for plugins or other packages to find this user later in signals
+        corr_id = request.session.get("user_correlation_id")
+        if corr_id and user_id == "new":
+            user._correlation_id = corr_id
         user.save()
+        if "user_correlation_id" in request.session:
+            del request.session["user_correlation_id"]
         record_active_state(request, user, form, "is_active", user_id == "new")
         record_local_many_to_many_changes(request, user, form, "qualifications")
         record_local_many_to_many_changes(request, user, form, "physical_access_levels")
