@@ -127,6 +127,8 @@ def create_or_modify_user(request, user_id):
         # Only set training required initial value on new users
         initial_data = {}
         if not user:
+            # set correlation id to be used later on when saving the user
+            request.session["user_correlation_id"] = request.GET.get("correlation_id", "")
             initial_data: dict = {
                 "training_required": not training_not_required,
                 "is_active": not inactive_by_default,
@@ -260,7 +262,14 @@ def create_or_modify_user(request, user_id):
         # See this web page for more information:
         # https://docs.djangoproject.com/en/dev/topics/forms/modelforms/#the-save-method
         user = form.save(commit=False)
+        # Retrieve correlation ID from the session and set it on the new user.
+        # This allows for plugins or other packages to find this user later in signals
+        corr_id = request.session.get("user_correlation_id")
+        if corr_id and user_id == "new":
+            user._correlation_id = corr_id
         user.save()
+        if "user_correlation_id" in request.session:
+            del request.session["user_correlation_id"]
         record_active_state(request, user, form, "is_active", user_id == "new")
         record_local_many_to_many_changes(request, user, form, "qualifications")
         record_local_many_to_many_changes(request, user, form, "physical_access_levels")
