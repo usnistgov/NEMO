@@ -2973,6 +2973,10 @@ class Area(MPTTModel):
             reservation_questions = reservation_questions.filter(only_for_projects=None)
         return MultiDynamicForms(reservation_questions)
 
+    @property
+    def location(self):
+        return self.name
+
 
 class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     area = TreeForeignKey(Area, on_delete=models.CASCADE)

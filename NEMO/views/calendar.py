@@ -1071,8 +1071,15 @@ def cancel_the_reservation(
                     recipients.extend(reservation.area.reservation_email_list())
                 if reservation.user.get_preferences().attach_cancelled_reservation:
                     event_name = reservation.title or f"{reservation.reservation_item.name} Reservation"
+                    location = getattr(reservation.reservation_item, "location", None)
                     attachment = create_ics(
-                        reservation.id, event_name, reservation.start, reservation.end, reservation.user, cancelled=True
+                        reservation.id,
+                        event_name,
+                        reservation.start,
+                        reservation.end,
+                        reservation.user,
+                        cancelled=True,
+                        location=location,
                     )
                     send_mail(
                         subject="Your reservation was cancelled",
@@ -1129,6 +1136,7 @@ def send_user_created_reservation_notification(reservation: Reservation):
         # We don't need to check for existence of reservation_created_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
         if user_office_email:
             event_name = reservation.title or f"{reservation.reservation_item.name} Reservation"
+            location = getattr(reservation.reservation_item, "location", None)
             attachment = create_ics(
                 reservation.id,
                 event_name,
@@ -1136,6 +1144,7 @@ def send_user_created_reservation_notification(reservation: Reservation):
                 reservation.end,
                 reservation.user,
                 description=reservation.note,
+                location=location,
             )
             send_mail(
                 subject=subject, content=message, from_email=user_office_email, to=recipients, attachments=[attachment]
@@ -1163,8 +1172,15 @@ def send_user_cancelled_reservation_notification(reservation: Reservation):
         # We don't need to check for existence of reservation_cancelled_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
         if user_office_email:
             event_name = reservation.title or f"{reservation.reservation_item.name} Reservation"
+            location = getattr(reservation.reservation_item, "location", None)
             attachment = create_ics(
-                reservation.id, event_name, reservation.start, reservation.end, reservation.user, cancelled=True
+                reservation.id,
+                event_name,
+                reservation.start,
+                reservation.end,
+                reservation.user,
+                cancelled=True,
+                location=location,
             )
             send_mail(
                 subject=subject, content=message, from_email=user_office_email, to=recipients, attachments=[attachment]
