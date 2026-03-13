@@ -380,7 +380,7 @@ def create_tool_summary(tooltip_info=False, tool_categories=None):
     )
     scheduled_outages = ScheduledOutage.objects.filter(
         start__lte=timezone.now(), end__gt=timezone.now(), area__isnull=True
-    ).prefetch_related("tool", "fully_dependent_tools", "partially_dependent_tools")
+    ).prefetch_related("tool", "resource__fully_dependent_tools", "resource__partially_dependent_tools")
     tool_summary = merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages, tooltip_info)
     tool_summary = list(tool_summary.values())
     tool_sort = StatusDashboardCustomization.get("dashboard_tool_sort")
