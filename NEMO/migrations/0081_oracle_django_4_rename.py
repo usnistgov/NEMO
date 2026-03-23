@@ -34,7 +34,15 @@ class Migration(migrations.Migration):
                             table_renames.append(rename_table_sql % (old_quoted_name, new_quoted_name))
 
                     # Column names:
-                    column_list = connection.introspection.get_table_description(cursor, strip_quotes(old_quoted_name))
+                    try:
+                        # If the table doesn't exist yet in the test DB, this will fail
+                        column_list = connection.introspection.get_table_description(
+                            cursor, strip_quotes(old_quoted_name)
+                        )
+                    except Exception:
+                        # Table doesn't exist yet. Skip trying to rename its columns!
+                        continue
+
                     for field in _model._meta.local_fields:
                         if len(field.column) > max_name_length:
                             field_quoted_name = connection.ops.quote_name(field.column)
