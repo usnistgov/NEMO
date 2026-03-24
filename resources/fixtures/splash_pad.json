@@ -9925,6 +9925,19 @@
     }
   },
   {
+    "model": "NEMO.staffassistancerequest",
+    "pk": 2,
+    "fields": {
+      "creation_time": "2025-02-20T03:29:14.451Z",
+      "description": "I need help in the lab with a tool",
+      "user": [
+        "ned"
+      ],
+      "resolved": false,
+      "deleted": false
+    }
+  },
+  {
     "model": "NEMO.toolusagequestions",
     "pk": 1,
     "fields": {
