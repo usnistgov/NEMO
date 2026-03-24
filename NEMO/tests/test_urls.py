@@ -8,13 +8,14 @@ from typing import List
 
 from django.conf import settings
 from django.contrib.admin.options import get_content_type_for_model
+from django.db import connection
 from django.test.client import RequestFactory
 from django.test.testcases import TransactionTestCase
 from django.urls import reverse
 from django.urls.resolvers import RegexPattern
 
 from NEMO.models import ToolUsageQuestionType, ToolUsageQuestions, User
-from NEMO.tests.test_utilities import NEMOTestCaseMixin
+from NEMO.tests.test_utilities import NEMOTestCaseMixin, reset_all_oracle_sequences
 from NEMO.utilities import get_full_url
 from NEMO.views.customization import (
     AdjustmentRequestsCustomization,
@@ -206,6 +207,12 @@ urls_to_skip = [
 class URLsTestCase(NEMOTestCaseMixin, TransactionTestCase):
     reset_sequences = True
     fixtures = ["resources/fixtures/splash_pad.json"]
+
+    def _pre_setup(self):
+        if connection.vendor == "oracle":
+            # For Oracle, we need to manually reset sequences to 1 before the fixtures get loaded
+            reset_all_oracle_sequences(start_at_1=True)
+        super()._pre_setup()
 
     @classmethod
     def setUpTestData(cls):

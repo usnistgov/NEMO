@@ -792,6 +792,7 @@ class ToolWaitListTestCase(NEMOTestCaseMixin, TestCase):
 def create_tool(name, mode, missed_threshold=None):
     return Tool.objects.create(
         name="[Test Tool] " + name,
+        _category="Tool category",
         _operation_mode=mode,
         _missed_reservation_threshold=missed_threshold,
     )

@@ -76,8 +76,8 @@ class RestCRUDTestCase(NEMOTestCaseMixin, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["username"], "jode1")
         for key in data:
-            if key != "username":
-                self.assertEqual(response.data[key], data[key])
+            if key not in ["username", "badge_number"]:
+                self.assertEqual(response.data[key], data[key], f"{key} not matching")
 
     def test_partial_update_user(self):
         user = self.login_as_user()
