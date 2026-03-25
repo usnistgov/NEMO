@@ -55,14 +55,14 @@ class IsEmptyLookupTests(NEMOTestCaseMixin, TestCase):
     @classmethod
     def setUpTestData(cls):
         # 1. The "True NULL" Record
-        cls.null_record = Tool.objects.create(_serial=None, _description=None)
+        cls.null_record = Tool.objects.create(name="null record", _serial=None, _description=None)
 
         # 2. The "Empty String" Record
         # (Oracle treats char_field '' as NULL, but text_field as an empty CLOB)
-        cls.empty_string_record = Tool.objects.create(_serial="", _description="")
+        cls.empty_string_record = Tool.objects.create(name="empty record", _serial="", _description="")
 
         # 3. The "Populated" Record
-        cls.populated_record = Tool.objects.create(_serial="Data", _description="Data")
+        cls.populated_record = Tool.objects.create(name="populated record", _serial="Data", _description="Data")
 
     # --- TESTING TRUE (Looking for empty values) ---
     def test_char_field_isempty_true(self):
