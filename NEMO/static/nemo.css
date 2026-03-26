@@ -313,6 +313,12 @@ table > thead > tr.no-border > td, table > thead > tr.no-border > th
 	min-width: 375px;
 }
 
+.impersonating .split-screen-left-panel, .impersonating .split-screen-right-panel
+{
+	/* Add height of impersonate header */
+	top: 166px;
+}
+
 .split-screen-right-panel
 {
 	position: absolute;
