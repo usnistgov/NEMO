@@ -57,7 +57,7 @@ def get_training_dictionary(request):
         "tool_groups": list(tool_groups),
         "charge_types": training_types,
         "duration": usage_event.duration_minutes() if usage_event else None,
-        "date": usage_event.end if usage_event else None,
+        "date": usage_event.end.astimezone() if usage_event else None,
         "usage_event": usage_event,
     }
     return dictionary
