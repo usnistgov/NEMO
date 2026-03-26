@@ -640,7 +640,10 @@ class TrainingSessionAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, adm
         "type",
         "waived",
         ("tool", admin.RelatedOnlyFieldListFilter),
+        ("project__project_types", admin.RelatedOnlyFieldListFilter),
+        ("project__account__type", admin.RelatedOnlyFieldListFilter),
         ("project", admin.RelatedOnlyFieldListFilter),
+        ("project__account", admin.RelatedOnlyFieldListFilter),
         ("trainer", admin.RelatedOnlyFieldListFilter),
         ("trainee", admin.RelatedOnlyFieldListFilter),
     )
@@ -667,6 +670,10 @@ class StaffChargeAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.M
         ("staff_member", admin.RelatedOnlyFieldListFilter),
         has_fk_filter("areaaccessrecord", "Area Record"),
         has_fk_filter("usageevent", "Usage Event"),
+        ("project__project_types", admin.RelatedOnlyFieldListFilter),
+        ("project__account__type", admin.RelatedOnlyFieldListFilter),
+        ("project", admin.RelatedOnlyFieldListFilter),
+        ("project__account", admin.RelatedOnlyFieldListFilter),
     )
     date_hierarchy = "start"
     autocomplete_fields = ["staff_member", "customer", "project", "validated_by", "waived_by"]
@@ -689,6 +696,10 @@ class AreaAccessRecordAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, ad
         "start",
         "waived",
         has_fk_filter("staff_charge", "Staff Charge"),
+        ("project__project_types", admin.RelatedOnlyFieldListFilter),
+        ("project__account__type", admin.RelatedOnlyFieldListFilter),
+        ("project", admin.RelatedOnlyFieldListFilter),
+        ("project__account", admin.RelatedOnlyFieldListFilter),
     )
     date_hierarchy = "start"
     autocomplete_fields = ["customer", "project", "validated_by", "waived_by"]
@@ -907,6 +918,10 @@ class ReservationAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.M
         ("tool", admin.RelatedOnlyFieldListFilter),
         ("area", TreeRelatedFieldListFilter),
         ("user", admin.RelatedOnlyFieldListFilter),
+        ("project__project_types", admin.RelatedOnlyFieldListFilter),
+        ("project__account__type", admin.RelatedOnlyFieldListFilter),
+        ("project", admin.RelatedOnlyFieldListFilter),
+        ("project__account", admin.RelatedOnlyFieldListFilter),
     )
     date_hierarchy = "start"
     inlines = [ConfigurationOptionInline]
@@ -996,7 +1011,18 @@ class UsageEventAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.Mo
         "waived",
         "has_staff_charge",
     )
-    list_filter = ("remote_work", "training", "start", "end", "waived", ("tool", admin.RelatedOnlyFieldListFilter))
+    list_filter = (
+        "remote_work",
+        "training",
+        "start",
+        "end",
+        "waived",
+        ("tool", admin.RelatedOnlyFieldListFilter),
+        ("project__project_types", admin.RelatedOnlyFieldListFilter),
+        ("project__account__type", admin.RelatedOnlyFieldListFilter),
+        ("project", admin.RelatedOnlyFieldListFilter),
+        ("project__account", admin.RelatedOnlyFieldListFilter),
+    )
     date_hierarchy = "start"
     autocomplete_fields = ["tool", "user", "operator", "project", "validated_by", "waived_by"]
     readonly_fields = ["has_ended"]
@@ -1040,6 +1066,10 @@ class ConsumableWithdrawAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, 
         "waived",
         ("consumable__category", admin.RelatedOnlyFieldListFilter),
         ("consumable", admin.RelatedOnlyFieldListFilter),
+        ("project__project_types", admin.RelatedOnlyFieldListFilter),
+        ("project__account__type", admin.RelatedOnlyFieldListFilter),
+        ("project", admin.RelatedOnlyFieldListFilter),
+        ("project__account", admin.RelatedOnlyFieldListFilter),
     )
     date_hierarchy = "date"
     autocomplete_fields = ["customer", "merchant", "consumable", "project", "validated_by", "waived_by", "usage_event"]
