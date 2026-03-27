@@ -83,6 +83,13 @@ def landing(request):
         "facility_rules_required_message": Template(
             ApplicationCustomization.get("facility_rules_required_message")
         ).render(Context()),
+        "user_access_expiration_banner_message": Template(
+            UserCustomization.get("user_access_expiration_banner_message")
+        ).render(
+            Context(
+                {"show_access_expiration_banner": show_access_expiration_banner, "now": timezone.now(), "user": user}
+            )
+        ),
     }
     return render(request, "landing.html", dictionary)
 

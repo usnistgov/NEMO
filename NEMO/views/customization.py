@@ -351,6 +351,7 @@ class UserCustomization(CustomizationBase):
         "user_access_expiration_types": "-1",
         "user_access_expiration_banner_warning": "",
         "user_access_expiration_banner_danger": "",
+        "user_access_expiration_banner_message": '<div class="text-center alert alert-{{ show_access_expiration_banner }}">\n<i class="glyphicon glyphicon-alert"></i> Your access {% if user.access_expiration < now.date %}expired {{ user.access_expiration|timesince }} ago{% else %}expires in {{ user.access_expiration|timeuntil }}{% endif %} on {{ user.access_expiration|date:"SHORT_DATE_FORMAT" }}\n</div>',
         "user_allow_document_upload": "",
         "user_allow_profile_view": "",
     }
