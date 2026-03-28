@@ -8,13 +8,14 @@ from typing import List
 
 from django.conf import settings
 from django.contrib.admin.options import get_content_type_for_model
+from django.db import connection
 from django.test.client import RequestFactory
 from django.test.testcases import TransactionTestCase
 from django.urls import reverse
 from django.urls.resolvers import RegexPattern
 
 from NEMO.models import ToolUsageQuestionType, ToolUsageQuestions, User
-from NEMO.tests.test_utilities import NEMOTestCaseMixin
+from NEMO.tests.test_utilities import NEMOTestCaseMixin, reset_all_oracle_sequences
 from NEMO.utilities import get_full_url
 from NEMO.views.customization import (
     AdjustmentRequestsCustomization,
@@ -116,9 +117,9 @@ url_kwargs_get_post = {
     "delete_adjustment_request": {"kwargs": {"request_id": 2}, "login_id": 3},
     "adjustment_request_reply": {"kwargs": {"request_id": 2}, "login_id": 3, "post": {"reply_content": "new message"}},
     "create_staff_assistance_request": {"kwargs": {}, "post": {"description": "I need some help"}},
-    "edit_staff_assistance_request": {"kwargs": {"request_id": 2}},
+    "edit_staff_assistance_request": {"login_id": 3, "kwargs": {"request_id": 2}},
     "resolve_staff_assistance_request": {"login_id": 1},
-    "delete_staff_assistance_request": {"kwargs": {"request_id": 2}},
+    "delete_staff_assistance_request": {"login_id": 3, "kwargs": {"request_id": 2}},
     "reopen_staff_assistance_request": {"login_id": 1},
     "staff_assistance_request_reply": {
         "kwargs": {"request_id": 2},
@@ -206,6 +207,12 @@ urls_to_skip = [
 class URLsTestCase(NEMOTestCaseMixin, TransactionTestCase):
     reset_sequences = True
     fixtures = ["resources/fixtures/splash_pad.json"]
+
+    def _pre_setup(self):
+        if connection.vendor == "oracle":
+            # For Oracle, we need to manually reset sequences to 1 before the fixtures get loaded
+            reset_all_oracle_sequences()
+        super()._pre_setup()
 
     @classmethod
     def setUpTestData(cls):

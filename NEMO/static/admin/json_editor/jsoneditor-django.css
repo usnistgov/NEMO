@@ -28,6 +28,11 @@
     margin-top: 0;
 }
 
+.json_schema_editor[data-theme=django] .je-indented-panel
+{
+    min-height: 75px;
+}
+
 .json_schema_editor[data-theme=django] .je-header,
 .json_schema_editor[data-theme=django] .control-group
 {
@@ -42,10 +47,16 @@
 }
 
 /* Edit Json modal */
+.json_schema_editor[data-theme=django] .je-modal
+{
+    box-shadow: none;
+}
+
 .json_schema_editor[data-theme=django] .je-modal textarea
 {
     min-width: min(70vw, 300px);
-    min-height: 150px;
+    min-height: 50px;
+    height: 100px;
 }
 
 .json_schema_editor[data-theme=django] [data-schematype="array"] table

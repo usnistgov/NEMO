@@ -1804,6 +1804,7 @@
   },
   {
     "model": "NEMO.user",
+    "pk": 1,
     "fields": {
       "username": "captain",
       "first_name": "Captain",
@@ -1866,6 +1867,7 @@
   },
   {
     "model": "NEMO.user",
+    "pk": 2,
     "fields": {
       "username": "professor",
       "first_name": "Pierre",
@@ -1921,6 +1923,7 @@
   },
   {
     "model": "NEMO.user",
+    "pk": 3,
     "fields": {
       "username": "ned",
       "first_name": "Ned",
@@ -1974,6 +1977,7 @@
   },
   {
     "model": "NEMO.user",
+    "pk": 4,
     "fields": {
       "username": "commander",
       "first_name": "Commander",
@@ -2027,6 +2031,7 @@
   },
   {
     "model": "NEMO.user",
+    "pk": 5,
     "fields": {
       "username": "conseil",
       "first_name": "Assistant",
@@ -2083,6 +2088,7 @@
   },
   {
     "model": "NEMO.user",
+    "pk": 6,
     "fields": {
       "username": "tech",
       "first_name": "Tech",
@@ -9908,6 +9914,19 @@
   {
     "model": "NEMO.staffassistancerequest",
     "pk": 1,
+    "fields": {
+      "creation_time": "2025-02-20T03:29:14.451Z",
+      "description": "I need help in the lab with a tool",
+      "user": [
+        "ned"
+      ],
+      "resolved": false,
+      "deleted": false
+    }
+  },
+  {
+    "model": "NEMO.staffassistancerequest",
+    "pk": 2,
     "fields": {
       "creation_time": "2025-02-20T03:29:14.451Z",
       "description": "I need help in the lab with a tool",

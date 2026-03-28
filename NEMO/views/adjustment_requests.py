@@ -566,19 +566,21 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
 
 def for_reviewer(adjustment_request_qs: QuerySet[AdjustmentRequest], user: User) -> QuerySet[AdjustmentRequest]:
     # Start with the base conditions: the user is an explicit reviewer, or he created the adjustment request
-    can_review_tool = Q(item_tool___adjustment_request_reviewers=user) | Q(
-        item_tool__parent_tool___adjustment_request_reviewers=user
-    )
-    can_review_area = Q(item_area__adjustment_request_reviewers=user)
+    tools_user_can_review = Tool.objects.filter(_adjustment_request_reviewers=user).values("id")
+    can_review_tool = Q(item_tool_id__in=tools_user_can_review) | Q(item_tool__parent_tool_id__in=tools_user_can_review)
+    can_review_area = Q(item_area_id__in=Area.objects.filter(adjustment_request_reviewers=user).values("id"))
     created_request = Q(creator=user)
 
     # If the user is a facility manager, add the new condition.
     if user.is_facility_manager:
         # Condition for tool/area with an empty reviewer list.
-        tool_has_no_reviewers = Q(item_tool___adjustment_request_reviewers=None) & Q(
-            item_tool__parent_tool___adjustment_request_reviewers=None
+        tools_with_reviewers = Tool.objects.filter(_adjustment_request_reviewers__isnull=False).values("id")
+        tool_has_no_reviewers = ~Q(item_tool_id__in=tools_with_reviewers) & ~Q(
+            item_tool__parent_tool_id__in=tools_with_reviewers
         )
-        area_has_no_reviewers = Q(item_area__adjustment_request_reviewers=None)
+        area_has_no_reviewers = ~Q(
+            item_area_id__in=Area.objects.filter(adjustment_request_reviewers__isnull=False).values("id")
+        )
 
         # Now, the logic is: "user is a reviewer OR tool has no reviewers".
         can_review_tool |= tool_has_no_reviewers

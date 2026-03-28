@@ -168,6 +168,32 @@
                 {% endif %}
             </div>
         </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="user_access_expiration_banner_message">User access expiration banner</label>
+            <div class="col-md-9">
+                <textarea oninput="auto_size_textarea(this);"
+                          id="user_access_expiration_banner_message"
+                          name="user_access_expiration_banner_message"
+                          class="form-control">{{ user_access_expiration_banner_message }}</textarea>
+            </div>
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                <p>
+                    This HTML message will be displayed on the dashboard when the user's access is about to expire or has already expired.
+                </p>
+                <p>The following context variables are provided when the banner is renderd:</p>
+                <ul style="margin-bottom: 0">
+                    <li>
+                        <b>user</b> - the user whose access expired or is about to expire
+                    </li>
+                    <li>
+                        <b>show_access_expiration_banner</b> - the type of banner to display ("warning" or "danger")
+                    </li>
+                    <li>
+                        <b>now</b> - the current date and time
+                    </li>
+                </ul>
+            </div>
+        </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Access expiration - Reminders</h3>
         <div class="form-group {% if errors.user_access_expiration_reminder_days %}has-error{% endif %}">
@@ -262,3 +288,11 @@
         <div class="text-center">{% button type="save" value="Save settings" %}</div>
     </div>
 </form>
+<script>
+    $("#application-tab-link").click(function() {setTimeout(on_application_tab_show, 50)});
+    function on_application_tab_show()
+    {
+        auto_size_textarea(document.getElementById('user_access_expiration_banner_message'));
+    }
+    on_application_tab_show();
+</script>

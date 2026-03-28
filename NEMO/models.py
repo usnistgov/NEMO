@@ -92,7 +92,8 @@ class BaseQuerySet(models.query.QuerySet):
         return getattr(connection, "vendor", "") == "oracle"
 
     def model_text_fields(self) -> List[str]:
-        return [f.name for f in self.model._meta.fields if isinstance(f, models.TextField)]
+        lob_field_types = (models.TextField, models.JSONField, models.BinaryField)
+        return [f.name for f in self.model._meta.fields if isinstance(f, lob_field_types)]
 
 
 class BaseManager(Manager.from_queryset(BaseQuerySet)):
@@ -2972,6 +2973,10 @@ class Area(MPTTModel):
         else:
             reservation_questions = reservation_questions.filter(only_for_projects=None)
         return MultiDynamicForms(reservation_questions)
+
+    @property
+    def location(self):
+        return self.name
 
 
 class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):

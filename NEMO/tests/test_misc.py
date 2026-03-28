@@ -4,6 +4,7 @@ from django.conf import settings
 from django.test import TestCase
 from PIL import Image
 
+from NEMO.models import Tool
 from NEMO.tests.test_utilities import NEMOTestCaseMixin
 from NEMO.utilities import capitalize, get_email_from_settings, resize_image
 
@@ -48,3 +49,45 @@ class MiscTests(NEMOTestCaseMixin, TestCase):
         self.assertTrue(re.match(re.escape("test?[]]") + "\d+$", "test?[]]124"))
         # number is mandatory
         self.assertFalse(re.match(re.escape("test?[]]") + "\d+$", "test?[]]"))
+
+
+class IsEmptyLookupTests(NEMOTestCaseMixin, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        # 1. The "True NULL" Record
+        cls.null_record = Tool.objects.create(name="null record", _serial=None, _description=None)
+
+        # 2. The "Empty String" Record
+        # (Oracle treats char_field '' as NULL, but text_field as an empty CLOB)
+        cls.empty_string_record = Tool.objects.create(name="empty record", _serial="", _description="")
+
+        # 3. The "Populated" Record
+        cls.populated_record = Tool.objects.create(name="populated record", _serial="Data", _description="Data")
+
+    # --- TESTING TRUE (Looking for empty values) ---
+    def test_char_field_isempty_true(self):
+        """Should return records where char_field is NULL or ''"""
+        results = Tool.objects.filter(_serial__isempty=True)
+        self.assertEqual(results.count(), 2)
+        self.assertIn(self.null_record, results)
+        self.assertIn(self.empty_string_record, results)
+
+    def test_text_field_isempty_true(self):
+        """Should return records where text_field is NULL or an empty CLOB"""
+        results = Tool.objects.filter(_description__isempty=True)
+        self.assertEqual(results.count(), 2)
+        self.assertIn(self.null_record, results)
+        self.assertIn(self.empty_string_record, results)
+
+    # --- TESTING FALSE (Looking for populated values) ---
+    def test_char_field_isempty_false(self):
+        """Should ONLY return the record with actual text in the char_field"""
+        results = Tool.objects.filter(_serial__isempty=False)
+        self.assertEqual(results.count(), 1)
+        self.assertIn(self.populated_record, results)
+
+    def test_text_field_isempty_false(self):
+        """Should ONLY return the record with actual text in the text_field"""
+        results = Tool.objects.filter(_description__isempty=False)
+        self.assertEqual(results.count(), 1)
+        self.assertIn(self.populated_record, results)

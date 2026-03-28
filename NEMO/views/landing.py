@@ -62,11 +62,10 @@ def landing(request):
     expiration_danger = UserCustomization.get_int("user_access_expiration_banner_danger")
     if user.access_expiration and (expiration_warning or expiration_danger):
         access_expiration_datetime = datetime.datetime.combine(user.access_expiration, datetime.time.min).astimezone()
-        if access_expiration_datetime >= timezone.now():
-            if expiration_warning and access_expiration_datetime < timezone.now() + timedelta(days=expiration_warning):
-                show_access_expiration_banner = "warning"
-            if expiration_danger and access_expiration_datetime < timezone.now() + timedelta(days=expiration_danger):
-                show_access_expiration_banner = "danger"
+        if expiration_warning and access_expiration_datetime < timezone.now() + timedelta(days=expiration_warning):
+            show_access_expiration_banner = "warning"
+        if expiration_danger and access_expiration_datetime < timezone.now() + timedelta(days=expiration_danger):
+            show_access_expiration_banner = "danger"
 
     dictionary = {
         "show_access_expiration_banner": show_access_expiration_banner,
@@ -84,6 +83,13 @@ def landing(request):
         "facility_rules_required_message": Template(
             ApplicationCustomization.get("facility_rules_required_message")
         ).render(Context()),
+        "user_access_expiration_banner_message": Template(
+            UserCustomization.get("user_access_expiration_banner_message")
+        ).render(
+            Context(
+                {"show_access_expiration_banner": show_access_expiration_banner, "now": timezone.now(), "user": user}
+            )
+        ),
     }
     return render(request, "landing.html", dictionary)
 

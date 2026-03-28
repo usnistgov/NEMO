@@ -145,7 +145,11 @@
 
         function resize_container()
         {
-            const safety_height = $(".navbar.navbar-default").outerHeight(true) + $("#safety-tabs").outerHeight(true) + $("#data_sheets_header").outerHeight(true) + 20;
+            let safety_height = $(".navbar.navbar-default").outerHeight(true) + $("#safety-tabs").outerHeight(true) + $("#data_sheets_header").outerHeight(true) + 20;
+            if ($("body").hasClass("impersonating"))
+            {
+                safety_height += 46;
+            }
             $("#safety_data_sheets_container").css("top", safety_height + "px");
         }
         $(window).on("resize", resize_container);

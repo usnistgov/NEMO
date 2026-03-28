@@ -368,23 +368,19 @@ def create_tool_summary(tooltip_info=False, tool_categories=None):
             Prefetch("_requires_area_access", queryset=Area.objects.all().only("name")),
         )
     )
-    tasks = Task.objects.filter(cancelled=False, resolved=False, tool__visible=True).prefetch_related("tool")
+    tasks = Task.objects.filter(cancelled=False, resolved=False, tool__visible=True, tool__in=tools)
     unavailable_resources = Resource.objects.filter(available=False).prefetch_related(
         "fully_dependent_tools", "partially_dependent_tools"
     )
     # also check for visibility on the parent if there is one (alternate tool are hidden)
-    category_filter = Q()
-    if tool_categories:
-        for category in tool_categories:
-            category_filter |= Q(tool___category__istartswith=category)
     usage_events = (
         UsageEvent.objects.filter(Q(end=None, tool__visible=True) | Q(end=None, tool__parent_tool__visible=True))
-        .filter(category_filter)
+        .filter(tool__in=tools)
         .prefetch_related("operator", "user", "tool")
     )
     scheduled_outages = ScheduledOutage.objects.filter(
         start__lte=timezone.now(), end__gt=timezone.now(), area__isnull=True
-    )
+    ).prefetch_related("tool", "resource__fully_dependent_tools", "resource__partially_dependent_tools")
     tool_summary = merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages, tooltip_info)
     tool_summary = list(tool_summary.values())
     tool_sort = StatusDashboardCustomization.get("dashboard_tool_sort")
@@ -500,7 +496,7 @@ def create_area_summary(area_tree: ModelTreeHelper = None, add_resources=True, a
 def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages, tooltip_info=False):
     result = {}
     tools_with_delayed_logoff_in_effect = [
-        x.tool.tool_or_parent_id() for x in UsageEvent.objects.filter(end__gt=timezone.now())
+        x.tool.tool_or_parent_id() for x in UsageEvent.objects.filter(end__gt=timezone.now()).prefetch_related("tool")
     ]
     parent_ids = Tool.objects.filter(parent_tool__isnull=False).values_list("parent_tool_id", flat=True)
     for tool in tools:
@@ -525,8 +521,8 @@ def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages, 
         }
         if tooltip_info:
             result[tool.tool_or_parent_id()]["get_tool_info_html"] = tool.get_tool_info_html()
-    for task in tasks:
-        result[task.tool.id]["problematic"] = True
+    for tool_id in tasks.values_list("tool_id", flat=True):
+        result[tool_id]["problematic"] = True
     for event in usage_events:
         result[event.tool.tool_or_parent_id()]["operator"] = str(event.operator)
         result[event.tool.tool_or_parent_id()]["user"] = str(event.operator)
@@ -538,15 +534,19 @@ def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages, 
         result[event.tool.tool_or_parent_id()]["operator_is_service_personnel"] = event.operator.is_service_personnel
     for resource in unavailable_resources:
         for tool in resource.fully_dependent_tools.filter(visible=True):
-            result[tool.id]["required_resource_is_unavailable"] = True
+            if tool.id in result:
+                result[tool.id]["required_resource_is_unavailable"] = True
         for tool in resource.partially_dependent_tools.filter(visible=True):
-            result[tool.id]["nonrequired_resource_is_unavailable"] = True
+            if tool.id in result:
+                result[tool.id]["nonrequired_resource_is_unavailable"] = True
     for outage in scheduled_outages:
-        if outage.tool_id and outage.tool.visible:
-            result[outage.tool.id]["scheduled_outage"] = True
+        if outage.tool_id and outage.tool.visible and outage.tool_id in result:
+            result[outage.tool_id]["scheduled_outage"] = True
         elif outage.resource_id:
             for t in outage.resource.fully_dependent_tools.filter(visible=True):
-                result[t.id]["scheduled_outage"] = True
+                if t.id in result:
+                    result[t.id]["scheduled_outage"] = True
             for t in outage.resource.partially_dependent_tools.filter(visible=True):
-                result[t.id]["scheduled_partial_outage"] = True
+                if t.id in result:
+                    result[t.id]["scheduled_partial_outage"] = True
     return result
