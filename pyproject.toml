@@ -1,6 +1,6 @@
 [project]
 name = "NEMO"
-version = "7.4.1"
+version = "7.4.2.dev"
 description = "NEMO is a laboratory logistics web application. Use it to schedule reservations, control tool access, track maintenance issues, and more."
 keywords = ["NEMO"]
 readme = "README.md"
@@ -21,12 +21,12 @@ classifiers = [
 ]
 requires-python = ">=3.10, <4"
 dependencies = [
-    "cryptography==46.0.5",
+    "cryptography==46.0.6",
     "Django==4.2.29",
     "django-auditlog==3.4.1",
     "django-filter==25.1",
     "django-mptt==0.18.0",
-    "djangorestframework==3.16.1",
+    "djangorestframework==3.17.1",
     "drf-excel==2.5.3",
     "drf-flex-fields==1.0.2",
     "fastjsonschema==2.21.2",
@@ -35,7 +35,7 @@ dependencies = [
     "Pillow==12.1.1",
     "pymodbus==3.12.1",
     "python-dateutil==2.9.0",
-    "requests==2.32.5",
+    "requests==2.33.0",
 ]
 license = {file = "LICENSE"}
 
