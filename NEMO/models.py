@@ -5324,6 +5324,11 @@ class AdjustmentRequest(BaseModel):
                 if item_att is not None:
                     setattr(self, f"original_{att}", item_att)
             tool_id = getattr(self.item, "tool_id", None)
+            if not tool_id:
+                # try usage event tool id (from consumable withdrawal)
+                usage_event = getattr(self.item, "usage_event", None)
+                if usage_event:
+                    tool_id = usage_event.tool_id
             area_id = getattr(self.item, "area_id", None)
             if tool_id:
                 self.item_tool_id = tool_id
