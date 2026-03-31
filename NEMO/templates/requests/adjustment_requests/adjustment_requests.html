@@ -22,7 +22,7 @@
 <ul class="nav nav-tabs">
     {% for status in request_statuses %}
         <li class="nav-item{% if selected_status == status.0 %} active{% endif %}">
-            <a class="nav-link" href="javascript:load_adjustment_requests({{ status.0 }})">
+            <a class="nav-link" href="javascript:load_adjustment_requests({{ status.0 }}, undefined, true)">
                 {{ status.1 }}
                 {% if status.0 == 0 and adjustment_notification_count %}
                     <span class="badge badge-tab-top">{{ adjustment_notification_count }}</span>

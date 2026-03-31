@@ -1308,3 +1308,15 @@ def get_django_default_perm(model, action) -> str:
     """
     codename = get_permission_codename(action, model._meta)
     return f"{model._meta.app_label}.{codename}"
+
+
+def set_default_session_variable(
+    request, request_param_name: str, default_value="", session_variable_name=None, value=None
+) -> str:
+    session_variable_name = session_variable_name or request_param_name
+    if request.GET.get(request_param_name) is not None:
+        request.session[session_variable_name] = request.GET.get(request_param_name, default_value)
+    variable_value = default_value
+    if session_variable_name in request.session:
+        variable_value = request.session[session_variable_name]
+    return variable_value
