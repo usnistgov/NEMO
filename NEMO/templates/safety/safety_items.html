@@ -6,7 +6,7 @@
              data-target="#items-{{ safety_category.id }}"
              onclick="toggle_details($(this).children(':first'))">
             <h3 class="panel-title pointer">
-                <i class="glyphicon glyphicon-chevron-down chevron"></i> {{ safety_category }}
+                <i aria-hidden="true" class="glyphicon glyphicon-chevron-down chevron"></i> {{ safety_category }}
             </h3>
         </div>
         <div class="collapse in" id="items-{{ safety_category.id }}">

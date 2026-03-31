@@ -814,8 +814,8 @@
                         <ul>
                             {% for cred in tool_credentials %}
                                 <li>
-                                    <i class="glyphicon glyphicon-user"></i> {{ cred.username|default_if_none:"" }}
-                                    {% if cred.password %}<i class="glyphicon glyphicon-lock"></i> {{ cred.password }}{% endif %}
+                                    <i aria-hidden="true" class="glyphicon glyphicon-user"></i> {{ cred.username|default_if_none:"" }}
+                                    {% if cred.password %}<i aria-hidden="true" class="glyphicon glyphicon-lock"></i> {{ cred.password }}{% endif %}
                                     {% if cred.comments %}({{ cred.comments }}){% endif %}
                                 </li>
                             {% endfor %}

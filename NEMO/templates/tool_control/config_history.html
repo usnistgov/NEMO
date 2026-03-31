@@ -8,7 +8,7 @@
         </a>
         <div class="media-body">
             <div class="media-heading">
-                On <i style="font-size: small">{{ config.modification_time|default:'Current' }}</i> {{ config.user }}
+                On <span style="font-size: small">{{ config.modification_time|default:'Current' }}</span> {{ config.user }}
                 changed the {{ config.name }} configuration
             </div>
             <div id="config_{{ forloop.counter }}_details" class="media-middle collapse" style="margin-top: 10px">

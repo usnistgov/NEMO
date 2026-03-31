@@ -114,7 +114,7 @@
                                                                  class="btn btn-primary"
                                                                  style="margin-right: 8px"
                                                                  title="{{ item.notes|linebreaksbr }}">
-                                                                <i class="glyphicon glyphicon-info-sign"></i>
+                                                                <i aria-hidden="true" class="glyphicon glyphicon-info-sign"></i>
                                                             </div>
                                                         {% endif %}
                                                         <span class="consumable_trigger" data-item-id="{{ item.id }}">{{ item.name }}
@@ -133,7 +133,7 @@
                                                                 class="btn btn-success float-right consumable-add"
                                                                 type="button"
                                                                 disabled>
-                                                            <i class="glyphicon glyphicon-plus-sign"></i>
+                                                            <i aria-hidden="true" class="glyphicon glyphicon-plus-sign"></i>
                                                             Add to cart
                                                         </button>
                                                         <input type="hidden" id="{{ item.id }}_quantity_value" value="0" disabled>

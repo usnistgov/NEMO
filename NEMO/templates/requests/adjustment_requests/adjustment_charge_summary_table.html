@@ -24,10 +24,13 @@
                 {% if request_obj.status != status_pending %}
                     {{ request_obj.get_status_display }} by {{ request_obj.reviewer.get_name }}
                     {% if request_obj.status == status_denied and request_obj.manager_note %}
-                        <i class="glyphicon glyphicon-info-sign" title="{{ request_obj.manager_note }}"></i>
+                        <i aria-hidden="true" class="glyphicon glyphicon-info-sign" title="{{ request_obj.manager_note }}"></i>
                     {% endif %}
                 {% endif %}
-                <i class="glyphicon glyphicon-chevron-down chevron" style="color: inherit; padding-right: inherit"></i>
+                <i aria-hidden="true"
+                   class="glyphicon glyphicon-chevron-down chevron"
+                   style="color: inherit;
+                          padding-right: inherit"></i>
             </div>
         </div>
         <div class="panel-body clearfix">
@@ -207,7 +210,7 @@
                     {% if request_obj.status == status_pending and user in request_obj.reviewers %}
                         <a class="btn btn-default"
                            title="Approve/Deny"
-                           href="{% url 'edit_adjustment_request' request_obj.id %}"><i class="glyphicon glyphicon-ok-circle success-highlight"></i>&nbsp;&nbsp;<i class="glyphicon glyphicon-ban-circle danger-highlight"></i> Review</a>
+                           href="{% url 'edit_adjustment_request' request_obj.id %}"><i aria-hidden="true" class="glyphicon glyphicon-ok-circle success-highlight"></i>&nbsp;&nbsp;<i aria-hidden="true" class="glyphicon glyphicon-ban-circle danger-highlight"></i> Review</a>
                     {% endif %}
                     {% if request_obj.status == status_pending and request_obj.creator == user %}
                         {% url 'edit_adjustment_request' request_obj.id as edit_request_url %}

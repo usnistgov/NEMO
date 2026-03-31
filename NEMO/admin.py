@@ -1371,7 +1371,6 @@ class UserAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.instance: User = self.instance
         self.fields["training_required"].label = f'{ApplicationCustomization.get("facility_rules_name")} required'
         if self.instance.pk:
             self.fields["primary_owner_on_tools"].initial = self.instance.primary_tool_owner.all()

@@ -25,7 +25,7 @@
         <a style="text-decoration: none;
                   color: inherit"
            title="Go to user's page"
-           href="{% url "create_or_modify_user" u.id %}"><i style="font-size: small;" class="glyphicon glyphicon-link"></i></a>
+           href="{% url "create_or_modify_user" u.id %}"><i aria-hidden="true" style="font-size: small;" class="glyphicon glyphicon-link"></i></a>
         <br>
     {% empty %}
         This project does not have any members.
