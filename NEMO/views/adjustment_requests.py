@@ -550,7 +550,6 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
     table_result.add_header(("applied", "Applied"))
     table_result.add_header(("applied_by", "Applied by"))
     for req in request_list:
-        req: AdjustmentRequest = req
         table_result.add_row(
             {
                 "status": req.get_status_display(),

@@ -646,7 +646,6 @@ def send_csv_interlock_report(interlock_list: QuerySetType[Interlock_model], use
     filename = "interlocks_report_" + export_format_datetime() + ".csv"
     report_attachment = get_interlock_report(interlock_list).to_csv_attachment(filename)
     for user in users:
-        user: User = user
         user.email_user(
             f"Interlock status report {format_datetime()}",
             "Please find attached the interlock report.",
@@ -670,7 +669,6 @@ def get_interlock_report(interlock_list: QuerySetType[Interlock_model]) -> Basic
         ("id", "ID"),
     ]
     for interlock in interlock_list:
-        interlock: Interlock_model = interlock
         interlock_report.add_row(
             {
                 "status": interlock.ping(),

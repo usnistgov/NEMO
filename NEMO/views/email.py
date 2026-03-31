@@ -206,7 +206,6 @@ def export_email_addresses(request):
         if not send_to_expired_access_users:
             users = [user for user in users if not user.has_access_expired()]
         for user in users:
-            user: User = user
             for email in user.get_emails(user.get_preferences().email_send_broadcast_emails):
                 writer.writerow(
                     [
