@@ -500,9 +500,10 @@ class ToolUsageQuestionsAdmin(admin.ModelAdmin):
 
 
 @register(ToolWaitList)
-class ToolWaitList(admin.ModelAdmin):
+class ToolWaitListAdmin(admin.ModelAdmin):
     list_display = ["tool", "user", "date_entered", "date_exited", "expired", "deleted"]
     list_filter = ["deleted", "expired", "tool"]
+    autocomplete_fields = ["tool", "user"]
 
 
 @register(ToolQualificationGroup)
@@ -1216,6 +1217,7 @@ class TaskAdmin(admin.ModelAdmin):
     )
     date_hierarchy = "creation_time"
     autocomplete_fields = ["tool", "creator", "last_updated_by", "resolver"]
+    search_fields = ["tool__name", "creator__first_name", "creator__last_name", "creator__username"]
 
 
 @register(TaskCategory)
@@ -1246,6 +1248,7 @@ class TaskHistoryAdmin(admin.ModelAdmin):
 @register(TaskImages)
 class TaskImagesAdmin(admin.ModelAdmin):
     list_display = ("id", "get_tool", "task", "uploaded_at")
+    readonly_fields = ["uploaded_at"]
 
     @admin.display(ordering="tool", description="Tool Name")
     def get_tool(self, task_image: TaskImages):
