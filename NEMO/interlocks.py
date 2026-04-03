@@ -500,7 +500,7 @@ class WebRelayHttpInterlock(Interlock):
         return state
 
     @classmethod
-    def get_response(cls, interlock: Interlock_model, parameters_str, timeout=5) -> Response:
+    def get_response(cls, interlock: Interlock_model, parameters_str) -> Response:
         response, auth, response_error = None, None, None
         if interlock.card.username and interlock.card.password:
             auth = (interlock.card.username, interlock.card.password)
