@@ -1149,6 +1149,16 @@
         </div>
     {% endif %}
 </div>
+{% if device == 'mobile' %}
+    <a href="{% url 'view_calendar' 'tool' tool.id %}">
+        <svg height="50" width="100" style="position:fixed; left:15px; bottom:15px">
+            <circle cx="25" cy="25" r="25" fill="purple"></circle>
+            <text x="25" y="26" fill="white" font-size="11" font-family="Arial" text-anchor="middle" alignment-baseline="middle">
+            Calendar
+            </text>
+        </svg>
+    </a>
+{% endif %}
 <script>
 	$(".contact-info-tooltip").on('click', function () {
         $(".tooltip").remove();
