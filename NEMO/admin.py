@@ -1886,8 +1886,14 @@ class ContactInformationCategoryAdmin(admin.ModelAdmin):
 
 @register(ContactInformation)
 class ContactInformationAdmin(admin.ModelAdmin):
-    list_display = ("name", "category", "user")
+    list_display = ("name", "category", "user", "image_thumbnail")
     autocomplete_fields = ["user"]
+
+    @admin.display(ordering="image", description="Image")
+    def image_thumbnail(self, obj):
+        if obj.image:
+            return mark_safe(f'<img src="{obj.image.url}" height="32px" />')
+        return "No image"
 
 
 @register(LandingPageChoice)
