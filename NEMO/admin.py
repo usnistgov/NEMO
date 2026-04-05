@@ -2147,12 +2147,18 @@ class ChemicalHazardAdminForm(forms.ModelForm):
 @register(ChemicalHazard)
 class ChemicalHazardAdmin(admin.ModelAdmin):
     form = ChemicalHazardAdminForm
-    list_display = ("name", "display_order")
+    list_display = ("name", "display_order", "logo_thumbnail")
 
     def save_model(self, request, obj: ChemicalHazard, form, change):
         super().save_model(request, obj, form, change)
         if "chemicals" in form.changed_data:
             obj.chemical_set.set(form.cleaned_data["chemicals"])
+
+    @admin.display(ordering="logo", description="Logo")
+    def logo_thumbnail(self, obj):
+        if obj.logo:
+            return mark_safe(f'<img src="{obj.logo.url}" height="32px" />')
+        return "No logo"
 
 
 @register(Chemical)
