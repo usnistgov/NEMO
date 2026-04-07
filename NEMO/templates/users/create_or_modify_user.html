@@ -474,7 +474,7 @@
                            class="grey hover-black"
                            title="Remove {{ d.filename }}"><span class="glyphicon glyphicon-remove-circle"></span></a>
                     {% endif %}
-                    <a href="{{ d.document.url }}" target="_blank" style="margin-right: 5px">{{ d.filename }}</a>
+                    <a href="{{ d.document.link }}" target="_blank" style="margin-right: 5px">{{ d.filename }}</a>
                 </div>
             {% empty %}
                 <div class="form-control-static">This user doesn't have any documents.</div>
@@ -529,7 +529,7 @@
 		{
             let project_text = project_name;
             {% if user.is_accounting_officer or user.is_user_office or user.is_facility_manager or user.is_superuser %}
-            project_text += " <a style='text-decoration: none;color: inherit' title='Go to the project\'s page' href='"+"{% url "project" 999 %}".replace("999", project_id)+"'><i aria-hidden="true" style='font-size: small;' class='glyphicon glyphicon-link'></i></a>";
+            project_text += " <a style='text-decoration: none;color: inherit' title='Go to the project\'s page' href='"+"{% url "project" 999 %}".replace("999", project_id)+"'><i aria-hidden='true' style='font-size: small;' class='glyphicon glyphicon-link'></i></a>";
             {% endif %}
 			add_to_list("#project-list", "remove_project", project_id, project_text, "Remove this user from " + project_name, "projects", {{ readonly|yesno:"true,false" }});
 		}
@@ -541,7 +541,7 @@
 		{
             let tool_text = tool_name;
             {% if user.is_any_part_of_staff %}
-            tool_text += " <a style='text-decoration: none;color: inherit' title='Go to the tool\'s page' href='"+"{% url "tool_control" 999 %}".replace("999", tool_id)+"'><i aria-hidden="true" style='font-size: small;' class='glyphicon glyphicon-link'></i></a>";
+            tool_text += " <a style='text-decoration: none;color: inherit' title='Go to the tool\'s page' href='"+"{% url "tool_control" 999 %}".replace("999", tool_id)+"'><i aria-hidden='true' style='font-size: small;' class='glyphicon glyphicon-link'></i></a>";
             {% endif %}
 			add_to_list("#qualification-list", "remove_tool_qualification", tool_id, tool_text, "Disqualify this user from using the " + tool_name, "qualifications", {{ readonly|yesno:"true,false" }});
 		}
