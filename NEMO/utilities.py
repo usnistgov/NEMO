@@ -437,7 +437,7 @@ def extract_times(
     try:
         new_start = float(start)
         new_start = datetime.utcfromtimestamp(new_start)
-        new_start = localize(new_start)
+        new_start = localize(new_start).replace(microsecond=0)
         if beginning_and_end:
             new_start = beginning_of_the_day(new_start)
     except:
@@ -447,7 +447,7 @@ def extract_times(
     try:
         new_end = float(end)
         new_end = datetime.utcfromtimestamp(new_end)
-        new_end = localize(new_end)
+        new_end = localize(new_end).replace(microsecond=0)
         if beginning_and_end:
             new_end = end_of_the_day(new_end)
     except:
