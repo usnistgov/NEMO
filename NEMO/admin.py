@@ -1901,6 +1901,7 @@ class LandingPageChoiceAdmin(admin.ModelAdmin):
     list_display = (
         "display_order",
         "name",
+        "icon_thumbnail",
         "url",
         "get_view_permissions",
         "open_in_new_tab",
@@ -1918,6 +1919,12 @@ class LandingPageChoiceAdmin(admin.ModelAdmin):
                 for role_str in obj.view_permissions
             )
         )
+
+    @admin.display(ordering="image", description="Icon")
+    def icon_thumbnail(self, obj):
+        if obj.image:
+            return mark_safe(f'<img src="{obj.image.url}" height="32px" />')
+        return "No icon"
 
 
 @register(Customization)
