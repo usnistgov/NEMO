@@ -26,11 +26,11 @@ class OutageTestCase(NEMOTestCaseMixin, TestCase):
         title="",
         start: datetime = None,
         end: datetime = None,
-        item_id: int = "",
+        item_id: str = "",
         item_type: ReservationItemType = ReservationItemType.TOOL,
         outage: bool = False,
         frequency: RecurrenceFrequency = None,
-        interval: int = "",
+        interval: str = "",
         until: datetime = None,
     ):
         if not start:
@@ -414,7 +414,7 @@ class OutageTestCase(NEMOTestCaseMixin, TestCase):
         self.every_week_for_a_year(item_id=area.id, item_type=ReservationItemType.AREA)
 
     def every_week_for_a_year(self, item_id: int, item_type: ReservationItemType):
-        start = (datetime.now() + timedelta(days=1)).replace(microsecond=0).replace(hour=7)
+        start = (datetime.now() + timedelta(days=1)).replace(microsecond=0).replace(second=0).replace(hour=7)
         end = start + timedelta(hours=1)
         until = datetime.now() + timedelta(days=365)
 
