@@ -427,14 +427,8 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
     bypass_interlock = request.POST.get("bypass", "False") == "True"
     # Figure out if the tool usage is part of remote work
     # 1: Staff charge means it's always remote work
-    # 2: Never remote if customization is set to never be remote
-    # 3: Always remote if the operator is different from the user
-    # 4: Unless customization is set to ask explicitly
-    remote_work = user != operator and operator.is_staff_on_tool(tool)
-    if RemoteWorkCustomization.get("remote_work_on_behalf_of_user") == "ask":
-        remote_work = remote_work and bool(request.POST.get("remote_work", False))
-    elif RemoteWorkCustomization.get("remote_work_on_behalf_of_user") == "never":
-        remote_work = False
+    # 2: Always remote if the operator is different from the user AND operator requested it (remote_work=True)
+    remote_work = user != operator and operator.is_staff_on_tool(tool) and bool(request.POST.get("remote_work", False))
     response = policy.check_to_enable_tool(tool, operator, user, project, staff_charge, remote_work)
     if response.status_code != HTTPStatus.OK:
         return response
@@ -484,8 +478,8 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
         new_staff_charge.save()
         new_usage_event.staff_charge = new_staff_charge
         # If the tool requires area access, start charging area access time
-        if tool.requires_area_access and RemoteWorkCustomization.get_bool(
-            "remote_work_start_area_access_automatically"
+        if tool.requires_area_access and ToolCustomization.get_bool(
+            "tool_control_use_for_other_remote_area_access_automatically_enabled"
         ):
             area_access = AreaAccessRecord()
             area_access.area = tool.requires_area_access

@@ -73,7 +73,7 @@
                         Include username of the person freeing time in the notification email
                     </label>
                     <br>
-                    <label style="display: inline;">
+                    <label id="label_tool_freed_time_notify_next_reservation" style="display: inline;">
                         <input type="checkbox"
                                name="tool_freed_time_notify_next_reservation_enabled"
                                {% if tool_freed_time_notify_next_reservation_enabled %}checked{% endif %}
@@ -84,6 +84,7 @@
                     <span class="input-group-sm" style="display: inline-table; width: 40%">
                         <input type="number"
                                min="1"
+                               aria-labelledby="label_tool_freed_time_notify_next_reservation"
                                id="tool_freed_time_notify_next_reservation_min_freed_time"
                                name="tool_freed_time_notify_next_reservation_min_freed_time"
                                class="form-control text-right"
@@ -94,6 +95,7 @@
                     <span class="input-group-sm" style="display: inline-table; width: 30%">
                         <input type="number"
                                min="1"
+                               aria-labelledby="label_tool_freed_time_notify_next_reservation"
                                id="tool_freed_time_notify_next_reservation_starts_within"
                                name="tool_freed_time_notify_next_reservation_starts_within"
                                class="form-control text-right"
@@ -256,73 +258,110 @@
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Tool control</h3>
         <div class="form-group">
-            <span class="control-label col-md-3">Tool enable labels</span>
-            <div class="col-md-7">
+            <span class="control-label col-md-3">Tool usage options</span>
+            <div class="col-md-9">
                 <input type="text"
-                       id="tool_control_use_self"
-                       name="tool_control_use_self"
+                       id="tool_control_use_self_label"
+                       name="tool_control_use_self_label"
                        class="form-control"
-                       value="{{ tool_control_use_self }}" />
+                       value="{{ tool_control_use_self_label }}" />
             </div>
             <div class="col-md-offset-3 col-md-9 help-block light-grey">
-                <label for="tool_control_use_self">This label if used when a user is using a tool for himself</label>
+                <label for="tool_control_use_self_label">
+                    This is the default option. It's automatically selected for regular users, while staff can always choose it.
+                </label>
             </div>
-            {% if customizations|get_item:"training_show_self_option_in_tool_control" == "enabled" %}
-                <div class="col-md-offset-3 col-md-7">
+            <div class="col-md-offset-3 col-md-9" style="margin-bottom: 10px">
+                <label id="label_tool_control_use_self_training">
+                    <input type="checkbox"
+                           id="tool_control_use_self_training_enabled"
+                           name="tool_control_use_self_training_enabled"
+                           {% if tool_control_use_self_training_enabled %}checked{% endif %}
+                           value="enabled"
+                           onchange="on_tool_control_option_change()">
+                    Show option to use a tool for training (for trainers and staff only)
+                </label>
+                <div class="col-xs-offset-1 col-xs-11">
                     <input type="text"
-                           id="tool_control_use_self_training"
-                           name="tool_control_use_self_training"
+                           aria-labelledby="label_tool_control_use_self_training"
+                           id="tool_control_use_self_training_label"
+                           name="tool_control_use_self_training_label"
                            class="form-control"
-                           value="{{ tool_control_use_self_training }}" />
+                           value="{{ tool_control_use_self_training_label }}" />
                 </div>
-                <div class="col-md-offset-3 col-md-9 help-block light-grey">
-                    <label for="tool_control_use_self_training">
-                        This label if used when a user is using a tool for himself for a training
-                    </label>
-                </div>
-            {% endif %}
-            {% if customizations|get_item:"remote_work_on_behalf_of_user" == "ask" or customizations|get_item:"remote_work_on_behalf_of_user" == "never" %}
-                <div class="col-md-offset-3 col-md-7">
+            </div>
+            <div class="col-md-offset-3 col-md-9">
+                <label id="label_tool_control_use_for_other_training">
+                    <input type="checkbox"
+                           id="tool_control_use_for_other_training_enabled"
+                           name="tool_control_use_for_other_training_enabled"
+                           {% if tool_control_use_for_other_training_enabled %}checked{% endif %}
+                           value="enabled"
+                           onchange="on_tool_control_option_change()">
+                    Show option to use a tool for training on behalf of someone else (staff only)
+                </label>
+                <div class="col-xs-offset-1 col-xs-11">
                     <input type="text"
-                           id="tool_control_use_for_other"
-                           name="tool_control_use_for_other"
+                           aria-labelledby="label_tool_control_use_for_other_training"
+                           id="tool_control_use_for_other_training_label"
+                           name="tool_control_use_for_other_training_label"
                            class="form-control"
-                           value="{{ tool_control_use_for_other }}" />
+                           value="{{ tool_control_use_for_other_training_label }}" />
                 </div>
-                <div class="col-md-offset-3 col-md-9 help-block light-grey">
-                    <label for="tool_control_use_for_other">
-                        This label if used when a user is using a tool on behalf of someone else
-                    </label>
-                </div>
-            {% endif %}
-            {% if customizations|get_item:"training_show_behalf_option_in_tool_control" == "enabled" %}
-                <div class="col-md-offset-3 col-md-7">
+            </div>
+            <div class="col-md-offset-3 col-md-9" style="margin-bottom: 10px">
+                <input type="hidden" name="tool_control_use_for_other_enabled" value="off" />
+                <label id="label_tool_control_use_for_other">
+                    <input type="checkbox"
+                           id="tool_control_use_for_other_enabled"
+                           name="tool_control_use_for_other_enabled"
+                           {% if tool_control_use_for_other_enabled == 'enabled' %}checked{% endif %}
+                           value="enabled"
+                           onchange="on_tool_control_option_change()">
+                    Show option to use a tool on behalf of another user (staff only)
+                </label>
+                <div class="col-xs-offset-1 col-xs-11">
                     <input type="text"
-                           id="tool_control_use_for_other_training"
-                           name="tool_control_use_for_other_training"
+                           aria-labelledby="label_tool_control_use_for_other"
+                           id="tool_control_use_for_other_label"
+                           name="tool_control_use_for_other_label"
                            class="form-control"
-                           value="{{ tool_control_use_for_other_training }}" />
+                           value="{{ tool_control_use_for_other_label }}" />
                 </div>
-                <div class="col-md-offset-3 col-md-9 help-block light-grey">
-                    <label for="tool_control_use_for_other_training">
-                        This label if used when a user is using a tool on behalf of someone else for training
-                    </label>
-                </div>
-            {% endif %}
-            {% if customizations|get_item:"remote_work_on_behalf_of_user" == "ask" or customizations|get_item:"remote_work_on_behalf_of_user" == "always" %}
-                <div class="col-md-offset-3 col-md-7">
+            </div>
+            <div class="col-md-offset-3 col-md-9" style="margin-bottom: 10px">
+                <input type="hidden" name="tool_control_use_for_other_remote_enabled" value="off" />
+                <label id="label_tool_control_use_for_other_remote">
+                    <input type="checkbox"
+                           id="tool_control_use_for_other_remote_enabled"
+                           name="tool_control_use_for_other_remote_enabled"
+                           {% if tool_control_use_for_other_remote_enabled != 'off' %}checked{% endif %}
+                           value="enabled"
+                           onchange="on_tool_control_option_change()">
+                    Show option to use a tool on behalf of another user for a <b>remote project</b> (staff only)
+                </label>
+                <div class="col-xs-offset-1 col-xs-11">
                     <input type="text"
-                           id="tool_control_use_for_other_remote"
-                           name="tool_control_use_for_other_remote"
+                           aria-labelledby="label_tool_control_use_for_other_remote"
+                           id="tool_control_use_for_other_remote_label"
+                           name="tool_control_use_for_other_remote_label"
                            class="form-control"
-                           value="{{ tool_control_use_for_other_remote }}" />
+                           value="{{ tool_control_use_for_other_remote_label }}" />
+                    <div class="checkbox" id="tool_control_use_for_other_remote_area_access_automatically_checkbox">
+                        <input type="hidden"
+                               name="tool_control_use_for_other_remote_area_access_automatically_enabled"
+                               value="off" />
+                        <label>
+                            <input type="checkbox"
+                                   id="tool_control_use_for_other_remote_area_access_automatically_enabled"
+                                   name="tool_control_use_for_other_remote_area_access_automatically_enabled"
+                                   {% if tool_control_use_for_other_remote_area_access_automatically_enabled != "off" %}checked{% endif %}
+                                   value="">
+                            Charge area access time automatically when starting a remote project
+                        </label>
+                    </div>
                 </div>
-                <div class="col-md-offset-3 col-md-9 help-block light-grey">
-                    <label for="tool_control_use_for_other_remote">
-                        This label if used when a user is using a tool on behalf of someone else for a remote project
-                    </label>
-                </div>
-            {% endif %}
+            </div>
         </div>
         <div class="form-group">
             <label class="control-label col-sm-4 col-md-3">Run data history</label>
@@ -567,11 +606,24 @@
         <div class="text-center">{% button type="save" value="Save settings" %}</div>
     </div>
     <script type="text/javascript">
+        function on_tool_control_option_change()
+        {
+            for (const name of ["tool_control_use_for_other", "tool_control_use_for_other_remote", "tool_control_use_self_training", "tool_control_use_for_other_training"])
+            {
+                $('#' + name + '_label').toggle($('#' + name + '_enabled').prop('checked'));
+                if (name === "tool_control_use_for_other_remote")
+                {
+                    $('#tool_control_use_for_other_remote_area_access_automatically_checkbox').toggle($('#' + name + '_enabled').prop('checked'));
+                }
+            }
+        }
+        
         $("#tool-tab-link").click(function() {setTimeout(on_tool_tab_show, 50)});
         function on_tool_tab_show()
         {
             auto_size_textarea(document.getElementById('tool_control_configuration_setting_template'))
         }
         on_tool_tab_show();
+        on_tool_control_option_change();
     </script>
 </form>

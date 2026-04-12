@@ -1203,7 +1203,7 @@
   },
   {
     "model": "NEMO.customization",
-    "pk": "training_show_self_option_in_tool_control",
+    "pk": "tool_control_use_self_training_enabled",
     "fields": {
       "value": "enabled"
     }

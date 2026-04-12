@@ -18,53 +18,6 @@
                 </div>
             </div>
         </div>
-        <div class="form-group">
-            <label class="control-label col-sm-4">Remote work area access time</label>
-            <div class="col-sm-8">
-                <div class="checkbox">
-                    <input type="hidden" name="remote_work_start_area_access_automatically" value="off" />
-                    <label>
-                        <input type="checkbox"
-                               name="remote_work_start_area_access_automatically"
-                               {% if remote_work_start_area_access_automatically != "off" %}checked{% endif %}
-                               value="">
-                        Charge area access time automatically when starting a remote project
-                    </label>
-                    <br />
-                </div>
-            </div>
-        </div>
-        <div class="form-group">
-            <label class="control-label col-sm-4">Work on behalf of another user</label>
-            <div class="col-sm-8">
-                <div class="radio">
-                    <label>
-                        <input type="radio"
-                               name="remote_work_on_behalf_of_user"
-                               {% if remote_work_on_behalf_of_user == "always" %}checked{% endif %}
-                               value="always">
-                        Staff on behalf of user is <b>always</b> considered remote
-                    </label>
-                    <br />
-                    <label>
-                        <input type="radio"
-                               name="remote_work_on_behalf_of_user"
-                               {% if remote_work_on_behalf_of_user == "never" %}checked{% endif %}
-                               value="never">
-                        Staff on behalf of user is <b>never</b> considered remote
-                    </label>
-                    <br />
-                    <label>
-                        <input type="radio"
-                               name="remote_work_on_behalf_of_user"
-                               {% if remote_work_on_behalf_of_user == "ask" %}checked{% endif %}
-                               value="ask">
-                        Ask explicitly
-                    </label>
-                    <br />
-                </div>
-            </div>
-        </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <div class="text-center">{% button type="save" value="Save settings" %}</div>
     </form>

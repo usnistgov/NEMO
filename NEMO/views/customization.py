@@ -714,11 +714,16 @@ class ToolCustomization(CustomizationBase):
         "tool_control_show_tool_credentials": "enabled",
         "tool_control_show_next_reservation_user": "",
         "tool_control_prefill_post_usage_with_pre_usage_answers": "",
-        "tool_control_use_self": "Use this tool for my own project",
-        "tool_control_use_self_training": "Use this tool for my own project for training",
-        "tool_control_use_for_other": "Use this tool on behalf of another user",
-        "tool_control_use_for_other_training": "Use this tool on behalf of another user for training",
-        "tool_control_use_for_other_remote": "Use this tool for a remote project",
+        "tool_control_use_self_label": "Use this tool for my own project",
+        "tool_control_use_for_other_enabled": "",
+        "tool_control_use_for_other_label": "Use this tool on behalf of another user",
+        "tool_control_use_for_other_remote_enabled": "enabled",
+        "tool_control_use_for_other_remote_area_access_automatically_enabled": "enabled",
+        "tool_control_use_for_other_remote_label": "Use this tool for a remote project",
+        "tool_control_use_self_training_enabled": "",
+        "tool_control_use_self_training_label": "Use this tool for my own project for training",
+        "tool_control_use_for_other_training_enabled": "",
+        "tool_control_use_for_other_training_label": "Use this tool on behalf of another user for training",
         "tool_control_note_show": "",
         "tool_control_note_copy_reservation": "",
         "tool_control_hide_tool_owners": "",
@@ -779,8 +784,6 @@ class KnowledgeBaseCustomization(CustomizationBase):
 class RemoteWorkCustomization(CustomizationBase):
     variables = {
         "remote_work_validation": "",
-        "remote_work_start_area_access_automatically": "enabled",
-        "remote_work_on_behalf_of_user": "always",
     }
 
 
@@ -790,8 +793,6 @@ class TrainingCustomization(CustomizationBase):
         "training_only_type": "",
         "training_allow_date": "",
         "training_included_hidden_tools": "",
-        "training_show_self_option_in_tool_control": "",
-        "training_show_behalf_option_in_tool_control": "",
     }
 
     def context(self) -> Dict:

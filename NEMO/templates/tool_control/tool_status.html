@@ -485,42 +485,38 @@
                         <div class="radio" role="group" aria-labelledby="what_to_do_label">
                             <label>
                                 <input type="radio" onchange="use_tool_for_self('{{ tool.id }}')" name="staff_charge" value="false">
-                                {{ customizations|get_item:"tool_control_use_self" }}
+                                {{ customizations|get_item:"tool_control_use_self_label" }}
                             </label>
                             {% if user|is_staff_on_tool:tool %}
-                                {% if customizations|get_item:"training_show_self_option_in_tool_control" == "enabled" %}
+                                {% if customizations|get_item:"tool_control_use_self_training_enabled" == "enabled" %}
                                     <br>
                                     <label>
                                         <input type="radio" onchange="use_tool_for_self('{{ tool.id }}', true)" name="staff_charge" value="false">
-                                        {{ customizations|get_item:"tool_control_use_self_training" }}
+                                        {{ customizations|get_item:"tool_control_use_self_training_label" }}
                                     </label>
                                 {% endif %}
-                                {% if customizations|get_item:"training_show_behalf_option_in_tool_control" == "enabled" %}
+                                {% if customizations|get_item:"tool_control_use_for_other_training_enabled" == "enabled" %}
                                     <br>
                                     <label>
                                         <input type="radio"
                                                onchange="use_tool_for_other('{{ tool.id }}', '', true)"
                                                name="staff_charge"
                                                value="false">
-                                        {{ customizations|get_item:"tool_control_use_for_other_training" }}
+                                        {{ customizations|get_item:"tool_control_use_for_other_training_label" }}
                                     </label>
                                 {% endif %}
-                                <br>
-                                <label>
-                                    <input type="radio" onchange="use_tool_for_other('{{ tool.id }}')" name="staff_charge" value="false">
-                                    {% if customizations|get_item:"remote_work_on_behalf_of_user" == "always" %}
-                                        {{ customizations|get_item:"tool_control_use_for_other_remote" }}
-                                    {% elif customizations|get_item:"remote_work_on_behalf_of_user" == "ask" %}
-                                        {{ customizations|get_item:"tool_control_use_for_other" }}
-                                    {% else %}
-                                        {{ customizations|get_item:"tool_control_use_for_other" }}
-                                    {% endif %}
-                                </label>
-                                {% if customizations|get_item:"remote_work_on_behalf_of_user" == "ask" %}
+                                {% if customizations|get_item:"tool_control_use_for_other_enabled" == "enabled" %}
+                                    <br>
+                                    <label>
+                                        <input type="radio" onchange="use_tool_for_other('{{ tool.id }}')" name="staff_charge" value="false">
+                                        {{ customizations|get_item:"tool_control_use_for_other_label" }}
+                                    </label>
+                                {% endif %}
+                                {% if customizations|get_item:"tool_control_use_for_other_remote_enabled" == "enabled" %}
                                     <br>
                                     <label>
                                         <input type="radio" onchange="use_tool_for_other('{{ tool.id }}', true)" name="staff_charge" value="false">
-                                        {{ customizations|get_item:"tool_control_use_for_other_remote" }}
+                                        {{ customizations|get_item:"tool_control_use_for_other_remote_label" }}
                                     </label>
                                 {% endif %}
                                 {% if user.charging_staff_time %}
@@ -532,9 +528,9 @@
                                                data-placement="right"
                                                title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.">
                                             <input type="radio" disabled>
-                                            <span id="staff_charge_tooltip_location">{{ customizations|get_item:"tool_control_use_for_other_remote" }}
-                                                {% if customizations|get_item:"remote_work_on_behalf_of_user" == "ask" or customizations|get_item:"remote_work_on_behalf_of_user" == "always" %}
-                                                    {% if tool.requires_area_access and customizations|get_item:"remote_work_start_area_access_automatically" == "enabled" %}
+                                            <span id="staff_charge_tooltip_location">{{ customizations|get_item:"tool_control_use_for_other_remote_label" }}
+                                                {% if customizations|get_item:"tool_control_use_for_other_remote_enabled" == "enabled" %}
+                                                    {% if tool.requires_area_access and customizations|get_item:"tool_control_use_for_other_remote_area_access_automatically_enabled" == "enabled" %}
                                                         (start staff time & {{ tool.requires_area_access|lower }} time)
                                                     {% else %}
                                                         (start staff time)
@@ -544,37 +540,35 @@
                                         </label>
                                         <script>$("#staff_charge_tooltip_container").tooltip();</script>
                                     {% endwith %}
-                                {% elif customizations|get_item:"remote_work_on_behalf_of_user" != "never" %}
+                                {% elif customizations|get_item:"tool_control_use_for_other_remote_enabled" == "enabled" %}
                                     <br>
                                     <label>
-                                        <input type="radio" onchange="use_tool_for_other('{{ tool.id }}')" name="staff_charge" value="true">
-                                        {{ customizations|get_item:"tool_control_use_for_other_remote" }}
-                                        {% if customizations|get_item:"remote_work_on_behalf_of_user" == "ask" or customizations|get_item:"remote_work_on_behalf_of_user" == "always" %}
-                                            {% if tool.requires_area_access and customizations|get_item:"remote_work_start_area_access_automatically" == "enabled" %}
-                                                (start staff time & {{ tool.requires_area_access|lower }} time)
-                                            {% else %}
-                                                (start staff time)
-                                            {% endif %}
+                                        <input type="radio" onchange="use_tool_for_other('{{ tool.id }}', true)" name="staff_charge" value="true">
+                                        {{ customizations|get_item:"tool_control_use_for_other_remote_label" }}
+                                        {% if tool.requires_area_access and customizations|get_item:"tool_control_use_for_other_remote_area_access_automatically_enabled" == "enabled" %}
+                                            (start staff time & {{ tool.requires_area_access|lower }} time)
+                                        {% else %}
+                                            (start staff time)
                                         {% endif %}
                                     </label>
                                 {% endif %}
                             {% endif %}
                         </div>
                         <div id="project_choice"></div>
-                    {% elif user in tool.superusers.all and customizations|get_item:"training_show_self_option_in_tool_control" == "enabled" %}
+                    {% elif user in tool.superusers.all and customizations|get_item:"tool_control_use_self_training_enabled" == "enabled" %}
                         {# When user is not staff/service personnel but is a tool superuser and training option is enabled #}
                         <h4 id="what_to_do_label_superuser">What would you like to do?</h4>
                         <input type="hidden" id="training" name="training" value="">
                         <div class="radio" role="group" aria-labelledby="what_to_do_label_superuser">
                             <label>
                                 <input type="radio" onchange="use_tool_for_self('{{ tool.id }}')" name="staff_charge" value="false">
-                                {{ customizations|get_item:"tool_control_use_self" }}
+                                {{ customizations|get_item:"tool_control_use_self_label" }}
                             </label>
-                            {% if customizations|get_item:"training_show_self_option_in_tool_control" == "enabled" %}
+                            {% if customizations|get_item:"tool_control_use_self_training_enabled" == "enabled" %}
                                 <br>
                                 <label>
                                     <input type="radio" onchange="use_tool_for_self('{{ tool.id }}', true)" name="staff_charge" value="false">
-                                    {{ customizations|get_item:"tool_control_use_self_training" }}
+                                    {{ customizations|get_item:"tool_control_use_self_training_label" }}
                                 </label>
                             {% endif %}
                         </div>
