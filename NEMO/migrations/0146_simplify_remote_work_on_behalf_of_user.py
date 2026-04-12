@@ -5,7 +5,7 @@ NEW_TOOL_CONTROL_BEHALF_OF_USER_CUSTOMIZATION_NAME = "tool_control_use_for_other
 NEW_TOOL_CONTROL_BEHALF_OF_USER_REMOTE_CUSTOMIZATION_NAME = "tool_control_use_for_other_remote_enabled"
 
 
-def simplify_remote_work_on_behalf_of_user(apps, schema_editor):
+def simplify_tool_usage_options(apps, schema_editor):
     Customization = apps.get_model("NEMO", "Customization")
     # rename all label customizations for tool control
     Customization.objects.filter(name="tool_control_use_self").update(name="tool_control_use_self_label")
@@ -43,12 +43,15 @@ def simplify_remote_work_on_behalf_of_user(apps, schema_editor):
                 name=NEW_TOOL_CONTROL_BEHALF_OF_USER_REMOTE_CUSTOMIZATION_NAME, defaults={"value": "enabled"}
             )
         elif old_value == "never":
-            # it was never, we need to enable for regular and disabled for remote
+            # it was "never", we need to enable for regular and disabled for both remote options
             Customization.objects.update_or_create(
                 name=NEW_TOOL_CONTROL_BEHALF_OF_USER_CUSTOMIZATION_NAME, defaults={"value": "enabled"}
             )
             Customization.objects.update_or_create(
                 name=NEW_TOOL_CONTROL_BEHALF_OF_USER_REMOTE_CUSTOMIZATION_NAME, defaults={"value": "off"}
+            )
+            Customization.objects.update_or_create(
+                name="tool_control_use_for_other_remote_staff_charge_enabled", defaults={"value": "off"}
             )
         else:
             # it was ask, so we need to enable both
@@ -61,7 +64,7 @@ def simplify_remote_work_on_behalf_of_user(apps, schema_editor):
         Customization.objects.filter(name=PREVIOUS_REMOTE_WORK_CUSTOMIZATION_NAME).delete()
 
 
-def reverse_simplify_remote_work_on_behalf_of_user(apps, schema_editor):
+def reverse_simplify_tool_usage(apps, schema_editor):
     Customization = apps.get_model("NEMO", "Customization")
     behalf = Customization.objects.filter(name=NEW_TOOL_CONTROL_BEHALF_OF_USER_CUSTOMIZATION_NAME).first()
     behalf_remote = Customization.objects.filter(name=NEW_TOOL_CONTROL_BEHALF_OF_USER_REMOTE_CUSTOMIZATION_NAME).first()
@@ -77,6 +80,7 @@ def reverse_simplify_remote_work_on_behalf_of_user(apps, schema_editor):
     )
     Customization.objects.filter(name=NEW_TOOL_CONTROL_BEHALF_OF_USER_CUSTOMIZATION_NAME).delete()
     Customization.objects.filter(name=NEW_TOOL_CONTROL_BEHALF_OF_USER_REMOTE_CUSTOMIZATION_NAME).delete()
+    Customization.objects.filter(name="tool_control_use_for_other_remote_staff_charge_enabled").delete()
     # rename all label customizations for tool control
     Customization.objects.filter(name="tool_control_use_self_label").update(name="tool_control_use_self")
     Customization.objects.filter(name="tool_control_use_self_training_label").update(
@@ -107,6 +111,4 @@ class Migration(migrations.Migration):
         ("NEMO", "0145_version_7_4_0"),
     ]
 
-    operations = [
-        migrations.RunPython(simplify_remote_work_on_behalf_of_user, reverse_simplify_remote_work_on_behalf_of_user)
-    ]
+    operations = [migrations.RunPython(simplify_tool_usage_options, reverse_simplify_tool_usage)]
