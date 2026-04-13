@@ -512,6 +512,16 @@
                                         {{ customizations|get_item:"tool_control_use_for_other_label" }}
                                     </label>
                                 {% endif %}
+                                {% if customizations|get_item:"tool_control_use_for_other_staff_charge_enabled" == "enabled" %}
+                                    <br>
+                                    <label>
+                                        <input type="radio" onchange="use_tool_for_other('{{ tool.id }}')" name="staff_charge" value="true">
+                                        {{ customizations|get_item:"tool_control_use_for_other_staff_charge_label" }}
+                                        {% if tool.requires_area_access and customizations|get_item:"tool_control_use_for_other_area_access_automatically_enabled" == "enabled" %}
+                                            {% render_template_string customizations|get_item:"tool_control_use_for_other_area_access_automatically_label" "tool" tool %}
+                                        {% endif %}
+                                    </label>
+                                {% endif %}
                                 {% if customizations|get_item:"tool_control_use_for_other_remote_enabled" == "enabled" %}
                                     <br>
                                     <label>

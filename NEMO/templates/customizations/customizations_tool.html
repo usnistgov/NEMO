@@ -218,7 +218,7 @@
                     <label>
                         <input type="checkbox"
                                name="tool_task_updates_facility_managers"
-                               {% if tool_task_updates_facility_managers != 'off' %}checked{% endif %}
+                               {% if tool_task_updates_facility_managers == "enabled" %}checked{% endif %}
                                value="">
                         Send all tool problem & updates to facility managers
                     </label>
@@ -320,7 +320,7 @@
                         <input type="checkbox"
                                id="tool_control_use_for_other_enabled"
                                name="tool_control_use_for_other_enabled"
-                               {% if tool_control_use_for_other_enabled == 'enabled' %}checked{% endif %}
+                               {% if tool_control_use_for_other_enabled == "enabled" %}checked{% endif %}
                                value="enabled"
                                onchange="on_tool_control_option_change()">
                         Show option to use a tool on behalf of another user (staff only)
@@ -336,13 +336,55 @@
                 </div>
             </div>
             <div class="col-md-offset-3 col-md-9" style="margin-bottom: 10px">
+                <input type="hidden" name="tool_control_use_for_other_staff_charge_enabled" value="off" />
+                <div class="checkbox" style="padding-top: 0">
+                    <label id="label_tool_control_use_for_other_staff_charge">
+                        <input type="checkbox"
+                               id="tool_control_use_for_other_staff_charge_enabled"
+                               name="tool_control_use_for_other_staff_charge_enabled"
+                               {% if tool_control_use_for_other_staff_charge_enabled == "enabled" %}checked{% endif %}
+                               value="enabled"
+                               onchange="on_tool_control_option_change()">
+                        Show option to use a tool on behalf of another user and <b>charge staff time</b> (staff only)
+                    </label>
+                </div>
+                <div class="col-xs-offset-1 col-xs-11" style="padding-right: 0">
+                    <input type="text"
+                           aria-labelledby="label_tool_control_use_for_other_staff_charge"
+                           id="tool_control_use_for_other_staff_charge_label"
+                           name="tool_control_use_for_other_staff_charge_label"
+                           class="form-control"
+                           value="{{ tool_control_use_for_other_staff_charge_label }}" />
+                    <div class="checkbox" id="tool_control_use_for_other_area_access_automatically_checkbox">
+                        <input type="hidden" name="tool_control_use_for_other_area_access_automatically_enabled" value="off" />
+                        <label id="label_tool_control_use_for_other_area_access_automatically" style="min-height: 27px">
+                            <input type="checkbox"
+                                   id="tool_control_use_for_other_area_access_automatically_enabled"
+                                   name="tool_control_use_for_other_area_access_automatically_enabled"
+                                   {% if tool_control_use_for_other_area_access_automatically_enabled == "enabled" %}checked{% endif %}
+                                   value=""
+                                   onchange="on_tool_control_option_change()">
+                            Charge area access time automatically in addition to staff time
+                        </label>
+                        <div class="col-xs-offset-1 col-xs-11" style="padding-right: 0">
+                            <input type="text"
+                                   aria-labelledby="label_tool_control_use_for_other_area_access_automatically"
+                                   id="tool_control_use_for_other_area_access_automatically_label"
+                                   name="tool_control_use_for_other_area_access_automatically_label"
+                                   class="form-control"
+                                   value="{{ tool_control_use_for_other_area_access_automatically_label }}" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-offset-3 col-md-9" style="margin-bottom: 10px">
                 <input type="hidden" name="tool_control_use_for_other_remote_enabled" value="off" />
                 <div class="checkbox" style="padding-top: 0">
                     <label id="label_tool_control_use_for_other_remote">
                         <input type="checkbox"
                                id="tool_control_use_for_other_remote_enabled"
                                name="tool_control_use_for_other_remote_enabled"
-                               {% if tool_control_use_for_other_remote_enabled != 'off' %}checked{% endif %}
+                               {% if tool_control_use_for_other_remote_enabled == "enabled" %}checked{% endif %}
                                value="enabled"
                                onchange="on_tool_control_option_change()">
                         Show option to use a tool on behalf of another user for a remote project (staff only)
@@ -364,7 +406,7 @@
                         <input type="checkbox"
                                id="tool_control_use_for_other_remote_staff_charge_enabled"
                                name="tool_control_use_for_other_remote_staff_charge_enabled"
-                               {% if tool_control_use_for_other_remote_staff_charge_enabled != 'off' %}checked{% endif %}
+                               {% if tool_control_use_for_other_remote_staff_charge_enabled == "enabled" %}checked{% endif %}
                                value="enabled"
                                onchange="on_tool_control_option_change()">
                         Show option to use a tool on behalf of another user for a remote project and <b>charge staff time</b> (staff only)
@@ -385,10 +427,10 @@
                             <input type="checkbox"
                                    id="tool_control_use_for_other_remote_area_access_automatically_enabled"
                                    name="tool_control_use_for_other_remote_area_access_automatically_enabled"
-                                   {% if tool_control_use_for_other_remote_area_access_automatically_enabled != "off" %}checked{% endif %}
+                                   {% if tool_control_use_for_other_remote_area_access_automatically_enabled == "enabled" %}checked{% endif %}
                                    value=""
                                    onchange="on_tool_control_option_change()">
-                            Charge area access time automatically when starting a remote project
+                            Charge area access time automatically in addition to staff time
                         </label>
                         <div class="col-xs-offset-1 col-xs-11" style="padding-right: 0">
                             <input type="text"
@@ -647,13 +689,17 @@
     <script type="text/javascript">
         function on_tool_control_option_change()
         {
-            for (const name of ["tool_control_use_for_other", "tool_control_use_for_other_remote", "tool_control_use_self_training", "tool_control_use_for_other_training", "tool_control_use_for_other_remote_staff_charge", "tool_control_use_for_other_remote_area_access_automatically"])
+            for (const name of ["tool_control_use_for_other", "tool_control_use_for_other_staff_charge", "tool_control_use_for_other_area_access_automatically", "tool_control_use_for_other_remote", "tool_control_use_for_other_remote_staff_charge", "tool_control_use_for_other_remote_area_access_automatically", "tool_control_use_self_training", "tool_control_use_for_other_training"])
             {
                 const option_enabled_jq = $("#" + name + "_enabled");
-                $('#' + name + '_label').toggle(option_enabled_jq.prop('checked'));
+                $("#" + name + "_label").toggle(option_enabled_jq.prop("checked"));
                 if (name === "tool_control_use_for_other_remote_staff_charge")
                 {
-                    $('#tool_control_use_for_other_remote_area_access_automatically_checkbox').toggle(option_enabled_jq.prop('checked'));
+                    $("#tool_control_use_for_other_remote_area_access_automatically_checkbox").toggle(option_enabled_jq.prop("checked"));
+                }
+                if (name === "tool_control_use_for_other_staff_charge")
+                {
+                    $("#tool_control_use_for_other_area_access_automatically_checkbox").toggle(option_enabled_jq.prop("checked"));
                 }
             }
         }
@@ -661,7 +707,7 @@
         $("#tool-tab-link").click(function() {setTimeout(on_tool_tab_show, 50)});
         function on_tool_tab_show()
         {
-            auto_size_textarea(document.getElementById('tool_control_configuration_setting_template'))
+            auto_size_textarea(document.getElementById("tool_control_configuration_setting_template"))
         }
         on_tool_tab_show();
         on_tool_control_option_change();
