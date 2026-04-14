@@ -32,7 +32,7 @@ dependencies = [
     "fastjsonschema==2.21.2",
     "ldap3==2.9.1",
     "packaging==26.0",
-    "Pillow==12.1.1",
+    "Pillow==12.2.0",
     "pymodbus==3.12.1",
     "python-dateutil==2.9.0",
     "requests==2.33.0",
