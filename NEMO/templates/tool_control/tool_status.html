@@ -485,14 +485,14 @@
                         <div class="radio" role="group" aria-labelledby="what_to_do_label">
                             <label>
                                 <input type="radio" onchange="use_tool_for_self('{{ tool.id }}')" name="staff_charge" value="false">
-                                {{ customizations|get_item:"tool_control_use_self_label" }}
+                                {{ customizations|get_item:"tool_control_use_self_label"|safe }}
                             </label>
                             {% if user|is_staff_on_tool:tool %}
                                 {% if customizations|get_item:"tool_control_use_self_training_enabled" == "enabled" %}
                                     <br>
                                     <label>
                                         <input type="radio" onchange="use_tool_for_self('{{ tool.id }}', true)" name="staff_charge" value="false">
-                                        {{ customizations|get_item:"tool_control_use_self_training_label" }}
+                                        {{ customizations|get_item:"tool_control_use_self_training_label"|safe }}
                                     </label>
                                 {% endif %}
                                 {% if customizations|get_item:"tool_control_use_for_other_training_enabled" == "enabled" %}
@@ -502,21 +502,21 @@
                                                onchange="use_tool_for_other('{{ tool.id }}', '', true)"
                                                name="staff_charge"
                                                value="false">
-                                        {{ customizations|get_item:"tool_control_use_for_other_training_label" }}
+                                        {{ customizations|get_item:"tool_control_use_for_other_training_label"|safe }}
                                     </label>
                                 {% endif %}
                                 {% if customizations|get_item:"tool_control_use_for_other_enabled" == "enabled" %}
                                     <br>
                                     <label>
                                         <input type="radio" onchange="use_tool_for_other('{{ tool.id }}')" name="staff_charge" value="false">
-                                        {{ customizations|get_item:"tool_control_use_for_other_label" }}
+                                        {{ customizations|get_item:"tool_control_use_for_other_label"|safe }}
                                     </label>
                                 {% endif %}
                                 {% if customizations|get_item:"tool_control_use_for_other_staff_charge_enabled" == "enabled" %}
                                     <br>
                                     <label>
                                         <input type="radio" onchange="use_tool_for_other('{{ tool.id }}')" name="staff_charge" value="true">
-                                        {{ customizations|get_item:"tool_control_use_for_other_staff_charge_label" }}
+                                        {{ customizations|get_item:"tool_control_use_for_other_staff_charge_label"|safe }}
                                         {% if tool.requires_area_access and customizations|get_item:"tool_control_use_for_other_area_access_automatically_enabled" == "enabled" %}
                                             {% render_template_string customizations|get_item:"tool_control_use_for_other_area_access_automatically_label" "tool" tool %}
                                         {% endif %}
@@ -526,7 +526,7 @@
                                     <br>
                                     <label>
                                         <input type="radio" onchange="use_tool_for_other('{{ tool.id }}', true)" name="staff_charge" value="false">
-                                        {{ customizations|get_item:"tool_control_use_for_other_remote_label" }}
+                                        {{ customizations|get_item:"tool_control_use_for_other_remote_label"|safe }}
                                     </label>
                                 {% endif %}
                                 {% if user.charging_staff_time %}
@@ -539,7 +539,7 @@
                                                title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.">
                                             <input type="radio" disabled>
                                             <span id="staff_charge_tooltip_location">
-                                                {{ customizations|get_item:"tool_control_use_for_other_remote_staff_charge_label" }}
+                                                {{ customizations|get_item:"tool_control_use_for_other_remote_staff_charge_label"|safe }}
                                                 {% if tool.requires_area_access and customizations|get_item:"tool_control_use_for_other_remote_area_access_automatically_enabled" == "enabled" %}
                                                     {% render_template_string customizations|get_item:"tool_control_use_for_other_remote_area_access_automatically_label" "tool" tool %}
                                                 {% endif %}
@@ -551,7 +551,7 @@
                                     <br>
                                     <label>
                                         <input type="radio" onchange="use_tool_for_other('{{ tool.id }}', true)" name="staff_charge" value="true">
-                                        {{ customizations|get_item:"tool_control_use_for_other_remote_staff_charge_label" }}
+                                        {{ customizations|get_item:"tool_control_use_for_other_remote_staff_charge_label"|safe }}
                                         {% if tool.requires_area_access and customizations|get_item:"tool_control_use_for_other_remote_area_access_automatically_enabled" == "enabled" %}
                                             {% render_template_string customizations|get_item:"tool_control_use_for_other_remote_area_access_automatically_label" "tool" tool %}
                                         {% endif %}
@@ -567,13 +567,13 @@
                         <div class="radio" role="group" aria-labelledby="what_to_do_label_superuser">
                             <label>
                                 <input type="radio" onchange="use_tool_for_self('{{ tool.id }}')" name="staff_charge" value="false">
-                                {{ customizations|get_item:"tool_control_use_self_label" }}
+                                {{ customizations|get_item:"tool_control_use_self_label"|safe }}
                             </label>
                             {% if customizations|get_item:"tool_control_use_self_training_enabled" == "enabled" %}
                                 <br>
                                 <label>
                                     <input type="radio" onchange="use_tool_for_self('{{ tool.id }}', true)" name="staff_charge" value="false">
-                                    {{ customizations|get_item:"tool_control_use_self_training_label" }}
+                                    {{ customizations|get_item:"tool_control_use_self_training_label"|safe }}
                                 </label>
                             {% endif %}
                         </div>

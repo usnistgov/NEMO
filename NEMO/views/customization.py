@@ -704,9 +704,45 @@ class ToolCustomization(CustomizationBase):
         "tool_task_updates_facility_managers": "enabled",
         "tool_task_updates_superusers": "",
         "tool_task_updates_allow_regular_user_preferences": "",
+        "tool_problem_max_image_size_pixels": "750",
+        "tool_problem_send_to_all_qualified_users": "",
+        "tool_problem_allow_regular_user_preferences": "",
+        "tool_problem_safety_hazard_automatic_shutdown": "",
+        "tool_configuration_setting_template": "{{ current_setting }}",
+        "tool_configuration_near_future_days": "1",
+        "tool_configuration_change_while_in_use": "",
+        "tool_reservation_policy_superusers_bypass": "",
+        "tool_wait_list_spot_expiration": "15",
+        "tool_wait_list_reservation_buffer": "15",
+        "tool_freed_time_notification_include_username": "",
+        "tool_freed_time_notify_next_reservation_enabled": "",
+        "tool_freed_time_notify_next_reservation_min_freed_time": "15",
+        "tool_freed_time_notify_next_reservation_starts_within": "1",
+        "kiosk_only_show_qualified_tools": "",
+    }
+
+    def validate(self, name, value):
+        if (
+            name
+            in [
+                "tool_problem_max_image_size_pixels",
+                "tool_configuration_near_future_days",
+            ]
+            and value
+        ):
+            validate_integer(value)
+        if name == "tool_configuration_setting_template" and value:
+            try:
+                Template(value).render(Context({"current_setting": "setting"}))
+            except Exception as e:
+                raise ValidationError(str(e))
+
+
+@customization(key="tool_control", title="Tool control")
+class ToolControlCustomization(CustomizationBase):
+    variables = {
         "tool_control_hide_data_history_users": "",
         "tool_control_documents_in_separate_tab": "",
-        "tool_control_configuration_setting_template": "{{ current_setting }}",
         "tool_control_broadcast_upcoming_reservation": "",
         "tool_control_show_task_details": "",
         "tool_control_show_qualified_users_to_all": "",
@@ -734,37 +770,7 @@ class ToolCustomization(CustomizationBase):
         "tool_control_note_show": "",
         "tool_control_note_copy_reservation": "",
         "tool_control_hide_tool_owners": "",
-        "tool_problem_max_image_size_pixels": "750",
-        "tool_problem_send_to_all_qualified_users": "",
-        "tool_problem_allow_regular_user_preferences": "",
-        "tool_problem_safety_hazard_automatic_shutdown": "",
-        "tool_configuration_near_future_days": "1",
-        "tool_configuration_change_while_in_use": "",
-        "tool_reservation_policy_superusers_bypass": "",
-        "tool_wait_list_spot_expiration": "15",
-        "tool_wait_list_reservation_buffer": "15",
-        "tool_freed_time_notification_include_username": "",
-        "tool_freed_time_notify_next_reservation_enabled": "",
-        "tool_freed_time_notify_next_reservation_min_freed_time": "15",
-        "tool_freed_time_notify_next_reservation_starts_within": "1",
-        "kiosk_only_show_qualified_tools": "",
     }
-
-    def validate(self, name, value):
-        if (
-            name
-            in [
-                "tool_problem_max_image_size_pixels",
-                "tool_configuration_near_future_days",
-            ]
-            and value
-        ):
-            validate_integer(value)
-        if name == "tool_control_configuration_setting_template" and value:
-            try:
-                Template(value).render(Context({"current_setting": "setting"}))
-            except Exception as e:
-                raise ValidationError(str(e))
 
 
 @customization(key="safety", title="Safety")

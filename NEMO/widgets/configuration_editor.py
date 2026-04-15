@@ -90,7 +90,7 @@ class ConfigurationEditor(Widget):
     def display_setting(self, current_setting):
         from NEMO.views.customization import ToolCustomization
 
-        template = ToolCustomization.get("tool_control_configuration_setting_template")
+        template = ToolCustomization.get("tool_configuration_setting_template")
         contents = "{{ current_setting }}"
         try:
             contents = Template(template).render(Context({"current_setting": escape(current_setting)}))

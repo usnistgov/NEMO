@@ -2270,14 +2270,14 @@ class Tool(SerializationByNameModel):
         self, questions_type: ToolUsageQuestionType, user: User = None, project: Project = None
     ) -> MultiDynamicForms:
         from NEMO.widgets.dynamic_form import MultiDynamicForms
-        from NEMO.views.customization import ToolCustomization
+        from NEMO.views.customization import ToolControlCustomization
 
         is_post_usage = questions_type == ToolUsageQuestionType.POST
         initial_data = None
         if is_post_usage:
             current_usage = self.get_current_usage_event()
             if current_usage:
-                if ToolCustomization.get_bool("tool_control_prefill_post_usage_with_pre_usage_answers"):
+                if ToolControlCustomization.get_bool("tool_control_prefill_post_usage_with_pre_usage_answers"):
                     initial_data = current_usage.pre_run_data_json()
                 project = current_usage.project
                 user = current_usage.user

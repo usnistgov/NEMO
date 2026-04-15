@@ -28,6 +28,9 @@ def simplify_tool_usage_options(apps, schema_editor):
     Customization.objects.filter(name="training_show_behalf_option_in_tool_control").update(
         name="tool_control_use_for_other_training_enabled"
     )
+    Customization.objects.filter(name="tool_control_configuration_setting_template").update(
+        name="tool_configuration_setting_template"
+    )
 
     customization = Customization.objects.filter(name=PREVIOUS_REMOTE_WORK_CUSTOMIZATION_NAME).first()
     if not customization:
@@ -102,6 +105,9 @@ def reverse_simplify_tool_usage(apps, schema_editor):
     )
     Customization.objects.filter(name="tool_control_use_for_other_training_enabled").update(
         name="training_show_behalf_option_in_tool_control"
+    )
+    Customization.objects.filter(name="tool_configuration_setting_template").update(
+        name="tool_control_configuration_setting_template"
     )
 
 

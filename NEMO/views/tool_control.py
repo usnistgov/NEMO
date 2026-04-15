@@ -34,7 +34,6 @@ from NEMO.models import (
     Tool,
     ToolUsageCounter,
     ToolUsageQuestionType,
-    ToolUsageQuestions,
     ToolWaitList,
     UsageEvent,
     User,
@@ -57,7 +56,7 @@ from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import (
     EmailsCustomization,
     InterlockCustomization,
-    RemoteWorkCustomization,
+    ToolControlCustomization,
     ToolCustomization,
     get_media_file_contents,
 )
@@ -94,7 +93,7 @@ def tool_status(request, tool_id):
     user: User = request.user
     tool = get_object_or_404(Tool, id=tool_id, visible=True)
     user_is_qualified = tool.user_set.filter(id=user.id).exists()
-    broadcast_upcoming_reservation = ToolCustomization.get("tool_control_broadcast_upcoming_reservation")
+    broadcast_upcoming_reservation = ToolControlCustomization.get("tool_control_broadcast_upcoming_reservation")
     wait_list = tool.current_wait_list()
     user_wait_list_entry = wait_list.filter(user=request.user).first()
     user_wait_list_position = (
@@ -110,7 +109,7 @@ def tool_status(request, tool_id):
         else 0
     )
     tool_credentials = []
-    if ToolCustomization.get_bool("tool_control_show_tool_credentials") and (
+    if ToolControlCustomization.get_bool("tool_control_show_tool_credentials") and (
         user.is_staff_on_tool(tool) or user.is_facility_manager
     ):
         if user.is_facility_manager:
@@ -132,9 +131,9 @@ def tool_status(request, tool_id):
         "show_broadcast_upcoming_reservation": user.is_any_part_of_staff
         or (user_is_qualified and broadcast_upcoming_reservation == "qualified")
         or broadcast_upcoming_reservation == "all",
-        "tool_control_show_task_details": ToolCustomization.get_bool("tool_control_show_task_details"),
+        "tool_control_show_task_details": ToolControlCustomization.get_bool("tool_control_show_task_details"),
         "user_can_see_documents": user.is_any_part_of_staff
-        or not ToolCustomization.get_bool("tool_control_show_documents_only_qualified_users")
+        or not ToolControlCustomization.get_bool("tool_control_show_documents_only_qualified_users")
         or user_is_qualified,
         "wait_list_position": user_wait_list_position,  # 0 if not in wait list
         "wait_list": wait_list,
@@ -162,7 +161,7 @@ def tool_status(request, tool_id):
     ).last()
     if current_reservation:
         dictionary["time_left"] = current_reservation.end
-        if ToolCustomization.get_bool("tool_control_note_copy_reservation"):
+        if ToolControlCustomization.get_bool("tool_control_note_copy_reservation"):
             dictionary["reservation_note"] = current_reservation.note
 
     dictionary["next_reservation"] = (
@@ -474,7 +473,7 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
         new_staff_charge.save()
         new_usage_event.staff_charge = new_staff_charge
         # If the tool requires area access, start charging area access time
-        if tool.requires_area_access and ToolCustomization.get_bool(
+        if tool.requires_area_access and ToolControlCustomization.get_bool(
             "tool_control_use_for_other_remote_area_access_automatically_enabled"
         ):
             area_access = AreaAccessRecord()
