@@ -119,7 +119,8 @@ def adjustment_requests(request, status: int):
             "item_tool__parent_tool___category", flat=True
         )
     )
-    request_tool_categories.remove(None)
+    if None in request_tool_categories:
+        request_tool_categories.remove(None)
     request_tool_categories = sorted(request_tool_categories, key=lambda x: x.lower())
 
     dictionary = {
