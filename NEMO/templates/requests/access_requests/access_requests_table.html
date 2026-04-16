@@ -42,7 +42,7 @@
                     {% if request_status == 'pending' and user in a_request.reviewers %}
                         <a class="btn btn-sm btn-default"
                            title="Approve/Deny"
-                           href="{% url 'edit_access_request' a_request.id %}"><i class="glyphicon glyphicon-ok-circle success-highlight"></i>&nbsp;&nbsp;<i class="glyphicon glyphicon-ban-circle danger-highlight"></i> Review</a>
+                           href="{% url 'edit_access_request' a_request.id %}"><i aria-hidden="true" class="glyphicon glyphicon-ok-circle success-highlight"></i>&nbsp;&nbsp;<i aria-hidden="true" class="glyphicon glyphicon-ban-circle danger-highlight"></i> Review</a>
                     {% elif request_status == 'pending' and a_request.creator == user %}
                         {% url 'edit_access_request' a_request.id as edit_request_url %}
                         {% url 'delete_access_request' a_request.id as delete_request_url %}

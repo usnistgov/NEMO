@@ -32,7 +32,6 @@ def export_tool_credentials(request):
         ("authorized_staff", "Authorized staff"),
     ]
     for tool_cred in ToolCredentials.objects.all():
-        tool_cred: ToolCredentials = tool_cred
         table.add_row(
             {
                 "tool": tool_cred.tool.name,

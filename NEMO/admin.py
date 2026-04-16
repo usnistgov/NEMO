@@ -500,9 +500,10 @@ class ToolUsageQuestionsAdmin(admin.ModelAdmin):
 
 
 @register(ToolWaitList)
-class ToolWaitList(admin.ModelAdmin):
+class ToolWaitListAdmin(admin.ModelAdmin):
     list_display = ["tool", "user", "date_entered", "date_exited", "expired", "deleted"]
     list_filter = ["deleted", "expired", "tool"]
+    autocomplete_fields = ["tool", "user"]
 
 
 @register(ToolQualificationGroup)
@@ -1216,6 +1217,7 @@ class TaskAdmin(admin.ModelAdmin):
     )
     date_hierarchy = "creation_time"
     autocomplete_fields = ["tool", "creator", "last_updated_by", "resolver"]
+    search_fields = ["tool__name", "creator__first_name", "creator__last_name", "creator__username"]
 
 
 @register(TaskCategory)
@@ -1246,6 +1248,7 @@ class TaskHistoryAdmin(admin.ModelAdmin):
 @register(TaskImages)
 class TaskImagesAdmin(admin.ModelAdmin):
     list_display = ("id", "get_tool", "task", "uploaded_at")
+    readonly_fields = ["uploaded_at"]
 
     @admin.display(ordering="tool", description="Tool Name")
     def get_tool(self, task_image: TaskImages):
@@ -1371,7 +1374,6 @@ class UserAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.instance: User = self.instance
         self.fields["training_required"].label = f'{ApplicationCustomization.get("facility_rules_name")} required'
         if self.instance.pk:
             self.fields["primary_owner_on_tools"].initial = self.instance.primary_tool_owner.all()
@@ -1884,8 +1886,14 @@ class ContactInformationCategoryAdmin(admin.ModelAdmin):
 
 @register(ContactInformation)
 class ContactInformationAdmin(admin.ModelAdmin):
-    list_display = ("name", "category", "user")
+    list_display = ("name", "category", "user", "image_thumbnail")
     autocomplete_fields = ["user"]
+
+    @admin.display(ordering="image", description="Image")
+    def image_thumbnail(self, obj):
+        if obj.image:
+            return mark_safe(f'<img src="{obj.image.url}" height="32px" />')
+        return "No image"
 
 
 @register(LandingPageChoice)
@@ -1893,6 +1901,7 @@ class LandingPageChoiceAdmin(admin.ModelAdmin):
     list_display = (
         "display_order",
         "name",
+        "icon_thumbnail",
         "url",
         "get_view_permissions",
         "open_in_new_tab",
@@ -1910,6 +1919,12 @@ class LandingPageChoiceAdmin(admin.ModelAdmin):
                 for role_str in obj.view_permissions
             )
         )
+
+    @admin.display(ordering="image", description="Icon")
+    def icon_thumbnail(self, obj):
+        if obj.image:
+            return mark_safe(f'<img src="{obj.image.url}" height="32px" />')
+        return "No icon"
 
 
 @register(Customization)
@@ -2145,12 +2160,18 @@ class ChemicalHazardAdminForm(forms.ModelForm):
 @register(ChemicalHazard)
 class ChemicalHazardAdmin(admin.ModelAdmin):
     form = ChemicalHazardAdminForm
-    list_display = ("name", "display_order")
+    list_display = ("name", "display_order", "logo_thumbnail")
 
     def save_model(self, request, obj: ChemicalHazard, form, change):
         super().save_model(request, obj, form, change)
         if "chemicals" in form.changed_data:
             obj.chemical_set.set(form.cleaned_data["chemicals"])
+
+    @admin.display(ordering="logo", description="Logo")
+    def logo_thumbnail(self, obj):
+        if obj.logo:
+            return mark_safe(f'<img src="{obj.logo.url}" height="32px" />')
+        return "No logo"
 
 
 @register(Chemical)

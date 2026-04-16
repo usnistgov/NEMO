@@ -22,7 +22,7 @@
 <ul class="nav nav-tabs">
     {% for status in request_statuses %}
         <li class="nav-item{% if selected_status == status.0 %} active{% endif %}">
-            <a class="nav-link" href="javascript:load_adjustment_requests({{ status.0 }})">
+            <a class="nav-link" href="javascript:load_adjustment_requests({{ status.0 }}, undefined, true)">
                 {{ status.1 }}
                 {% if status.0 == 0 and adjustment_notification_count %}
                     <span class="badge badge-tab-top">{{ adjustment_notification_count }}</span>
@@ -35,11 +35,11 @@
     <div class="panel-body" style="padding: 15px 0">
         {% block tab_content %}
             {% if page %}
-                {% if selected_status == 1 or request_tools or request_areas %}
+                {% if selected_status == 1 or request_tool_categories or request_areas %}
                     <form class="form-horizontal" style="margin-bottom: -15px">
                         {% if selected_status == 1 %}
                             <div class="form-group">
-                                <label class="col-xs-1 control-label" for="applied_status">Applied</label>
+                                <label class="col-xs-2 control-label" for="applied_status">Applied</label>
                                 <div class="col-xs-9">
                                     <select class="form-control"
                                             style="width: auto"
@@ -52,17 +52,17 @@
                                 </div>
                             </div>
                         {% endif %}
-                        {% if request_tools %}
+                        {% if request_tool_categories %}
                             <div class="form-group">
-                                <label class="col-xs-1 control-label" for="tool">Tool</label>
+                                <label class="col-xs-2 control-label" for="tool_categories">Tool categories</label>
                                 <div class="col-xs-9">
                                     <select class="form-control"
                                             style="width: auto"
-                                            id="tool"
+                                            id="tool_categories"
                                             onchange="load_adjustment_requests({{ selected_status }})">
                                         <option selected value="">All</option>
-                                        {% for tool in request_tools %}
-                                            <option value="{{ tool.id }}" {% if selected_tool_id|to_int == tool.id %}selected{% endif %}>{{ tool.name }}</option>
+                                        {% for category in request_tool_categories %}
+                                            <option value="{{ category }}" {% if selected_tool_category == category %}selected{% endif %}>{{ category }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -70,7 +70,7 @@
                         {% endif %}
                         {% if request_areas %}
                             <div class="form-group">
-                                <label class="col-xs-1 control-label" for="area">Area</label>
+                                <label class="col-xs-2 control-label" for="area">Area</label>
                                 <div class="col-xs-9">
                                     <select class="form-control"
                                             style="width: auto"
@@ -134,7 +134,7 @@
         {
             form_element.parents('div').fadeIn('50');
             form_element.children('textarea').focus();
-            $(button_element).html('<i class="glyphicon glyphicon-send"></i> Send');
+            $(button_element).html('<i aria-hidden="true" class="glyphicon glyphicon-send"></i> Send');
         }
     }
 

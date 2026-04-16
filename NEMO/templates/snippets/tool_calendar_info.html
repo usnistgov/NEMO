@@ -6,7 +6,7 @@
         <div class="label label-info info-tooltip-container"
              data-toggle="tooltip"
              title="{{ tool.get_tool_reservation_info_html|safe }}">
-            <i class="glyphicon glyphicon-info-sign"></i> Reservation policy
+            <i aria-hidden="true" class="glyphicon glyphicon-info-sign"></i> Reservation policy
         </div>
     {% endif %}
 {% endif %}
@@ -16,7 +16,7 @@
              style="max-width: {{ customizations|get_item:"calendar_status_bar_tool_max_width" }}px"
              data-toggle="tooltip"
              title="{{ pinned_comment.content|linebreaksbr|escape }}">
-            <i class="glyphicon glyphicon-comment"></i>
+            <i aria-hidden="true" class="glyphicon glyphicon-comment"></i>
             {{ pinned_comment.content }}
         </div>
     {% endfor %}
@@ -27,7 +27,8 @@
              style="max-width: {{ customizations|get_item:"calendar_status_bar_tool_max_width" }}px"
              data-toggle="tooltip"
              title="{{ last_problem.problem_description|linebreaksbr|escape }}">
-            <i class="glyphicon {% if last_problem.force_shutdown %}glyphicon-fire{% else %}glyphicon-wrench{% endif %}"></i>
+            <i aria-hidden="true"
+               class="glyphicon {% if last_problem.force_shutdown %}glyphicon-fire{% else %}glyphicon-wrench{% endif %}"></i>
             {{ last_problem.problem_description }}
         </div>
     {% endif %}

@@ -150,10 +150,14 @@ def get_item(dict_or_array, key):
 
 @register.simple_tag
 def project_selection_display(project):
-    project_selection_template = ProjectsAccountsCustomization.get("project_selection_template")
-    contents = "{{ project.name }}"
+    return render_template_string(ProjectsAccountsCustomization.get("project_selection_template"), "project", project)
+
+
+@register.simple_tag
+def render_template_string(template_string, obj_name, obj):
+    contents = str(obj) if obj else ""
     try:
-        contents = Template(project_selection_template).render(Context({"project": project}))
+        contents = Template(template_string).render(Context({obj_name: obj}))
     except:
         pass
     return format_html(contents)

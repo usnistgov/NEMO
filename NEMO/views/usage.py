@@ -45,7 +45,11 @@ from NEMO.views.api_billing import (
     billable_items_training_sessions,
     billable_items_usage_events,
 )
-from NEMO.views.customization import AdjustmentRequestsCustomization, ProjectsAccountsCustomization, ToolCustomization
+from NEMO.views.customization import (
+    AdjustmentRequestsCustomization,
+    ProjectsAccountsCustomization,
+    ToolControlCustomization,
+)
 
 logger = getLogger(__name__)
 
@@ -634,7 +638,7 @@ def csv_export_response(
         if billable_item.type == "staff_charge" and billable_item.item:
             row["note"] = billable_item.item.note
         if (
-            ToolCustomization.get_bool("tool_control_note_show")
+            ToolControlCustomization.get_bool("tool_control_note_show")
             and billable_item.type == "tool_usage"
             and billable_item.item
         ):

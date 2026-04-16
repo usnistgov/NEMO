@@ -2270,14 +2270,14 @@ class Tool(SerializationByNameModel):
         self, questions_type: ToolUsageQuestionType, user: User = None, project: Project = None
     ) -> MultiDynamicForms:
         from NEMO.widgets.dynamic_form import MultiDynamicForms
-        from NEMO.views.customization import ToolCustomization
+        from NEMO.views.customization import ToolControlCustomization
 
         is_post_usage = questions_type == ToolUsageQuestionType.POST
         initial_data = None
         if is_post_usage:
             current_usage = self.get_current_usage_event()
             if current_usage:
-                if ToolCustomization.get_bool("tool_control_prefill_post_usage_with_pre_usage_answers"):
+                if ToolControlCustomization.get_bool("tool_control_prefill_post_usage_with_pre_usage_answers"):
                     initial_data = current_usage.pre_run_data_json()
                 project = current_usage.project
                 user = current_usage.user
@@ -5324,6 +5324,11 @@ class AdjustmentRequest(BaseModel):
                 if item_att is not None:
                     setattr(self, f"original_{att}", item_att)
             tool_id = getattr(self.item, "tool_id", None)
+            if not tool_id:
+                # try usage event tool id (from consumable withdrawal)
+                usage_event = getattr(self.item, "usage_event", None)
+                if usage_event:
+                    tool_id = usage_event.tool_id
             area_id = getattr(self.item, "area_id", None)
             if tool_id:
                 self.item_tool_id = tool_id

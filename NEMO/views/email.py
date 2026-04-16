@@ -31,7 +31,7 @@ from NEMO.utilities import (
 )
 from NEMO.views.customization import (
     ApplicationCustomization,
-    ToolCustomization,
+    ToolControlCustomization,
     get_media_file_contents,
 )
 
@@ -206,7 +206,6 @@ def export_email_addresses(request):
         if not send_to_expired_access_users:
             users = [user for user in users if not user.has_access_expired()]
         for user in users:
-            user: User = user
             for email in user.get_emails(user.get_preferences().email_send_broadcast_emails):
                 writer.writerow(
                     [
@@ -402,7 +401,9 @@ def get_users_for_email(audience: str, selection: List, no_type: bool) -> (Query
 
 def check_user_allowed(user: User, audience: str, selection: str) -> Optional[str]:
     if not user.is_any_part_of_staff:
-        allow_broadcast_upcoming_reservation = ToolCustomization.get("tool_control_broadcast_upcoming_reservation")
+        allow_broadcast_upcoming_reservation = ToolControlCustomization.get(
+            "tool_control_broadcast_upcoming_reservation"
+        )
         if not allow_broadcast_upcoming_reservation or audience != "tool-reservation":
             return "You may not broadcast email to this audience"
         else:

@@ -45,7 +45,7 @@ from NEMO.views.consumables import (
 from NEMO.views.customization import (
     ApplicationCustomization,
     CalendarCustomization,
-    ToolCustomization,
+    ToolControlCustomization,
     UserCustomization,
 )
 from NEMO.views.get_projects import get_projects
@@ -501,7 +501,7 @@ def tool_information(request, tool_id, user_id, back):
         else 0
     )
     tool_credentials = []
-    if ToolCustomization.get_bool("tool_control_show_tool_credentials") and (
+    if ToolControlCustomization.get_bool("tool_control_show_tool_credentials") and (
         customer.is_staff_on_tool(tool) or customer.is_facility_manager
     ):
         if customer.is_facility_manager:
@@ -522,7 +522,7 @@ def tool_information(request, tool_id, user_id, back):
             post_usage_questions.render(virtual_inputs=virtual_inputs) if post_usage_questions else ""
         ),
         "back": back,
-        "tool_control_show_task_details": ToolCustomization.get_bool("tool_control_show_task_details"),
+        "tool_control_show_task_details": ToolControlCustomization.get_bool("tool_control_show_task_details"),
         "wait_list_position": user_wait_list_position,  # 0 if not in wait list
         "wait_list": wait_list,
         "show_wait_list": (
@@ -553,7 +553,7 @@ def tool_information(request, tool_id, user_id, back):
         # Staff are exempt from reservation shortening.
         if remaining_reservation_duration > 2:
             dictionary["remaining_reservation_duration"] = remaining_reservation_duration
-        if ToolCustomization.get_bool("tool_control_note_copy_reservation"):
+        if ToolControlCustomization.get_bool("tool_control_note_copy_reservation"):
             dictionary["reservation_note"] = current_reservation.note
 
     return render(request, "kiosk/tool_information.html", dictionary)

@@ -34,7 +34,6 @@ from NEMO.models import (
     Tool,
     ToolUsageCounter,
     ToolUsageQuestionType,
-    ToolUsageQuestions,
     ToolWaitList,
     UsageEvent,
     User,
@@ -57,7 +56,7 @@ from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import (
     EmailsCustomization,
     InterlockCustomization,
-    RemoteWorkCustomization,
+    ToolControlCustomization,
     ToolCustomization,
     get_media_file_contents,
 )
@@ -94,7 +93,7 @@ def tool_status(request, tool_id):
     user: User = request.user
     tool = get_object_or_404(Tool, id=tool_id, visible=True)
     user_is_qualified = tool.user_set.filter(id=user.id).exists()
-    broadcast_upcoming_reservation = ToolCustomization.get("tool_control_broadcast_upcoming_reservation")
+    broadcast_upcoming_reservation = ToolControlCustomization.get("tool_control_broadcast_upcoming_reservation")
     wait_list = tool.current_wait_list()
     user_wait_list_entry = wait_list.filter(user=request.user).first()
     user_wait_list_position = (
@@ -110,7 +109,7 @@ def tool_status(request, tool_id):
         else 0
     )
     tool_credentials = []
-    if ToolCustomization.get_bool("tool_control_show_tool_credentials") and (
+    if ToolControlCustomization.get_bool("tool_control_show_tool_credentials") and (
         user.is_staff_on_tool(tool) or user.is_facility_manager
     ):
         if user.is_facility_manager:
@@ -132,9 +131,9 @@ def tool_status(request, tool_id):
         "show_broadcast_upcoming_reservation": user.is_any_part_of_staff
         or (user_is_qualified and broadcast_upcoming_reservation == "qualified")
         or broadcast_upcoming_reservation == "all",
-        "tool_control_show_task_details": ToolCustomization.get_bool("tool_control_show_task_details"),
+        "tool_control_show_task_details": ToolControlCustomization.get_bool("tool_control_show_task_details"),
         "user_can_see_documents": user.is_any_part_of_staff
-        or not ToolCustomization.get_bool("tool_control_show_documents_only_qualified_users")
+        or not ToolControlCustomization.get_bool("tool_control_show_documents_only_qualified_users")
         or user_is_qualified,
         "wait_list_position": user_wait_list_position,  # 0 if not in wait list
         "wait_list": wait_list,
@@ -162,7 +161,7 @@ def tool_status(request, tool_id):
     ).last()
     if current_reservation:
         dictionary["time_left"] = current_reservation.end
-        if ToolCustomization.get_bool("tool_control_note_copy_reservation"):
+        if ToolControlCustomization.get_bool("tool_control_note_copy_reservation"):
             dictionary["reservation_note"] = current_reservation.note
 
     dictionary["next_reservation"] = (
@@ -425,16 +424,8 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
     staff_charge = staff_charge == "true"
     is_training = request.POST.get("training", "false") == "true"
     bypass_interlock = request.POST.get("bypass", "False") == "True"
-    # Figure out if the tool usage is part of remote work
-    # 1: Staff charge means it's always remote work
-    # 2: Never remote if customization is set to never be remote
-    # 3: Always remote if the operator is different from the user
-    # 4: Unless customization is set to ask explicitly
-    remote_work = user != operator and operator.is_staff_on_tool(tool)
-    if RemoteWorkCustomization.get("remote_work_on_behalf_of_user") == "ask":
-        remote_work = remote_work and bool(request.POST.get("remote_work", False))
-    elif RemoteWorkCustomization.get("remote_work_on_behalf_of_user") == "never":
-        remote_work = False
+    # Figure out if the tool usage is remote work based on the request parameter and the operator's permissions.
+    remote_work = user != operator and operator.is_staff_on_tool(tool) and bool(request.POST.get("remote_work", False))
     response = policy.check_to_enable_tool(tool, operator, user, project, staff_charge, remote_work)
     if response.status_code != HTTPStatus.OK:
         return response
@@ -470,8 +461,6 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 
     # Start staff charge before tool usage
     if staff_charge:
-        # Staff charge means always a remote
-        remote_work = True
         new_staff_charge = StaffCharge()
         new_staff_charge.staff_member = request.user
         new_staff_charge.customer = user
@@ -484,8 +473,8 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
         new_staff_charge.save()
         new_usage_event.staff_charge = new_staff_charge
         # If the tool requires area access, start charging area access time
-        if tool.requires_area_access and RemoteWorkCustomization.get_bool(
-            "remote_work_start_area_access_automatically"
+        if tool.requires_area_access and ToolControlCustomization.get_bool(
+            "tool_control_use_for_other_remote_area_access_automatically_enabled"
         ):
             area_access = AreaAccessRecord()
             area_access.area = tool.requires_area_access

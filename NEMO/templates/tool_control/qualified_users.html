@@ -48,7 +48,7 @@
                             {% endif %}
                             {% url "create_or_modify_user" user.id as edit_user_url %}
                             {% if edit_user_url %}
-                                <a style="text-decoration: none; color: inherit" title="Go to user's page" href="{{ edit_user_url }}"><i style="font-size: small;" class="glyphicon glyphicon-link"></i></a>
+                                <a style="text-decoration: none; color: inherit" title="Go to user's page" href="{{ edit_user_url }}"><i aria-hidden="true" style="font-size: small;" class="glyphicon glyphicon-link"></i></a>
                             {% endif %}
                         {% endwith %}
                         <br>

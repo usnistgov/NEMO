@@ -351,7 +351,7 @@ class UserCustomization(CustomizationBase):
         "user_access_expiration_types": "-1",
         "user_access_expiration_banner_warning": "",
         "user_access_expiration_banner_danger": "",
-        "user_access_expiration_banner_message": '<div class="text-center alert alert-{{ show_access_expiration_banner }}">\n<i class="glyphicon glyphicon-alert"></i> Your access {% if user.access_expiration < now.date %}expired {{ user.access_expiration|timesince }} ago{% else %}expires in {{ user.access_expiration|timeuntil }}{% endif %} on {{ user.access_expiration|date:"SHORT_DATE_FORMAT" }}\n</div>',
+        "user_access_expiration_banner_message": '<div class="text-center alert alert-{{ show_access_expiration_banner }}">\n<i aria-hidden="true" class="glyphicon glyphicon-alert"></i> Your access {% if user.access_expiration < now.date %}expired {{ user.access_expiration|timesince }} ago{% else %}expires in {{ user.access_expiration|timeuntil }}{% endif %} on {{ user.access_expiration|date:"SHORT_DATE_FORMAT" }}\n</div>',
         "user_allow_document_upload": "",
         "user_allow_profile_view": "",
     }
@@ -704,28 +704,11 @@ class ToolCustomization(CustomizationBase):
         "tool_task_updates_facility_managers": "enabled",
         "tool_task_updates_superusers": "",
         "tool_task_updates_allow_regular_user_preferences": "",
-        "tool_control_hide_data_history_users": "",
-        "tool_control_documents_in_separate_tab": "",
-        "tool_control_configuration_setting_template": "{{ current_setting }}",
-        "tool_control_broadcast_upcoming_reservation": "",
-        "tool_control_show_task_details": "",
-        "tool_control_show_qualified_users_to_all": "",
-        "tool_control_show_documents_only_qualified_users": "",
-        "tool_control_show_tool_credentials": "enabled",
-        "tool_control_show_next_reservation_user": "",
-        "tool_control_prefill_post_usage_with_pre_usage_answers": "",
-        "tool_control_use_self": "Use this tool for my own project",
-        "tool_control_use_self_training": "Use this tool for my own project for training",
-        "tool_control_use_for_other": "Use this tool on behalf of another user",
-        "tool_control_use_for_other_training": "Use this tool on behalf of another user for training",
-        "tool_control_use_for_other_remote": "Use this tool for a remote project",
-        "tool_control_note_show": "",
-        "tool_control_note_copy_reservation": "",
-        "tool_control_hide_tool_owners": "",
         "tool_problem_max_image_size_pixels": "750",
         "tool_problem_send_to_all_qualified_users": "",
         "tool_problem_allow_regular_user_preferences": "",
         "tool_problem_safety_hazard_automatic_shutdown": "",
+        "tool_configuration_setting_template": "{{ current_setting }}",
         "tool_configuration_near_future_days": "1",
         "tool_configuration_change_while_in_use": "",
         "tool_reservation_policy_superusers_bypass": "",
@@ -748,11 +731,46 @@ class ToolCustomization(CustomizationBase):
             and value
         ):
             validate_integer(value)
-        if name == "tool_control_configuration_setting_template" and value:
+        if name == "tool_configuration_setting_template" and value:
             try:
                 Template(value).render(Context({"current_setting": "setting"}))
             except Exception as e:
                 raise ValidationError(str(e))
+
+
+@customization(key="tool_control", title="Tool control")
+class ToolControlCustomization(CustomizationBase):
+    variables = {
+        "tool_control_hide_data_history_users": "",
+        "tool_control_documents_in_separate_tab": "",
+        "tool_control_broadcast_upcoming_reservation": "",
+        "tool_control_show_task_details": "",
+        "tool_control_show_qualified_users_to_all": "",
+        "tool_control_show_documents_only_qualified_users": "",
+        "tool_control_show_tool_credentials": "enabled",
+        "tool_control_show_next_reservation_user": "",
+        "tool_control_prefill_post_usage_with_pre_usage_answers": "",
+        "tool_control_use_self_label": "Use this tool for my own project",
+        "tool_control_use_for_other_enabled": "",
+        "tool_control_use_for_other_label": "Use this tool on behalf of another user",
+        "tool_control_use_for_other_staff_charge_enabled": "",
+        "tool_control_use_for_other_staff_charge_label": "Use this tool on behalf of another user - charge staff time",
+        "tool_control_use_for_other_area_access_automatically_enabled": "enabled",
+        "tool_control_use_for_other_area_access_automatically_label": "and {{ tool.requires_area_access|lower }} time",
+        "tool_control_use_for_other_remote_enabled": "enabled",
+        "tool_control_use_for_other_remote_label": "Use this tool for a remote project",
+        "tool_control_use_for_other_remote_staff_charge_enabled": "enabled",
+        "tool_control_use_for_other_remote_staff_charge_label": "Use this tool for a remote project - charge staff time",
+        "tool_control_use_for_other_remote_area_access_automatically_enabled": "enabled",
+        "tool_control_use_for_other_remote_area_access_automatically_label": "and {{ tool.requires_area_access|lower }} time",
+        "tool_control_use_self_training_enabled": "",
+        "tool_control_use_self_training_label": "Use this tool for my own project for training",
+        "tool_control_use_for_other_training_enabled": "",
+        "tool_control_use_for_other_training_label": "Use this tool on behalf of another user for training",
+        "tool_control_note_show": "",
+        "tool_control_note_copy_reservation": "",
+        "tool_control_hide_tool_owners": "",
+    }
 
 
 @customization(key="safety", title="Safety")
@@ -779,8 +797,6 @@ class KnowledgeBaseCustomization(CustomizationBase):
 class RemoteWorkCustomization(CustomizationBase):
     variables = {
         "remote_work_validation": "",
-        "remote_work_start_area_access_automatically": "enabled",
-        "remote_work_on_behalf_of_user": "always",
     }
 
 
@@ -790,8 +806,6 @@ class TrainingCustomization(CustomizationBase):
         "training_only_type": "",
         "training_allow_date": "",
         "training_included_hidden_tools": "",
-        "training_show_self_option_in_tool_control": "",
-        "training_show_behalf_option_in_tool_control": "",
     }
 
     def context(self) -> Dict:

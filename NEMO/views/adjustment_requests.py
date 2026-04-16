@@ -37,6 +37,7 @@ from NEMO.utilities import (
     get_full_url,
     render_email_template,
     send_mail,
+    set_default_session_variable,
 )
 from NEMO.views.customization import AdjustmentRequestsCustomization, EmailsCustomization, get_media_file_contents
 from NEMO.views.notifications import (
@@ -57,16 +58,23 @@ def adjustment_requests(request, status: int):
         return HttpResponseBadRequest("Adjustment requests are not enabled")
 
     status = status if status in [0, 1, 2] else 0
-    status = RequestStatus(status)
-    selected_applied_status = request.GET.get("applied_status", "")
-    selected_tool_id = request.GET.get("tool_id", "")
-    selected_area_id = request.GET.get("area_id", "")
+    request_status = RequestStatus(status)
+    prefix = "adjustment_requests_" + request_status.name.lower()
+    selected_applied_status = set_default_session_variable(
+        request, "applied_status", session_variable_name=prefix + "_applied_status"
+    )
+    selected_tool_category = set_default_session_variable(
+        request, "tool_category", session_variable_name=prefix + "_tool_category"
+    )
+    selected_area_id = set_default_session_variable(request, "area_id", session_variable_name=prefix + "_area_id")
 
-    adj_requests = AdjustmentRequest.objects.filter(deleted=False, status=status)
+    adj_requests = AdjustmentRequest.objects.filter(deleted=False, status=request_status)
     if selected_applied_status:
         adj_requests = adj_requests.filter(applied=bool(selected_applied_status == "true"))
-    if selected_tool_id:
-        adj_requests = adj_requests.filter(item_tool_id=selected_tool_id)
+    if selected_tool_category:
+        adj_requests = adj_requests.filter(
+            Q(item_tool___category=selected_tool_category) | Q(item_tool__parent_tool___category=selected_tool_category)
+        )
     if selected_area_id:
         adj_requests = adj_requests.filter(item_area_id=selected_area_id)
     adj_requests = adj_requests.select_related("creator", "item_type", "reviewer").prefetch_related(
@@ -83,10 +91,37 @@ def adjustment_requests(request, status: int):
         # show all requests the user can review, exclude the rest
         adj_requests = for_reviewer(adj_requests, user)
 
-    js_callback = f"load_adjustment_requests_" + status.name.lower()
+    # Special case here if we have set tool, area or status and no results => reset the parameter so we don't get stuck
+    if selected_applied_status or selected_tool_category or selected_area_id:
+        if not adj_requests.exists():
+            if selected_applied_status:
+                del request.session[prefix + "_applied_status"]
+                return redirect("adjustment_requests", status=status)
+            if selected_tool_category:
+                del request.session[prefix + "_tool_category"]
+                return redirect("adjustment_requests", status=status)
+            if selected_area_id:
+                del request.session[prefix + "_area_id"]
+                return redirect("adjustment_requests", status=status)
 
-    order_by = "-last_updated" if status == RequestStatus.APPROVED else "-creation_time"
+    js_callback = f"load_adjustment_requests_" + request_status.name.lower()
+
+    order_by = "-last_updated" if request_status == RequestStatus.APPROVED else "-creation_time"
     page = SortedPaginator(adj_requests, request, order_by=order_by, js_callback=js_callback).get_current_page()
+
+    request_tool_categories = set(
+        AdjustmentRequest.objects.filter(deleted=False, status=request_status).values_list(
+            "item_tool___category", flat=True
+        )
+    )
+    request_tool_categories |= set(
+        AdjustmentRequest.objects.filter(deleted=False, status=request_status).values_list(
+            "item_tool__parent_tool___category", flat=True
+        )
+    )
+    if None in request_tool_categories:
+        request_tool_categories.remove(None)
+    request_tool_categories = sorted(request_tool_categories, key=lambda x: x.lower())
 
     dictionary = {
         "page": page,
@@ -95,20 +130,14 @@ def adjustment_requests(request, status: int):
         "reply_notifications": get_notifications(request.user, Notification.Types.ADJUSTMENT_REQUEST_REPLY),
         "user_is_reviewer": user_is_reviewer,
         "request_statuses": RequestStatus.choices_without_expired(),
-        "selected_status": status.value,
+        "selected_status": request_status.value,
         "selected_applied_status": selected_applied_status,
-        "selected_tool_id": selected_tool_id,
+        "selected_tool_category": selected_tool_category,
         "selected_area_id": selected_area_id,
-        "request_tools": set(
-            Tool.objects.filter(
-                id__in=AdjustmentRequest.objects.filter(deleted=False, status=status).values_list(
-                    "item_tool_id", flat=True
-                )
-            )
-        ),
+        "request_tool_categories": request_tool_categories,
         "request_areas": set(
             Area.objects.filter(
-                id__in=AdjustmentRequest.objects.filter(deleted=False, status=status).values_list(
+                id__in=AdjustmentRequest.objects.filter(deleted=False, status=request_status).values_list(
                     "item_area_id", flat=True
                 )
             )
@@ -533,7 +562,6 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
     table_result.add_header(("applied", "Applied"))
     table_result.add_header(("applied_by", "Applied by"))
     for req in request_list:
-        req: AdjustmentRequest = req
         table_result.add_row(
             {
                 "status": req.get_status_display(),

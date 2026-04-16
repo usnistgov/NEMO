@@ -20,7 +20,7 @@
 <div class="modal-footer">
     {% if overridable %}
         <button type="button" class="btn btn-info pull-left" data-dismiss="modal">
-            <i class="glyphicon glyphicon-ban-circle"></i> Don't create the reservation
+            <i aria-hidden="true" class="glyphicon glyphicon-ban-circle"></i> Don't create the reservation
         </button>
         {% button type="save" submit=False dismiss="modal" onclick="$('#dialog_cancelled').val(false)" value="Override policy and "|concat:reservation_action|concat:" the reservation" %}
     {% else %}

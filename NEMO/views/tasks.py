@@ -171,10 +171,18 @@ def send_new_task_emails(request, task: Task, user, task_images: List[TaskImages
     user_office_email = EmailsCustomization.get("user_office_email_address")
     message = get_media_file_contents("reservation_warning_email.html")
     if user_office_email and message:
-        upcoming_reservations = Reservation.objects.filter(
-            start__gt=timezone.now(), cancelled=False, tool=task.tool, user__is_staff=False
-        ).select_related("tool", "user__preferences")
-        for reservation in upcoming_reservations:
+        upcoming_reservations = (
+            Reservation.objects.filter(start__gt=timezone.now(), cancelled=False, tool=task.tool, user__is_staff=False)
+            .select_related("tool", "user__preferences")
+            .order_by("start")
+        )
+        unique_users = set()
+        unique_user_reservations = []
+        for r in upcoming_reservations:
+            if r.user_id not in unique_users:
+                unique_users.add(r.user_id)
+                unique_user_reservations.append(r)
+        for reservation in unique_user_reservations:
             if not task.tool.operational:
                 subject = reservation.tool.name + " reservation problem"
                 rendered_message = render_email_template(

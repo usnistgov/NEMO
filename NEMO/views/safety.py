@@ -213,7 +213,6 @@ def export_safety_data_sheets(request):
     table.add_header(("keywords", "Keywords"))
 
     for chemical in Chemical.objects.all():
-        chemical: Chemical = chemical
         values = {f"hazard_{hazard.id}": "X" for hazard in hazards if hazard in chemical.hazards.all()}
         values["name"] = chemical.name
         values["keywords"] = chemical.keywords

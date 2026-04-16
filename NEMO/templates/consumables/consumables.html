@@ -46,13 +46,20 @@
                     </select>
                 </div>
             </div>
-            <div class="form-group">
+            <div class="form-group" style="margin-top: 50px">
                 <label class="control-label col-md-3">Consumables</label>
-                <div class="col-md-9 control-label" style="text-align: left"></div>
+                <div class="col-md-9" style="text-align: left">
+                    <input id="search"
+                           type="text"
+                           aria-label="Chemical search"
+                           placeholder="Search for a consumable name"
+                           class="form-control"
+                           autofocus>
+                </div>
             </div>
             <div class="form-group">
                 <div class="col-sm-12">
-                    <table class="table">
+                    <table id="consumable-table" class="table">
                         {% with category_collapse=customizations|get_item:"consumable_category_collapse" %}
                             {% regroup consumables by category as categories %}
                             {% for category in categories %}
@@ -158,6 +165,7 @@
 		}
         window.addEventListener("load", function ()
         {
+            $("#search").keyup(table_search("consumable-table"));
 			$('[data-toggle="notes-tooltip"]').tooltip({"html": true, container: 'body'});
             $('#customer_search').autocomplete('users', fetch_projects, {{ users|json_search_base }}).focus();
             let withdrawal_order_form = $('#withdrawal_form_order');
