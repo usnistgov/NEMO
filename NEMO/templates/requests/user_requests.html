@@ -115,15 +115,15 @@
             if (!reset)
             {
                 const applied_status_param = $("#applied_status").val();
-                const tool_id_param = $("#tool").val();
+                const tool_category_param = $("#tool_categories").val();
                 const area_id_param = $("#area").val();
                 if (applied_status_param !== undefined)
                 {
                     parameters.set("applied_status", applied_status_param);
                 }
-                if (tool_id_param !== undefined)
+                if (tool_category_param !== undefined)
                 {
-                    parameters.set("tool_id", tool_id_param);
+                    parameters.set("tool_category", tool_category_param);
                 }
                 if (area_id_param !== undefined)
                 {
