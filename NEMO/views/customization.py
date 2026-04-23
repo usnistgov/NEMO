@@ -181,37 +181,32 @@ class CustomizationBase(ABC):
         return all_variables
 
     @classmethod
-    def get(cls, name: str, raise_exception=True, use_cache=True) -> str:
+    def get(cls, name: str, raise_exception=True, use_cache=True) -> Optional[str]:
         if name not in cls.variables:
-            raise InvalidCustomizationException(name)
-        default_value = cls.variables[name]
-        if use_cache:
-            # We are using the cache (default behavior)
-            try:
-                CustomizationBase._load_cache()  # Ensure cache is valid
+            if name in cls._all_variables():
+                owner = next(
+                    (type(cust).__name__ for cust in CustomizationBase.instances() if name in cust.variables),
+                    None,
+                )
+                customization_logger.warning(
+                    f"Variable {name} is requested for {cls.__name__} but is defined in: {owner}"
+                )
+            else:
+                raise InvalidCustomizationException(name)
+        default_value = cls.variables.get(name, cls._all_variables().get(name))
+        try:
+            if use_cache:
+                CustomizationBase._load_cache()
                 with CustomizationBase._cache_lock:
-                    if name in CustomizationBase._variables_cache:
-                        # Return the cached value
-                        return CustomizationBase._variables_cache[name]
-                    else:
-                        # Return default value
-                        return default_value
-            except Exception:
-                if raise_exception:
-                    raise
-                else:
-                    return default_value
-        else:
-            # We are not using the cache, so we need to load the value from the database
-            try:
+                    return CustomizationBase._variables_cache.get(name, default_value)
+            else:
                 return Customization.objects.get(name=name).value
-            except Customization.DoesNotExist:
-                return default_value
-            except Exception:
-                if raise_exception:
-                    raise
-                else:
-                    return default_value
+        except Customization.DoesNotExist:
+            return default_value
+        except Exception:
+            if raise_exception:
+                raise
+            return default_value
 
     @staticmethod
     def get_all() -> Dict:
@@ -231,13 +226,13 @@ class CustomizationBase(ABC):
         return cls.get(name, raise_exception) == "enabled"
 
     @classmethod
-    def get_date(cls, name: str, raise_exception=True) -> date:
+    def get_date(cls, name: str, raise_exception=True) -> Optional[date]:
         str_date = cls.get(name, raise_exception)
         if str_date:
             return datetime.strptime(str_date, date_input_format).date()
 
     @classmethod
-    def get_datetime(cls, name: str, raise_exception=True) -> datetime:
+    def get_datetime(cls, name: str, raise_exception=True) -> Optional[datetime]:
         str_datetime = cls.get(name, raise_exception)
         if str_datetime:
             return datetime.strptime(str_datetime, datetime_input_format)
@@ -837,6 +832,7 @@ class TrainingCustomization(CustomizationBase):
 
 @customization(key="templates", title="File & email templates")
 class TemplatesCustomization(CustomizationBase):
+    variables = {}
     files = [
         ("login_banner", ".html"),
         ("authorization_failed", ".html"),
