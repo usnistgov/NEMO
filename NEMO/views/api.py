@@ -48,6 +48,7 @@ from NEMO.models import (
     Reservation,
     ReservationQuestions,
     Resource,
+    ResourceCategory,
     ScheduledOutage,
     StaffAssistanceRequest,
     StaffCharge,
@@ -97,6 +98,7 @@ from NEMO.serializers import (
     RecurringConsumableChargeSerializer,
     ReservationQuestionsSerializer,
     ReservationSerializer,
+    ResourceCategorySerializer,
     ResourceSerializer,
     ScheduledOutageSerializer,
     StaffAssistanceRequestSerializer,
@@ -438,6 +440,16 @@ class AreaViewSet(ModelViewSet):
         "maximum_capacity": number_filters,
         "count_staff_in_occupancy": boolean_filters,
         "count_service_personnel_in_occupancy": boolean_filters,
+    }
+
+
+class ResourceCategoryViewSet(ModelViewSet):
+    filename = "resource_categories"
+    queryset = ResourceCategory.objects.all()
+    serializer_class = ResourceCategorySerializer
+    filterset_fields = {
+        "id": key_filters,
+        "name": string_filters,
     }
 
 
