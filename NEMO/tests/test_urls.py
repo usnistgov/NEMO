@@ -414,6 +414,7 @@ def test_urls(test_case, url_patterns, url_params, url_skip, prefix=""):
                         "django.contrib.admin.options",
                     ]
                     or prefix == "admin"
+                    or fun_name == "<lambda>"
                 ):
                     continue
                 pkg_mod = importlib.import_module(pkg)
