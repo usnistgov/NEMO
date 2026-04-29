@@ -1,7 +1,7 @@
 FROM python:3.13
 
 RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y less vim
+RUN apt-get install -y less vim wget
 
 # Intall NEMO (in the current directory) and Gunicorn
 COPY . /nemo/
@@ -27,6 +27,8 @@ ENV NEMO_EXTRA_PIP_PACKAGES=""
 COPY gunicorn_configuration.py /etc/
 
 EXPOSE 8000/tcp
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD wget -qO- http://localhost:8000/health/ || exit 1
 
 COPY start_NEMO_in_Docker.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/start_NEMO_in_Docker.sh
