@@ -171,6 +171,11 @@ def add_extra_policy_class(policy_class_name: str):
 
 
 def add_inline_to_admin_class(model_class, inline_class):
+    from django.apps import apps
+
+    if not apps.is_installed("django.contrib.admin"):
+        return
+
     from django.contrib import admin
 
     if model_class not in admin.site._registry:
