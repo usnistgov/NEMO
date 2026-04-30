@@ -42,6 +42,8 @@ def check_unique_plugin_ids(app_configs, silent=False, **kwargs):
                 if plugin_id is None:
                     continue
 
+                plugin_id = str(plugin_id)
+
                 # Check for conflicting plugin_ids
                 if plugin_id in plugin_ids:
                     conflicting_app_name = plugin_ids[plugin_id]
@@ -166,3 +168,25 @@ def add_extra_policy_class(policy_class_name: str):
 
     # Force reload of policies
     policy.policy_class = policy.NEMOPolicyChain(policy.get_policy_classes())
+
+
+def add_inline_to_admin_class(model_class, inline_class):
+    from django.contrib import admin
+
+    if model_class not in admin.site._registry:
+        return
+
+    OriginalModelAdminClass = admin.site._registry[model_class].__class__
+
+    if inline_class in list(OriginalModelAdminClass.inlines):
+        return
+
+    NewModelAdminClassWithInline = type(
+        f"{model_class.__name__}AdminWithInline",
+        (OriginalModelAdminClass,),
+        {"inlines": [inline_class] + list(OriginalModelAdminClass.inlines)},
+    )
+
+    # re-register
+    admin.site.unregister(model_class)
+    admin.site.register(model_class, NewModelAdminClassWithInline)
