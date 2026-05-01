@@ -175,7 +175,7 @@ class CustomizationBase(ABC):
 
     @staticmethod
     def _all_variables() -> Dict:
-        all_variables = CustomizationBase.variables
+        all_variables = dict(CustomizationBase.variables)
         for instance in CustomizationBase.instances():
             all_variables.update(instance.variables)
         return all_variables
