@@ -2,7 +2,7 @@ import time
 from abc import ABC
 from datetime import date, datetime
 from logging import getLogger
-from threading import Lock
+from threading import RLock
 from typing import Dict, Iterable, List, Optional
 
 from dateutil.relativedelta import relativedelta
@@ -56,7 +56,7 @@ class CustomizationBase(ABC):
     # Static cache variables
     _variables_cache = None
     _cache_expiry = 0
-    _cache_lock = Lock()
+    _cache_lock = RLock()
     # Cache expiry time (in seconds, default 30 seconds)
     CACHE_TTL = quiet_int(getattr(settings, "CUSTOMIZATIONS_CACHE_SECONDS", 30), 30)
 
@@ -196,8 +196,8 @@ class CustomizationBase(ABC):
         default_value = cls.variables.get(name, cls._all_variables().get(name))
         try:
             if use_cache:
-                CustomizationBase._load_cache()
                 with CustomizationBase._cache_lock:
+                    CustomizationBase._load_cache()
                     return CustomizationBase._variables_cache.get(name, default_value)
             else:
                 return Customization.objects.get(name=name).value
