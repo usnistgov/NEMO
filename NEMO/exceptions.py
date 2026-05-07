@@ -57,6 +57,10 @@ class InactiveUserError(UserAccessError):
     detailed_msg = "This user is not active"
 
 
+class TrainingRequiredUserError(UserAccessError):
+    detailed_msg = "This user has not completed their mandatory training"
+
+
 class NoActiveProjectsForUserError(UserAccessError):
     detailed_msg = "This user does not have any active projects"
 

@@ -1,0 +1,4 @@
+{% load custom_tags_and_filters %}
+<h1>You have not completed the {{ customizations|get_item:"facility_rules_name" }}.</h1>
+<h2>Please contact {{ facility_name }} staff for more information.</h2>
+<script>revert(15);</script>

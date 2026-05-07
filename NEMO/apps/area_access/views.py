@@ -20,6 +20,7 @@ from NEMO.exceptions import (
     ProjectChargeException,
     ReservationRequiredUserError,
     ScheduledOutageInProgressError,
+    TrainingRequiredUserError,
     UnavailableResourcesUserError,
     UserAccessError,
 )
@@ -105,6 +106,11 @@ def login_to_area(request, door_id):
         log.details = "This user is not active, preventing them from entering any access controlled areas."
         log.save()
         return render(request, "area_access/inactive.html")
+
+    except TrainingRequiredUserError:
+        log.details = "The user has not completed their mandatory training, preventing them from entering an access controlled area."
+        log.save()
+        return render(request, "area_access/training_required.html")
 
     except NoActiveProjectsForUserError:
         log.details = "The user has no active projects, preventing them from entering an access controlled area."
