@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+import warnings
 from abc import ABC
 from datetime import date, datetime
 from logging import getLogger
@@ -672,7 +673,10 @@ class RecurringChargesCustomization(CustomizationBase):
 
     def __init__(self, key, title):
         super().__init__(key, title)
-        self.update_title()
+        # Ignore warning when updating title during initialization
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=RuntimeWarning)
+            self.update_title()
 
     def context(self) -> Dict:
         # Override to add list of consumable categories
