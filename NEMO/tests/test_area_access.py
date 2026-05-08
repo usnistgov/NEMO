@@ -472,6 +472,12 @@ class NewAreaAccessTestCase(NEMOTestCaseMixin, TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertTrue(
+            "You must complete your mandatory training before you can enter any area" in str(response.content)
+        )  # user did not complete mandatory training
+        staff.training_required = True
+        staff.save()
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(
             "You are not a member of any active projects" in str(response.content)
         )  # user does not have active projects
         staff.projects.add(
