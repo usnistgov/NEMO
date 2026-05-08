@@ -264,7 +264,7 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
         # Staff may only charge staff time for one user at a time.
         if staff_charge and operator.charging_staff_time():
             return HttpResponseBadRequest(
-                "You are already charging staff time. You must end the current staff charge before you being another."
+                "You are already charging staff time. You must end the current staff charge before you begin another."
             )
 
         # Staff may not bill staff time to themselves.
