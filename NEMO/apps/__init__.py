@@ -5,6 +5,29 @@ from django.contrib.auth.decorators import login_required
 
 
 def monkey_patch_json_field_for_oracle():
+    try:
+        import oracledb
+        from django.db.backends.oracle.base import FormatStylePlaceholderCursor
+
+        original_output_type_handler = FormatStylePlaceholderCursor._output_type_handler
+
+        # _get_lob_value AttributeError: 'dict' object has no attribute '_impl'
+        # Django's _output_type_handler already knows that oracledb 2.0+ returns
+        # NCLOB IS JSON columns as Python dicts instead of LOB objects, and tries
+        # to work around it with cursor.var(DB_TYPE_NCLOB). In newer oracledb thick
+        # mode this is no longer sufficient — the dict still ends up in the LOB
+        # variable buffer, causing _get_lob_value to raise AttributeError.
+        # Returning DB_TYPE_LONG forces Oracle to send the data as a plain string,
+        # bypassing _get_lob_value entirely.
+        def patched_output_type_handler(cursor, name, defaultType, length, precision, scale):
+            if defaultType == oracledb.DB_TYPE_NCLOB:
+                return cursor.var(oracledb.DB_TYPE_LONG, arraysize=cursor.arraysize)
+            return original_output_type_handler(cursor, name, defaultType, length, precision, scale)
+
+        FormatStylePlaceholderCursor._output_type_handler = staticmethod(patched_output_type_handler)
+    except ImportError:
+        pass
+
     from django.db.models.fields.json import JSONField
 
     # Save the original method
