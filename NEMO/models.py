@@ -863,7 +863,7 @@ class User(BaseModel, PermissionsMixin):
         from NEMO.views.customization import UserCustomization
 
         user_type_required = UserCustomization.get_bool("user_type_required")
-        if user_type_required and UserType.objects.exists() and not self.type_id:
+        if user_type_required and UserType.objects.exists() and self.type_id is None:
             raise ValidationError({"type": _("This field is required.")})
         username_pattern = getattr(settings, "USERNAME_REGEX", None)
         if self.username:
