@@ -22,7 +22,7 @@ def apply_oracledb_patches():
     try:
         import oracledb
         from django.db.backends.oracle.base import FormatStylePlaceholderCursor
-    except ImportError:
+    except:
         return
 
     original_output_type_handler = FormatStylePlaceholderCursor._output_type_handler
