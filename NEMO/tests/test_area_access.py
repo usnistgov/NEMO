@@ -112,6 +112,15 @@ class KioskAreaAccess(NEMOTestCaseMixin, TestCase):
         )
         self.assertTrue(f"login_to_area/{door.id}" in response.request["PATH_INFO"])
         self.assertContains(
+            response, f"You have not completed the {ApplicationCustomization.get('facility_rules_name')}"
+        )  # user did not complete mandatory training
+        user.training_required = False
+        user.save()
+        response = self.client.post(
+            reverse("login_to_area", kwargs={"door_id": door.id}), data={"badge_number": user.badge_number}, follow=True
+        )
+        self.assertTrue(f"login_to_area/{door.id}" in response.request["PATH_INFO"])
+        self.assertContains(
             response=response, text="You are not a member of any active projects", status_code=200
         )  # user does not have active projects
         user.projects.add(Project.objects.create(name="Project1", account=Account.objects.create(name="Account1")))
@@ -146,6 +155,7 @@ class KioskAreaAccess(NEMOTestCaseMixin, TestCase):
         )
         staff.projects.add(Project.objects.get(name="Project1"))
         staff.physical_access_levels.add(PhysicalAccessLevel.objects.get(name="cleanroom access"))
+        staff.training_required = False
         staff.save()
         self.client.force_login(user=user)
         response = self.client.post(
@@ -192,9 +202,19 @@ class KioskAreaAccess(NEMOTestCaseMixin, TestCase):
             data={"badge_number": staff.badge_number},
             follow=True,
         )
+        self.assertContains(
+            response, f"You have not completed the {ApplicationCustomization.get('facility_rules_name')}"
+        )  # user did not complete mandatory training
+        staff.training_required = False
+        staff.save()
+        response = self.client.post(
+            reverse("login_to_area", kwargs={"door_id": door.id}),
+            data={"badge_number": staff.badge_number},
+            follow=True,
+        )
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(
-            "You are not a member of any active projects" in str(response.content)
+        self.assertContains(
+            response, "You are not a member of any active projects"
         )  # user does not have active projects
         staff.projects.add(
             Project.objects.create(name="Maintenance", account=Account.objects.create(name="Maintenance Account"))
@@ -205,7 +225,7 @@ class KioskAreaAccess(NEMOTestCaseMixin, TestCase):
             data={"badge_number": staff.badge_number},
             follow=True,
         )
-        self.assertTrue("Physical access denied" in str(response.content))
+        self.assertContains(response, "Physical access denied")
         # create an area an allow staff access without granting it to them
         area = door.areas.first()
         access = PhysicalAccessLevel.objects.create(
@@ -221,14 +241,14 @@ class KioskAreaAccess(NEMOTestCaseMixin, TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertTrue(f"login_to_area/{door.id}" in response.request["PATH_INFO"])
-        self.assertTrue("You're logged in to the " in str(response.content))
+        self.assertContains(response, "You're logged in to the ")
         # try to login again
         response = self.client.post(
             reverse("login_to_area", kwargs={"door_id": door.id}),
             data={"badge_number": staff.badge_number},
             follow=True,
         )
-        self.assertTrue("already logged in the" in str(response.content))  # user already logged in
+        self.assertContains(response, "already logged in the")  # user already logged in
         response = self.client.post(
             reverse("logout_of_area", kwargs={"door_id": door.id}),
             data={"badge_number": staff.badge_number},
@@ -243,7 +263,7 @@ class KioskAreaAccess(NEMOTestCaseMixin, TestCase):
             data={"badge_number": staff.badge_number},
             follow=True,
         )
-        self.assertTrue("now logged out of the" in str(response.content))
+        self.assertContains(response, "now logged out of the")
         # now undo access and try explicitly
         access.allow_staff_access = False
         access.save()
@@ -252,7 +272,7 @@ class KioskAreaAccess(NEMOTestCaseMixin, TestCase):
             data={"badge_number": staff.badge_number},
             follow=True,
         )
-        self.assertTrue("Physical access denied" in str(response.content))
+        self.assertContains(response, "Physical access denied")
         # also work by explicitly giving access to staff
         staff.physical_access_levels.add(access)
         staff.save()
@@ -263,7 +283,7 @@ class KioskAreaAccess(NEMOTestCaseMixin, TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertTrue(f"login_to_area/{door.id}" in response.request["PATH_INFO"])
-        self.assertTrue("You're logged in to the " in str(response.content))
+        self.assertContains(response, "You're logged in to the ")
         self.assertTrue(
             AreaAccessRecord.objects.filter(
                 area=area, customer=User.objects.get(badge_number=staff.badge_number), end__isnull=True
@@ -375,24 +395,30 @@ class NewAreaAccessTestCase(NEMOTestCaseMixin, TestCase):
         user.save()
         response = self.client.get(reverse("new_area_access_record"), data={"customer": user.id}, follow=True)
         self.assertEqual(response.status_code, 200)
-        self.assertTrue("Oops! Something went wrong" in str(response.content))
-        self.assertTrue("is inactive" in str(response.content))  # user is inactive
+        self.assertContains(response, "Oops! Something went wrong")
+        self.assertContains(response, "is inactive")  # user is inactive
         user.is_active = True
         user.save()
         response = self.client.get(reverse("new_area_access_record"), data={"customer": user.id}, follow=True)
         self.assertEqual(response.status_code, 200)
-        self.assertTrue("Oops! Something went wrong" in str(response.content))
-        self.assertTrue(
-            "does not have any active projects to bill area access" in str(response.content)
+        self.assertContains(response, "Oops! Something went wrong")
+        self.assertContains(
+            response, "must complete their mandatory training"
+        )  # user did not complete mandatory training
+        user.training_required = False
+        user.save()
+        response = self.client.get(reverse("new_area_access_record"), data={"customer": user.id}, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Oops! Something went wrong")
+        self.assertContains(
+            response, "does not have any active projects to bill area access"
         )  # user does not have active projects
         user.projects.add(Project.objects.create(name="Project1", account=Account.objects.create(name="Account1")))
         user.save()
         response = self.client.get(reverse("new_area_access_record"), data={"customer": user.id}, follow=True)
         self.assertEqual(response.status_code, 200)
-        self.assertTrue("Oops! Something went wrong" in str(response.content))
-        self.assertTrue(
-            "does not have access to any billable areas" in str(response.content)
-        )  # user does not have access
+        self.assertContains(response, "Oops! Something went wrong")
+        self.assertContains(response, "does not have access to any billable areas")  # user does not have access
         user.physical_access_levels.add(
             PhysicalAccessLevel.objects.create(
                 name="cleanroom access", area=area, schedule=PhysicalAccessLevel.Schedule.ALWAYS
@@ -401,7 +427,7 @@ class NewAreaAccessTestCase(NEMOTestCaseMixin, TestCase):
         user.save()
         response = self.client.get(reverse("new_area_access_record"), data={"customer": user.id}, follow=True)
         self.assertEqual(response.status_code, 200)
-        self.assertFalse("Oops! Something went wrong" in str(response.content))
+        self.assertNotContains(response, "Oops! Something went wrong")
 
     def test_new_area_record_post(self):
         project = Project.objects.create(name="Project1", account=Account.objects.create(name="Account1"))
@@ -421,8 +447,8 @@ class NewAreaAccessTestCase(NEMOTestCaseMixin, TestCase):
             follow=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertTrue("Oops! Something went wrong" in str(response.content))
-        self.assertTrue("is inactive" in str(response.content))  # user is inactive
+        self.assertContains(response, "Oops! Something went wrong")
+        self.assertContains(response, "is inactive")  # user is inactive
         user.is_active = True
         user.save()
         response = self.client.post(
@@ -431,9 +457,19 @@ class NewAreaAccessTestCase(NEMOTestCaseMixin, TestCase):
             follow=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertTrue("Oops! Something went wrong" in str(response.content))
-        self.assertTrue(
-            "does not have any active projects to bill area access" in str(response.content)
+        self.assertContains(response, "Oops! Something went wrong")
+        self.assertContains(response, "mandatory training")  # user did not complete mandatory training
+        user.training_required = False
+        user.save()
+        response = self.client.post(
+            reverse("new_area_access_record"),
+            data={"customer": user.id, "area": area.id, "project": project.id},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Oops! Something went wrong")
+        self.assertContains(
+            response, "does not have any active projects to bill area access"
         )  # user does not have active projects
         user.projects.add(project)
         user.save()
@@ -443,10 +479,8 @@ class NewAreaAccessTestCase(NEMOTestCaseMixin, TestCase):
             follow=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertTrue("Oops! Something went wrong" in str(response.content))
-        self.assertTrue(
-            "does not have access to any billable areas" in str(response.content)
-        )  # user does not have access
+        self.assertContains(response, "Oops! Something went wrong")
+        self.assertTrue(response, "does not have access to any billable areas")  # user does not have access
         user.physical_access_levels.add(
             PhysicalAccessLevel.objects.create(
                 name="cleanroom access", area=area, schedule=PhysicalAccessLevel.Schedule.ALWAYS
@@ -459,7 +493,7 @@ class NewAreaAccessTestCase(NEMOTestCaseMixin, TestCase):
             follow=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertFalse("Oops! Something went wrong" in str(response.content))
+        self.assertNotContains(response, "Oops! Something went wrong")
         self.assertTrue(AreaAccessRecord.objects.filter(area=area, customer=user, end__isnull=True).exists())
 
     def test_staff_login_to_area(self):
@@ -471,8 +505,19 @@ class NewAreaAccessTestCase(NEMOTestCaseMixin, TestCase):
             follow=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(
-            "You are not a member of any active projects" in str(response.content)
+        self.assertContains(
+            response, f"You have not completed the {ApplicationCustomization.get('facility_rules_name')}"
+        )  # user did not complete mandatory training
+        staff.training_required = False
+        staff.save()
+        response = self.client.post(
+            reverse("login_to_area", kwargs={"door_id": door.id}),
+            data={"badge_number": staff.badge_number},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response, "You are not a member of any active projects"
         )  # user does not have active projects
         staff.projects.add(
             Project.objects.create(name="Maintenance", account=Account.objects.create(name="Maintenance Account"))
@@ -483,7 +528,7 @@ class NewAreaAccessTestCase(NEMOTestCaseMixin, TestCase):
             data={"badge_number": staff.badge_number},
             follow=True,
         )
-        self.assertTrue("Physical access denied" in str(response.content))
+        self.assertContains(response, f"Physical access denied")
         # create an area an allow staff access without granting it to them
         access = PhysicalAccessLevel.objects.create(
             allow_staff_access=True,
@@ -498,14 +543,14 @@ class NewAreaAccessTestCase(NEMOTestCaseMixin, TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertTrue(f"login_to_area/{door.id}" in response.request["PATH_INFO"])
-        self.assertTrue("You're logged in to the " in str(response.content))
+        self.assertContains(response, "You're logged in to the ")
         # try to login again
         response = self.client.post(
             reverse("login_to_area", kwargs={"door_id": door.id}),
             data={"badge_number": staff.badge_number},
             follow=True,
         )
-        self.assertTrue("already logged in the" in str(response.content))  # user already logged in
+        self.assertContains(response, "already logged in the")  # user already logged in
         response = self.client.post(
             reverse("logout_of_area", kwargs={"door_id": door.id}),
             data={"badge_number": staff.badge_number},
@@ -520,7 +565,7 @@ class NewAreaAccessTestCase(NEMOTestCaseMixin, TestCase):
             data={"badge_number": staff.badge_number},
             follow=True,
         )
-        self.assertTrue("now logged out of the" in str(response.content))
+        self.assertContains(response, "now logged out of the")
         # now undo access and try explicitly
         access.allow_staff_access = False
         access.save()
@@ -529,7 +574,7 @@ class NewAreaAccessTestCase(NEMOTestCaseMixin, TestCase):
             data={"badge_number": staff.badge_number},
             follow=True,
         )
-        self.assertTrue("Physical access denied" in str(response.content))
+        self.assertContains(response, "Physical access denied")
         # also work by explicitly giving access to staff
         staff.physical_access_levels.add(access)
         staff.save()
@@ -540,7 +585,7 @@ class NewAreaAccessTestCase(NEMOTestCaseMixin, TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertTrue(f"login_to_area/{door.id}" in response.request["PATH_INFO"])
-        self.assertTrue("You're logged in to the " in str(response.content))
+        self.assertContains(response, "You're logged in to the ")
         self.assertTrue(
             AreaAccessRecord.objects.filter(
                 area=area, customer=User.objects.get(badge_number=staff.badge_number)
