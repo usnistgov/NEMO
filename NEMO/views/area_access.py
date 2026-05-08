@@ -25,6 +25,7 @@ from NEMO.exceptions import (
     ProjectChargeException,
     ReservationRequiredUserError,
     ScheduledOutageInProgressError,
+    TrainingRequiredUserError,
     UnavailableResourcesUserError,
     UserAccessError,
 )
@@ -217,6 +218,8 @@ def check_policy_for_user(customer: User):
         policy.check_to_enter_any_area(user=customer)
     except InactiveUserError:
         error_message = "{} is inactive".format(customer)
+    except TrainingRequiredUserError:
+        error_message = "{} must complete their mandatory training before they can access any areas".format(customer)
     except NoActiveProjectsForUserError:
         error_message = "{} does not have any active projects to bill area access".format(customer)
     except NoPhysicalAccessUserError:
@@ -328,6 +331,10 @@ def self_log_in(request, load_areas=True):
             f"Your account has been deactivated. Please contact {facility_name} staff to resolve the problem."
         )
         return render(request, "area_access/self_login.html", dictionary)
+    except TrainingRequiredUserError:
+        dictionary["error_message"] = (
+            f"You must complete your mandatory training before you can enter any area. Please contact {facility_name} staff for more information."
+        )
     except NoActiveProjectsForUserError:
         dictionary["error_message"] = (
             f"You are not a member of any active projects. You won't be able to use any interlocked {facility_name} tools. Please contact {facility_name} staff for more information."
@@ -455,7 +462,7 @@ def log_out_user(user: User):
         record.end = timezone.now()
         record.save()
         # Shorten the user's area reservation since the user is now leaving
-        shorten_reservation(user, record.area)
+        shorten_reservation(record.customer, user, record.area)
         # Stop charging area access if staff is leaving the area
         staff_charge = user.get_staff_charge()
         if staff_charge:

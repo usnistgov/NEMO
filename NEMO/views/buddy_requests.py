@@ -13,6 +13,7 @@ from NEMO.exceptions import (
     NoActiveProjectsForUserError,
     NoPhysicalAccessUserError,
     PhysicalAccessExpiredUserError,
+    TrainingRequiredUserError,
 )
 from NEMO.forms import BuddyRequestForm
 from NEMO.models import Area, BuddyRequest, Notification, RequestMessage, User
@@ -152,6 +153,8 @@ def check_user_reply_error(buddy_request: BuddyRequest, user: User) -> Optional[
         policy.check_to_enter_any_area(user)
     except InactiveUserError:
         error_message = "You cannot reply to this request because your account has been deactivated"
+    except TrainingRequiredUserError:
+        error_message = "You cannot reply to this request because you have not completed your mandatory training"
     except NoActiveProjectsForUserError:
         error_message = "You cannot reply to this request because you don't have any active projects"
     except PhysicalAccessExpiredUserError:

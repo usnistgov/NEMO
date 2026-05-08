@@ -106,6 +106,7 @@ router.register(r"recurring_consumable_charges", api.RecurringConsumableChargesV
 router.register(r"reservations", api.ReservationViewSet)
 router.register(r"reservation_configuration_options", api.ConfigurationOptionViewSet)
 router.register(r"reservation_questions", api.ReservationQuestionsViewSet)
+router.register(r"resource_categories", api.ResourceCategoryViewSet)
 router.register(r"resources", api.ResourceViewSet)
 router.register(r"scheduled_outages", api.ScheduledOutageViewSet)
 router.register(r"staff_assistance_requests", api.StaffAssistanceRequestViewSet)
