@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import time
 from abc import ABC
 from datetime import date, datetime
 from logging import getLogger
-from threading import Lock
+from threading import RLock
 from typing import Dict, Iterable, List, Optional
 
 from dateutil.relativedelta import relativedelta
@@ -52,11 +54,11 @@ customization_logger = getLogger(__name__)
 
 
 class CustomizationBase(ABC):
-    _instances = {}
+    _instances: Dict[str, CustomizationBase] = {}
     # Static cache variables
     _variables_cache = None
     _cache_expiry = 0
-    _cache_lock = Lock()
+    _cache_lock = RLock()
     # Cache expiry time (in seconds, default 30 seconds)
     CACHE_TTL = quiet_int(getattr(settings, "CUSTOMIZATIONS_CACHE_SECONDS", 30), 30)
 
@@ -166,11 +168,11 @@ class CustomizationBase(ABC):
         CustomizationBase._instances[inst.key] = inst
 
     @staticmethod
-    def instances() -> Iterable:
+    def instances() -> Iterable[CustomizationBase]:
         return CustomizationBase._instances.values()
 
     @staticmethod
-    def get_instance(key):
+    def get_instance(key) -> Optional[CustomizationBase]:
         return CustomizationBase._instances.get(key)
 
     @staticmethod
@@ -196,8 +198,8 @@ class CustomizationBase(ABC):
         default_value = cls.variables.get(name, cls._all_variables().get(name))
         try:
             if use_cache:
-                CustomizationBase._load_cache()
                 with CustomizationBase._cache_lock:
+                    CustomizationBase._load_cache()
                     return CustomizationBase._variables_cache.get(name, default_value)
             else:
                 return Customization.objects.get(name=name).value
@@ -941,7 +943,7 @@ def set_customization(name, value):
 @administrator_required
 @require_GET
 def customization(request, key: str = "application"):
-    customization_instance: CustomizationBase = CustomizationBase.get_instance(key)
+    customization_instance: Optional[CustomizationBase] = CustomizationBase.get_instance(key)
     if not customization_instance:
         return HttpResponseNotFound(f"Customizations with key: '{key}' not found")
     return render(request, "customizations/customizations.html", customization_instance.context())
@@ -950,7 +952,7 @@ def customization(request, key: str = "application"):
 @administrator_required
 @require_POST
 def customize(request, key, element=None):
-    customization_instance: CustomizationBase = CustomizationBase.get_instance(key)
+    customization_instance: Optional[CustomizationBase] = CustomizationBase.get_instance(key)
     if not customization_instance:
         return HttpResponseNotFound(f"Customizations with key: '{key}' not found")
     errors = customization_instance.save(request, element)
