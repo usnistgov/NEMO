@@ -473,8 +473,14 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
         new_staff_charge.save()
         new_usage_event.staff_charge = new_staff_charge
         # If the tool requires area access, start charging area access time
-        if tool.requires_area_access and ToolControlCustomization.get_bool(
+        area_access_remote_enabled = ToolControlCustomization.get_bool(
             "tool_control_use_for_other_remote_area_access_automatically_enabled"
+        )
+        area_access_non_remote_enabled = ToolControlCustomization.get_bool(
+            "tool_control_use_for_other_area_access_automatically_enabled"
+        )
+        if tool.requires_area_access and (
+            remote_work and area_access_remote_enabled or not remote_work and area_access_non_remote_enabled
         ):
             area_access = AreaAccessRecord()
             area_access.area = tool.requires_area_access
