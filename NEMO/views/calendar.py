@@ -1006,12 +1006,19 @@ def get_selected_tool_calendar_info(request, tool_id):
     )
 
 
-def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime = None, force=False):
+def shorten_reservation(
+    user: User, reservation_user: User, item: Union[Area, Tool], new_end: datetime = None, force=False
+):
     try:
         if new_end is None:
             new_end = timezone.now()
         current_reservation_qs = Reservation.objects.filter(
-            start__lt=timezone.now(), end__gt=timezone.now(), cancelled=False, missed=False, shortened=False, user=user
+            start__lt=timezone.now(),
+            end__gt=timezone.now(),
+            cancelled=False,
+            missed=False,
+            shortened=False,
+            user=reservation_user,
         )
         reservation_item_type = ReservationItemType.from_item(item)
         reservation_item_id = item.tool_or_parent_id() if reservation_item_type == ReservationItemType.TOOL else item.id

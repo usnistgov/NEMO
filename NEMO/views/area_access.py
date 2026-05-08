@@ -455,7 +455,7 @@ def log_out_user(user: User):
         record.end = timezone.now()
         record.save()
         # Shorten the user's area reservation since the user is now leaving
-        shorten_reservation(user, record.area)
+        shorten_reservation(record.customer, user, record.area)
         # Stop charging area access if staff is leaving the area
         staff_charge = user.get_staff_charge()
         if staff_charge:

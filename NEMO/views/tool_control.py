@@ -92,6 +92,7 @@ def tool_status(request, tool_id):
 
     user: User = request.user
     tool = get_object_or_404(Tool, id=tool_id, visible=True)
+    current_usage_event = tool.get_current_usage_event()
     user_is_qualified = tool.user_set.filter(id=user.id).exists()
     broadcast_upcoming_reservation = ToolControlCustomization.get("tool_control_broadcast_upcoming_reservation")
     wait_list = tool.current_wait_list()
@@ -140,15 +141,16 @@ def tool_status(request, tool_id):
         "show_wait_list": (
             tool.allow_wait_list()
             and (
-                not (
-                    tool.get_current_usage_event().operator.id == user.id
-                    or tool.get_current_usage_event().user.id == user.id
-                )
-                if tool.in_use()
+                not (current_usage_event.operator_id == user.id or current_usage_event.user_id == user.id)
+                if current_usage_event
                 else wait_list.count() > 0
             )
         ),
     }
+
+    reservation_user = user
+    if current_usage_event and current_usage_event.operator_id == user.id:
+        reservation_user = current_usage_event.user
 
     current_reservation = Reservation.objects.filter(
         start__lt=timezone.now(),
@@ -156,7 +158,7 @@ def tool_status(request, tool_id):
         cancelled=False,
         missed=False,
         shortened=False,
-        user=user,
+        user=reservation_user,
         tool=tool,
     ).last()
     if current_reservation:
@@ -544,7 +546,11 @@ def disable_tool(request, tool_id):
     current_usage_event = tool.get_current_usage_event()
     staff_shortening = request.POST.get("shorten", False)
     shorten_reservation(
-        user=current_usage_event.user, item=tool, new_end=timezone.now() + downtime, force=staff_shortening
+        user=user,
+        reservation_user=current_usage_event.user,
+        item=tool,
+        new_end=timezone.now() + downtime,
+        force=staff_shortening,
     )
 
     # End the current usage event for the tool
