@@ -5,22 +5,45 @@ from django.apps import AppConfig
 from django.contrib.auth.decorators import login_required
 
 
-def monkey_patch_json_field_for_oracle():
+def apply_oracledb_patches():
+    """
+    Compatibility patches for oracledb 2.0+ thick mode with newer Oracle databases.
+
+    In oracledb 2.0+ thick mode, NCLOB columns with an IS JSON constraint are
+    returned as Python dicts instead of LOB objects. Django's own cursor output
+    type handler tries to prevent this with cursor.var(DB_TYPE_NCLOB), but in
+    newer oracledb versions that no longer stops the dict from ending up in the
+    LOB variable buffer, causing _get_lob_value to raise AttributeError.
+
+    Patch 1 overrides Django's handler to return NCLOB as DB_TYPE_LONG (plain
+    string), bypassing the LOB path entirely.
+    Patch 2 is a safety net for any JSON column oracledb returns as a native
+    Python type before Django's JSONField.from_db_value can process it.
+    """
+    try:
+        import oracledb
+        from django.db.backends.oracle.base import FormatStylePlaceholderCursor
+    except:
+        return
+
+    original_output_type_handler = FormatStylePlaceholderCursor._output_type_handler
+
+    def patched_output_type_handler(cursor, name, defaultType, length, precision, scale):
+        if defaultType == oracledb.DB_TYPE_NCLOB:
+            return cursor.var(oracledb.DB_TYPE_LONG, arraysize=cursor.arraysize)
+        return original_output_type_handler(cursor, name, defaultType, length, precision, scale)
+
+    FormatStylePlaceholderCursor._output_type_handler = staticmethod(patched_output_type_handler)
+
     from django.db.models.fields.json import JSONField
 
-    # Save the original method
     original_from_db_value = JSONField.from_db_value
 
-    # Define a wrapper that checks the type first
     def patched_from_db_value(self, value, expression, connection):
-        # If the driver already parsed it into a native Python type, just return it
         if isinstance(value, (dict, list)):
             return value
-
-        # Otherwise, let Django handle it as usual (string/bytes parsing)
         return original_from_db_value(self, value, expression, connection)
 
-    # Apply the patch
     JSONField.from_db_value = patched_from_db_value
 
 
@@ -54,7 +77,7 @@ class NEMOConfig(AppConfig):
     def ready(self):
         from NEMO.plugins import utils  # needed for checks
 
-        monkey_patch_json_field_for_oracle()
+        apply_oracledb_patches()
 
         if "migrate" in sys.argv or "makemigrations" in sys.argv:
             return
