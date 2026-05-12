@@ -417,6 +417,7 @@ class UnplannedOutageSerializer(FlexFieldsSerializerMixin, ModelSerializer):
         fields = "__all__"
         expandable_fields = {
             "tool": "NEMO.serializers.ToolSerializer",
+            "resource": "NEMO.serializers.ResourceSerializer",
         }
 
 
@@ -720,7 +721,9 @@ class ToolStatusSerializer(serializers.Serializer):
     in_use = BooleanField(read_only=True)
     visible = BooleanField(read_only=True)
     operational = BooleanField(read_only=True)
+    non_operational_since = DateTimeField(default=None, read_only=True)
     problematic = BooleanField(read_only=True)
+    problematic_since = DateTimeField(default=None, read_only=True)
     problem_descriptions = CharField(default=None, max_length=CHAR_FIELD_LARGE_LENGTH, read_only=True)
     customer_id = IntegerField(default=None, source="get_current_usage_event.user.id", read_only=True)
     customer_name = CharField(
@@ -751,9 +754,13 @@ class ToolStatusSerializer(serializers.Serializer):
     current_usage_id = IntegerField(default=None, source="get_current_usage_event.id", read_only=True)
     current_usage_start = DateTimeField(default=None, source="get_current_usage_event.start", read_only=True)
     outages = CharField(default=None, max_length=2000, read_only=True)
+    outages_since = DateTimeField(default=None, read_only=True)
     partial_outages = CharField(default=None, max_length=2000, read_only=True)
+    partial_outages_since = DateTimeField(default=None, read_only=True)
     required_resources_unavailable = CharField(default=None, max_length=2000, read_only=True)
+    required_resources_unavailable_since = DateTimeField(default=None, read_only=True)
     optional_resources_unavailable = CharField(default=None, max_length=2000, read_only=True)
+    optional_resources_unavailable_since = DateTimeField(default=None, read_only=True)
 
     def update(self, instance, validated_data):
         pass

@@ -676,6 +676,7 @@ class UnplannedOutageViewSet(ModelViewSet):
         "start": datetime_filters,
         "end": datetime_filters,
         "tool_id": key_filters,
+        "resource_id": key_filters,
         "tool": key_filters,
     }
 
@@ -1106,14 +1107,35 @@ class ToolStatusViewSet(XLSXFileMixin, viewsets.GenericViewSet):
             rss_unavailable = tool.unavailable_required_resources()
             partial_rss_unavailable = tool.unavailable_nonrequired_resources()
             tool.problem_descriptions = ", ".join(pb.problem_description for pb in pbs) if pbs else None
+            tool.problematic_since = min((pb.creation_time for pb in pbs), default=None)
             tool.outages = ", ".join(outage.title for outage in outages) if outages else None
+            tool.outages_since = min((outage.start for outage in outages), default=None)
             tool.partial_outages = ", ".join(outage.title for outage in partial_outages) if partial_outages else None
+            tool.partial_outages_since = min((partial_outage.start for partial_outage in partial_outages), default=None)
             tool.required_resources_unavailable = (
                 ", ".join(res.name for res in rss_unavailable) if rss_unavailable else None
             )
             tool.optional_resources_unavailable = (
                 ", ".join(res.name for res in partial_rss_unavailable) if partial_rss_unavailable else None
             )
+            try:
+                tool.required_resources_unavailable_since = (
+                    UnplannedOutage.objects.filter(resource__in=rss_unavailable, end=None).earliest("start").start
+                )
+            except UnplannedOutage.DoesNotExist:
+                pass
+            try:
+                tool.optional_resources_unavailable_since = (
+                    UnplannedOutage.objects.filter(resource__in=partial_rss_unavailable, end=None)
+                    .earliest("start")
+                    .start
+                )
+            except UnplannedOutage.DoesNotExist:
+                pass
+            try:
+                tool.non_operational_since = UnplannedOutage.objects.filter(tool=tool, end=None).earliest("start").start
+            except UnplannedOutage.DoesNotExist:
+                pass
         return tools
 
     def get_filename(self, *args, **kwargs):
