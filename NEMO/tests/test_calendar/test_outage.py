@@ -395,7 +395,10 @@ class OutageTestCase(NEMOTestCaseMixin, TestCase):
         response = self.client.post(reverse("create_outage"), data, follow=True)
 
         self.assertEqual(response.status_code, 200)
-        outages = ScheduledOutage.objects.filter(title="every day outage week", tool=tool)
+        if item_type == ReservationItemType.TOOL:
+            outages = ScheduledOutage.objects.filter(title="every day outage week", tool=tool)
+        else:
+            outages = ScheduledOutage.objects.filter(title="every day outage week", area=area)
         self.assertEqual(len(outages), 7)
         local_start = start.astimezone()
         local_end = end.astimezone()
