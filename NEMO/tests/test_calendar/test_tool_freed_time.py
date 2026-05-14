@@ -423,16 +423,22 @@ class ReservationTestCase(NEMOTestCaseMixin, TransactionTestCase):
             project=self.project,
         )
         self.login_as(consumer_2)
+        now_before = timezone.now()
         self.client.post(reverse("disable_tool", args=[self.tool.id]), follow=True)
-        # Wait a second since the freed time notification is asynchronous
+        # Wait half a second since the freed time notification is asynchronous
         sleep(0.5)
         # This time it should work
-        minutes = (timezone.now() - reservation.end).total_seconds() // 60
-        start_of_freed_time = reservation.end + timedelta(minutes=minutes)
-        self.assertEqual(
-            EmailLog.objects.filter(to=self.consumer.email, subject__startswith=f"[{self.tool.name}]").first().subject,
-            email_subject(self.tool, minutes, start_of_freed_time),
+        # Use now_before to limit time difference between the post and the email notification
+        # So check for both on-time and one minute late (in case it was 59.5 seconds and the email was sent at 00:00)
+        minutes = (now_before - reservation.end).total_seconds() // 60
+        actual_subject = (
+            EmailLog.objects.filter(to=self.consumer.email, subject__startswith=f"[{self.tool.name}]").first().subject
         )
+        possible_subjects = [
+            email_subject(self.tool, minutes + offset, reservation.end + timedelta(minutes=minutes + offset))
+            for offset in range(2)
+        ]
+        self.assertIn(actual_subject, possible_subjects)
 
     def test_notify_next_reservation_notification_first_one(self):
         consumer_2 = User.objects.create(
