@@ -4899,7 +4899,7 @@ class ToolUsageCounter(BaseModel):
                 question_name = f"tool_{question_type}_usage_question"
                 question_data_name = getattr(self, question_name)
                 tool_questions = ToolUsageQuestions.objects.filter(enabled=True, questions_type=question_type).filter(
-                    Q(only_for_tools=None) | Q(only_for_tools__in=[self.tool_or_parent_id()])
+                    Q(only_for_tools=None) | Q(only_for_tools__in=[self.tool.tool_or_parent_id()])
                 )
                 dynamic_form = MultiDynamicForms(tool_questions).merged_dynamic_forms
                 error = self.clean_counter_question(dynamic_form, question_data_name, question_type)
