@@ -189,6 +189,82 @@ function show_all_tool_categories()
 	{
 		$(category).show();
 	});
+	apply_tool_category_filter(localStorage.getItem("toolCategoryFilter") || "");
+}
+
+// Build a dropdown of top-level tool categories from the item tree and wire it
+// to filter visible categories. The selection persists in localStorage so it
+// survives reloads and navigation between the calendar and tool control pages.
+function setup_tool_category_filter()
+{
+	let tool_tree_jq = $("#tool_tree");
+	if (tool_tree_jq.length === 0) return;
+
+	let categories = [];
+	let seen = {};
+	tool_tree_jq.children("li.tool-category").each(function ()
+	{
+		let name = $(this).children("label").find("div").first().text().trim();
+		if (name && !seen[name])
+		{
+			seen[name] = true;
+			categories.push(name);
+		}
+	});
+	if (categories.length === 0) return;
+
+	let escape_html = function (str) { return $("<div>").text(str).html(); };
+	let options = '<option value="">All categories</option>';
+	categories.forEach(function (cat)
+	{
+		let escaped = escape_html(cat);
+		options += '<option value="' + escaped + '">' + escaped + '</option>';
+	});
+	let dropdown_jq = $(
+		'<select id="tool_category_filter" class="form-control sidebar-item" aria-label="Filter tools by category" title="Filter tools by category">'
+		+ options +
+		'</select>'
+	);
+	tool_tree_jq.before(dropdown_jq);
+
+	let saved = localStorage.getItem("toolCategoryFilter") || "";
+	dropdown_jq.val(saved);
+	if (dropdown_jq.val() === null || dropdown_jq.val() === undefined)
+	{
+		// Saved category no longer exists; fall back to "All categories".
+		dropdown_jq.val("");
+		localStorage.setItem("toolCategoryFilter", "");
+	}
+
+	dropdown_jq.on("change", function ()
+	{
+		let selected = $(this).val() || "";
+		localStorage.setItem("toolCategoryFilter", selected);
+		apply_tool_category_filter(selected);
+	});
+
+	apply_tool_category_filter(dropdown_jq.val() || "");
+}
+
+function apply_tool_category_filter(category)
+{
+	$("#tool_tree").children("li.tool-category").each(function ()
+	{
+		let name = $(this).children("label").find("div").first().text().trim();
+		if (!category || name === category)
+		{
+			$(this).show();
+		}
+		else
+		{
+			$(this).hide();
+		}
+	});
+	// Maintain the "my tools" filter on top of the category filter.
+	if (localStorage.getItem("showMyTools") === "true")
+	{
+		hide_empty_tool_categories();
+	}
 }
 
 function set_my_tools_button_status(btn_active)

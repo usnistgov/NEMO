@@ -1159,6 +1159,7 @@ function on_load()
         {# Filter "my tools" depending on the status of the button. #}
         load_my_tools(retrieve_my_tools());
     {% endif %}
+    setup_tool_category_filter();
 	$('input[type=checkbox].item-checkbox').show();
 	$(".item_tree").show(); {# Item tree is initially hidden so that previous expand/collapse state of categories is configured before it's visible. #}
 	{% if auto_select_item_id %}
