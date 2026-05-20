@@ -842,8 +842,8 @@ class DynamicForm:
         pre_post = "post"
         if run_data_json:
             if usage_event.pre_run_data and usage_event.run_data:
-                # if we have both check which one matches
-                if loads(usage_event.pre_run_data) == run_data_json:
+                # if we have both check if the usage event has an end date
+                if not usage_event.end:
                     pre_post = "pre"
             elif usage_event.pre_run_data:
                 # if we only have pre_run_data then it has to be pre usage question

@@ -1957,7 +1957,7 @@ class Tool(SerializationByNameModel):
         return self.operation_mode in [self.OperationMode.REGULAR, self.OperationMode.HYBRID]
 
     def current_wait_list(self):
-        return ToolWaitList.objects.filter(tool=self, expired=False, deleted=False).order_by("date_entered")
+        return ToolWaitList.objects.filter(tool_id=self.id, expired=False, deleted=False).order_by("date_entered")
 
     def top_wait_list_entry(self):
         return self.current_wait_list().first()
