@@ -5,6 +5,10 @@
     {% load static %}
     <link rel="stylesheet" type="text/css" href="{% static "fullcalendar/fullcalendar.min.css" %}" />
     <script type="text/javascript" src="{% static "fullcalendar/fullcalendar.min.js" %}"></script>
+    {# Select2 (used by the tool category filter) #}
+    <script type="text/javascript" src="{% static "select2/js/select2.min.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "select2/css/select2.min.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "select2/css/select2-bootstrap.min.css" %}" />
 {% endblock %}
 {% block body %}
     <div id="main-content">
