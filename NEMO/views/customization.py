@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+import warnings
 from abc import ABC
 from datetime import date, datetime
 from logging import getLogger
@@ -419,6 +420,7 @@ class CalendarCustomization(CustomizationBase):
         "calendar_all_areastools": "",
         "calendar_outage_recurrence_limit": "90",
         "calendar_qualified_tools": "",
+        "calendar_tool_category_filter": "",
         "calendar_configuration_in_reservations": "",
         "calendar_status_bar_show_tool_reservation_policy": "enabled",
         "calendar_status_bar_show_tool_pinned_comments": "enabled",
@@ -672,7 +674,10 @@ class RecurringChargesCustomization(CustomizationBase):
 
     def __init__(self, key, title):
         super().__init__(key, title)
-        self.update_title()
+        # Ignore warning when updating title during initialization
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=RuntimeWarning)
+            self.update_title()
 
     def context(self) -> Dict:
         # Override to add list of consumable categories

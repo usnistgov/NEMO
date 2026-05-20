@@ -9,6 +9,7 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LogoutView
 from django.contrib.staticfiles.storage import staticfiles_storage
+from django.http import HttpResponse
 from django.urls import path, re_path
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.generic import RedirectView
@@ -159,6 +160,8 @@ for app in apps.get_app_configs():
 
 # The order matters for some tests to run properly
 urlpatterns += [
+    # Health check
+    path("health/", lambda request: HttpResponse("OK"), name="health_check"),
     # Authentication & error pages:
     path("login/", authentication.login_user, name="login"),
     path(

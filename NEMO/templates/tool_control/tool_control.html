@@ -5,6 +5,10 @@
     {% load static %}
     <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
     <link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
+    {# Select2 (used by the tool category filter) #}
+    <script type="text/javascript" src="{% static "select2/js/select2.min.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "select2/css/select2.min.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "select2/css/select2-bootstrap.min.css" %}" />
 {% endblock %}
 {% block body %}
     <div id="main-content">
@@ -426,6 +430,9 @@
                 {% if user.is_staff or customizations|get_item:"calendar_qualified_tools" == "enabled" %}
                     {# Filter "my tools" depending on the status of the button. #}
                     load_my_tools(retrieve_my_tools());
+                {% endif %}
+                {% if customizations|get_item:"calendar_tool_category_filter" == "enabled" %}
+                    setup_tool_category_filter();
                 {% endif %}
 				$(".item_tree").show();
 				{# Tool tree is initially hidden so that previous expand/collapse state of categories is configured before it's visible. #}

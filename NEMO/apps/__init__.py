@@ -1,4 +1,5 @@
 import sys
+import warnings
 
 from django.apps import AppConfig
 from django.contrib.auth.decorators import login_required
@@ -82,6 +83,10 @@ class NEMOConfig(AppConfig):
             return
         from django.apps import apps
 
-        if apps.is_installed("django.contrib.admin"):
-            init_admin_site()
-        init_rates()
+        # ignore warning when initializing admin site and rates
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=RuntimeWarning)
+
+            if apps.is_installed("django.contrib.admin"):
+                init_admin_site()
+            init_rates()

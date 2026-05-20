@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import importlib
 import os
+import warnings
 from calendar import monthrange
 from copy import deepcopy
 from datetime import date, datetime, time, timedelta, timezone
@@ -1195,8 +1196,10 @@ def safe_lazy_queryset_evaluation(qs: QuerySet, default=UNSET, raise_exception=F
     if default is UNSET:
         default = []
     try:
-        # force evaluation of queryset
-        _ = list(qs)
+        # force evaluation of queryset, ignore warnings (this is sort of the point)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=RuntimeWarning)
+            _ = list(qs)
         return qs, False
     except UndefinedTable if HAS_UNDEFINED_TABLE else OperationalError:
         if raise_exception:

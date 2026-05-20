@@ -2,7 +2,7 @@ FROM python:3.13
 
 ENV PIP_ROOT_USER_ACTION=ignore
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y systemctl rsync vim less
+RUN apt-get update && apt-get upgrade -y && apt-get install -y systemctl rsync vim less wget
 
 COPY . /nemo/
 RUN python3 -m pip install --upgrade pip
@@ -43,6 +43,9 @@ WORKDIR /nemo
 
 ENV REMOTE_USER="captain"
 EXPOSE 8000/tcp
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD wget -qO- http://localhost:8000/health/ || exit 1
 
 # We have to start systemd jobs manually here unfortunately
 CMD (cd /nemo/systemd && ls *.timer) | sed -e 's/\.timer$//' | xargs -t -I % systemctl start % ; exec django-admin runserver 0.0.0.0:8000

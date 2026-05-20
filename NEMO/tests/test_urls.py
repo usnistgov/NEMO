@@ -208,7 +208,8 @@ class URLsTestCase(NEMOTestCaseMixin, TransactionTestCase):
     reset_sequences = True
     fixtures = ["resources/fixtures/splash_pad.json"]
 
-    def _pre_setup(self):
+    @classmethod
+    def _pre_setup(cls):
         if connection.vendor == "oracle":
             # For Oracle, we need to manually reset sequences to 1 before the fixtures get loaded
             reset_all_oracle_sequences()
@@ -413,6 +414,7 @@ def test_urls(test_case, url_patterns, url_params, url_skip, prefix=""):
                         "django.contrib.admin.options",
                     ]
                     or prefix == "admin"
+                    or fun_name == "<lambda>"
                 ):
                     continue
                 pkg_mod = importlib.import_module(pkg)

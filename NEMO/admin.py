@@ -1280,6 +1280,7 @@ class ResourceAdmin(admin.ModelAdmin):
     list_display = ("name", "category", "available")
     list_filter = ("available", "category")
     filter_horizontal = ("fully_dependent_tools", "partially_dependent_tools", "dependent_areas")
+    search_fields = ("name", "category__name", "restriction_message")
 
 
 @register(ActivityHistory)
@@ -1953,9 +1954,9 @@ class ScheduledOutageAdmin(admin.ModelAdmin):
 
 @register(UnplannedOutage)
 class UnplannedOutageAdmin(admin.ModelAdmin):
-    list_display = ("id", "tool", "start", "end")
-    list_filter = (("tool", admin.RelatedOnlyFieldListFilter),)
-    autocomplete_fields = ["tool"]
+    list_display = ("id", "tool", "resource", "start", "end")
+    list_filter = (("tool", admin.RelatedOnlyFieldListFilter), ("resource", admin.RelatedOnlyFieldListFilter))
+    autocomplete_fields = ["tool", "resource"]
     date_hierarchy = "start"
 
     def has_delete_permission(self, request, obj=None):

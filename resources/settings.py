@@ -52,6 +52,7 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 # If True, the SecurityMiddleware redirects all non-HTTPS requests to HTTPS
 # (except for those URLs matching a regular expression listed in SECURE_REDIRECT_EXEMPT).
 SECURE_SSL_REDIRECT = False  # Set to True if you have an HTTPS Certificate installed
+SECURE_REDIRECT_EXEMPT = [r"^health/$"]
 # Set to "DENY" to prevent frames even from the same server
 X_FRAME_OPTIONS = "SAMEORIGIN"
 

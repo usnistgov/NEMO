@@ -189,6 +189,107 @@ function show_all_tool_categories()
 	{
 		$(category).show();
 	});
+	apply_tool_category_filter();
+}
+
+// Build a Select2 multi-select of top-level tool categories from the item tree
+// and wire it to filter visible categories. The selection (a list of category
+// names) persists in localStorage so it survives reloads and navigation between
+// the calendar and tool control pages.
+function setup_tool_category_filter()
+{
+	let tool_tree_jq = $("#tool_tree");
+	if (tool_tree_jq.length === 0) return;
+
+	let categories = [];
+	let seen = {};
+	tool_tree_jq.children("li.tool-category").each(function ()
+	{
+		let name = $(this).children("label").find("div").first().text().trim();
+		if (name && !seen[name])
+		{
+			seen[name] = true;
+			categories.push(name);
+		}
+	});
+	if (categories.length === 0) return;
+
+	let escape_html = function (str) { return $("<div>").text(str).html(); };
+	let options = "";
+	categories.forEach(function (cat)
+	{
+		let escaped = escape_html(cat);
+		options += '<option value="' + escaped + '">' + escaped + '</option>';
+	});
+
+	let select_html =
+		'<div style="margin-top: 10px;">' +
+		'<select id="tool_category_filter" class="form-control sidebar-item" multiple aria-label="Filter tools by category">' +
+		options +
+		'</select>' +
+		'<div style="margin-top: 10px;">';
+	tool_tree_jq.before(select_html);
+	let select_jq = $("#tool_category_filter");
+
+	// Drop any saved categories that no longer exist.
+	let saved = parse_tool_category_filter().filter(function (cat) { return categories.indexOf(cat) !== -1; });
+	save_tool_category_filter(saved);
+	select_jq.val(saved);
+
+	if (typeof $.fn.select2 !== "undefined")
+	{
+		select_jq.select2(
+		{
+			placeholder: " Filter categories",
+			allowClear: true,
+			width: "100%",
+			closeOnSelect: true
+		});
+	}
+
+	select_jq.on("change", function ()
+	{
+		let selected = $(this).val() || [];
+		save_tool_category_filter(selected);
+		apply_tool_category_filter();
+	});
+
+	apply_tool_category_filter();
+}
+
+function parse_tool_category_filter()
+{
+	let stored = localStorage.getItem("toolCategoryFilter");
+	if (!stored) return [];
+	let parsed = JSON.parse(stored);
+	return Array.isArray(parsed) ? parsed : [];
+}
+
+function save_tool_category_filter(selected)
+{
+	localStorage.setItem("toolCategoryFilter", JSON.stringify(selected));
+}
+
+function apply_tool_category_filter()
+{
+	let selected = parse_tool_category_filter();
+	$("#tool_tree").children("li.tool-category").each(function ()
+	{
+		let name = $(this).children("label").find("div").first().text().trim();
+		if (selected.length === 0 || selected.indexOf(name) !== -1)
+		{
+			$(this).show();
+		}
+		else
+		{
+			$(this).hide();
+		}
+	});
+	// Maintain the "my tools" filter on top of the category filter.
+	if (localStorage.getItem("showMyTools") === "true")
+	{
+		hide_empty_tool_categories();
+	}
 }
 
 function set_my_tools_button_status(btn_active)
@@ -323,6 +424,7 @@ function save_sidebar_state()
 {
 	let showMyTools = localStorage.getItem("showMyTools");
 	let calendarToolInfoUrl = localStorage.getItem("calendarToolInfoUrl");
+	let toolCategoryFilter = localStorage.getItem("toolCategoryFilter");
 
 	localStorage.clear();
 	localStorage["sidebarExpanded"] = $("#sidebar").attr("aria-expanded") || "false";
@@ -351,6 +453,10 @@ function save_sidebar_state()
 	if (calendarToolInfoUrl !== null)
 	{
 		localStorage.setItem("calendarToolInfoUrl", calendarToolInfoUrl);
+	}
+	if (toolCategoryFilter !== null)
+	{
+		localStorage.setItem("toolCategoryFilter", toolCategoryFilter);
 	}
 }
 

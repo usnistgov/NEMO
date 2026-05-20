@@ -842,8 +842,8 @@ class DynamicForm:
         pre_post = "post"
         if run_data_json:
             if usage_event.pre_run_data and usage_event.run_data:
-                # if we have both check which one matches
-                if loads(usage_event.pre_run_data) == run_data_json:
+                # if we have both check if the usage event has an end date
+                if not usage_event.end:
                     pre_post = "pre"
             elif usage_event.pre_run_data:
                 # if we only have pre_run_data then it has to be pre usage question
@@ -1169,6 +1169,87 @@ def formula_preview(request, content_type_id, item_id, field_name, formula_name)
     return HttpResponse()
 
 
+class PostUsageRatingQuestion(PostUsageQuestion):
+    question_type = "Question of type rating"
+    DEFAULT_MAX_RATING = 5
+    DEFAULT_SYMBOL = "★"
+    DEFAULT_COLOR = "#f0ad4e"
+    DEFAULT_EMPTY_COLOR = "#ccc"
+
+    def __init__(self, properties: Dict, index: int = None, initial_data=None):
+        super().__init__(properties, index, initial_data)
+        self.max_rating = int(self._init_property("max_rating") or self.DEFAULT_MAX_RATING)
+        self.symbol = self._init_property("symbol") or self.DEFAULT_SYMBOL
+        self.color = self._init_property("color") or self.DEFAULT_COLOR
+        self.empty_color = self._init_property("empty_color") or self.DEFAULT_EMPTY_COLOR
+
+    def validate(self):
+        super().validate()
+        if self.max_rating < 1:
+            raise Exception("Rating question 'max_rating' must be at least 1")
+
+    def render_element(self, virtual_inputs: bool, item, dynamic_field_name: str, extra_class="") -> str:
+        title = self.title_html or self.title
+        max_width = f"max-width:{self.max_width}px" if self.max_width else ""
+        default_value = self.get_default_value()
+        required = "required" if self.required else ""
+        initial_value = int(default_value) if default_value is not None else 0
+        result = f'<div class="form-group {extra_class}" style="{max_width}">'
+        result += f'<label style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
+        # Invisible number input for form submission and HTML5 required validation
+        result += (
+            f'<input aria-label="rating value" type="number" id="{self.form_name}" name="{self.form_name}" '
+            f'min="1" max="{self.max_rating}" style="opacity:0;height:1px;width:1px;" {required} '
+            f'tabindex="-1" value="{default_value or ""}">'
+        )
+        result += f'<div class="dynamic-form-rating" id="{self.form_name}_stars" style="font-size:1.5em;line-height:1.5;cursor:pointer;">'
+        for i in range(1, self.max_rating + 1):
+            color = self.color if i <= initial_value else self.empty_color
+            result += f'<span class="dynamic-form-rating-star" data-value="{i}" style="color:{color};padding:2px;">{self.symbol}</span>'
+        result += "</div>"
+        if self.help:
+            result += f'<div style="font-size:smaller;color:#999;">{self.help}</div>'
+        result += "</div>"
+        return result
+
+    def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
+        default_value = self.get_default_value()
+        initial_value = int(default_value) if default_value is not None else 0
+        return f"""<script>(function() {{
+    var stars = $('#{self.form_name}_stars .dynamic-form-rating-star');
+    var input = $('#{self.form_name}');
+    var currentRating = {initial_value};
+    var filledColor = '{self.color}';
+    var emptyColor = '{self.empty_color}';
+
+    function applyRating(value) {{
+        currentRating = value;
+        input.val(value > 0 ? value : '').trigger('change');
+        stars.each(function() {{
+            $(this).css('color', parseInt($(this).data('value')) <= value ? filledColor : emptyColor);
+        }});
+    }}
+
+    stars.on('click', function() {{
+        var value = parseInt($(this).data('value'));
+        applyRating(value === currentRating ? 0 : value);
+    }});
+
+    stars.on('mouseenter', function() {{
+        var hoverVal = parseInt($(this).data('value'));
+        stars.each(function() {{
+            $(this).css('color', parseInt($(this).data('value')) <= hoverVal ? filledColor : emptyColor);
+        }});
+    }});
+
+    $('#{self.form_name}_stars').on('mouseleave', function() {{
+        stars.each(function() {{
+            $(this).css('color', parseInt($(this).data('value')) <= currentRating ? filledColor : emptyColor);
+        }});
+    }});
+}})();</script>"""
+
+
 question_types: Dict[str, Type[PostUsageQuestion]] = {
     "number": PostUsageNumberFieldQuestion,
     "float": PostUsageFloatFieldQuestion,
@@ -1180,4 +1261,5 @@ question_types: Dict[str, Type[PostUsageQuestion]] = {
     "dropdown": PostUsageDropdownQuestion,
     "formula": PostUsageFormulaQuestion,
     "group": PostUsageGroupQuestion,
+    "rating": PostUsageRatingQuestion,
 }
