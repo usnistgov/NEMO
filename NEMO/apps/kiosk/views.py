@@ -446,11 +446,10 @@ def choices(request):
     expiration_danger = UserCustomization.get_int("user_access_expiration_banner_danger")
     if customer.access_expiration and (expiration_warning or expiration_danger):
         access_expiration_datetime = datetime.combine(customer.access_expiration, time.min).astimezone()
-        if access_expiration_datetime >= timezone.now():
-            if expiration_warning and access_expiration_datetime < timezone.now() + timedelta(days=expiration_warning):
-                show_access_expiration_banner = "warning"
-            if expiration_danger and access_expiration_datetime < timezone.now() + timedelta(days=expiration_danger):
-                show_access_expiration_banner = "danger"
+        if expiration_warning and access_expiration_datetime < timezone.now() + timedelta(days=expiration_warning):
+            show_access_expiration_banner = "warning"
+        if expiration_danger and access_expiration_datetime < timezone.now() + timedelta(days=expiration_danger):
+            show_access_expiration_banner = "danger"
 
     dictionary = {
         "show_access_expiration_banner": show_access_expiration_banner,
