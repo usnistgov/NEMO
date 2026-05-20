@@ -21,9 +21,17 @@
                 Adjustment Request #{{ request_obj.id }}</strong>
             </div>
             <div id="adjustment_right_{{ request_obj.id }}" class="col-xs-6 text-right" style="padding-right: 0">
-                {% if request_obj.status != status_pending %}
+                {% if request_obj.status == status_approved %}
+                    {% if request_obj.applied and request_obj.applied_by == request_obj.reviewer %}
+                        {{ request_obj.get_status_display }} and applied by {{ request_obj.reviewer.get_name }}
+                    {% elif request_obj.applied %}
+                        {{ request_obj.get_status_display }} by {{ request_obj.reviewer.get_name }} and applied by {{ request_obj.applied_by.get_name }}
+                    {% else %}
+                        {{ request_obj.get_status_display }} by {{ request_obj.reviewer.get_name }}
+                    {% endif %}
+                {% elif request_obj.status == status_denied %}
                     {{ request_obj.get_status_display }} by {{ request_obj.reviewer.get_name }}
-                    {% if request_obj.status == status_denied and request_obj.manager_note %}
+                    {% if request_obj.manager_note %}
                         <i aria-hidden="true" class="glyphicon glyphicon-info-sign" title="{{ request_obj.manager_note }}"></i>
                     {% endif %}
                 {% endif %}
