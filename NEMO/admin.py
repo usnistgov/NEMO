@@ -679,6 +679,7 @@ class StaffChargeAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.M
     date_hierarchy = "start"
     autocomplete_fields = ["staff_member", "customer", "project", "validated_by", "waived_by"]
     actions = [waive_selected_charges]
+    search_fields = ["=id"]
 
     @admin.display(boolean=True, description="Usage Event")
     def has_usage_event(self, obj) -> bool:
@@ -703,7 +704,7 @@ class AreaAccessRecordAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, ad
         ("project__account", admin.RelatedOnlyFieldListFilter),
     )
     date_hierarchy = "start"
-    autocomplete_fields = ["customer", "project", "validated_by", "waived_by"]
+    autocomplete_fields = ["customer", "project", "validated_by", "waived_by", "staff_charge"]
     readonly_fields = ["has_ended"]
     actions = [waive_selected_charges]
 
@@ -1025,7 +1026,7 @@ class UsageEventAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.Mo
         ("project__account", admin.RelatedOnlyFieldListFilter),
     )
     date_hierarchy = "start"
-    autocomplete_fields = ["tool", "user", "operator", "project", "validated_by", "waived_by"]
+    autocomplete_fields = ["tool", "user", "operator", "project", "validated_by", "waived_by", "staff_charge"]
     readonly_fields = ["has_ended"]
     actions = [waive_selected_charges]
     search_fields = ["user__username", "user__first_name", "user__last_name", "tool__name"]
