@@ -298,6 +298,25 @@ class ToolUsageQuestionType(models.TextChoices):
     POST = "post", _("Post")
 
 
+class CoreFacility(SerializationByNameModel):
+    name = models.CharField(
+        max_length=CHAR_FIELD_MEDIUM_LENGTH, unique=True, help_text="The name of this core facility."
+    )
+    external_id = models.CharField(
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
+        null=True,
+        blank=True,
+        help_text="An external ID to associate with this core facility.",
+    )
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name_plural = "Core facilities"
+
+
 class UserPreferences(BaseModel):
     attach_created_reservation = models.BooleanField(
         "Created reservation invite",
@@ -1269,6 +1288,16 @@ class Tool(SerializationByNameModel):
         default=True,
         help_text="Whether or not users can shut down the tool when reporting a problem.",
     )
+    _core_facility = models.ForeignKey(
+        CoreFacility,
+        db_column="core_facility_id",
+        verbose_name="core facility",
+        null=True,
+        blank=True,
+        related_name="tools",
+        help_text="The core facility this tool belongs to.",
+        on_delete=models.SET_NULL,
+    )
     _properties = fields.JsonField(
         schema=load_properties_schemas("Tool"), db_column="properties", verbose_name="properties", null=True, blank=True
     )
@@ -1576,6 +1605,15 @@ class Tool(SerializationByNameModel):
     def problem_shutdown_enabled(self, value):
         self.raise_setter_error_if_child_tool("problem_shutdown_enabled")
         self._problem_shutdown_enabled = value
+
+    @property
+    def core_facility(self):
+        return self.parent_tool.core_facility if self.is_child_tool() else self._core_facility
+
+    @core_facility.setter
+    def core_facility(self, value):
+        self.raise_setter_error_if_child_tool("core_facility")
+        self._core_facility = value
 
     @property
     def properties(self):
@@ -2301,7 +2339,7 @@ class Tool(SerializationByNameModel):
             if self.parent_tool_id == self.id:
                 errors["parent_tool"] = _("You cannot select the parent to be the tool itself.")
         else:
-            from NEMO.views.customization import ToolCustomization
+            from NEMO.views.customization import ToolCustomization, CoreFacilityCustomization
 
             if not self._category:
                 errors["_category"] = _("This field is required.")
@@ -2325,6 +2363,8 @@ class Tool(SerializationByNameModel):
                 errors["_requires_area_occupancy_minimum"] = _(
                     "You cannot have a minimum occupancy without requiring an active access record to that area"
                 )
+            if not self._core_facility_id and CoreFacilityCustomization.get_bool("core_facility_required_for_tools"):
+                errors["_core_facility"] = _("This field is required")
         if errors:
             raise ValidationError(errors)
 
@@ -2651,6 +2691,14 @@ class StaffCharge(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     staff_member = models.ForeignKey(User, related_name="staff_charge_actor", on_delete=models.CASCADE)
     customer = models.ForeignKey(User, related_name="staff_charge_customer", on_delete=models.CASCADE)
     project = models.ForeignKey("Project", on_delete=models.CASCADE)
+    core_facility = models.ForeignKey(
+        CoreFacility,
+        null=True,
+        blank=True,
+        related_name="staff_charges",
+        help_text="The core facility this staff charge belongs to.",
+        on_delete=models.SET_NULL,
+    )
     start = models.DateTimeField(default=timezone.now)
     end = models.DateTimeField(null=True, blank=True)
     note = models.TextField(null=True, blank=True)
@@ -2665,9 +2713,13 @@ class StaffCharge(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     )
 
     def clean(self):
+        from NEMO.views.customization import CoreFacilityCustomization
+
         errors = validate_waive_information(self)
         if self.end and self.start and self.end < self.start:
-            raise ValidationError({"end": "The end must be on or after the start"})
+            errors["end"] = _("The end must be on or after the start")
+        if not self.core_facility_id and CoreFacilityCustomization.get_bool("core_facility_required_for_staff_charges"):
+            errors["core_facility"] = _("This field is required")
         if errors:
             raise ValidationError(errors)
 
@@ -2707,6 +2759,14 @@ class Area(MPTTModel):
         null=True,
         blank=True,
         help_text="An email will be sent to this address when users create or cancel reservations in the area or in children areas. A comma-separated list can be used.",
+    )
+    core_facility = models.ForeignKey(
+        CoreFacility,
+        null=True,
+        blank=True,
+        related_name="areas",
+        help_text="The core facility this area belongs to.",
+        on_delete=models.SET_NULL,
     )
 
     # Area permissions
@@ -2977,6 +3037,15 @@ class Area(MPTTModel):
     @property
     def location(self):
         return self.name
+
+    def clean(self):
+        from NEMO.views.customization import CoreFacilityCustomization
+
+        errors = {}
+        if not self.core_facility_id and CoreFacilityCustomization.get_bool("core_facility_required_for_areas"):
+            errors["core_facility"] = _("This field is required")
+        if errors:
+            raise ValidationError(errors)
 
 
 class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):
@@ -3449,6 +3518,14 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 class Consumable(BaseModel):
     name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
     category = models.ForeignKey("ConsumableCategory", blank=True, null=True, on_delete=models.CASCADE)
+    core_facility = models.ForeignKey(
+        CoreFacility,
+        null=True,
+        blank=True,
+        related_name="consumables",
+        help_text="The core facility this consumable belongs to.",
+        on_delete=models.SET_NULL,
+    )
     quantity = models.IntegerField(help_text="The number of items currently in stock.")
     reusable = models.BooleanField(
         default=False,
@@ -3481,13 +3558,20 @@ class Consumable(BaseModel):
         ordering = ["name"]
 
     def clean(self):
+        from NEMO.views.customization import CoreFacilityCustomization
+
+        errors = {}
+        if not self.core_facility_id and CoreFacilityCustomization.get_bool("core_facility_required_for_consumables"):
+            errors["core_facility"] = _("This field is required")
         if not self.reusable and (not self.reminder_threshold or not self.reminder_email):
-            raise ValidationError(
+            errors.update(
                 {
                     "reminder_threshold": "This field is required when the item is not reusable",
                     "reminder_email": "This field is required when the item is not reusable",
                 }
             )
+        if errors:
+            raise ValidationError(errors)
 
     def __str__(self):
         return self.name

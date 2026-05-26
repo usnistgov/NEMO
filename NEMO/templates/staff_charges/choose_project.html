@@ -9,6 +9,7 @@
                 Customer: {{ customer }}
                 <br>
                 <input type="hidden" name="customer" value="{{ customer.id }}">
+                <input type="hidden" name="core_facility" value="{{ core_facility_id }}">
             </div>
             <div class="form-group">
                 {% if customer.active_project_count == 1 and customer.active_projects.0.allow_staff_charges %}

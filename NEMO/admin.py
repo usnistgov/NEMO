@@ -61,6 +61,7 @@ from NEMO.models import (
     ConsumableWithdraw,
     ContactInformation,
     ContactInformationCategory,
+    CoreFacility,
     Customization,
     Door,
     EmailLog,
@@ -129,7 +130,7 @@ from NEMO.models import (
     record_remote_many_to_many_changes_and_save,
 )
 from NEMO.utilities import admin_get_item, format_daterange
-from NEMO.views.customization import ApplicationCustomization, ProjectsAccountsCustomization
+from NEMO.views.customization import ApplicationCustomization, CoreFacilityCustomization, ProjectsAccountsCustomization
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageGroupQuestion, admin_render_dynamic_form_preview
 
 
@@ -171,6 +172,70 @@ class AtLeastOneRequiredInlineFormSet(BaseInlineFormSet):
 
 class DocumentModelAdmin(admin.TabularInline):
     extra = 1
+
+
+class CoreFacilityAdminForm(forms.ModelForm):
+    class Meta:
+        model = CoreFacility
+        fields = "__all__"
+
+    core_facility_tools = forms.ModelMultipleChoiceField(
+        queryset=Tool.objects.all(),
+        required=False,
+        widget=FilteredSelectMultiple(verbose_name="Core facility tools", is_stacked=False),
+    )
+    core_facility_areas = forms.ModelMultipleChoiceField(
+        queryset=Area.objects.all(),
+        required=False,
+        widget=FilteredSelectMultiple(verbose_name="Core facility areas", is_stacked=False),
+    )
+    core_facility_consumables = forms.ModelMultipleChoiceField(
+        queryset=Consumable.objects.all(),
+        required=False,
+        widget=FilteredSelectMultiple(verbose_name="Core facility consumable", is_stacked=False),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # We are filtering out already set tools, areas and consumables
+        queryset_filter = Q(core_facility__isnull=True) | Q(core_facility_id=self.instance.pk)
+        if "external_id" in self.fields:
+            self.fields["external_id"].label = CoreFacilityCustomization.get("core_facility_external_id_name")
+
+        # Exclude children tools since their core facility is their parent's
+        if "core_facility_tools" in self.fields:
+            self.fields["core_facility_tools"].queryset = Tool.objects.filter(
+                Q(_core_facility_id=self.instance.pk) | Q(_core_facility__isnull=True)
+            ).exclude(parent_tool__isnull=False)
+            if self.instance.pk:
+                self.fields["core_facility_tools"].initial = self.instance.tools.all()
+        if "core_facility_areas" in self.fields:
+            self.fields["core_facility_areas"].queryset = Area.objects.filter(queryset_filter)
+            if self.instance.pk:
+                self.fields["core_facility_areas"].initial = self.instance.areas.all()
+        if "core_facility_consumables" in self.fields:
+            self.fields["core_facility_consumables"].queryset = Consumable.objects.filter(queryset_filter)
+            if self.instance.pk:
+                self.fields["core_facility_consumables"].initial = self.instance.consumables.all()
+
+
+@register(CoreFacility)
+class CoreFacilityAdmin(admin.ModelAdmin):
+    list_display = ["name", "get_external_id"]
+    form = CoreFacilityAdminForm
+
+    def save_model(self, request, obj: CoreFacility, form, change):
+        super().save_model(request, obj, form, change)
+        if "core_facility_tools" in form.changed_data:
+            obj.tools.set(form.cleaned_data["core_facility_tools"])
+        if "core_facility_areas" in form.changed_data:
+            obj.areas.set(form.cleaned_data["core_facility_areas"])
+        if "core_facility_consumables" in form.changed_data:
+            obj.consumables.set(form.cleaned_data["core_facility_consumables"])
+
+    @admin.display(ordering="external_id")
+    def get_external_id(self, core_facility: CoreFacility):
+        return core_facility.external_id
 
 
 class ToolAdminForm(forms.ModelForm):
@@ -246,6 +311,7 @@ class ToolAdmin(admin.ModelAdmin):
         "visible",
         "operational_display",
         "_operation_mode",
+        "_core_facility",
         "problematic",
         "is_configurable",
         "id",
@@ -258,8 +324,8 @@ class ToolAdmin(admin.ModelAdmin):
         "_operation_mode",
         "_category",
         "_location",
+        ("_core_facility", admin.RelatedOnlyFieldListFilter),
         ("_requires_area_access", admin.RelatedOnlyFieldListFilter),
-        has_fk_filter("staff_charge", "Staff Charge"),
     )
     autocomplete_fields = [
         "_primary_owner",
@@ -277,6 +343,7 @@ class ToolAdmin(admin.ModelAdmin):
                     "parent_tool",
                     "_category",
                     "_operation_mode",
+                    "_core_facility",
                     "qualified_users",
                     "_problem_shutdown_enabled",
                 )
@@ -535,6 +602,7 @@ class AreaAdmin(DraggableMPTTAdmin):
         "parent_area",
         "category",
         "requires_reservation",
+        "core_facility",
         "maximum_capacity",
         "reservation_warning",
         "buddy_system_allowed",
@@ -542,7 +610,7 @@ class AreaAdmin(DraggableMPTTAdmin):
     )
     filter_horizontal = ["adjustment_request_reviewers", "access_request_reviewers"]
     fieldsets = (
-        (None, {"fields": ("name", "parent_area", "category", "reservation_email", "abuse_email")}),
+        (None, {"fields": ("name", "parent_area", "category", "reservation_email", "abuse_email", "core_facility")}),
         ("Additional Information", {"fields": ("area_calendar_color",)}),
         (
             "Area access",
@@ -597,7 +665,11 @@ class AreaAdmin(DraggableMPTTAdmin):
         ),
     )
     list_display_links = ("indented_title",)
-    list_filter = ("requires_reservation", ("parent_area", TreeRelatedFieldListFilter))
+    list_filter = (
+        "requires_reservation",
+        ("parent_area", TreeRelatedFieldListFilter),
+        ("core_facility", admin.RelatedOnlyFieldListFilter),
+    )
     search_fields = ("name",)
     actions = [rebuild_area_tree]
 
@@ -663,12 +735,24 @@ class TrainingSessionAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, adm
 
 @register(StaffCharge)
 class StaffChargeAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
-    list_display = ("id", "staff_member", "customer", "start", "end", "waived", "has_area_record", "has_usage_event")
+    list_display = (
+        "id",
+        "staff_member",
+        "customer",
+        "project",
+        "core_facility",
+        "start",
+        "end",
+        "waived",
+        "has_area_record",
+        "has_usage_event",
+    )
     list_filter = (
         "start",
         "waived",
         ("customer", admin.RelatedOnlyFieldListFilter),
         ("staff_member", admin.RelatedOnlyFieldListFilter),
+        ("core_facility", admin.RelatedOnlyFieldListFilter),
         has_fk_filter("areaaccessrecord", "Area Record"),
         has_fk_filter("usageevent", "Usage Event"),
         ("project__project_types", admin.RelatedOnlyFieldListFilter),
@@ -1018,6 +1102,7 @@ class UsageEventAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.Mo
         "start",
         "end",
         "waived",
+        has_fk_filter("staff_charge", "Staff Charge"),
         ("tool", admin.RelatedOnlyFieldListFilter),
         ("project__project_types", admin.RelatedOnlyFieldListFilter),
         ("project__account__type", admin.RelatedOnlyFieldListFilter),
@@ -1041,6 +1126,7 @@ class ConsumableAdmin(admin.ModelAdmin):
         "name",
         "quantity",
         "category",
+        "core_facility",
         "visible",
         "reusable",
         "allow_self_checkout",
@@ -1048,7 +1134,13 @@ class ConsumableAdmin(admin.ModelAdmin):
         "reminder_email",
         "id",
     )
-    list_filter = ("visible", ("category", admin.RelatedOnlyFieldListFilter), "reusable", "allow_self_checkout")
+    list_filter = (
+        "visible",
+        ("category", admin.RelatedOnlyFieldListFilter),
+        "reusable",
+        "allow_self_checkout",
+        ("core_facility", admin.RelatedOnlyFieldListFilter),
+    )
     filter_horizontal = ["self_checkout_only_users"]
     search_fields = ("name",)
     readonly_fields = ("reminder_threshold_reached",)

@@ -464,6 +464,8 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
     # Start staff charge before tool usage
     if staff_charge:
         new_staff_charge = StaffCharge()
+        # Set the core facility from the tool on the staff charge
+        new_staff_charge.core_facility = tool.core_facility
         new_staff_charge.staff_member = request.user
         new_staff_charge.customer = user
         new_staff_charge.project = project

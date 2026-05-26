@@ -34,6 +34,7 @@ from NEMO.models import (
     Consumable,
     ConsumableCategory,
     ConsumableWithdraw,
+    CoreFacility,
     Customization,
     Interlock,
     InterlockCard,
@@ -83,6 +84,7 @@ from NEMO.serializers import (
     ConsumableSerializer,
     ConsumableWithdrawSerializer,
     ContentTypeSerializer,
+    CoreFacilitySerializer,
     CustomizationSerializer,
     GroupSerializer,
     InterlockCardCategorySerializer,
@@ -227,6 +229,16 @@ class AlertViewSet(ModelViewSet):
         "dismissible": boolean_filters,
         "expired": boolean_filters,
         "deleted": boolean_filters,
+    }
+
+
+class CoreFacilityViewSet(ModelViewSet):
+    filename = "core_facilities"
+    queryset = CoreFacility.objects.all()
+    serializer_class = CoreFacilitySerializer
+    filterset_fields = {
+        "name": string_filters,
+        "external_id": string_filters,
     }
 
 
@@ -411,6 +423,7 @@ class ToolViewSet(ModelViewSet):
         "_requires_area_access": key_filters,
         "_requires_area_occupancy_minimum": number_filters,
         "_problem_shutdown_enabled": boolean_filters,
+        "_core_facility": key_filters,
     }
 
 
@@ -440,6 +453,7 @@ class AreaViewSet(ModelViewSet):
         "maximum_capacity": number_filters,
         "count_staff_in_occupancy": boolean_filters,
         "count_service_personnel_in_occupancy": boolean_filters,
+        "core_facility": key_filters,
     }
 
 
@@ -701,6 +715,7 @@ class StaffChargeViewSet(ModelViewSet):
         "waived": boolean_filters,
         "waived_on": datetime_filters,
         "waived_by": key_filters,
+        "core_facility": key_filters,
     }
 
 
@@ -753,6 +768,7 @@ class ConsumableViewSet(ModelViewSet):
         "visible": boolean_filters,
         "reusable": boolean_filters,
         "reminder_threshold_reached": boolean_filters,
+        "core_facility": key_filters,
     }
 
 

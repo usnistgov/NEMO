@@ -1,0 +1,64 @@
+{% load custom_tags_and_filters %}
+<div class="panel-body">
+    <h3 class="customization-section-title">Core facilities</h3>
+    <form method="POST" action="{% url 'customize' 'core_facility' %}" class="form-horizontal">
+        {% csrf_token %}
+        <div class="form-group {% if errors.core_facility_external_id_name %}has-error{% endif %}">
+            <label class="control-label col-md-3" for="core_facility_external_id_name">External id name</label>
+            <div class="col-md-4">
+                <input type="text"
+                       id="core_facility_external_id_name"
+                       name="core_facility_external_id_name"
+                       class="form-control"
+                       value="{{ core_facility_external_id_name }}">
+            </div>
+            <div class="col-md-5 help-block light-grey">
+                {% if errors.core_facility_external_id_name %}
+                    {{ errors.core_facility_external_id_name.error }}
+                {% else %}
+                    The name of the external identifier property for Core Facilities.
+                {% endif %}
+            </div>
+        </div>
+        <div class="form-group">
+            <span class="control-label col-md-3">Core facility required</span>
+            <div class="col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="core_facility_required_for_tools"
+                               {% if core_facility_required_for_tools == "enabled" %}checked{% endif %}
+                               value="enabled">
+                        For tools
+                    </label>
+                    <br>
+                    <label>
+                        <input type="checkbox"
+                               name="core_facility_required_for_areas"
+                               {% if core_facility_required_for_areas == "enabled" %}checked{% endif %}
+                               value="enabled">
+                        For areas
+                    </label>
+                    <br />
+                    <label>
+                        <input type="checkbox"
+                               name="core_facility_required_for_consumables"
+                               {% if core_facility_required_for_consumables == "enabled" %}checked{% endif %}
+                               value="enabled">
+                        For consumables
+                    </label>
+                    <br />
+                    <label>
+                        <input type="checkbox"
+                               name="core_facility_required_for_staff_charges"
+                               {% if core_facility_required_for_staff_charges == "enabled" %}checked{% endif %}
+                               value="enabled">
+                        For staff charges
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
+        <div class="text-center">{% button type="save" value="Save settings" %}</div>
+    </form>
+</div>

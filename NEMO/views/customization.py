@@ -311,6 +311,25 @@ class ApplicationCustomization(CustomizationBase):
         return errors
 
 
+@customization(key="core_facility", title="Core facilities")
+class CoreFacilityCustomization(CustomizationBase):
+    variables = {
+        "core_facility_external_id_name": "External ID",
+        "core_facility_required_for_tools": "",
+        "core_facility_required_for_areas": "",
+        "core_facility_required_for_consumables": "",
+        "core_facility_required_for_staff_charges": "",
+    }
+
+    @classmethod
+    def set(cls, name, value):
+        super().set(name, value)
+        from NEMO.admin import CoreFacilityAdmin
+
+        if name and name == "core_facility_external_id_name":
+            CoreFacilityAdmin.get_external_id.short_description = value
+
+
 @customization(key="projects_and_accounts", title="Projects & accounts")
 class ProjectsAccountsCustomization(CustomizationBase):
     variables = {
