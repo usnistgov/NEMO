@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 <html lang="en">
     <head>
         <meta charset="utf-8">
@@ -20,7 +21,7 @@
             </tr>
             <tr>
                 <td style="padding: 10px;">
-                    <p>{{ user }} just completed the Facility rules tutorial.</p>
+                    <p>{{ user }} just completed the {{ customizations|get_item:"facility_rules_name" }}.</p>
                 </td>
             </tr>
         </table>
