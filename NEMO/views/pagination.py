@@ -14,10 +14,12 @@ class SortedPaginator(Paginator):
         allow_empty_first_page=True,
     ):
         self.js_callback = js_callback
+        if isinstance(per_page, int):
+            per_page = str(per_page)
         per_page = self.get_session_per_page(request, object_list, per_page)
         self.page_number = request.GET.get("p")
         self.order_by = request.GET.get("o", order_by)
-        if object_list and isinstance(object_list, QuerySet) and self.order_by:
+        if isinstance(object_list, QuerySet) and self.order_by:
             object_list = object_list.order_by(self.order_by)
         if per_page == "0":
             self.object_list = object_list
@@ -27,7 +29,7 @@ class SortedPaginator(Paginator):
     def get_current_page(self):
         return super().get_page(self.page_number)
 
-    def get_session_per_page(self, request, query_set, default_per_page: str = None):
+    def get_session_per_page(self, request, query_set, default_per_page: str | None = None) -> str:
         per_page_requested = request.GET.get("pp")
         if request and query_set and isinstance(query_set, QuerySet):
             try:
