@@ -905,11 +905,11 @@ function matcher(items, search_fields)
 // is redirected to the logout page, and then further redirected to the login
 // page. This design is useful because some of NEMO's pages (such as the
 // Calendar, Tool Control, and Status Dashboard) make regular polling AJAX requests.
-function navigate_to_login_on_session_expiration(logout_url, event, xhr, status, error)
+function navigate_to_login_on_session_expiration(event, xhr, status, error)
 {
 	if(xhr.status === 403)
 	{
-		window.location.href = logout_url;
+		$("#logout-form").submit();
 	}
 }
 
