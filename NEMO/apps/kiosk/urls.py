@@ -42,7 +42,7 @@ urlpatterns = [
                 re_path(
                     r"^tool_usage_questions/(?P<tool_id>\d+)/"
                     + tool_usage_question_types
-                    + "/(?P<user_id>\d+)/(?P<project_id>\d+)/(?P<virtual_inputs>(true|false))/$",
+                    + r"/(?P<user_id>\d+)/(?P<project_id>\d+)/(?P<virtual_inputs>(true|false))/$",
                     views.kiosk_tool_usage_questions,
                     name="kiosk_tool_usage_questions",
                 ),
