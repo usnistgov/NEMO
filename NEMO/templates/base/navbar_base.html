@@ -149,7 +149,10 @@
                 </li>
                 {% if logout_allowed %}
                     <li class="visible-xs visible-sm">
-                        <a href="{% url 'logout' %}">Logout</a>
+                        <form id="logout-form-small" method="post" action="{% url 'logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-link navbar-btn navbar-link">Logout</button>
+                        </form>
                     </li>
                 {% endif %}
             </ul>
@@ -189,11 +192,10 @@
                 </li>
                 {% if logout_allowed %}
                     <li>
-                        <a href="{% url 'logout' %}"
-                           style="padding-left: 0;
-                                  padding-right: 0;
-                                  margin-left: 15px;
-                                  margin-right: 15px">Logout</a>
+                        <form id="logout-form" method="post" action="{% url 'logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-link navbar-btn navbar-link">Logout</button>
+                        </form>
                     </li>
                 {% endif %}
             </ul>

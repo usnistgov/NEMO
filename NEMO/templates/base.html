@@ -151,7 +151,7 @@
         {# When an AJAX request receives an HTTP 403 (unauthorized) reply the user is #}
         {# sent to the logoff page, which then redirects them back to the login page. #}
         {% if logout_allowed %}
-            $(document).ajaxComplete(function (event, xhr, status, error){navigate_to_login_on_session_expiration('{% url 'logout' %}', event, xhr, status, error)});
+            $(document).ajaxComplete(function (event, xhr, status, error){navigate_to_login_on_session_expiration(event, xhr, status, error)});
         {% endif %}
 
         {# Remove all size classes from the modal on close, to revert to default medium size #}
