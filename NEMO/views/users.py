@@ -136,6 +136,7 @@ def create_or_modify_user(request, user_id):
                 "last_name": request.GET.get("last_name", ""),
                 "email": request.GET.get("email", ""),
                 "type": request.GET.get("type", ""),
+                "notes": request.GET.get("notes", ""),
             }
 
         dictionary["form"] = UserForm(instance=user, initial=initial_data)
