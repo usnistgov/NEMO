@@ -53,13 +53,19 @@ def maintenance(request, sort_by=""):
     closed_tasks = (
         Task.objects.filter(Q(cancelled=True) | Q(resolved=True))
         .exclude(resolution_time__isnull=True)
-        .order_by("-resolution_time")[:20]
+        .order_by("-resolution_time")
     )
+    if tool_category:
+        closed_tasks = closed_tasks.filter(
+            Q(tool___category=tool_category) | (Q(tool___category__startswith=tool_category + "/"))
+        )
+    closed_tasks = closed_tasks[:20]
     dictionary = {
         "pending_tasks": pending_tasks,
         "closed_tasks": closed_tasks,
         "tool_categories": get_tool_categories_for_filters(),
         "tool_category": tool_category,
+        "tab": request.GET.get("tab", "pending"),
     }
     return render(request, "maintenance/maintenance.html", dictionary)
 

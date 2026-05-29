@@ -11,23 +11,23 @@
     <div class="container-fluid">
         <h1 class="pull-left" style="margin-right:20px; margin-top:0; margin-bottom:0">Maintenance</h1>
         <ul class="nav nav-pills" id="tabs">
-            <li class="active">
+            <li class="{% if not tab or tab == 'pending' %}active{% endif %}">
                 <a href="#pending">Pending</a>
             </li>
-            <li>
+            <li class="{% if tab == 'closed' %}active{% endif %}">
                 <a href="#closed">Closed</a>
             </li>
         </ul>
     </div>
     <div class="tab-content">
-        <div id="pending" class="tab-pane active">
+        <div id="pending" class="tab-pane {% if not tab or tab == 'pending' %}active{% endif %}">
             <div class="split-screen-left-panel">
                 <div class="form-inline" style="margin: 15px;">
-                    <label class="form-group control-label text-left" for="tool_category_search">Tool category:</label>
+                    <label class="form-group control-label text-left" for="tool_category_search_pending">Tool category:</label>
                     <div class="form-group" style="display: inline-block;margin-left: 15px;width: 60%; min-width: 150px;">
-                        <input id="tool_category_search"
+                        <input id="tool_category_search_pending"
                                type="text"
-                               class="form-group form-control"
+                               class="form-group form-control tool-category-search"
                                placeholder="Filter by tool category"
                                value="{{ tool_category|default_if_none:'' }}"
                                style="width: 100%" />
@@ -87,15 +87,27 @@
             </div>
             <div id="pending_task_details" class="split-screen-right-panel"></div>
         </div>
-        <div id="closed" class="tab-pane">
+        <div id="closed" class="tab-pane {% if tab == 'closed' %}active{% endif %}">
             <div class="split-screen-left-panel">
+                <div class="form-inline" style="margin: 15px;">
+                    <label class="form-group control-label text-left" for="tool_category_search_closed">Tool category:</label>
+                    <div class="form-group" style="display: inline-block;margin-left: 15px;width: 60%; min-width: 150px;">
+                        <input id="tool_category_search_closed"
+                               type="text"
+                               class="form-group form-control tool-category-search"
+                               placeholder="Filter by tool category"
+                               value="{{ tool_category|default_if_none:'' }}"
+                               style="width: 100%" />
+                    </div>
+                </div>
                 <table id="closed_tasks" class="table table-hover">
                     <thead>
                         <tr>
                             <th>Urgency</th>
                             <th>Severity</th>
                             <th>Tool</th>
-                            <th>Category</th>
+                            <th>Tool category</th>
+                            <th>Problem category</th>
                             <th>Created</th>
                             <th>Resolved</th>
                             <th>Description</th>
@@ -112,6 +124,7 @@
                                 {% endif %}
                             </td>
                             <td>{{ task.tool.name }}</td>
+                            <td>{{ task.tool.category }}</td>
                             <td>{{ task.problem_category|default_if_none:"" }}</td>
                             <td>{{ task.creation_time }}</td>
                             <td>{{ task.resolution_time }}</td>
@@ -191,6 +204,7 @@
     {
         const this_url = new URL(window.location.href);
         this_url.searchParams.set("tool_category", search_selection.name);
+        this_url.searchParams.set("tab", $("#tabs li.active a").attr("href").substring(1));
         window.location.href = this_url.toString();
     }
 
@@ -203,7 +217,7 @@
 			let row = $("#pending_tasks tr[data-task-id='" + active_row + "']");
 			row.click();
 		}
-        $("#tool_category_search")
+        $(".tool-category-search")
         .autocomplete('tool_categories', filter_tool_category, {% json_search_base_with_extra_fields tool_categories %}, true)
         .on("input", function ()
         {
@@ -216,7 +230,5 @@
 	}
 
 	$(on_load);
-
-	
     </script>
 {% endblock %}
