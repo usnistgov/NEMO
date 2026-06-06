@@ -66,19 +66,14 @@
         </div>
     {% endif %}
     <table class="table table-striped" style="margin-bottom: 0">
-        {% if user.is_staff or user|is_staff_on_tool:reservation.tool %}
+        {% if user.is_staff or user|is_staff_on_tool:reservation.tool or user == reservation.user %}
             <tr>
                 <td style="vertical-align: middle">
                     <label for="title">Title:</label>
                 </td>
                 <td>
                     <div class="input-group">
-                        <input type="text"
-                               id="title"
-                               class="form-control"
-                               placeholder="{{ reservation.user }}"
-                               maxlength="200"
-                               value="{{ reservation.title }}">
+                        <input type="text" id="title" class="form-control" maxlength="200" value="{{ reservation.title }}">
                         <span class="input-group-btn">
                             <button type="button" class="btn btn-success" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() {
                             {% endif %}

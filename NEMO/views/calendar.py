@@ -840,12 +840,11 @@ def cancel_outage(request, outage_id):
         return render(request, "mobile/cancellation_result.html", dictionary)
 
 
-@staff_member_or_tool_staff_required
 @require_POST
 def set_reservation_title(request, reservation_id):
     """Change reservation title for a user."""
     reservation = get_object_or_404(Reservation, id=reservation_id)
-    if not request.user.is_staff_on_tool(reservation.tool):
+    if not (request.user.is_staff_on_tool(reservation.tool) or request.user == reservation.user):
         return HttpResponseBadRequest("You are not allowed to edit this reservation.")
     reservation.title = request.POST.get("title", "")[: reservation._meta.get_field("title").max_length]
     reservation.save_and_notify()
