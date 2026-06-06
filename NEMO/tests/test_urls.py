@@ -136,6 +136,13 @@ url_kwargs_get_post = {
             "new_end": end_one_day.replace(minute=30).strftime(settings.DATETIME_INPUT_FORMATS[0]),
         },
     },
+    "set_reservation_title": {
+        "login_id": 1,
+        "post": {
+            "id": 2,
+            "note": "test title",
+        },
+    },
     "change_reservation_note": {
         "login_id": 1,
         "post": {

@@ -83,11 +83,6 @@
             </div>
         </td>
     </tr>
-{% elif reservation.title %}
-    <tr>
-        <td>Title:</td>
-        <td>{{ reservation.title }}</td>
-    </tr>
 {% endif %}
 <tr>
     <td>User:</td>
@@ -318,8 +313,7 @@
             {% if reservation.user == user %}
                 <button type="button" class="btn btn-danger" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() {
                 {% endif %}
-                cancel_reservation('{% url 'cancel_reservation' reservation.id %}', 'Reservation {{ reservation.id }}') {% if popup_view %}})
-            {% endif %}
+                cancel_reservation('{% url 'cancel_reservation' reservation.id %}', 'Reservation {{ reservation.id }}') {% if popup_view %}}){% endif %}
             " title="Cancel this reservation">
             <i aria-hidden="true" class="glyphicon glyphicon-trash"></i> Cancel this reservation
         </button>
