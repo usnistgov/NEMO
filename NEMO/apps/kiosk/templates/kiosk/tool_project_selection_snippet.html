@@ -38,7 +38,8 @@
         <div class="list-group" style="display:table">
             {% for project in active_projects %}
                 <a href="javascript:void(0)"
-                   class="list-group-item project-choice"
+                   class="list-group-item project-choice {% if reservation_project == project %}alert alert-success{% endif %}"
+                   {% if reservation_project == project %}title="This is the project from your current reservation"{% endif %}
                    style="font-size:large"
                    onclick="select_project(this, '{{ project.id }}', '{{ customer.id }}', '{{ tool.id }}')">{% project_selection_display project %}</a>
             {% endfor %}
