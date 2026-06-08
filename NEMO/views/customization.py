@@ -771,6 +771,7 @@ class ToolControlCustomization(CustomizationBase):
         "tool_control_show_tool_credentials": "enabled",
         "tool_control_show_next_reservation_user": "",
         "tool_control_prefill_post_usage_with_pre_usage_answers": "",
+        "tool_control_prefill_pre_usage_with_reservation_answers": "",
         "tool_control_use_self_label": "Use this tool for my own project",
         "tool_control_use_for_other_enabled": "",
         "tool_control_use_for_other_label": "Use this tool on behalf of another user",

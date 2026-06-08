@@ -260,6 +260,21 @@
             </div>
         </div>
         <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Prefill pre usage questions</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               id="tool_control_prefill_pre_usage_with_reservation_answers"
+                               name="tool_control_prefill_pre_usage_with_reservation_answers"
+                               {% if tool_control_prefill_pre_usage_with_reservation_answers %}checked{% endif %}
+                               value="enabled">
+                        Prefill pre usage questions with reservation answers (matched by question name)
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-sm-4 col-md-3">Prefill post usage questions</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
