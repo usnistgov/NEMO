@@ -51,7 +51,7 @@ def get_projects_for_tool_control(request):
         "tool_control/get_projects.html",
         {
             "active_projects": user.active_projects(),
-            "reservation_project": current_reservation.project,
+            "reservation_project": current_reservation.project if current_reservation else None,
             "customer_id": customer_id,
             "tool_id": tool.id,
         },
@@ -69,7 +69,7 @@ def get_projects_for_self(request):
         "tool_control/get_projects.html",
         {
             "active_projects": request.user.active_projects(),
-            "reservation_project": current_reservation.project,
+            "reservation_project": current_reservation.project if current_reservation else None,
             "customer_id": request.user.id,
             "tool_id": tool.id,
         },
