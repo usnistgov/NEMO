@@ -1102,6 +1102,7 @@ function table_search(table_id, always_show_rows)
 				   // Only look at tds within the row that don't have "display:none", so we don't only look at visible cells
 				   if ($row.find("td").filter(function() { return $(this).css('display') !== 'none'; }).filter(":icontains('" + v + "')").length !== 0)
 				   {
+					   $row.closest('tbody').show();
 					   $row.show();
 				   }
 				});
