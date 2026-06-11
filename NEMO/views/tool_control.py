@@ -650,6 +650,13 @@ def past_comments_and_tasks(request):
         comments = Comment.objects.filter(tool_id=tool_id)
         if not user.is_staff_on_tool(tool):
             comments = comments.filter(staff_only=False)
+        else:
+            # staff can decide which comments to show
+            comments_to_show = request.GET.get("comments_to_show", "all")
+            if comments_to_show == "staff_only":
+                comments = comments.filter(staff_only=True)
+            elif comments_to_show == "non_staff_only":
+                comments = comments.filter(staff_only=False)
         if start:
             tasks = tasks.filter(creation_time__gt=start)
             comments = comments.filter(creation_date__gt=start)
