@@ -65,7 +65,7 @@ def json_search_base(items_to_search, display="__str__"):
     for item in items_to_search:
         attr = getattr(item, display, None)
         display_value = attr() if callable(attr) else attr
-        result += '{{"name":"{0}", "id":{1}}},'.format(escape(display_value), item.id)
+        result += '{{"name":"{0}", "id":"{1}"}},'.format(escape(display_value), item.id)
     result = result.rstrip(",") + "]"
     return mark_safe(result)
 

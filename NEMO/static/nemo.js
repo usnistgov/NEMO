@@ -720,7 +720,7 @@ function add_to_list(list_selector, on_click, id, text, removal_title, input_nam
 		readonly = false;
 	}
 	let div_id = input_name + "_" + id;
-	let div_id_selector = "#" + div_id;
+	let div_id_selector = "[id='" + div_id + "']"; // safer than using '#' + div_id
 	let addition = '<div id="' + div_id + '">';
 	if (!readonly)
 	{
