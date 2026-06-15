@@ -153,7 +153,7 @@ function update_tool_list_display(item_function, my_tool_list)
 	$("a[data-item-type='tool']").each((index, item) =>
 	{
 		let $item = $(item);
-		if (!my_tool_list.includes(parseInt($item.attr("data-item-id"))))
+		if (!my_tool_list.includes($item.attr("data-item-id")))
 		{
 			$item.closest("li")[item_function]();
 		}
