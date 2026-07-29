@@ -32,7 +32,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
 from django.db import OperationalError, ProgrammingError
 from django.db.models import FileField, IntegerChoices, Model, QuerySet
-from django.http import HttpRequest, HttpResponse, QueryDict
+from django.http import Http404, HttpRequest, HttpResponse, QueryDict
 from django.shortcuts import resolve_url
 from django.template import Template
 from django.template.context import make_context
@@ -1323,3 +1323,10 @@ def set_default_session_variable(
     if session_variable_name in request.session:
         variable_value = request.session[session_variable_name]
     return variable_value
+
+
+def get_object_or_404_from_queryset(queryset: QuerySetType[Any]) -> Optional[Any]:
+    instance = queryset.first()
+    if instance is None:
+        raise Http404("No %s matches the given query." % queryset.model._meta.object_name)
+    return instance

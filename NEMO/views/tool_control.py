@@ -46,6 +46,7 @@ from NEMO.utilities import (
     extract_optional_beginning_and_end_times,
     format_datetime,
     get_email_from_settings,
+    get_object_or_404_from_queryset,
     quiet_int,
     render_email_template,
     response_js_redirect,
@@ -91,7 +92,9 @@ def tool_status(request, tool_id):
     from NEMO.rates import rate_class
 
     user: User = request.user
-    tool = get_object_or_404(Tool, id=tool_id, visible=True)
+    tool = get_object_or_404_from_queryset(
+        Tool.objects.filter(id=tool_id, visible=True).prefetch_related("qualification_set__user")
+    )
     current_usage_event = tool.get_current_usage_event()
     user_is_qualified = tool.user_set.filter(id=user.id).exists()
     broadcast_upcoming_reservation = ToolControlCustomization.get("tool_control_broadcast_upcoming_reservation")
