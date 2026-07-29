@@ -151,21 +151,10 @@ def tool_status(request, tool_id):
         ),
     }
 
-    reservation_user = user
-    if current_usage_event and current_usage_event.operator_id == user.id:
-        reservation_user = current_usage_event.user
-
-    current_reservation = Reservation.objects.filter(
-        start__lt=timezone.now(),
-        end__gt=timezone.now(),
-        cancelled=False,
-        missed=False,
-        shortened=False,
-        user=reservation_user,
-        tool=tool,
-    ).last()
+    current_reservation = get_current_reservation(user, tool)
     if current_reservation:
         dictionary["time_left"] = current_reservation.end
+        dictionary["reservation_project"] = current_reservation.project
         if ToolControlCustomization.get_bool("tool_control_note_copy_reservation"):
             dictionary["reservation_note"] = current_reservation.note
 
@@ -664,6 +653,13 @@ def past_comments_and_tasks(request):
         comments = Comment.objects.filter(tool_id=tool_id)
         if not user.is_staff_on_tool(tool):
             comments = comments.filter(staff_only=False)
+        else:
+            # staff can decide which comments to show
+            comments_to_show = request.GET.get("comments_to_show", "all")
+            if comments_to_show == "staff_only":
+                comments = comments.filter(staff_only=True)
+            elif comments_to_show == "non_staff_only":
+                comments = comments.filter(staff_only=False)
         if start:
             tasks = tasks.filter(creation_time__gt=start)
             comments = comments.filter(creation_date__gt=start)
@@ -792,6 +788,23 @@ def tool_usage_questions(
     return HttpResponse(
         tool.get_usage_questions(question_type, customer, project).render(virtual_inputs=virtual_inputs)
     )
+
+
+def get_current_reservation(user: User, tool: Tool):
+    current_usage_event = tool.get_current_usage_event()
+    reservation_user = user
+    if current_usage_event and current_usage_event.operator_id == user.id:
+        reservation_user = current_usage_event.user
+
+    return Reservation.objects.filter(
+        start__lt=timezone.now(),
+        end__gt=timezone.now(),
+        cancelled=False,
+        missed=False,
+        shortened=False,
+        user=reservation_user,
+        tool=tool,
+    ).last()
 
 
 def interlock_bypass_allowed(user: User, item):

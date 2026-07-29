@@ -990,6 +990,16 @@
                                                class="form-control">
                                     </div>
                                 </div>
+                                {% if user|is_staff_on_tool:tool %}
+                                    <div class="form-group">
+                                        <label for="comments_to_show">Comments to show:</label>
+                                        <select id="comments_to_show" name="comments_to_show" class="form-control">
+                                            <option value="all">All</option>
+                                            <option value="non_staff_only">Non-staff only</option>
+                                            <option value="staff_only">Staff only</option>
+                                        </select>
+                                    </div>
+                                {% endif %}
                                 <div class="form-group" style="margin-bottom:0">
                                     <div class="col-sm-6" style="padding-left: 0">
                                         {% button type="save" submit=False value="Go" icon="glyphicon-search" onclick="load_tasks_and_comments();" %}

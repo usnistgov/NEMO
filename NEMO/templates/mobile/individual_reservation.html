@@ -9,8 +9,10 @@
           data-target="#extended_reservation_information_{{ reservation.id }}"><strong>
         {% if personal_schedule %}
             {{ reservation.title|default:reservation.reservation_item }}
-        {% else %}
+        {% elif reservation.user_id == user.id or user|is_staff_on_tool:reservation.tool %}
             {{ reservation.title|default:reservation.user }}
+        {% else %}
+            {{ reservation.user }}
         {% endif %}
     </strong></span>
     <br>
@@ -63,7 +65,7 @@
         {% endif %}
         {# Allow the user to cancel the reservation if they have that privilege. #}
         {% if not reservation.missed and not reservation.cancelled %}
-            {% if reservation.user.id == user.id and reservation.has_not_ended or user|is_staff_on_tool:reservation.tool %}
+            {% if reservation.user_id == user.id and reservation.has_not_ended or user|is_staff_on_tool:reservation.tool %}
                 <div style="height:10px">{# Vertical spacer #}</div>
                 <form method="post" action="{% url 'cancel_reservation' reservation.id %}">
                     {% csrf_token %}

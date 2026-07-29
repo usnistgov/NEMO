@@ -552,6 +552,7 @@ def tool_information(request, tool_id, user_id, back):
         tool=tool,
     ).last()
     if current_reservation:
+        dictionary["reservation_project"] = current_reservation.project
         remaining_reservation_duration = int((current_reservation.end - timezone.now()).total_seconds() / 60)
         # We don't need to bother telling the user their reservation will be shortened if there's less than two minutes left.
         # Staff are exempt from reservation shortening.

@@ -764,6 +764,7 @@ def resize_image(image: InMemoryUploadedFile, max_size: int, quality=85) -> InMe
         width, height = img.size
         # no need to resize if width or height is already less than the max
         if width <= max_size or height <= max_size:
+            image.seek(0)
             return image
         if width > height:
             width_ratio = max_size / float(width)

@@ -2305,14 +2305,19 @@ class Tool(SerializationByNameModel):
         return tool_questions
 
     def get_usage_questions(
-        self, questions_type: ToolUsageQuestionType, user: User = None, project: Project = None
-    ) -> MultiDynamicForms:
+        self, questions_type: ToolUsageQuestionType, user: User | None = None, project: Project | None = None
+    ) -> Optional[MultiDynamicForms]:
         from NEMO.widgets.dynamic_form import MultiDynamicForms
         from NEMO.views.customization import ToolControlCustomization
+        from NEMO.views.tool_control import get_current_reservation
 
-        is_post_usage = questions_type == ToolUsageQuestionType.POST
         initial_data = None
-        if is_post_usage:
+        if questions_type == ToolUsageQuestionType.PRE and user:
+            current_reservation = get_current_reservation(user, self)
+            if current_reservation:
+                if ToolControlCustomization.get_bool("tool_control_prefill_pre_usage_with_reservation_answers"):
+                    initial_data = current_reservation.question_data_json()
+        if questions_type == ToolUsageQuestionType.POST:
             current_usage = self.get_current_usage_event()
             if current_usage:
                 if ToolControlCustomization.get_bool("tool_control_prefill_post_usage_with_pre_usage_answers"):
