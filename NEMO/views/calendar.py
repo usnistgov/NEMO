@@ -1265,7 +1265,8 @@ def send_tool_free_time_notification(
                 tool_freed_time_notifications__in=[tool],
                 tool_freed_time_notifications_min_time__lte=freed_time,
                 tool_freed_time_notifications_max_future_days__gte=days_in_the_future,
-            )
+                user__is_active=True,
+            ).exclude(user__access_expiration__lte=timezone.now())
             formatted_start = format_datetime(start_time)
             formatted_time = f"{freed_time:0.0f}"
             link = get_full_url(reverse("calendar"), request)

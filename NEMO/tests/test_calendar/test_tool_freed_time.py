@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from time import sleep
 
 from django.test import TransactionTestCase
@@ -61,6 +61,62 @@ class ReservationTestCase(NEMOTestCaseMixin, TransactionTestCase):
         self.assertEqual(
             EmailLog.objects.filter(to=self.consumer.email, subject__startswith=f"[{self.tool.name}]").first().subject,
             email_subject(self.tool, minutes, start_of_freed_time),
+        )
+
+    def test_cancel_reservation_inactive_or_expired_users_not_notified(self):
+        # Users who are inactive or whose access has expired should not receive
+        # the freed time notification even if they have subscribed to it.
+        inactive_user = User.objects.create(
+            username="inactive",
+            first_name="In",
+            last_name="Active",
+            training_required=False,
+            email="inactive@test.com",
+            is_active=False,
+        )
+        inactive_user.qualifications.add(self.tool)
+        inactive_user.projects.add(self.project)
+        expired_user = User.objects.create(
+            username="expired",
+            first_name="Ex",
+            last_name="Pired",
+            training_required=False,
+            email="expired@test.com",
+            access_expiration=date.today() - timedelta(days=1),
+        )
+        expired_user.qualifications.add(self.tool)
+        expired_user.projects.add(self.project)
+        # All three users subscribe to the tool's freed time notifications
+        for user in (self.consumer, inactive_user, expired_user):
+            prefs: UserPreferences = user.get_preferences()
+            prefs.tool_freed_time_notifications.set([self.tool])
+        # default is 7 days in the future, more than 2 hours
+        start = timezone.now() + timedelta(hours=1)
+        end = start + timedelta(hours=3)
+        reservation = Reservation.objects.create(
+            tool=self.tool,
+            start=start,
+            end=end,
+            user=self.staff,
+            creator=self.staff,
+            project=self.project,
+            short_notice=False,
+        )
+        self.login_as(self.staff)
+        self.client.post(reverse("cancel_reservation", args=[reservation.id]), follow=True)
+        # Wait a second since the freed time notification is asynchronous
+        sleep(0.5)
+        self.assertTrue(Reservation.objects.get(id=reservation.id).cancelled, True)
+        # The active consumer should have received the notification (sanity check)
+        self.assertTrue(
+            EmailLog.objects.filter(to=self.consumer.email, subject__startswith=f"[{self.tool.name}]").exists()
+        )
+        # The inactive user and the user with expired access should not have received anything
+        self.assertFalse(
+            EmailLog.objects.filter(to=inactive_user.email, subject__startswith=f"[{self.tool.name}]").exists()
+        )
+        self.assertFalse(
+            EmailLog.objects.filter(to=expired_user.email, subject__startswith=f"[{self.tool.name}]").exists()
         )
 
     def test_cancel_reservation_same_user(self):
