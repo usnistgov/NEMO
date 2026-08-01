@@ -5345,7 +5345,7 @@ class AdjustmentRequest(BaseModel):
                         self.item.start = self.new_start
                     if self.new_end:
                         self.item.end = self.new_end
-                elif self.new_quantity:
+                elif self.new_quantity is not None:
                     self.item.quantity = self.new_quantity
                 # But changing the project can happen in addition to changed times and quantity
                 if self.new_project:
