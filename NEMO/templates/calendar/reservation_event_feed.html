@@ -26,9 +26,9 @@
 			{% if x.user_id == user.id %}"own-reservation": true,{% endif %}
 		{% endif %}
 		{% if x.creator.id == x.user_id %}
-			"tooltip": "{{ x.reservation_item.name }} reservation for {{ x.user }}",
+			"tooltip": "{{ x.reservation_item.name }} reservation for {{ x.user|escapejs }}",
 		{% else %}
-			"tooltip": "{{ x.reservation_item.name }} reservation for {{ x.user }}, created by {{ x.creator }}",
+			"tooltip": "{{ x.reservation_item.name }} reservation for {{ x.user|escapejs }}, created by {{ x.creator|escapejs }}",
 		{% endif %}
 		"id": "Reservation {{ x.id }}",
 		{# The reservation creator or staff may edit the event: #}
