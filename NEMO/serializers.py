@@ -68,6 +68,7 @@ from NEMO.models import (
     UserCalendarToolList,
     UserDocuments,
     UserPreferences,
+    UserType,
 )
 
 
@@ -171,6 +172,12 @@ class CoreFacilitySerializer(ModelSerializer):
         fields = "__all__"
 
 
+class UserTypeSerializer(ModelSerializer):
+    class Meta:
+        model = UserType
+        fields = "__all__"
+
+
 class UserSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     user_documents = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
@@ -185,6 +192,7 @@ class UserSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "groups": ("NEMO.serializers.GroupSerializer", {"many": True}),
             "user_documents": ("NEMO.serializers.UserDocumentSerializer", {"many": True}),
             "user_permissions": ("NEMO.serializers.PermissionSerializer", {"many": True}),
+            "type": ("NEMO.serializers.UserTypeSerializer",),
         }
 
     def to_internal_value(self, data):

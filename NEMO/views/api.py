@@ -63,6 +63,7 @@ from NEMO.models import (
     UnplannedOutage,
     UsageEvent,
     User,
+    UserType,
     UserCalendarToolList,
     UserDocuments,
     UserPreferences,
@@ -120,6 +121,7 @@ from NEMO.serializers import (
     UserDocumentSerializer,
     UserPreferenceSerializer,
     UserSerializer,
+    UserTypeSerializer,
 )
 from NEMO.templatetags.custom_tags_and_filters import app_version
 from NEMO.typing import QuerySetType
@@ -134,7 +136,20 @@ from NEMO.views.customization import ApplicationCustomization
 date_filters = ["exact", "in", "month", "year", "day", "gte", "gt", "lte", "lt", "isnull"]
 time_filters = ["exact", "in", "hour", "minute", "second", "gte", "gt", "lte", "lt", "isnull"]
 datetime_filters = remove_duplicates(date_filters + time_filters + ["week"])
-string_filters = ["exact", "iexact", "in", "contains", "icontains", "isempty"]
+string_filters = [
+    "exact",
+    "iexact",
+    "in",
+    "contains",
+    "icontains",
+    "isempty",
+    "startswith",
+    "istartswith",
+    "endswith",
+    "iendswith",
+    "regex",
+    "iregex",
+]
 number_filters = ["exact", "in", "gte", "gt", "lte", "lt", "isnull"]
 key_filters = ["exact", "in", "isnull"]
 manykey_filters = ["exact", "isnull"]
@@ -239,6 +254,15 @@ class CoreFacilityViewSet(ModelViewSet):
     filterset_fields = {
         "name": string_filters,
         "external_id": string_filters,
+    }
+
+
+class UserTypeViewSet(ModelViewSet):
+    filename = "user_types"
+    queryset = UserType.objects.all()
+    serializer_class = UserTypeSerializer
+    filterset_fields = {
+        "name": string_filters,
     }
 
 
