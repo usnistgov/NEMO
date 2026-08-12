@@ -28,7 +28,7 @@ COPY gunicorn_configuration.py /etc/
 
 EXPOSE 8000/tcp
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    CMD wget -qO- http://localhost:8000/health/ || exit 1
+    CMD wget -qO- http://localhost:8000${GUNICORN_SCRIPT_NAME}/health/ || exit 1
 
 COPY start_NEMO_in_Docker.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/start_NEMO_in_Docker.sh
