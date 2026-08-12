@@ -597,16 +597,17 @@ class PostUsageGroupQuestion(PostUsageQuestion):
             result += self.render_group_question(virtual_inputs, item, dynamic_field_name)
             result += "</div>"
         result += "</div>"
-        result += '<div class="form-group">'
-        add_group_url = (
-            reverse(
-                "render_group_question",
-                args=[ContentType.objects.get_for_model(item).id, item.id, dynamic_field_name, self.group_name],
+        if self.max_number > 1:
+            result += '<div class="form-group">'
+            add_group_url = (
+                reverse(
+                    "render_group_question",
+                    args=[ContentType.objects.get_for_model(item).id, item.id, dynamic_field_name, self.group_name],
+                )
+                + f"?virtual_inputs={virtual_inputs}"
             )
-            + f"?virtual_inputs={virtual_inputs}"
-        )
-        result += f'<button class="{self.group_name}_add_button" type="button" onclick="add_group_question(this, \'{self.group_name}\', {self.max_number}, \'{add_group_url}\')">{self.group_add_button_name}</button>'
-        result += "</div>"
+            result += f'<button class="{self.group_name}_add_button" type="button" onclick="add_group_question(this, \'{self.group_name}\', {self.max_number}, \'{add_group_url}\')">{self.group_add_button_name}</button>'
+            result += "</div>"
         result += "</div>"
         return result
 
