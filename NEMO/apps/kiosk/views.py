@@ -46,6 +46,7 @@ from NEMO.views.customization import (
     ApplicationCustomization,
     CalendarCustomization,
     ToolControlCustomization,
+    ToolCustomization,
     UserCustomization,
 )
 from NEMO.views.get_projects import get_projects
@@ -627,6 +628,10 @@ def report_problem(request):
     customer = User.objects.get(id=request.POST["customer_id"])
     back = request.POST["back"]
 
+    if ToolCustomization.get_bool("tool_problem_hide_for_non_staff") and not customer.is_any_part_of_staff:
+        message = "You do not have permission to report problems for this tool."
+        return render(request, "kiosk/error.html", {"message": message, "customer": customer})
+
     dictionary = {
         "tool": tool,
         "customer": customer,
@@ -700,6 +705,10 @@ def post_comment(request):
     tool = Tool.objects.get(id=request.POST["tool"])
     customer = User.objects.get(id=request.POST["customer_id"])
     back = request.POST["back"]
+
+    if ToolCustomization.get_bool("tool_comments_hide_for_non_staff") and not customer.is_any_part_of_staff:
+        message = "You do not have permission to post comments on this tool."
+        return render(request, "kiosk/error.html", {"message": message, "customer": customer})
 
     dictionary = {"back": back, "tool": tool, "customer": customer}
 

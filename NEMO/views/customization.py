@@ -725,6 +725,8 @@ class ToolCustomization(CustomizationBase):
         "tool_task_updates_facility_managers": "enabled",
         "tool_task_updates_superusers": "",
         "tool_task_updates_allow_regular_user_preferences": "",
+        "tool_comments_hide_for_non_staff": "",
+        "tool_problem_hide_for_non_staff": "",
         "tool_problem_max_image_size_pixels": "750",
         "tool_problem_send_to_all_qualified_users": "",
         "tool_problem_allow_regular_user_preferences": "",

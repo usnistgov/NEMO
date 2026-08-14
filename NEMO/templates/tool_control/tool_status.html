@@ -22,12 +22,16 @@
                             <a href="#usage_data" style="padding: 10px 5px;" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a>
                         </li>
                     {% endif %}
-                    <li style="width:48%; text-align:center">
-                        <a href="#problem" style="padding: 10px 5px">Report a problem</a>
-                    </li>
-                    <li style="width:48%; text-align:center">
-                        <a href="#comment" style="padding: 10px 5px">Post a comment</a>
-                    </li>
+                    {% if not customizations|get_item:"tool_problem_hide_for_non_staff" == "enabled" or user.is_any_part_of_staff %}
+                        <li style="width:48%; text-align:center">
+                            <a href="#problem" style="padding: 10px 5px">Report a problem</a>
+                        </li>
+                    {% endif %}
+                    {% if not customizations|get_item:"tool_comments_hide_for_non_staff" == "enabled" or user.is_any_part_of_staff %}
+                        <li style="width:48%; text-align:center">
+                            <a href="#comment" style="padding: 10px 5px">Post a comment</a>
+                        </li>
+                    {% endif %}
                 {% endif %}
                 {% if documents_separate_tab == "enabled" and tool.tooldocuments_set.all and user_can_see_documents %}
                     <li style="width:48%; text-align:center">
@@ -57,12 +61,16 @@
                             <a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Run Data History</a>
                         </li>
                     {% endif %}
-                    <li>
-                        <a href="#problem">Report a problem</a>
-                    </li>
-                    <li>
-                        <a href="#comment">Post a comment</a>
-                    </li>
+                    {% if not customizations|get_item:"tool_problem_hide_for_non_staff" == "enabled" or user.is_any_part_of_staff %}
+                        <li>
+                            <a href="#problem">Report a problem</a>
+                        </li>
+                    {% endif %}
+                    {% if not customizations|get_item:"tool_comments_hide_for_non_staff" == "enabled" or user.is_any_part_of_staff %}
+                        <li>
+                            <a href="#comment">Post a comment</a>
+                        </li>
+                    {% endif %}
                 {% endif %}
                 {% if documents_separate_tab == "enabled" and tool.tooldocuments_set.all and user_can_see_documents %}
                     <li>

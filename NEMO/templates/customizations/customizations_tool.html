@@ -183,6 +183,28 @@
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Tool problems</h3>
         <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Permissions</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="tool_problem_hide_for_non_staff"
+                               {% if tool_problem_hide_for_non_staff %}checked{% endif %}
+                               value="enabled">
+                        Only allow staff to report tool problems
+                    </label>
+                    <br>
+                    <label>
+                        <input type="checkbox"
+                               name="tool_comments_hide_for_non_staff"
+                               {% if tool_comments_hide_for_non_staff %}checked{% endif %}
+                               value="enabled">
+                        Only allow staff to add comments on a tool
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-sm-4 col-md-3">New problems</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">

@@ -5,7 +5,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.db.models import Q
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
 from django.utils import timezone
@@ -55,6 +55,10 @@ def create(request):
     This could be a problem report or shutdown notification.
     """
     user: User = request.user
+
+    if ToolCustomization.get_bool("tool_problem_hide_for_non_staff") and not user.is_any_part_of_staff:
+        return HttpResponseForbidden("You do not have permission to report problems for this tool.")
+
     images_form = TaskImagesForm(request.POST, request.FILES)
     form = TaskForm(user, data=request.POST)
     if not form.is_valid() or not images_form.is_valid():

@@ -9,7 +9,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, JsonResponse
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
 from django.utils import formats, timezone
@@ -358,6 +358,9 @@ def tool_configuration(request):
 @login_required
 @require_POST
 def create_comment(request):
+    if ToolCustomization.get_bool("tool_comments_hide_for_non_staff") and not request.user.is_any_part_of_staff:
+        return HttpResponseForbidden("You do not have permission to post comments on this tool.")
+
     form = CommentForm(request.POST)
     if not form.is_valid():
         return HttpResponseBadRequest(nice_errors(form).as_ul())
