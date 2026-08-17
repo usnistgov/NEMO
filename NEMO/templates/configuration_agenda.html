@@ -35,6 +35,7 @@
                             <a href="{% url 'calendar' item_type='tool' item_id=tool.id %}"
                                title="View the {{ tool }} calendar"
                                target="_blank">{{ tool.name }}</a>
+                            <span style="vertical-align:middle">{% include 'snippets/item_status_icons.html' with item=tool %}</span>
                         </th>
                     </tr>
                 </thead>
