@@ -12,10 +12,12 @@
             <td>Operator:</td>
             <td>{{ event.operator }}</td>
         </tr>
-        <tr>
-            <td>Project:</td>
-            <td>{{ event.project.name }}</td>
-        </tr>
+        {% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == event.user %}
+            <tr>
+                <td>Project:</td>
+                <td>{{ event.project.name }}</td>
+            </tr>
+        {% endif %}
         <tr>
             <td>Tool:</td>
             <td>{{ event.tool }}</td>

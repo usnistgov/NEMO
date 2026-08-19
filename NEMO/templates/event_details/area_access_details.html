@@ -1,4 +1,5 @@
 {% extends popup_view|yesno:"base/popup.html,base.html" %}
+{% load custom_tags_and_filters %}
 {% block title %}{{ event.area }} access details{% endblock %}
 {% block content %}
     {% if not popup_view %}<h1>{{ event.area }} access details</h1>{% endif %}
@@ -8,8 +9,10 @@
         {% endif %}
         Customer: {{ event.customer }}
         <br>
-        Project: {{ event.project.name }}
-        <br>
+        {% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == event.customer %}
+            Project: {{ event.project.name }}
+            <br>
+        {% endif %}
         Start: {{ event.start }}
         <br>
         {% if event.end %}

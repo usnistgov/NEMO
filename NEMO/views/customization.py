@@ -344,6 +344,7 @@ class ProjectsAccountsCustomization(CustomizationBase):
         "project_allow_transferring_charges": "",
         "project_type_allow_multiple": "",
         "account_enable_manager_edit_mode": "",
+        "project_hide_project_info": "",
     }
 
     def validate(self, name, value):

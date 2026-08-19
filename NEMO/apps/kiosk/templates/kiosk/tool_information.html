@@ -45,7 +45,10 @@
                     {% if current_usage_event.operator.id != current_usage_event.user.id %}
                         on behalf of {{ current_usage_event.user }}
                     {% endif %}
-                    for the project named {{ current_usage_event.project.name }} since {{ current_usage_event.start }} (#{{ current_usage_event.id }}).
+                    {% if customizations|get_item:"project_hide_project_info" != "enabled" or customer.is_any_part_of_staff or current_usage_event.user.id == customer.id %}
+                        for the project named {{ current_usage_event.project.name }}
+                    {% endif %}
+                    since {{ current_usage_event.start }} (#{{ current_usage_event.id }}).
                 </h2>
             {% endwith %}
         </div>

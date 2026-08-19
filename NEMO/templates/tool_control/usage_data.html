@@ -81,12 +81,14 @@
                                    name="data_history_user_id"
                                    value="{{ data_history_user.id }}">
                         </div>
-                        <div class="checkbox">
-                            <label style="padding-left: 20px">
-                                <input type="checkbox" name="show_project_info" {% if show_project_info %}checked{% endif %}>
-                                Show project information
-                            </label>
-                        </div>
+                        {% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff %}
+                            <div class="checkbox">
+                                <label style="padding-left: 20px">
+                                    <input type="checkbox" name="show_project_info" {% if show_project_info %}checked{% endif %}>
+                                    Show project information
+                                </label>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

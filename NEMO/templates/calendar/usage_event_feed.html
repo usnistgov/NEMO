@@ -1,16 +1,17 @@
 {# djlint:off #}
+{% load custom_tags_and_filters %}
 [
 	{% for x in usage_events %}
 	{
 		{% if personal_schedule %}
 			"title": "{{ x.tool.name }} ({{ x.user.username }})\n {{ x.project }}",
 		{% else %}
-			"title": "{{ x.tool.name }} ({% if x.operator.id != x.user.id %}{{ x.operator|escapejs }} on behalf of {% endif %}{{ x.user.username }})\n {{ x.project }}",
+			"title": "{{ x.tool.name }} ({% if x.operator.id != x.user.id %}{{ x.operator|escapejs }} on behalf of {% endif %}{{ x.user.username }})\n {% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.user %}{{ x.project }}{% endif %}",
 		{% endif %}
 		{% if x.operator.id == x.user.id %}
-			"tooltip": "{{ x.tool.name }} usage for {{ x.user|escapejs }} billed to project {{ x.project }}",
+			"tooltip": "{{ x.tool.name }} usage for {{ x.user|escapejs }}{% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.user %} billed to project {{ x.project }}{% endif %}",
 		{% else %}
-			"tooltip": "{{ x.tool.name }} usage for {{ x.user|escapejs }}, operated by {{ x.operator|escapejs }} and billed to project {{ x.project }}",
+			"tooltip": "{{ x.tool.name }} usage for {{ x.user|escapejs }}, operated by {{ x.operator|escapejs }}{% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.user %} and billed to project {{ x.project }}{% endif %}",
 		{% endif %}
 		"id": {{ x.id }},
 		"start": "{{ x.start|date:"c" }}",
@@ -23,8 +24,8 @@
 	{% endfor %}
 	{% for x in area_access_events %}
 	{
-		"title": "{{ x.area }} access billed to project {{ x.project }} {% if x.staff_charge %}by {{ x.staff_charge.staff_member }}{% endif %}",
-		"tooltip": "{{ x.area }} access for {{ x.customer }} billed to project {{ x.project }} {% if x.staff_charge %}by {{ x.staff_charge.staff_member }}{% endif %}",
+		"title": "{{ x.area }} access {% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.user %}billed to project {{ x.project }}{% endif %} {% if x.staff_charge %}by {{ x.staff_charge.staff_member }}{% endif %}",
+		"tooltip": "{{ x.area }} access for {{ x.customer }}{% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.customer %} billed to project {{ x.project }}{% endif %} {% if x.staff_charge %}by {{ x.staff_charge.staff_member }}{% endif %}",
 		"id": {{ x.id }},
 		"start": "{{ x.start|date:"c" }}",
 		{# Area access events that are less than the configured minimum display length are artificially lengthened for display purposes. #}
@@ -38,12 +39,12 @@
 		{% if personal_schedule %}
 			"title": "Missed reservation for the {{ x.reservation_item }} \n {{ x.project }}",
 		{% else %}
-			"title": "Missed reservation by {{ x.user|escapejs }} \n {{ x.project }}",
+			"title": "Missed reservation by {{ x.user|escapejs }} \n{% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.user %} {{ x.project }}{% endif %}",
 		{% endif %}
 		{% if x.creator.id == x.user.id %}
-			"tooltip": "Missed {{ x.reservation_item.name }} reservation for {{ x.user|escapejs }} billed to project {{ x.project }}",
+			"tooltip": "Missed {{ x.reservation_item.name }} reservation for {{ x.user|escapejs }}{% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.user %} billed to project {{ x.project }}{% endif %}",
 		{% else %}
-			"tooltip": "Missed {{ x.reservation_item.name }} reservation for {{ x.user|escapejs }} billed to project {{ x.project }}, created by {{ x.creator|escapejs }}",
+			"tooltip": "Missed {{ x.reservation_item.name }} reservation for {{ x.user|escapejs }}{% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.user %} billed to project {{ x.project }}{% endif %}, created by {{ x.creator|escapejs }}",
 		{% endif %}
 		"id": {{ x.id }},
 		"color": "#ff0000",
