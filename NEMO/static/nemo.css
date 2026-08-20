@@ -524,7 +524,7 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 	padding-top: 10px;
 	padding-bottom: 10px;
 }
-.force-navbar-collapse .collapse.in
+.force-navbar-collapse .navbar-collapse.collapse.in
 {
 	display:block !important;
 	border-color: #e7e7e7;
