@@ -39,6 +39,7 @@ from NEMO.utilities import (
 from NEMO.views.customization import (
     ApplicationCustomization,
     EmailsCustomization,
+    RemoteWorkCustomization,
     ToolCustomization,
     get_media_file_contents,
 )
@@ -83,8 +84,12 @@ def create(request):
 
     task = form.save()
     task_images = save_task_images(request, task)
-    # Only staff can choose not to lock the tool
-    lock_interlock = not (user.is_staff_on_tool(task.tool) and not form.cleaned_data["lock"])
+    # Only staff can choose not to lock the tool, and that's only possible if the option is enabled
+    lock_interlock = (
+        not RemoteWorkCustomization.get_bool("tool_interlock_ask_when_shutting_down_problem")
+        or not user.is_staff_on_tool(task.tool)
+        or form.cleaned_data["lock"]
+    )
 
     save_task(request, task, user, task_images, lock=lock_interlock)
 
@@ -110,7 +115,7 @@ def save_task(request, task: Task, user: User, task_images: List[TaskImages] = N
         # Lock the interlock for this tool.
         try:
             if lock:
-                tool_interlock = Interlock.objects.get(tool__id=task.tool.id)
+                tool_interlock = Interlock.objects.get(tool__id=task.tool.tool_or_parent_id())
                 tool_interlock.lock()
         except Interlock.DoesNotExist:
             pass

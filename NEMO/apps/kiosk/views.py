@@ -45,6 +45,7 @@ from NEMO.views.consumables import (
 from NEMO.views.customization import (
     ApplicationCustomization,
     CalendarCustomization,
+    RemoteWorkCustomization,
     ToolControlCustomization,
     ToolCustomization,
     UserCustomization,
@@ -673,8 +674,12 @@ def report_problem(request):
 
     task = form.save()
     task.estimated_resolution_time = estimated_resolution_time
-    # Only staff can choose not to lock the tool
-    lock_interlock = not (customer.is_staff_on_tool(tool) and not form.cleaned_data["lock"])
+    # Only staff can choose not to lock the tool, and that's only possible if the option is enabled
+    lock_interlock = (
+        not RemoteWorkCustomization.get_bool("tool_interlock_ask_when_shutting_down_problem")
+        or not customer.is_staff_on_tool(task.tool)
+        or form.cleaned_data["lock"]
+    )
 
     save_task(request, task, customer, lock=lock_interlock)
 
