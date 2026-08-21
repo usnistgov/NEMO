@@ -45,7 +45,7 @@
                         <li>
                             Active:
                             <ul>
-                                {% for project in user.active_projects %}<li>{{ project.display_with_pis|safe }}</li>{% endfor %}
+                                {% for project in user.active_projects %}<li>{{ project.display_with_status_and_managers|safe }}</li>{% endfor %}
                             </ul>
                         </li>
                     {% endif %}
@@ -53,7 +53,7 @@
                         <li>
                             Inactive:
                             <ul>
-                                {% for project in user.inactive_projects %}<li>{{ project.display_with_pis|safe }}</li>{% endfor %}
+                                {% for project in user.inactive_projects %}<li>{{ project.display_with_status_and_managers|safe }}</li>{% endfor %}
                             </ul>
                         </li>
                     {% endif %}
