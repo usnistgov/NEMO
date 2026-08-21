@@ -59,6 +59,7 @@ from NEMO.models import (
     TemporaryPhysicalAccessRequest,
     Tool,
     ToolCredentials,
+    ToolQualificationGroup,
     ToolUsageCounter,
     ToolUsageQuestions,
     TrainingSession,
@@ -290,6 +291,15 @@ class QualificationSerializer(FlexFieldsSerializerMixin, ModelSerializer):
         expandable_fields = {
             "user": "NEMO.serializers.UserSerializer",
             "tool": "NEMO.serializers.ToolSerializer",
+        }
+
+
+class ToolQualificationGroupSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = ToolQualificationGroup
+        fields = "__all__"
+        expandable_fields = {
+            "tools": ("NEMO.serializers.ToolSerializer", {"many": True}),
         }
 
 

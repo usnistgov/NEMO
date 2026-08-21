@@ -57,6 +57,7 @@ from NEMO.models import (
     TemporaryPhysicalAccessRequest,
     Tool,
     ToolCredentials,
+    ToolQualificationGroup,
     ToolUsageCounter,
     ToolUsageQuestions,
     TrainingSession,
@@ -110,6 +111,7 @@ from NEMO.serializers import (
     TemporaryPhysicalAccessRequestSerializer,
     ToolCommentSerializer,
     ToolCredentialsSerializer,
+    ToolQualificationGroupSerializer,
     ToolSerializer,
     ToolStatusSerializer,
     ToolUsageCounterSerializer,
@@ -449,6 +451,13 @@ class ToolViewSet(ModelViewSet):
         "_problem_shutdown_enabled": boolean_filters,
         "_core_facility": key_filters,
     }
+
+
+class ToolQualificationGroupViewSet(ModelViewSet):
+    filename = "tool_qualification_groups"
+    queryset = ToolQualificationGroup.objects.all()
+    serializer_class = ToolQualificationGroupSerializer
+    filterset_fields = {"id": key_filters, "name": string_filters, "tools": manykey_filters}
 
 
 class QualificationViewSet(ModelViewSet):
