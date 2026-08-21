@@ -3182,7 +3182,7 @@ class Project(SerializationByNameModel):
     class Meta:
         ordering = ["name"]
 
-    def display_with_pis(self):
+    def display_with_managers(self):
         from NEMO.templatetags.custom_tags_and_filters import project_selection_display
 
         managers = ", ".join([manager.get_name() for manager in self.manager_set.all()])
@@ -3191,6 +3191,9 @@ class Project(SerializationByNameModel):
 
     def display_with_status(self):
         return f"{'[INACTIVE] ' if not self.active else ''}{self.name}"
+
+    def display_with_status_and_managers(self):
+        return f"{'[INACTIVE] ' if not self.active else ''}{self.display_with_managers()}"
 
     def validate_unique(self, exclude=None):
         super().validate_unique(exclude)
