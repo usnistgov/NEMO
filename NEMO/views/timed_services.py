@@ -61,6 +61,7 @@ from NEMO.views.customization import (
     UserRequestsCustomization,
     get_media_file_contents,
 )
+from NEMO.views.qualifications import disqualify
 
 timed_service_logger = getLogger(__name__)
 
@@ -863,7 +864,7 @@ def do_manage_tool_qualifications(request=None):
                 # Check for staff on tools
                 if expiration_date and not user.is_staff_on_tool(tool):
                     if expiration_date <= date.today():
-                        qualification.delete()
+                        disqualify(request.user if request else None, qualification.tool, qualification.user)
                         send_tool_qualification_expiring_email(
                             qualification,
                             last_tool_use,

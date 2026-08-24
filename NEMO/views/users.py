@@ -273,7 +273,8 @@ def create_or_modify_user(request, user_id):
         if "user_correlation_id" in request.session:
             del request.session["user_correlation_id"]
         record_active_state(request, user, form, "is_active", user_id == "new")
-        record_local_many_to_many_changes(request, user, form, "qualifications")
+
+        record_qualifications(request.user, user, request.POST.getlist("qualifications", []))
         record_local_many_to_many_changes(request, user, form, "physical_access_levels")
         record_local_many_to_many_changes(request, user, form, "projects")
         form.save_m2m()
@@ -292,6 +293,19 @@ def create_or_modify_user(request, user_id):
         return redirect(request.GET.get("next") or "users")
     else:
         return HttpResponseBadRequest("Invalid method")
+
+
+def record_qualifications(request_user, user, qualifications: list[str]):
+    from NEMO.views.qualifications import qualify, disqualify
+
+    tools = set()
+    if qualifications:
+        for tool_id in qualifications:
+            tool = Tool.objects.get(pk=tool_id)
+            qualify(request_user, tool, user)
+            tools.add(tool)
+    for tool in set(user.qualifications.all()).difference(tools):
+        disqualify(request_user, tool, user)
 
 
 @user_office_or_manager_required

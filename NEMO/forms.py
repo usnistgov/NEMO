@@ -80,6 +80,7 @@ class UserForm(ModelForm):
             "managed_accounts",
             "managed_users",
             "preferences",
+            "qualifications",
         ]
 
 

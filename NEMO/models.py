@@ -1009,6 +1009,10 @@ class User(BaseModel, PermissionsMixin):
         last_name_initial = self.last_name[0] if self.last_name else ""
         return first_name_initial + last_name_initial
 
+    def remove_qualifications(self, tools: list[Tool]):
+        for qualification in Qualification.objects.filter(user=self, tool__in=tools):
+            qualification.delete()
+
     def accessible_access_levels(self):
         if not self.is_staff and not self.is_user_office:
             return self.physical_access_levels.all()
@@ -4368,6 +4372,8 @@ class MembershipHistory(BaseModel):
     date = models.DateTimeField(default=timezone.now, help_text="The time at which the membership status was changed.")
     authorizer = models.ForeignKey(
         User,
+        null=True,
+        blank=True,
         help_text="The staff member who changed the membership status of the account, project, or user in question.",
         on_delete=models.CASCADE,
     )

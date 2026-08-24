@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import staff_member_or_tool_staff_required
-from NEMO.models import MembershipHistory, Tool, ToolQualificationGroup, User
+from NEMO.models import MembershipHistory, Qualification, Tool, ToolQualificationGroup, User
 from NEMO.views.users import get_identity_service
 
 
@@ -65,8 +65,18 @@ def modify_qualifications(request):
     if tools == {}:
         return HttpResponseBadRequest("You must specify at least one tool.")
 
-    for user in users.values():
-        original_qualifications = set(user.qualifications.all())
+    record_qualification(request.user, action, tools.values(), users.values())
+
+    if request.POST.get("redirect") == "true":
+        messages.success(request, "Tool qualifications were successfully modified")
+        return redirect("qualifications")
+    else:
+        return HttpResponse()
+
+
+def record_qualification(request_user: User, action: str, tools: list[Tool], users: list[User]):
+    for user in users:
+        original_qualifications = set(Qualification.objects.filter(user=user))
         if action == "qualify":
             user.qualifications.add(*tools)
             original_physical_access_levels = set(user.physical_access_levels.all())
@@ -74,7 +84,7 @@ def modify_qualifications(request):
                 set(
                     [
                         t.grant_physical_access_level_upon_qualification
-                        for t in tools.values()
+                        for t in tools
                         if t.grant_physical_access_level_upon_qualification
                     ]
                 )
@@ -84,14 +94,14 @@ def modify_qualifications(request):
             added_physical_access_levels = set(current_physical_access_levels) - set(original_physical_access_levels)
             for access_level in added_physical_access_levels:
                 entry = MembershipHistory()
-                entry.authorizer = request.user
+                entry.authorizer = request_user
                 entry.parent_content_object = access_level
                 entry.child_content_object = user
                 entry.action = entry.Action.ADDED
                 entry.save()
             if get_identity_service().get("available", False):
                 for t in tools:
-                    tool = Tool.objects.get(id=t)
+                    tool = Tool.objects.get(id=t.id)
                     if tool.grant_badge_reader_access_upon_qualification:
                         parameters = {
                             "username": user.username,
@@ -103,31 +113,33 @@ def modify_qualifications(request):
                             urljoin(settings.IDENTITY_SERVICE["url"], "/add/"), data=parameters, timeout=timeout
                         )
         elif action == "disqualify":
-            user.qualifications.remove(*tools)
-        current_qualifications = set(user.qualifications.all())
+            user.remove_qualifications(tools)
+        current_qualifications = set(Qualification.objects.filter(user=user))
         # Record the qualification changes for each tool:
-        added_qualifications = set(current_qualifications) - set(original_qualifications)
-        for tool in added_qualifications:
+        added_qualifications = current_qualifications - original_qualifications
+        for qualification in added_qualifications:
             entry = MembershipHistory()
-            entry.authorizer = request.user
-            entry.parent_content_object = tool
+            entry.authorizer = request_user
+            entry.parent_content_object = qualification.tool
             entry.child_content_object = user
             entry.action = entry.Action.ADDED
             entry.save()
-        removed_qualifications = set(original_qualifications) - set(current_qualifications)
-        for tool in removed_qualifications:
+        removed_qualifications = original_qualifications - current_qualifications
+        for qualification in removed_qualifications:
             entry = MembershipHistory()
-            entry.authorizer = request.user
-            entry.parent_content_object = tool
+            entry.authorizer = request_user
+            entry.parent_content_object = qualification.tool
             entry.child_content_object = user
             entry.action = entry.Action.REMOVED
             entry.save()
 
-    if request.POST.get("redirect") == "true":
-        messages.success(request, "Tool qualifications were successfully modified")
-        return redirect("qualifications")
-    else:
-        return HttpResponse()
+
+def qualify(request_user: User, tool: Tool, user: User):
+    record_qualification(request_user, "qualify", [tool], [user])
+
+
+def disqualify(request_user: User, tool: Tool, user: User):
+    record_qualification(request_user, "disqualify", [tool], [user])
 
 
 @staff_member_or_tool_staff_required
