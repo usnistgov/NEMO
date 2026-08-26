@@ -217,7 +217,7 @@ class BillableItemMixin:
 
     def can_be_waived(self):
         from NEMO.views.customization import AdjustmentRequestsCustomization
-        from NEMO.models import AreaAccessRecord, ConsumableWithdraw, Reservation, UsageEvent
+        from NEMO.models import AreaAccessRecord, ConsumableWithdraw, Reservation, UsageEvent, StaffCharge
 
         return (
             isinstance(self, AreaAccessRecord)
@@ -228,6 +228,8 @@ class BillableItemMixin:
             and AdjustmentRequestsCustomization.get_bool("adjustment_requests_waive_consumable_withdrawal_enabled")
             or isinstance(self, Reservation)
             and AdjustmentRequestsCustomization.get_bool("adjustment_requests_waive_missed_reservation_enabled")
+            or isinstance(self, StaffCharge)
+            and AdjustmentRequestsCustomization.get_bool("adjustment_requests_waive_staff_charge_enabled")
         )
 
     def can_times_be_changed(item):

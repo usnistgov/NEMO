@@ -592,6 +592,7 @@ class AdjustmentRequestsCustomization(CustomizationBase):
         "adjustment_requests_waive_area_access_enabled": "",
         "adjustment_requests_waive_consumable_withdrawal_enabled": "",
         "adjustment_requests_waive_missed_reservation_enabled": "",
+        "adjustment_requests_waive_staff_charge_enabled": "",
         "adjustment_requests_title": "Adjustment requests",
         "adjustment_requests_description": "",
         "adjustment_requests_charges_display_number": "10",

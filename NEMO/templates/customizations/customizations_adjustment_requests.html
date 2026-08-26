@@ -210,6 +210,16 @@
                             Missed reservation
                         </label>
                     </div>
+                    <div class="row col-xs-12">
+                        <input type="hidden" name="adjustment_requests_waive_staff_charge_enabled" value="off" />
+                        <label>
+                            <input type="checkbox"
+                                   name="adjustment_requests_waive_staff_charge_enabled"
+                                   {% if adjustment_requests_waive_staff_charge_enabled == "enabled" %}checked{% endif %}
+                                   value="enabled">
+                            Staff charge
+                        </label>
+                    </div>
                 </div>
             </div>
         </div>
