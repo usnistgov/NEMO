@@ -1,6 +1,12 @@
 {% load humanize %}
+{% load custom_tags_and_filters %}
 <h2>{{ task.tool.name }} task</h2>
 Created by {{ task.creator }} on {{ task.creation_time }} ({{ task.creation_time|naturaltime }}).
+{% if user|is_staff_on_tool:task.tool %}
+    <p>
+        You can <a href="{% url 'task_update_form' task.id %}?next_page=maintenance">reopen</a> this task if it was mistakenly resolved.
+    </p>
+{% endif %}
 <br>
 Urgency: {{ task.get_urgency_display|lower }}
 <br>
@@ -16,38 +22,30 @@ Urgency: {{ task.get_urgency_display|lower }}
     Problem category: {{ task.problem_category|lower }}
     <br>
 {% endif %}
-<p>
-    <h4>Problem description</h4>
-    {{ task.problem_description|linebreaksbr }}
-    <p>
-        {% if task.task_images %}
-            <div>
-                images:
-                <ul>
-                    {% for image in task.task_images %}
-                        <li>
-                            <a href="{{ image.image.url }}" target="_blank" style="margin-right: 5px">{{ image.filename }}</a>
-                        </li>
-                    {% endfor %}
-                </ul>
-            </div>
-        {% endif %}
-        {% if task.progress_description %}
-            <p>
-                <h4>Progress</h4>
-                {{ task.progress_description|linebreaksbr }}
-                <p>
-                {% endif %}
-                {% if task.cancelled %}
-                    <p>
-                        <h4 class="primary-highlight">Cancelled on {{ task.resolution_time }}</h4>
-                        <p>
-                        {% endif %}
-                        {% if task.resolved %}
-                            <h4 class="success-highlight">Resolved by {{ task.resolver }} on {{ task.resolution_time }}</h4>
-                            {% if task.resolution_category %}
-                                Resolution category: {{ task.resolution_category|lower }}
-                                <br>
-                            {% endif %}
-                            {% if task.resolution_description %}{{ task.resolution_description|linebreaksbr }}{% endif %}
-                        {% endif %}
+<h4>Problem description</h4>
+<p>{{ task.problem_description|linebreaksbr }}</p>
+{% if task.task_images %}
+    <div>
+        images:
+        <ul>
+            {% for image in task.task_images %}
+                <li>
+                    <a href="{{ image.image.url }}" target="_blank" style="margin-right: 5px">{{ image.filename }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+{% if task.progress_description %}
+    <h4>Progress</h4>
+    <p>{{ task.progress_description|linebreaksbr }}</p>
+{% endif %}
+{% if task.cancelled %}<h4 class="primary-highlight">Cancelled on {{ task.resolution_time }}</h4>{% endif %}
+{% if task.resolved %}
+    <h4 class="success-highlight">Resolved by {{ task.resolver }} on {{ task.resolution_time }}</h4>
+    {% if task.resolution_category %}
+        Resolution category: {{ task.resolution_category|lower }}
+        <br>
+    {% endif %}
+    {% if task.resolution_description %}{{ task.resolution_description|linebreaksbr }}{% endif %}
+{% endif %}

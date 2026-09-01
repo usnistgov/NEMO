@@ -351,6 +351,7 @@ def task_update_form(request, task_id):
             as_timezone(task.estimated_resolution_time) if task.estimated_resolution_time else None
         ),
         "task_statuses": TaskStatus.objects.all(),
+        "next_page": request.GET.get("next_page", "tool_control"),
     }
     return render(request, "tasks/update.html", dictionary)
 

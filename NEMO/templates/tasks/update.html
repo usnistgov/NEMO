@@ -22,6 +22,7 @@
                 {% csrf_token %}
                 <input type="hidden" name="tool" value="{{ task.tool.id }}">
                 <input type="hidden" name="action" value="update">
+                <input type="hidden" name="next_page" value="{{ next_page }}">
                 <div class="form-group">
                     <label class="control-label" for="urgency">
                         Would you like to change the urgency of this task? This will help staff prioritize tasks in the {{ facility_name }}.
