@@ -73,8 +73,8 @@
 		unavailable_times.push([{{ times.start|date:"U" }},{{ times.end|date:"U" }}]);
 		{% endfor %}
 		let date_picker = $('#date').pickadate({format: "{{ pickadate_date_format }}", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, onSet: refresh_times});
-		let start_time_picker = $('#start').pickatime({interval: {{ calendar_slot_duration }},  format: "{{ pickadate_time_format }}", formatSubmit: "H:i", hiddenName: true, formatLabel: format_label});
-		let end_time_picker = $('#end').pickatime({interval: {{ calendar_slot_duration }}, format: "{{ pickadate_time_format }}", formatSubmit: "H:i", hiddenName: true, formatLabel: format_label});
+		let start_time_picker = $('#start').pickatime({interval: {{ calendar_slot_duration }},  format: "{{ pickadate_time_format }}", formatSubmit: "H:i", hiddenName: true, formatLabel: format_labels(true), onSet: function() { end_time_picker.pickatime('picker').render(); }});
+		let end_time_picker = $('#end').pickatime({interval: {{ calendar_slot_duration }}, format: "{{ pickadate_time_format }}", formatSubmit: "H:i", hiddenName: true, formatLabel: format_labels(false)});
 		// set initial date
 		if ('{{ date|default_if_none:'' }}')
 		{
@@ -85,22 +85,37 @@
             start_time_picker.pickatime('picker').render();
             end_time_picker.pickatime('picker').render();
         }
-        function format_label(time)
+        function format_labels(is_start)
         {
-		    if (date_picker.pickadate('picker').get('select') && unavailable_times.length > 0) {
-				let date_selected = date_picker.pickadate('picker').get('select').pick; // selected date in milliseconds
-				let time_selected = time.pick * 60 * 1000; // time in milliseconds
-				let date_time_selected = (date_selected + time_selected)/1000; // back to seconds to compare with python timestamp
-				for (let i=0 ; i < unavailable_times.length; i++) {
-                    let times = unavailable_times[i];
-                    let start = times[0];
-                    let end = times[1];
-                    if (date_time_selected >= start && date_time_selected < end) {
-                        return '<sp !an>{{ pickadate_time_format }}</sp !an> <sm !all> !alre!ad!y re!serve!d</sm !all>';
+            return function format_label(time)
+            {
+                if (date_picker.pickadate('picker').get('select') && unavailable_times.length > 0)
+                {
+                    let date_selected = date_picker.pickadate('picker').get('select').pick; // selected date in milliseconds
+                    let time_selected = time.pick * 60 * 1000; // time in milliseconds
+                    let date_time_selected = (date_selected + time_selected)/1000; // back to seconds to compare with python timestamp
+                    for (let i=0 ; i < unavailable_times.length; i++)
+                    {
+                        let times = unavailable_times[i];
+                        let start = times[0];
+                        let end = times[1];
+                        if (!is_start && date_time_selected === start)
+                        {
+                            let selected_start = start_time_picker.pickatime('picker').get('select');
+                            let start_time_selected = selected_start ? (date_selected + selected_start.pick * 60 * 1000) / 1000 : null;
+                            if (start_time_selected === null || date_time_selected > start_time_selected)
+                            {
+                                return '<sp!an style="color:#000000;font-style:!it!al!ic">{{ pickadate_time_format }}</sp!an> <sm!all style="color:#e6bf00">reserv!able up to !here</sm!all>';
+                            }
+                        }
+                        if (date_time_selected >= start && date_time_selected < end)
+                        {
+                            return '<sp!an>{{ pickadate_time_format }}</sp!an> <sm!all style="color:#777777">!alre!ady reserved</sm!all>';
+                        }
                     }
                 }
-			}
-		    return "{{ pickadate_time_format }}";
+                return '{{ pickadate_time_format }}';
+            }
         }
 	
     </script>

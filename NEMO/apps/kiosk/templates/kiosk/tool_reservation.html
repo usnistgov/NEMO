@@ -82,7 +82,7 @@
         }
     });
 	let end_date_picker = $('#end_date').pickadate({format: "{{ pickadate_date_format }}", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, onSet: refresh_times});
-	let start_time_picker = $('#start').pickatime({interval: {{ calendar_slot_duration }}, format: "{{ pickadate_time_format }}", formatSubmit: "H:i", hiddenName: true, formatLabel: format_labels(true)});
+	let start_time_picker = $('#start').pickatime({interval: {{ calendar_slot_duration }}, format: "{{ pickadate_time_format }}", formatSubmit: "H:i", hiddenName: true, formatLabel: format_labels(true), onSet: function() { end_time_picker.pickatime('picker').render(); }});
 	let end_time_picker = $('#end').pickatime({interval: {{ calendar_slot_duration }}, format: "{{ pickadate_time_format }}", formatSubmit: "H:i", hiddenName: true, formatLabel: format_labels(false)});
 	function refresh_times()
     {
@@ -104,9 +104,21 @@
                     let times = unavailable_times[i];
                     let start = times[0];
                     let end = times[1];
+                    if (!is_start && date_time_selected === start)
+                    {
+                        let start_date_selected = start_date_picker.pickadate('picker').get('select');
+                        let start_time_selected_obj = start_time_picker.pickatime('picker').get('select');
+                        let start_time_selected = (start_date_selected && start_time_selected_obj)
+                            ? (start_date_selected.pick + start_time_selected_obj.pick * 60 * 1000) / 1000
+                            : null;
+                        if (start_time_selected === null || date_time_selected > start_time_selected)
+                        {
+                            return '<sp!an style="color:#000000;font-style:!it!al!ic">{{ pickadate_time_format }}</sp!an> <sm!all style="color:#e6bf00">reserv!able up to !here</sm!all>';
+                        }
+                    }
                     if (date_time_selected >= start && date_time_selected < end)
                     {
-                        return '<sp !an>{{ pickadate_time_format }}</sp !an> <sm !all> !alre!ad!y re!serve!d</sm !all>';
+                        return '<sp!an>{{ pickadate_time_format }}</sp!an> <sm!all style="color:#777777">!alre!ady reserved</sm!all>';
                     }
                 }
             }
