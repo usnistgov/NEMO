@@ -105,12 +105,14 @@
                             let start_time_selected = selected_start ? (date_selected + selected_start.pick * 60 * 1000) / 1000 : null;
                             if (start_time_selected === null || date_time_selected > start_time_selected)
                             {
+{# djlint:off #}
                                 return '<sp!an style="color:#000000;font-style:!it!al!ic">{{ pickadate_time_format }}</sp!an> <sm!all style="color:#e6bf00">reserv!able up to !here</sm!all>';
                             }
                         }
                         if (date_time_selected >= start && date_time_selected < end)
                         {
                             return '<sp!an>{{ pickadate_time_format }}</sp!an> <sm!all style="color:#777777">!alre!ady reserved</sm!all>';
+{# djlint:on #}
                         }
                     }
                 }

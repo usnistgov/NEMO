@@ -21,7 +21,7 @@ classifiers = [
 ]
 requires-python = ">=3.10, <4"
 dependencies = [
-    "cryptography==50.0.0",
+    "cryptography==50.0.1",
     "Django==5.2.17",
     "django-auditlog==3.4.1",
     "django-filter==26.1",
