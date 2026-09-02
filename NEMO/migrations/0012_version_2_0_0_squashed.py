@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 import NEMO.utilities
 
-
 # Functions from the following migrations need manual copying.
 # Move them and any dependencies into this file, then update the
 # RunPython operations to refer to the local versions:
