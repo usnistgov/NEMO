@@ -5451,6 +5451,13 @@ class AdjustmentRequest(BaseModel):
                 raise ValidationError({NON_FIELD_ERRORS: _("There is already an adjustment request for this charge")})
             if self.new_start and self.new_end and self.new_start > self.new_end:
                 raise ValidationError({"new_end": _("The end must be later than the start")})
+            if self.new_quantity == 0:
+                from NEMO.views.customization import AdjustmentRequestsCustomization
+
+                message = "The quantity must be greater than zero"
+                if AdjustmentRequestsCustomization.get_bool("adjustment_requests_waive_consumable_withdrawal_enabled"):
+                    message += ", otherwise please request to waive the charge"
+                raise ValidationError({"new_quantity": message})
 
     class Meta:
         ordering = ["-creation_time"]
