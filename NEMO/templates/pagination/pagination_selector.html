@@ -1,5 +1,5 @@
 <select id="results_per_page"
-        onchange="{% if paginator.js_callback %}{{ paginator.js_callback }}({% else %}window.location = {% endif %}'?o={{ paginator.order_by }}&p={{ page.number }}&pp='+this.value{% if paginator.js_callback %}){% endif %}">
+        onchange="{% if paginator.js_callback %}{{ paginator.js_callback }}({% else %}window.location = {% endif %}'?{% if extra_params %}{{ extra_params }}&{% endif %}o={{ paginator.order_by }}&p={{ page.number }}&pp='+this.value{% if paginator.js_callback %}){% endif %}">
     <option value="5" {% if paginator.per_page == 5 %}selected{% endif %}>5</option>
     <option value="25" {% if paginator.per_page == 25 %}selected{% endif %}>25</option>
     <option value="50" {% if paginator.per_page == 50 %}selected{% endif %}>50</option>
