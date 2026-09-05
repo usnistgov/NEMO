@@ -1293,6 +1293,7 @@ class InterlockCardCategoryAdmin(admin.ModelAdmin):
 class TaskAdmin(admin.ModelAdmin):
     list_display = (
         "id",
+        "title",
         "urgency",
         "tool",
         "creator",
@@ -1314,7 +1315,7 @@ class TaskAdmin(admin.ModelAdmin):
     )
     date_hierarchy = "creation_time"
     autocomplete_fields = ["tool", "creator", "last_updated_by", "resolver"]
-    search_fields = ["tool__name", "creator__first_name", "creator__last_name", "creator__username"]
+    search_fields = ["title", "tool__name", "creator__first_name", "creator__last_name", "creator__username"]
 
 
 @register(TaskCategory)

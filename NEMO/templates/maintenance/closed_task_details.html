@@ -1,6 +1,7 @@
 {% load humanize %}
 {% load custom_tags_and_filters %}
 <h2>{{ task.tool.name }} task</h2>
+{% if task.title %}<h4>{{ task.title }}</h4>{% endif %}
 Created by {{ task.creator }} on {{ task.creation_time }} ({{ task.creation_time|naturaltime }}).
 {% if user|is_staff_on_tool:task.tool %}
     <p>

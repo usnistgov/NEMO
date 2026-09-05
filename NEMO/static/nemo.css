@@ -303,6 +303,15 @@ table > thead > tr.no-border > td, table > thead > tr.no-border > th
     border-color: #dee2e6;
 }
 
+.maintenance-task-title
+{
+	display: block;
+	max-width: 60vw;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 .split-screen-left-panel
 {
 	position: absolute;

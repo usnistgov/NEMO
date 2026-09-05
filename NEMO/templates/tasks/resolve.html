@@ -5,6 +5,7 @@
 {% block title %}Resolve task{% endblock %}
 {% block content %}
     <h1>{{ task.tool.name }} task</h1>
+    {% if task.title %}<h3>{{ task.title }}</h3>{% endif %}
     <span style="color:grey">Created by {{ task.creator }} on {{ task.creation_time }} ({{ task.creation_time|naturaltime }}).</span>
     <p>
         {% if task.last_updated and task.last_updated_by %}
@@ -18,6 +19,7 @@
                 {% csrf_token %}
                 <input type="hidden" name="tool" value="{{ task.tool_id }}">
                 <input type="hidden" name="action" value="resolve">
+                <input type="hidden" name="title" value="{{ task.title|default_if_none:'' }}">
                 <input type="hidden" name="urgency" value="{{ task.urgency }}">
                 <input type="hidden" name="problem_category" value="{{ task.problem_category_id|default_if_none:'' }}">
                 <input type="hidden"

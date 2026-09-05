@@ -9,6 +9,7 @@
 {% endblock %}
 {% block content %}
     <h1>{{ task.tool.name }} task</h1>
+    {% if task.title %}<h3>{{ task.title }}</h3>{% endif %}
     <span style="color:grey">Created by {{ task.creator }} on {{ task.creation_time }} ({{ task.creation_time|naturaltime }}).</span>
     <p>
         {% if task.last_updated and task.last_updated_by %}
@@ -23,6 +24,17 @@
                 <input type="hidden" name="tool" value="{{ task.tool.id }}">
                 <input type="hidden" name="action" value="update">
                 <input type="hidden" name="next_page" value="{{ next_page }}">
+                <div class="form-group">
+                    <label class="control-label" for="title">
+                        Optionally, give the problem a short title. If provided, this is what will be shown in lists instead of the full description.
+                    </label>
+                    <input id="title"
+                           name="title"
+                           type="text"
+                           class="form-control"
+                           maxlength="1024"
+                           value="{{ task.title|default_if_none:'' }}">
+                </div>
                 <div class="form-group">
                     <label class="control-label" for="urgency">
                         Would you like to change the urgency of this task? This will help staff prioritize tasks in the {{ facility_name }}.

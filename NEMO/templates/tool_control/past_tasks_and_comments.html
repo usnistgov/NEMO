@@ -17,9 +17,13 @@
             </a>
             <div class="media-body">
                 {% if i.problem_category %}<h4 class="media-heading">{{ i.problem_category }}</h4>{% endif %}
-                {{ i.problem_description }}
+                {{ i.title_or_description }}
                 <br>
                 <div id="past_task_{{ i.id }}_details" class="collapse">
+                    {% if i.title %}
+                        {{ i.problem_description|linebreaksbr }}
+                        <br>
+                    {% endif %}
                     <span class="grey">
                         Created by {{ i.creator }} on {{ i.creation_time }}.
                         <br>
