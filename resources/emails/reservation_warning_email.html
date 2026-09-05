@@ -49,6 +49,10 @@
                                         <em>{{ problem.problem_category }}</em>
                                         <br>
                                     {% endif %}
+                                    {% if problem.title %}
+                                        <b>{{ problem.title }}</b>
+                                        <br>
+                                    {% endif %}
                                     {{ problem.problem_description|linebreaksbr }}
                                 </p>
                                 <p>
