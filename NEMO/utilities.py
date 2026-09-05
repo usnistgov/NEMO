@@ -971,6 +971,65 @@ def create_ics(
     return attachment
 
 
+def _ics_escape_text(text: str) -> str:
+    # Escapes characters with special meaning in iCalendar text values, per RFC 5545 section 3.3.11
+    return (
+        str(text)
+        .replace("\\", "\\\\")
+        .replace(";", "\\;")
+        .replace(",", "\\,")
+        .replace("\r\n", "\\n")
+        .replace("\n", "\\n")
+    )
+
+
+def create_ics_feed(calendar_name: str, events: List[Dict]) -> str:
+    """
+    Build a "publish" style ICS feed (a single VCALENDAR containing one VEVENT per event), meant to be
+    served directly as a subscription feed (webcal/https) rather than emailed as an invitation.
+    Each item in `events` is a dictionary with the following keys:
+    identifier (required), name (required), start (required), end (required), location, description, cancelled
+    """
+    from NEMO.views.customization import ApplicationCustomization
+
+    site_title = ApplicationCustomization.get("site_title")
+    now = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    lines = [
+        "BEGIN:VCALENDAR\n",
+        "VERSION:2.0\n",
+        f"PRODID:-//{_ics_escape_text(site_title)}//Reservation Calendar Subscription//EN\n",
+        "CALSCALE:GREGORIAN\n",
+        "METHOD:PUBLISH\n",
+        f"X-WR-CALNAME:{_ics_escape_text(calendar_name)}\n",
+        "REFRESH-INTERVAL;VALUE=DURATION:PT1H\n",
+        "X-PUBLISHED-TTL:PT1H\n",
+    ]
+    for event in events:
+        start = event["start"].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        end = event["end"].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        cancelled = event.get("cancelled", False)
+        lines += [
+            "BEGIN:VEVENT\n",
+            f"UID:{event['identifier']}\n",
+            f"DTSTAMP:{now}\n",
+            f"DTSTART:{start}\n",
+            f"DTEND:{end}\n",
+        ]
+        if event.get("location"):
+            lines.append(f"LOCATION:{_ics_escape_text(event['location'])}\n")
+        lines += [
+            f"SUMMARY:[{site_title}] {_ics_escape_text(event['name'])}\n",
+        ]
+        if event.get("description"):
+            lines.append(f"DESCRIPTION:{_ics_escape_text(event['description'])}\n")
+        lines += [
+            f"STATUS:{'CANCELLED' if cancelled else 'CONFIRMED'}\n",
+            "END:VEVENT\n",
+        ]
+    lines.append("END:VCALENDAR\n")
+    return "".join(lines)
+
+
 def new_model_copy(instance):
     new_instance = deepcopy(instance)
     new_instance.id = None

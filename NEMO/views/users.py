@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Max
 from django.http import Http404, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
@@ -31,7 +32,7 @@ from NEMO.models import (
     record_active_state,
     record_local_many_to_many_changes,
 )
-from NEMO.utilities import queryset_search_filter
+from NEMO.utilities import get_full_url, queryset_search_filter
 from NEMO.views.customization import ApplicationCustomization, StatusDashboardCustomization, UserCustomization
 from NEMO.views.pagination import SortedPaginator
 from NEMO.views.status_dashboard import show_staff_status
@@ -504,6 +505,7 @@ def user_preferences(request):
             messages.success(request, "Your preferences have been saved")
         else:
             messages.error(request, "Please correct the errors below:")
+    calendar_subscription_path = reverse("user_calendar_subscription_feed", args=[user.get_calendar_token()])
     dictionary = {
         "form": form,
         "user_view": user_view,
@@ -512,8 +514,22 @@ def user_preferences(request):
             if not (user.is_staff or user.is_facility_manager or user.is_service_personnel)
             else Tool.objects.filter(visible=True)
         ),
+        "calendar_subscription_url": get_full_url(calendar_subscription_path, request),
+        "calendar_subscription_webcal_url": "webcal://"
+        + get_full_url(calendar_subscription_path, request).split("://", 1)[-1],
     }
     return render(request, "users/preferences.html", dictionary)
+
+
+@login_required
+@require_POST
+def regenerate_calendar_subscription_token(request):
+    user: User = User.objects.get(pk=request.user.id)
+    user.regenerate_calendar_token()
+    messages.success(
+        request, "Your calendar subscription link has been reset. Update it in any calendar app you subscribed it to."
+    )
+    return redirect("user_preferences")
 
 
 @login_required

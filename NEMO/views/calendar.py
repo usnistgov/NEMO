@@ -39,6 +39,7 @@ from NEMO.utilities import (
     RecurrenceFrequency,
     bootstrap_primary_color,
     create_ics,
+    create_ics_feed,
     datetime_input_format,
     distinct_qs_value_list,
     extract_times,
@@ -226,6 +227,42 @@ def extract_calendar_dates(parameters):
         raise Exception("The request parameters have an end time that precedes the start time.")
 
     return start, end
+
+
+@require_GET
+def user_calendar_subscription_feed(request, token):
+    """
+    Publicly reachable but token-protected ICS feed of a user's reservations, meant to be used as a
+    "subscribe to calendar" (webcal/https) URL in an external calendar application (Google Calendar,
+    Outlook, Apple Calendar, etc). The `calendar_token` acts as the shared secret and sole identifier.
+    """
+    user = get_object_or_404(User, calendar_token=token, is_active=True)
+
+    # Only include events that ended within the last 90 days, plus everything upcoming, to keep the feed small.
+    cutoff = timezone.now() - timedelta(days=90)
+    reservations = Reservation.objects.filter(
+        user=user, cancelled=False, missed=False, shortened=False, end__gte=cutoff
+    ).order_by("start")
+
+    events = []
+    for reservation in reservations:
+        reservation_item = reservation.reservation_item
+        events.append(
+            {
+                "identifier": f"reservation-{reservation.id}",
+                "name": reservation.title or f"{reservation_item} Reservation",
+                "start": reservation.start,
+                "end": reservation.end,
+                "location": getattr(reservation_item, "location", None),
+                "description": reservation.note,
+            }
+        )
+
+    site_title = ApplicationCustomization.get("site_title")
+    ics_feed = create_ics_feed(f"{site_title} - {user.get_name()}", events)
+    response = HttpResponse(ics_feed, content_type="text/calendar; charset=utf-8")
+    response["Content-Disposition"] = 'inline; filename="reservations.ics"'
+    return response
 
 
 def reservation_event_feed(request, start, end):

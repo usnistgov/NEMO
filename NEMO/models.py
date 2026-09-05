@@ -4,6 +4,7 @@ import datetime
 import json
 import os
 import sys
+import uuid
 from datetime import timedelta
 from enum import Enum
 from html import escape
@@ -871,6 +872,15 @@ class User(BaseModel, PermissionsMixin):
     # Preferences
     preferences: UserPreferences = models.OneToOneField(UserPreferences, null=True, on_delete=models.SET_NULL)
 
+    # Calendar subscription
+    calendar_token = models.UUIDField(
+        null=True,
+        blank=True,
+        editable=False,
+        unique=True,
+        help_text="Secret token used to authenticate this user's calendar subscription feed (webcal/ICS).",
+    )
+
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = ["first_name", "last_name", "email"]
     objects = UserManager()
@@ -1143,6 +1153,19 @@ class User(BaseModel, PermissionsMixin):
             )
             self.save()
         return self.preferences
+
+    def get_calendar_token(self) -> uuid.UUID:
+        """Return this user's calendar subscription token, generating one on first use."""
+        if not self.calendar_token:
+            self.calendar_token = uuid.uuid4()
+            self.save(update_fields=["calendar_token"])
+        return self.calendar_token
+
+    def regenerate_calendar_token(self) -> uuid.UUID:
+        """Invalidate the previous calendar subscription link and issue a new token."""
+        self.calendar_token = uuid.uuid4()
+        self.save(update_fields=["calendar_token"])
+        return self.calendar_token
 
     def get_contact_info_html(self):
         if hasattr(self, "contactinformation"):
