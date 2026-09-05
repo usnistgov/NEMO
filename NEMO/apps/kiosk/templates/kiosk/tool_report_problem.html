@@ -51,6 +51,17 @@
         </div>
     {% endif %}
     <div class="form-group">
+        <label for="title">
+            Optionally, give the problem a short title. If provided, this is what will be shown in lists instead of the full description below.
+        </label>
+        <input id="title"
+               name="title"
+               type="text"
+               class="form-control"
+               maxlength="1024"
+               value="{{ form.title.value|default_if_none:'' }}">
+    </div>
+    <div class="form-group">
         <label for="description">
             Please provide a <strong>detailed</strong> description of the problem so that the {{ facility_name }} staff have enough information to resolve the problem efficiently.
         </label>
@@ -117,6 +128,7 @@
 <script>
     if (virtual_inputs)
     {
+	    $('#title').keyboard();
 	    $('#description').keyboard();
     }
 	{% if task_categories %}

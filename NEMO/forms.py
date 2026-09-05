@@ -155,13 +155,18 @@ class TaskForm(ModelForm):
 
     class Meta:
         model = Task
-        fields = ["tool", "urgency", "estimated_resolution_time", "force_shutdown", "safety_hazard", "lock"]
+        fields = ["tool", "title", "urgency", "estimated_resolution_time", "force_shutdown", "safety_hazard", "lock"]
 
     def __init__(self, user, *args, **kwargs):
         super(TaskForm, self).__init__(*args, **kwargs)
         self.user = user
         self.fields["tool"].required = False
         self.fields["urgency"].required = False
+        self.fields["title"].required = False
+
+    def clean_title(self):
+        title = self.cleaned_data["title"]
+        return title.strip() or None if title else None
 
     def clean_description(self):
         return self.cleaned_data["description"].strip()

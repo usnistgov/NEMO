@@ -1192,7 +1192,7 @@ class ToolStatusViewSet(XLSXFileMixin, viewsets.GenericViewSet):
             partial_outages = tool.scheduled_partial_outages()
             rss_unavailable = tool.unavailable_required_resources()
             partial_rss_unavailable = tool.unavailable_nonrequired_resources()
-            tool.problem_descriptions = ", ".join(pb.problem_description for pb in pbs) if pbs else None
+            tool.problem_descriptions = ", ".join(pb.title_or_description() for pb in pbs) if pbs else None
             tool.problematic_since = min((pb.creation_time for pb in pbs), default=None)
             tool.outages = ", ".join(outage.title for outage in outages) if outages else None
             tool.outages_since = min((outage.start for outage in outages), default=None)

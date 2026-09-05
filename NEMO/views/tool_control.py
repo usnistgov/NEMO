@@ -670,7 +670,7 @@ def past_comments_and_tasks(request):
             tasks = tasks.filter(creation_time__lt=end)
             comments = comments.filter(creation_date__lt=end)
         if search:
-            tasks = tasks.filter(problem_description__icontains=search)
+            tasks = tasks.filter(Q(title__icontains=search) | Q(problem_description__icontains=search))
             comments = comments.filter(content__icontains=search)
     except:
         return HttpResponseBadRequest("Task and comment lookup failed.")

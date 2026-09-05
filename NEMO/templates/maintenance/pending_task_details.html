@@ -1,6 +1,7 @@
 {% load humanize %}
 {% load custom_tags_and_filters %}
 <h2>{{ task.tool.name }} task</h2>
+{% if task.title %}<h4>{{ task.title }}</h4>{% endif %}
 <p class="grey">
     Primary tool owner: {{ task.tool.primary_owner }}
     <br>
@@ -62,6 +63,17 @@
             {% csrf_token %}
             <input type="hidden" name="next_page" value="maintenance">
             <input type="hidden" name="tool" value="{{ task.tool.id }}">
+            <div class="form-group">
+                <label for="title" class="control-label col-lg-3">Title</label>
+                <div class="col-lg-6">
+                    <input id="title"
+                           name="title"
+                           type="text"
+                           class="form-control"
+                           maxlength="1024"
+                           value="{{ task.title|default_if_none:'' }}">
+                </div>
+            </div>
             <div class="form-group">
                 <label for="urgency" class="control-label col-lg-3">Urgency</label>
                 <div class="col-lg-3">

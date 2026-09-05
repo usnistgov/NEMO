@@ -292,11 +292,15 @@
                         </a>
                         <div class="media-body">
                             {% if t.problem_category %}<span class="media-heading">{{ t.problem_category }}</span>{% endif %}
-                            <span class="media-middle">{{ t.problem_description }}</span>
+                            <span class="media-middle">{{ t.title_or_description }}</span>
                             {% if t.estimated_resolution_time %}
                                 <span class="media-middle">Estimated resolution time is {{ t.estimated_resolution_time }}.</span>
                             {% endif %}
                             <div id="task_{{ t.id }}_details" class="collapse{% if tool_control_show_task_details %} in{% endif %}">
+                                {% if t.title %}
+                                    <span class="media-bottom">{{ t.problem_description|linebreaksbr }}</span>
+                                    <br>
+                                {% endif %}
                                 <span class="media-bottom">
                                     This task was created by {{ t.creator }} on {{ t.creation_time }}.
                                     {% if user|is_staff_on_tool:tool %}
@@ -1072,6 +1076,12 @@
                     </select>
                 </div>
             {% endif %}
+            <div class="form-group">
+                <label for="title">
+                    Optionally, give the problem a short title. If provided, this is what will be shown in lists instead of the full description below.
+                </label>
+                <input id="title" name="title" type="text" class="form-control" maxlength="1024">
+            </div>
             <div class="form-group">
                 <label for="description">
                     Please provide a <strong>detailed</strong> description of the problem so that the {{ facility_name }} staff have enough information to resolve the problem efficiently.
