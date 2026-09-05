@@ -30,6 +30,7 @@ dependencies = [
     "drf-excel==2.6.0",
     "drf-flex-fields==1.0.2",
     "fastjsonschema==2.22.2",
+    "icalendar==7.3.0",
     "ldap3==2.9.1",
     "packaging==26.3",
     "Pillow==12.3.0",

@@ -43,6 +43,8 @@ from django.utils.html import format_html
 from django.utils.module_loading import import_string
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
+from icalendar import Calendar, Event, vCalAddress, vText
+from icalendar.prop import vDuration
 
 # For backwards compatibility
 import NEMO.plugins.utils
@@ -930,57 +932,44 @@ def create_ics(
     site_title = ApplicationCustomization.get("site_title")
     if organizer:
         organizer_email = organizer.email
-        organizer = organizer.get_name()
+        organizer_name = organizer.get_name()
     else:
         organizer_email = getattr(settings, "RESERVATION_ORGANIZER_EMAIL", "no_reply")
-        organizer = getattr(settings, "RESERVATION_ORGANIZER", site_title)
+        organizer_name = getattr(settings, "RESERVATION_ORGANIZER", site_title)
     method_name = "CANCEL" if cancelled else "REQUEST"
-    sequence = "SEQUENCE:2\n" if cancelled else "SEQUENCE:0\n"
-    priority = "PRIORITY:5\n" if cancelled else "PRIORITY:0\n"
-    now = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
-    start = start.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    end = end.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    lines = [
-        "BEGIN:VCALENDAR\n",
-        "VERSION:2.0\n",
-        f"METHOD:{method_name}\n",
-        "BEGIN:VEVENT\n",
-        f"UID:{str(identifier)}\n",
-        sequence,
-        priority,
-        f"DTSTAMP:{now}\n",
-        f"DTSTART:{start}\n",
-        f"DTEND:{end}\n",
-    ]
-    if location:
-        lines.append(f"LOCATION:{location}\n")
-    lines += [
-        f'ATTENDEE;CN="{user.get_name()}";RSVP=TRUE:mailto:{user.email}\n',
-        f'ORGANIZER;CN="{organizer}":mailto:{organizer_email}\n',
-        f"SUMMARY:[{site_title}] {event_name}\n",
-        f'DESCRIPTION:{repr(description)[1:-1] if description else ""}\n',
-        f"STATUS:{'CANCELLED' if cancelled else 'CONFIRMED'}\n",
-        "END:VEVENT\n",
-        "END:VCALENDAR\n",
-    ]
-    ics = StringIO("")
-    ics.writelines(lines)
-    ics.seek(0)
 
+    calendar = Calendar()
+    calendar.add("version", "2.0")
+    calendar.add("method", method_name)
+
+    event = Event()
+    event.add("uid", str(identifier))
+    event.add("sequence", 2 if cancelled else 0)
+    event.add("priority", 5 if cancelled else 0)
+    event.add("dtstamp", datetime.now(timezone.utc))
+    event.add("dtstart", start.astimezone(timezone.utc))
+    event.add("dtend", end.astimezone(timezone.utc))
+    if location:
+        event.add("location", location)
+
+    attendee = vCalAddress(f"mailto:{user.email}")
+    attendee.params["cn"] = vText(user.get_name())
+    attendee.params["rsvp"] = vText("TRUE")
+    event.add("attendee", attendee, encode=0)
+
+    organizer_address = vCalAddress(f"mailto:{organizer_email}")
+    organizer_address.params["cn"] = vText(organizer_name)
+    event.add("organizer", organizer_address, encode=0)
+
+    event.add("summary", f"[{site_title}] {event_name}")
+    event.add("description", description or "")
+    event.add("status", "CANCELLED" if cancelled else "CONFIRMED")
+
+    calendar.add_component(event)
+
+    ics = StringIO(calendar.to_ical().decode("utf-8"))
     attachment = create_email_attachment(ics, maintype="text", subtype="calendar", method=method_name)
     return attachment
-
-
-def _ics_escape_text(text: str) -> str:
-    # Escapes characters with special meaning in iCalendar text values, per RFC 5545 section 3.3.11
-    return (
-        str(text)
-        .replace("\\", "\\\\")
-        .replace(";", "\\;")
-        .replace(",", "\\,")
-        .replace("\r\n", "\\n")
-        .replace("\n", "\\n")
-    )
 
 
 def create_ics_feed(calendar_name: str, events: List[Dict]) -> str:
@@ -993,41 +982,34 @@ def create_ics_feed(calendar_name: str, events: List[Dict]) -> str:
     from NEMO.views.customization import ApplicationCustomization
 
     site_title = ApplicationCustomization.get("site_title")
-    now = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
-    lines = [
-        "BEGIN:VCALENDAR\n",
-        "VERSION:2.0\n",
-        f"PRODID:-//{_ics_escape_text(site_title)}//Reservation Calendar Subscription//EN\n",
-        "CALSCALE:GREGORIAN\n",
-        "METHOD:PUBLISH\n",
-        f"X-WR-CALNAME:{_ics_escape_text(calendar_name)}\n",
-        "REFRESH-INTERVAL;VALUE=DURATION:PT1H\n",
-        "X-PUBLISHED-TTL:PT1H\n",
-    ]
-    for event in events:
-        start = event["start"].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        end = event["end"].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        cancelled = event.get("cancelled", False)
-        lines += [
-            "BEGIN:VEVENT\n",
-            f"UID:{event['identifier']}\n",
-            f"DTSTAMP:{now}\n",
-            f"DTSTART:{start}\n",
-            f"DTEND:{end}\n",
-        ]
-        if event.get("location"):
-            lines.append(f"LOCATION:{_ics_escape_text(event['location'])}\n")
-        lines += [
-            f"SUMMARY:[{site_title}] {_ics_escape_text(event['name'])}\n",
-        ]
-        if event.get("description"):
-            lines.append(f"DESCRIPTION:{_ics_escape_text(event['description'])}\n")
-        lines += [
-            f"STATUS:{'CANCELLED' if cancelled else 'CONFIRMED'}\n",
-            "END:VEVENT\n",
-        ]
-    lines.append("END:VCALENDAR\n")
-    return "".join(lines)
+    now = datetime.now(timezone.utc)
+
+    calendar = Calendar()
+    calendar.add("version", "2.0")
+    calendar.add("prodid", f"-//{site_title}//Reservation Calendar Subscription//EN")
+    calendar.add("calscale", "GREGORIAN")
+    calendar.add("method", "PUBLISH")
+    calendar.add("x-wr-calname", calendar_name)
+    refresh_interval = vDuration(timedelta(hours=1))
+    refresh_interval.params["VALUE"] = "DURATION"
+    calendar.add("refresh-interval", refresh_interval)
+    calendar.add("x-published-ttl", "PT1H")
+
+    for event_data in events:
+        event = Event()
+        event.add("uid", event_data["identifier"])
+        event.add("dtstamp", now)
+        event.add("dtstart", event_data["start"].astimezone(timezone.utc))
+        event.add("dtend", event_data["end"].astimezone(timezone.utc))
+        if event_data.get("location"):
+            event.add("location", event_data["location"])
+        event.add("summary", f"[{site_title}] {event_data['name']}")
+        if event_data.get("description"):
+            event.add("description", event_data["description"])
+        event.add("status", "CANCELLED" if event_data.get("cancelled") else "CONFIRMED")
+        calendar.add_component(event)
+
+    return calendar.to_ical().decode("utf-8")
 
 
 def new_model_copy(instance):
