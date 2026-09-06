@@ -2,6 +2,56 @@
 {% load static %}
 {% load custom_tags_and_filters %}
 {% block title %}{{ site_title }}{% endblock %}
+{% block extrahead %}
+    {% if upcoming_reservations %}
+        <script type="text/javascript">
+            function show_reservation_details(reservation_id)
+            {
+                let failure_dialog = ajax_failure_callback("Unable to display details");
+                let url = build_django_url("{% url 'reservation_details' 0 %}", [0], [reservation_id]);
+                ajax_get(url + '?popup_view=true', undefined, ajax_success_callback, [failure_dialog]);
+            }
+
+            function refresh_calendar_and_sidebar()
+            {
+                location.reload();
+            }
+
+            function cancel_reservation(url, reservation_id, reason)
+            {
+                let failure_dialog = ajax_failure_callback("Unable to cancel this reservation");
+                let contents = reason ? {'reason': reason} : undefined;
+                ajax_post(url, contents, refresh_calendar_and_sidebar, [failure_dialog, refresh_calendar_and_sidebar]);
+            }
+
+            function set_reservation_title(url, reservation_id, title)
+            {
+                let failure_dialog = ajax_failure_callback("Unable to set reservation title");
+                ajax_post(url, {'title': title}, refresh_calendar_and_sidebar, [failure_dialog, refresh_calendar_and_sidebar]);
+            }
+
+            function change_reservation_note(url, note)
+            {
+                let failure_dialog = ajax_failure_callback("Unable to change reservation note");
+                ajax_post(url, {'note': note}, refresh_calendar_and_sidebar, [failure_dialog, refresh_calendar_and_sidebar]);
+            }
+
+            function change_reservation_date(url, reservation_id, param, value)
+            {
+                let failure_dialog = ajax_failure_callback("Unable to change reservation date");
+                let data = {'id': reservation_id};
+                data[param] = value;
+                ajax_post(url, data, refresh_calendar_and_sidebar, [failure_dialog, refresh_calendar_and_sidebar]);
+            }
+
+            function change_reservation_project(url, project_id)
+            {
+                let failure_dialog = ajax_failure_callback("Unable to change reservation project");
+                ajax_post(url, {'project_id': project_id}, refresh_calendar_and_sidebar, [failure_dialog, refresh_calendar_and_sidebar]);
+            }
+        </script>
+    {% endif %}
+{% endblock %}
 {% block content %}
     <h1 class="sr-only">Main dashboard</h1>
     {% if user.training_required %}
@@ -20,33 +70,30 @@
                 <h3>Upcoming reservations</h3>
                 <div id="upcoming-reservations">
                     {% for r in upcoming_reservations %}
-                        {% if r.tool %}
-                            <a href="{% url 'tool_control' r.tool.id %}" style="text-decoration: none">
-                            {% elif self_log_in and r.area and r.start < now %}
-                                <a href="{% url 'self_log_in' %}?area_id={{ r.area.id }}" style="text-decoration: none">
-                                {% elif device == 'mobile' and r.area %}
-                                    <a href="{% url 'view_calendar' item_type='area' item_id=r.area.id date=r.start|date:'Y-m-d' %}"
-                                       style="text-decoration: none">
+                        {% if self_log_in and r.area and r.start < now %}
+                            <a href="{% url 'self_log_in' %}?area_id={{ r.area.id }}" style="text-decoration: none">
+                        {% else %}
+                            <a href="javascript:void(0)" onclick="show_reservation_details({{ r.id }})" style="text-decoration: none">
+                        {% endif %}
+                            <div class="alert {% if r.start < now %}alert-warning{% else %}alert-success{% endif %}">
+                                {% if r.title %}
+                                    <b>{{ r.title }}</b>
+                                    <br>
+                                {% endif %}
+                                <b>
+                                    {% if r.start < now %}
+                                        You're late for your {{ r.reservation_item }} reservation!
+                                    {% else %}
+                                        {{ r.reservation_item }}
                                     {% endif %}
-                                    <div class="alert {% if r.start < now %}alert-warning{% else %}alert-success{% endif %}">
-                                        {% if r.title %}
-                                            <b>{{ r.title }}</b>
-                                            <br>
-                                        {% endif %}
-                                        <b>
-                                            {% if r.start < now %}
-                                                You're late for your {{ r.reservation_item }} reservation!
-                                            {% else %}
-                                                {{ r.reservation_item }}
-                                            {% endif %}
-                                        </b>
-                                        <br>
-                                        Starting on {{ r.start }}
-                                        <br>
-                                        Ending on {{ r.end }}
-                                    </div>
-                                    {% if r.tool or device == 'mobile' and r.area or self_log_in and r.area and r.start < now %}</a>{% endif %}
-                            {% endfor %}
+                                </b>
+                                <br>
+                                Starting on {{ r.start }}
+                                <br>
+                                Ending on {{ r.end }}
+                            </div>
+                        </a>
+                    {% endfor %}
                         </div>
                     </div>
                 {% endif %}

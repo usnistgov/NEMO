@@ -8,6 +8,7 @@
         {% csrf_token %}
         <input type="hidden" name="date" value="{{ request_date }}">
         <input type="hidden" name="start" value="{{ request_start }}">
+        <input type="hidden" name="end_date" value="{{ request_end_date }}">
         <input type="hidden" name="end" value="{{ request_end }}">
         <input type="hidden" name="item_id" value="{{ reservation.reservation_item.id }}">
         <input type="hidden" name="item_type" value="{{ reservation.reservation_item_type.value }}">
