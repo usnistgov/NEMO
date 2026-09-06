@@ -2187,7 +2187,7 @@ class AdjustmentRequestAdmin(admin.ModelAdmin):
 
 @register(StaffAbsenceType)
 class StaffAbsenceTypeAdmin(admin.ModelAdmin):
-    list_display = ("name", "description")
+    list_display = ("name", "description", "remote_work")
 
 
 @register(StaffAvailabilityCategory)

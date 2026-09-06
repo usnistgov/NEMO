@@ -585,9 +585,60 @@ class AdjustmentRequestForm(ModelForm):
 
 
 class StaffAbsenceForm(ModelForm):
+    recurring_absence = BooleanField(required=False, initial=False)
+    recurrence_interval = IntegerField(required=False)
+    recurrence_frequency = ChoiceField(choices=RecurrenceFrequency.choices(), required=False)
+    recurrence_until = DateField(required=False)
+
     class Meta:
         model = StaffAbsence
         fields = "__all__"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        errors = {}
+        recurring_absence = cleaned_data.get("recurring_absence", False)
+        recurrence_until = cleaned_data.get("recurrence_until")
+        recurrence_frequency = cleaned_data.get("recurrence_frequency")
+        recurrence_interval = cleaned_data.get("recurrence_interval")
+        if recurring_absence:
+            if not recurrence_interval:
+                errors["recurrence_interval"] = _("This field is required.")
+            if not recurrence_frequency:
+                errors["recurrence_frequency"] = _("This field is required.")
+            if not recurrence_until:
+                errors["recurrence_until"] = _("This field is required.")
+            elif cleaned_data.get("end_date") and recurrence_until < cleaned_data["end_date"]:
+                errors["recurrence_until"] = _("This date must be on or after the absence's end date.")
+        if errors:
+            raise ValidationError(errors)
+        return cleaned_data
+
+
+def save_staff_absence(form: StaffAbsenceForm) -> StaffAbsence:
+    absence: StaffAbsence = form.save(commit=False)
+    duration = absence.end_date - absence.start_date
+
+    if form.cleaned_data.get("recurring_absence"):
+        submitted_frequency = form.cleaned_data.get("recurrence_frequency")
+        submitted_until = form.cleaned_data["recurrence_until"]
+        until_no_tz = datetime.combine(submitted_until, time())
+        start_no_tz = datetime.combine(absence.start_date, time())
+        frequency = RecurrenceFrequency(quiet_int(submitted_frequency, RecurrenceFrequency.WEEKLY.index))
+        rules = get_recurring_rule(
+            start_no_tz, frequency, until_no_tz, int(form.cleaned_data.get("recurrence_interval", 1))
+        )
+        last_absence = absence
+        for rule in list(rules):
+            new_absence = new_model_copy(absence)
+            new_absence.start_date = rule.date()
+            new_absence.end_date = new_absence.start_date + duration
+            new_absence.save()
+            last_absence = new_absence
+        return last_absence
+    else:
+        absence.save()
+        return absence
 
 
 def save_scheduled_outage(

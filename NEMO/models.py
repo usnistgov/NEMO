@@ -5480,6 +5480,10 @@ class StaffAbsenceType(BaseModel):
     description = models.CharField(
         max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The description for this absence type."
     )
+    remote_work = models.BooleanField(
+        default=False,
+        help_text="Indicates that staff members with this absence type are working remotely (e.g. from home) rather than fully absent. This is shown differently than a full absence on the staff status page.",
+    )
 
     def __str__(self):
         description = f" ({self.description})" if self.description else ""
