@@ -1,0 +1,10 @@
+{% load custom_tags_and_filters %}
+{% if model_name == "userknowledgebaseitem" %}
+    {% with reactions_enabled=customizations|get_item:"knowledge_base_user_reactions_enabled" %}
+        {% include "knowledge_base/helpful_widget_content.html" %}
+    {% endwith %}
+{% else %}
+    {% with reactions_enabled=customizations|get_item:"knowledge_base_staff_reactions_enabled" %}
+        {% include "knowledge_base/helpful_widget_content.html" %}
+    {% endwith %}
+{% endif %}

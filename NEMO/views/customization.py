@@ -733,6 +733,9 @@ class ToolCustomization(CustomizationBase):
         "tool_problem_send_to_all_qualified_users": "",
         "tool_problem_allow_regular_user_preferences": "",
         "tool_problem_safety_hazard_automatic_shutdown": "",
+        "tool_task_reactions_enabled": "enabled",
+        "tool_task_reactions_show_affected_users_to_staff": "enabled",
+        "tool_comment_reactions_enabled": "enabled",
         "tool_configuration_setting_template": "{{ current_setting }}",
         "tool_configuration_near_future_days": "1",
         "tool_configuration_change_while_in_use": "",
@@ -808,6 +811,8 @@ class SafetyCustomization(CustomizationBase):
         "safety_show_safety_data_sheets": "enabled",
         "safety_data_sheets_keywords_default": "",
         "safety_items_expand_categories": "",
+        "safety_issue_reactions_enabled": "enabled",
+        "safety_issue_reactions_show_affected_users_to_staff": "enabled",
     }
 
 
@@ -816,6 +821,8 @@ class KnowledgeBaseCustomization(CustomizationBase):
     variables = {
         "knowledge_base_user_expand_categories": "",
         "knowledge_base_staff_expand_categories": "",
+        "knowledge_base_user_reactions_enabled": "enabled",
+        "knowledge_base_staff_reactions_enabled": "enabled",
     }
 
 

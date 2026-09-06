@@ -4042,7 +4042,95 @@ class InterlockCardCategory(BaseModel):
         return str(self.name)
 
 
-class Task(BaseModel):
+class UserReaction(BaseModel):
+    """
+    Allows users to react to (+1, or mark as helpful/unhelpful) instances of other models.
+    This class uses generic relations in order to point to any model type.
+    For more information see: https://docs.djangoproject.com/en/dev/ref/contrib/contenttypes/#generic-relations
+    """
+
+    class Reaction(object):
+        HELPFUL = 1
+        NOT_HELPFUL = -1
+        Choices = (
+            (HELPFUL, "Helpful"),
+            (NOT_HELPFUL, "Not helpful"),
+        )
+
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey("content_type", "object_id")
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    reaction = models.IntegerField(choices=Reaction.Choices, default=Reaction.HELPFUL)
+    creation_time = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("content_type", "object_id", "user")
+
+    def __str__(self):
+        return f"{self.user} reacted to {self.content_object}"
+
+
+def get_user_reaction_counts(obj) -> dict:
+    content_type = ContentType.objects.get_for_model(obj)
+    reactions = UserReaction.objects.filter(content_type=content_type, object_id=obj.id)
+    return {
+        "helpful": reactions.filter(reaction=UserReaction.Reaction.HELPFUL).count(),
+        "not_helpful": reactions.filter(reaction=UserReaction.Reaction.NOT_HELPFUL).count(),
+    }
+
+
+def get_user_reaction(obj, user: User):
+    if not user or not getattr(user, "is_authenticated", False):
+        return None
+    content_type = ContentType.objects.get_for_model(obj)
+    existing = UserReaction.objects.filter(content_type=content_type, object_id=obj.id, user=user).first()
+    return existing.reaction if existing else None
+
+
+def set_user_reaction(obj, user: User, reaction: int):
+    """Toggles the given user's reaction to the object. Setting the same reaction again clears it."""
+    content_type = ContentType.objects.get_for_model(obj)
+    existing = UserReaction.objects.filter(content_type=content_type, object_id=obj.id, user=user).first()
+    if existing and existing.reaction == reaction:
+        existing.delete()
+        current_reaction = None
+    elif existing:
+        existing.reaction = reaction
+        existing.save()
+        current_reaction = reaction
+    else:
+        UserReaction.objects.create(content_type=content_type, object_id=obj.id, user=user, reaction=reaction)
+        current_reaction = reaction
+    return current_reaction, get_user_reaction_counts(obj)
+
+
+class UserReactionMixin:
+    """Mixin for models that support user reactions. See UserReaction."""
+
+    def reaction_counts(self) -> dict:
+        return get_user_reaction_counts(self)
+
+    def user_reaction(self, user: User):
+        return get_user_reaction(self, user)
+
+    def affected_user_count(self) -> int:
+        """Convenience accessor for models that only use the simple +1 ("helpful") reaction."""
+        return self.reaction_counts()["helpful"]
+
+    def is_affected_user(self, user: User) -> bool:
+        return self.user_reaction(user) == UserReaction.Reaction.HELPFUL
+
+    def affected_users(self):
+        """Users who reacted with the simple +1 ('helpful') reaction, for staff visibility."""
+        content_type = ContentType.objects.get_for_model(self)
+        user_ids = UserReaction.objects.filter(
+            content_type=content_type, object_id=self.id, reaction=UserReaction.Reaction.HELPFUL
+        ).values_list("user_id", flat=True)
+        return User.objects.filter(id__in=user_ids)
+
+
+class Task(UserReactionMixin, BaseModel):
     class Urgency(object):
         LOW = -1
         NORMAL = 0
@@ -4226,7 +4314,7 @@ class TaskHistory(BaseModel):
         get_latest_by = "time"
 
 
-class Comment(BaseModel):
+class Comment(UserReactionMixin, BaseModel):
     tool = models.ForeignKey(Tool, help_text="The tool that this comment relates to.", on_delete=models.CASCADE)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     creation_date = models.DateTimeField(default=timezone.now)
@@ -4436,7 +4524,7 @@ class Door(BaseModel):
     get_absolute_url.short_description = "URL"
 
 
-class SafetyIssue(BaseModel):
+class SafetyIssue(UserReactionMixin, BaseModel):
     reporter = models.ForeignKey(
         User, blank=True, null=True, related_name="reported_safety_issues", on_delete=models.SET_NULL
     )
@@ -5655,7 +5743,7 @@ class StaffKnowledgeBaseCategory(BaseCategory):
         verbose_name_plural = "Staff knowledge base categories"
 
 
-class StaffKnowledgeBaseItem(BaseModel):
+class StaffKnowledgeBaseItem(UserReactionMixin, BaseModel):
     name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The item name.")
     description = models.TextField(null=True, blank=True, help_text="The description for this item. HTML can be used.")
     category = models.ForeignKey(
@@ -5694,7 +5782,7 @@ class UserKnowledgeBaseCategory(BaseCategory):
         verbose_name_plural = "User knowledge base categories"
 
 
-class UserKnowledgeBaseItem(BaseModel):
+class UserKnowledgeBaseItem(UserReactionMixin, BaseModel):
     name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The item name.")
     description = models.TextField(null=True, blank=True, help_text="The description for this item. HTML can be used.")
     category = models.ForeignKey(

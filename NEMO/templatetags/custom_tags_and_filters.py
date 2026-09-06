@@ -318,6 +318,14 @@ def can_be_adjusted(value, arg) -> bool:
         return value.can_be_adjusted(arg)
 
 
+@register.filter(name="user_reaction")
+def user_reaction(user: User, obj):
+    """Returns the given user's reaction (UserReaction.Reaction value) to obj, or None."""
+    if not user or not obj:
+        return None
+    return obj.user_reaction(user)
+
+
 @register.filter(name="is_staff_on_tool")
 def is_staff_on_tool(user: User, tool: Tool) -> bool:
     if not user:

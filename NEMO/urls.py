@@ -49,6 +49,7 @@ from NEMO.views import (
     mobile,
     news,
     qualifications,
+    reactions,
     remote_work,
     resources,
     safety,
@@ -327,6 +328,7 @@ urlpatterns += [
     path("update_task/<int:task_id>/", tasks.update, name="update_task"),
     path("task_update_form/<int:task_id>/", tasks.task_update_form, name="task_update_form"),
     path("task_resolution_form/<int:task_id>/", tasks.task_resolution_form, name="task_resolution_form"),
+    path("toggle_reaction/<str:model_name>/<int:object_id>/", reactions.toggle_reaction, name="toggle_reaction"),
     # Calendar:
     re_path(r"^calendar/" + reservation_item_types + r"/(?P<item_id>\d+)/$", calendar.calendar, name="calendar"),
     path("calendar/", calendar.calendar, name="calendar"),

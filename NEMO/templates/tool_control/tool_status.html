@@ -291,6 +291,18 @@
                             <span class="glyphicon glyphicon-chevron-{% if tool_control_show_task_details %}down{% else %}right{% endif %} pull-left chevron"></span>
                         </a>
                         <div class="media-body">
+                            {% if customizations|get_item:"tool_task_reactions_enabled" == "enabled" %}
+                            <span class="pull-right" style="margin-left:10px">
+                                <a href="javascript:void(0)"
+                                   id="task_affected_{{ t.id }}"
+                                   class="btn btn-xs {% if user|user_reaction:t == 1 %}btn-primary{% else %}btn-default{% endif %}"
+                                   onclick="toggle_reaction('{% url 'toggle_reaction' 'task' t.id %}', 1, function (response) { $('#task_affected_' + {{ t.id }}).toggleClass('btn-primary', response.reaction === 1).toggleClass('btn-default', response.reaction !== 1); $('#task_affected_count_' + {{ t.id }}).text(response.helpful); })"
+                                   title="Let staff know you are also affected by this problem">
+                                    <span class="glyphicon glyphicon-thumbs-up"></span>
+                                    Me too (<span id="task_affected_count_{{ t.id }}">{{ t.affected_user_count }}</span>)
+                                </a>
+                            </span>
+                            {% endif %}
                             {% if t.problem_category %}<span class="media-heading">{{ t.problem_category }}</span>{% endif %}
                             <span class="media-middle">{{ t.problem_description }}</span>
                             {% if t.estimated_resolution_time %}
@@ -356,6 +368,18 @@
                             </a>
                         {% endif %}
                         <div class="media-body">
+                            {% if customizations|get_item:"tool_comment_reactions_enabled" == "enabled" %}
+                            <span class="pull-right" style="margin-left:10px">
+                                <a href="javascript:void(0)"
+                                   id="comment_affected_{{ c.id }}"
+                                   class="btn btn-xs {% if user|user_reaction:c == 1 %}btn-primary{% else %}btn-default{% endif %}"
+                                   onclick="toggle_reaction('{% url 'toggle_reaction' 'comment' c.id %}', 1, function (response) { $('#comment_affected_{{ c.id }}').toggleClass('btn-primary', response.reaction === 1).toggleClass('btn-default', response.reaction !== 1); $('#comment_affected_count_{{ c.id }}').text(response.helpful); })"
+                                   title="+1 this comment">
+                                    <span class="glyphicon glyphicon-thumbs-up"></span>
+                                    (<span id="comment_affected_count_{{ c.id }}">{{ c.affected_user_count }}</span>)
+                                </a>
+                            </span>
+                            {% endif %}
                             <span class="media-middle">{{ c.content|linebreaksbr }}</span>
                             <span class="media-bottom">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
                             {% if user.id == c.author.id or user|is_staff_on_tool:tool %}
@@ -396,6 +420,18 @@
                                             </a>
                                         {% endif %}
                                         <div class="media-body">
+                                            {% if customizations|get_item:"tool_comment_reactions_enabled" == "enabled" %}
+                                            <span class="pull-right" style="margin-left:10px">
+                                                <a href="javascript:void(0)"
+                                                   id="comment_affected_{{ c.id }}"
+                                                   class="btn btn-xs {% if user|user_reaction:c == 1 %}btn-primary{% else %}btn-default{% endif %}"
+                                                   onclick="toggle_reaction('{% url 'toggle_reaction' 'comment' c.id %}', 1, function (response) { $('#comment_affected_{{ c.id }}').toggleClass('btn-primary', response.reaction === 1).toggleClass('btn-default', response.reaction !== 1); $('#comment_affected_count_{{ c.id }}').text(response.helpful); })"
+                                                   title="+1 this comment">
+                                                    <span class="glyphicon glyphicon-thumbs-up"></span>
+                                                    (<span id="comment_affected_count_{{ c.id }}">{{ c.affected_user_count }}</span>)
+                                                </a>
+                                            </span>
+                                            {% endif %}
                                             <span class="media-middle">{{ c.content|linebreaksbr }}</span>
                                             <span class="media-bottom">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
                                             {% if user.id == c.author.id or user|is_staff_on_tool:tool %}

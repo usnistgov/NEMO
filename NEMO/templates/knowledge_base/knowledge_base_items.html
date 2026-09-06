@@ -18,6 +18,11 @@
                         <li id="knowledge_base_item_{{ item.id }}" style="margin-bottom: 15px">
                             <u>{{ item.name }}:</u>
                             {% if item.description %}<div style="margin: 5px 0">{{ item.description|safe|linebreaksbr }}</div>{% endif %}
+                            {% if kind == "user" %}{% with model_name="userknowledgebaseitem" %}
+                                {% include "knowledge_base/helpful_widget.html" %}
+                            {% endwith %}{% else %}{% with model_name="staffknowledgebaseitem" %}
+                                {% include "knowledge_base/helpful_widget.html" %}
+                            {% endwith %}{% endif %}
                             <ul>
                                 {% if kind == "user" %}
                                     {% for doc in item.userknowledgebaseitemdocuments_set.all %}

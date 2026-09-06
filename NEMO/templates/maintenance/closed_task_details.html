@@ -24,6 +24,14 @@ Urgency: {{ task.get_urgency_display|lower }}
 {% endif %}
 <h4>Problem description</h4>
 <p>{{ task.problem_description|linebreaksbr }}</p>
+{% if task.affected_user_count and customizations|get_item:"tool_task_reactions_show_affected_users_to_staff" == "enabled" %}
+    <h4>Users affected ({{ task.affected_user_count }})</h4>
+    <p>
+        {% for affected_user in task.affected_users %}
+            {{ affected_user.get_name }}{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+    </p>
+{% endif %}
 {% if task.task_images %}
     <div>
         images:

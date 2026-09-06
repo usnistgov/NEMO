@@ -58,6 +58,9 @@
                                 <a href="{% url 'maintenance' sort_by='creation_time' %}">Created</a>
                             </th>
                             <th>Description</th>
+                            {% if customizations|get_item:"tool_task_reactions_enabled" == "enabled" %}
+                                <th title="Number of users affected by this task">Affected</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     {% for task in pending_tasks %}
@@ -81,6 +84,13 @@
                             </td>
                             <td>{{ task.creation_time|naturaltime }}</td>
                             <td>{{ task.problem_description }}</td>
+                            {% if customizations|get_item:"tool_task_reactions_enabled" == "enabled" %}
+                                <td>
+                                    {% if task.affected_user_count %}
+                                        <span class="badge">{{ task.affected_user_count }}</span>
+                                    {% endif %}
+                                </td>
+                            {% endif %}
                         </tr>
                     {% endfor %}
                 </table>

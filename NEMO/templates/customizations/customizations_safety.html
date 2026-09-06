@@ -96,6 +96,32 @@
                 </div>
             </div>
         </div>
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Reactions</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <input type="hidden" name="safety_issue_reactions_enabled" value="off" />
+                    <label>
+                        <input type="checkbox"
+                               id="safety_issue_reactions_enabled"
+                               name="safety_issue_reactions_enabled"
+                               {% if safety_issue_reactions_enabled == "enabled" %}checked{% endif %}
+                               value="enabled">
+                        Allow users to +1 ("Me too") safety issues
+                    </label>
+                    <br>
+                    <input type="hidden" name="safety_issue_reactions_show_affected_users_to_staff" value="off" />
+                    <label>
+                        <input type="checkbox"
+                               id="safety_issue_reactions_show_affected_users_to_staff"
+                               name="safety_issue_reactions_show_affected_users_to_staff"
+                               {% if safety_issue_reactions_show_affected_users_to_staff == "enabled" %}checked{% endif %}
+                               value="enabled">
+                        Show staff the list of users who are also concerned about an issue
+                    </label>
+                </div>
+            </div>
+        </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <div class="text-center">{% button type="save" value="Save settings" %}</div>
     </form>

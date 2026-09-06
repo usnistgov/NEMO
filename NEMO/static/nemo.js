@@ -1173,3 +1173,9 @@ function build_django_url(urlTemplate, placeholders, actualValues)
     // Rejoin URL segments
     return segments.join('/');
 }
+
+function toggle_reaction(url, reaction, on_success)
+{
+    let failure_dialog = ajax_failure_callback("Unable to save your reaction");
+    ajax_post(url, {"reaction": reaction}, on_success, failure_dialog);
+}

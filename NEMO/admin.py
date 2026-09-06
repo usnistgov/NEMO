@@ -124,6 +124,7 @@ from NEMO.models import (
     UserKnowledgeBaseItem,
     UserKnowledgeBaseItemDocuments,
     UserPreferences,
+    UserReaction,
     UserType,
     record_active_state,
     record_local_many_to_many_changes,
@@ -1302,6 +1303,7 @@ class TaskAdmin(admin.ModelAdmin):
         "cancelled",
         "resolved",
         "resolution_category",
+        "affected_user_count",
     )
     list_filter = (
         "urgency",
@@ -1315,6 +1317,14 @@ class TaskAdmin(admin.ModelAdmin):
     date_hierarchy = "creation_time"
     autocomplete_fields = ["tool", "creator", "last_updated_by", "resolver"]
     search_fields = ["tool__name", "creator__first_name", "creator__last_name", "creator__username"]
+
+
+@register(UserReaction)
+class UserReactionAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "content_type", "object_id", "reaction", "creation_time")
+    list_filter = ("reaction", "content_type")
+    date_hierarchy = "creation_time"
+    autocomplete_fields = ["user"]
 
 
 @register(TaskCategory)

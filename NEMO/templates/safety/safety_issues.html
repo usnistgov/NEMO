@@ -11,45 +11,58 @@
     </div>
     {% if tickets %}
         {% for ticket in tickets %}
-            {% if user.is_staff %}
-                <a href="{% url 'update_safety_issue' ticket.id %}" style="text-decoration: none">
-                {% endif %}
-                <div class="panel panel-default">
-                    <div class="panel-body">
-                        <div class="form-group">
-                            <h4>
-                                {% if ticket.id in notifications %}<span class="badge active" style="vertical-align:middle;">New</span>{% endif %}
-                                Concern
-                            </h4>
-                            {{ ticket.concern|linebreaksbr }}
-                        </div>
-                        <div class="form-group">
-                            {% if not ticket.visible %}
-                                <span class="glyphicon glyphicon-eye-close"></span> This issue is hidden from users
-                                <br>
-                            {% endif %}
-                            {% if ticket.location %}
-                                Location: {{ ticket.location }}
-                                <br>
-                            {% endif %}
-                            {% if ticket.reporter %}
-                                Reported on {{ ticket.creation_time }}
-                                {% if user.is_staff %}by {{ ticket.reporter }}{% endif %}
-                                <br>
-                            {% else %}
-                                Reported anonymously on {{ ticket.creation_time }}
-                                <br>
-                            {% endif %}
-                        </div>
-                        {% if ticket.progress %}
-                            <div class="form-group">
-                                <h4>Progress</h4>
-                                {{ ticket.progress|linebreaksbr }}
-                            </div>
+            <div class="panel panel-default"
+                 {% if user.is_staff %}style="cursor:pointer" onclick="location.href='{% url 'update_safety_issue' ticket.id %}'"{% endif %}>
+                <div class="panel-body">
+                    <div class="form-group">
+                        {% if customizations|get_item:"safety_issue_reactions_enabled" == "enabled" %}
+                        <span class="pull-right" style="margin-left:10px" onclick="event.stopPropagation()">
+                            <a href="javascript:void(0)"
+                               id="safety_issue_affected_{{ ticket.id }}"
+                               class="btn btn-xs {% if user|user_reaction:ticket == 1 %}btn-primary{% else %}btn-default{% endif %}"
+                               onclick="toggle_reaction('{% url 'toggle_reaction' 'safetyissue' ticket.id %}', 1, function (response) { $('#safety_issue_affected_{{ ticket.id }}').toggleClass('btn-primary', response.reaction === 1).toggleClass('btn-default', response.reaction !== 1); $('#safety_issue_affected_count_{{ ticket.id }}').text(response.helpful); })"
+                               title="Let staff know you are also concerned about this issue">
+                                <span class="glyphicon glyphicon-thumbs-up"></span>
+                                Me too (<span id="safety_issue_affected_count_{{ ticket.id }}">{{ ticket.affected_user_count }}</span>)
+                            </a>
+                        </span>
+                        {% endif %}
+                        <h4>
+                            {% if ticket.id in notifications %}<span class="badge active" style="vertical-align:middle;">New</span>{% endif %}
+                            Concern
+                        </h4>
+                        {{ ticket.concern|linebreaksbr }}
+                    </div>
+                    <div class="form-group">
+                        {% if not ticket.visible %}
+                            <span class="glyphicon glyphicon-eye-close"></span> This issue is hidden from users
+                            <br>
+                        {% endif %}
+                        {% if ticket.location %}
+                            Location: {{ ticket.location }}
+                            <br>
+                        {% endif %}
+                        {% if ticket.reporter %}
+                            Reported on {{ ticket.creation_time }}
+                            {% if user.is_staff %}by {{ ticket.reporter }}{% endif %}
+                            <br>
+                        {% else %}
+                            Reported anonymously on {{ ticket.creation_time }}
+                            <br>
+                        {% endif %}
+                        {% if user.is_staff and ticket.affected_user_count and customizations|get_item:"safety_issue_reactions_show_affected_users_to_staff" == "enabled" %}
+                            Users also concerned: {% for u in ticket.affected_users %}{{ u.get_name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                            <br>
                         {% endif %}
                     </div>
+                    {% if ticket.progress %}
+                        <div class="form-group">
+                            <h4>Progress</h4>
+                            {{ ticket.progress|linebreaksbr }}
+                        </div>
+                    {% endif %}
                 </div>
-                {% if user.is_staff %}</a>{% endif %}
+            </div>
         {% endfor %}
     {% else %}
         <p>

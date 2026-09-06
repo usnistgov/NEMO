@@ -1,0 +1,28 @@
+{% load custom_tags_and_filters %}
+{% if reactions_enabled == "enabled" %}
+    <div style="margin:5px 0; color: grey; display: flex; justify-content: space-between; align-items: center; font-size:0.9em">
+        <div>
+            Was this article helpful?
+            <a href="javascript:void(0)"
+            id="kb_helpful_{{ item.id }}"
+            class="btn btn-xs {% if user|user_reaction:item == 1 %}btn-success{% else %}btn-default{% endif %}"
+            onclick="toggle_reaction('{% url 'toggle_reaction' model_name item.id %}', 1, function (response) { $('#kb_helpful_{{ item.id }}').toggleClass('btn-success', response.reaction === 1).toggleClass('btn-default', response.reaction !== 1); $('#kb_not_helpful_{{ item.id }}').toggleClass('btn-danger', response.reaction === -1).toggleClass('btn-default', response.reaction !== -1); $('#kb_helpful_count_{{ item.id }}').text(response.helpful); $('#kb_not_helpful_count_{{ item.id }}').text(response.not_helpful); })"
+            title="This page was helpful">
+                <span class="glyphicon glyphicon-thumbs-up"></span>
+            </a>
+            <a href="javascript:void(0)"
+            id="kb_not_helpful_{{ item.id }}"
+            class="btn btn-xs {% if user|user_reaction:item == -1 %}btn-danger{% else %}btn-default{% endif %}"
+            onclick="toggle_reaction('{% url 'toggle_reaction' model_name item.id %}', -1, function (response) { $('#kb_helpful_{{ item.id }}').toggleClass('btn-success', response.reaction === 1).toggleClass('btn-default', response.reaction !== 1); $('#kb_not_helpful_{{ item.id }}').toggleClass('btn-danger', response.reaction === -1).toggleClass('btn-default', response.reaction !== -1); $('#kb_helpful_count_{{ item.id }}').text(response.helpful); $('#kb_not_helpful_count_{{ item.id }}').text(response.not_helpful); })"
+            title="This page was not helpful">
+                <span class="glyphicon glyphicon-thumbs-down"></span>
+            </a>
+        </div>
+        <div>
+            <span id="kb_helpful_count_{{ item.id }}">{{ item.reaction_counts.helpful }}</span> found this helpful
+            {% if user.is_any_part_of_staff %}
+                (<span id="kb_not_helpful_count_{{ item.id }}">{{ item.reaction_counts.not_helpful }}</span> found this not helpful)
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
