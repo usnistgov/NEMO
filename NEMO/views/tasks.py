@@ -11,7 +11,7 @@ from django.template.defaultfilters import linebreaksbr
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.decorators import postpone, staff_member_or_tool_staff_required
+from NEMO.decorators import postpone
 from NEMO.forms import TaskForm, TaskImagesForm, nice_errors
 from NEMO.models import (
     Interlock,
@@ -305,12 +305,12 @@ Visit {url} to view the tool control page for the task.<br/>
         tasks_logger.exception(error_message)
 
 
-@staff_member_or_tool_staff_required
+@login_required
 @require_POST
 def update(request, task_id):
     task = get_object_or_404(Task, id=task_id)
     user: User = request.user
-    if not user.is_staff and task.tool_id not in user.staff_for_tools.values_list("id", flat=True):
+    if not task.can_be_managed_by(user):
         return HttpResponseBadRequest("You are not authorized to update this task.")
     images_form = TaskImagesForm(request.POST, request.FILES)
     form = TaskForm(request.user, data=request.POST, instance=task)
@@ -335,12 +335,12 @@ def update(request, task_id):
         return redirect("tool_control")
 
 
-@staff_member_or_tool_staff_required
+@login_required
 @require_GET
 def task_update_form(request, task_id):
     user: User = request.user
     task = get_object_or_404(Task, id=task_id)
-    if not user.is_staff and task.tool_id not in user.staff_for_tools.values_list("id", flat=True):
+    if not task.can_be_managed_by(user):
         return HttpResponseBadRequest("You are not authorized to update this task.")
     categories = TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT)
     dictionary = {
@@ -356,12 +356,12 @@ def task_update_form(request, task_id):
     return render(request, "tasks/update.html", dictionary)
 
 
-@staff_member_or_tool_staff_required
+@login_required
 @require_GET
 def task_resolution_form(request, task_id):
     user: User = request.user
     task = get_object_or_404(Task, id=task_id)
-    if not user.is_staff and task.tool_id not in user.staff_for_tools.values_list("id", flat=True):
+    if not task.can_be_managed_by(user):
         return HttpResponseBadRequest("You are not authorized to resolve this task.")
     categories = TaskCategory.objects.filter(stage=TaskCategory.Stage.COMPLETION)
     dictionary = {
@@ -378,8 +378,8 @@ def set_task_status(request, task, status_name, user):
     if not status_name:
         return
 
-    if not user.is_staff and not user.is_staff_on_tool(task.tool):
-        raise ValueError("Only staff can set task status")
+    if not task.can_be_managed_by(user):
+        raise ValueError("You are not authorized to set this task's status")
 
     status = TaskStatus.objects.get(name=status_name)
     TaskHistory.objects.create(task=task, status=status_name, user=user)

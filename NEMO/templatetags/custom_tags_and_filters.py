@@ -332,6 +332,13 @@ def is_staff_on_tool(user: User, tool: Tool) -> bool:
             return user in tool.staff.all()
 
 
+@register.filter(name="can_manage_task")
+def can_manage_task(user: User, task) -> bool:
+    if not user or not task:
+        return False
+    return task.can_be_managed_by(user)
+
+
 @register.simple_tag
 def render_tool_properties(tool_properties):
     """

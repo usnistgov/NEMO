@@ -4118,6 +4118,24 @@ class Task(BaseModel):
     def task_images(self):
         return TaskImages.objects.filter(task=self).order_by()
 
+    def can_be_managed_by(self, user: User) -> bool:
+        """
+        Whether the given user can update or resolve this task, beyond staff (who can always do so).
+        Controlled by the "tool_task_management_allow_owners" and "tool_task_management_allow_superusers"
+        customizations, which are both off by default.
+        """
+        from NEMO.views.customization import ToolCustomization
+
+        if user.is_staff_on_tool(self.tool):
+            return True
+        if ToolCustomization.get_bool("tool_task_management_allow_owners") and (
+            user == self.tool.primary_owner or user in self.tool.backup_owners.all()
+        ):
+            return True
+        if ToolCustomization.get_bool("tool_task_management_allow_superusers") and user in self.tool.superusers.all():
+            return True
+        return False
+
 
 class TaskImages(BaseModel):
     task = models.ForeignKey(Task, on_delete=models.CASCADE)

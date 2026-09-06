@@ -264,6 +264,30 @@
             </div>
         </div>
         <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Task permissions</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="tool_task_management_allow_owners"
+                               {% if tool_task_management_allow_owners %}checked{% endif %}
+                               value="enabled">
+                        Allow the tool's owner and backup owners to update or resolve tasks (in addition to staff)
+                    </label>
+                    <label>
+                        <input type="checkbox"
+                               name="tool_task_management_allow_superusers"
+                               {% if tool_task_management_allow_superusers %}checked{% endif %}
+                               value="enabled">
+                        Allow tool superusers to update or resolve tasks (in addition to staff)
+                    </label>
+                </div>
+                <div class="help-block light-grey">
+                    Whoever is allowed here can fully update or resolve a pending task from the tool control page.
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-sm-4 col-md-3" for="tool_problem_max_image_size_pixels">Limit task images size</label>
             <div class="col-md-3">
                 <div class="input-group">
