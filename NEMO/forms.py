@@ -151,6 +151,7 @@ class TaskForm(ModelForm):
     )
     action = ChoiceField(choices=[("create", "create"), ("update", "update"), ("resolve", "resolve")], label="Action")
     description = CharField(required=False, label="Description")
+    staff_only_description = CharField(required=False, label="Staff only description")
     lock = BooleanField(required=False, initial=True)
 
     class Meta:
@@ -165,6 +166,9 @@ class TaskForm(ModelForm):
 
     def clean_description(self):
         return self.cleaned_data["description"].strip()
+
+    def clean_staff_only_description(self):
+        return self.cleaned_data["staff_only_description"].strip()
 
     def clean(self):
         if any(self.errors):
@@ -210,6 +214,14 @@ class TaskForm(ModelForm):
                 else:
                     instance.progress_description += "\n\n" + preface + description
                 instance.progress_description = instance.progress_description.strip()
+            staff_only_description = self.cleaned_data.get("staff_only_description")
+            if staff_only_description:
+                preface = f"On {format_datetime(now)} {self.user.get_full_name()} updated this task:\n"
+                if instance.staff_only_progress_description is None:
+                    instance.staff_only_progress_description = preface + staff_only_description
+                else:
+                    instance.staff_only_progress_description += "\n\n" + preface + staff_only_description
+                instance.staff_only_progress_description = instance.staff_only_progress_description.strip()
         if action == "resolve":
             instance.cancelled = False
             instance.resolved = True

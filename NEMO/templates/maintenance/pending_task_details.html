@@ -167,6 +167,17 @@
                               placeholder="Please describe any actions being taken to resolve this task."></textarea>
                 </div>
             </div>
+            <div class="form-group">
+                <div class="col-lg-6">
+                    <label for="staff_only_description" class="control-label">Staff only notes</label>
+                    <textarea id="staff_only_description"
+                              name="staff_only_description"
+                              class="form-control"
+                              rows="3"
+                              aria-label="Staff only notes"
+                              placeholder="Optional notes visible to staff only (not used when resolving, and never sent in emails)."></textarea>
+                </div>
+            </div>
             <div id="resolution_category" class="form-group collapse">
                 <div class="col-lg-12">
                     <label for="category" class="control-label pull-left">Resolution category</label>
@@ -211,7 +222,13 @@
                         {{ task.progress_description|linebreaksbr }}
                         <p>
                         {% endif %}
-                        {% if rendered_configuration_html %}
+                        {% if task.staff_only_progress_description %}
+                            <p>
+                                <h4>Staff only notes</h4>
+                                <span class="danger-highlight">{{ task.staff_only_progress_description|linebreaksbr }}</span>
+                            <p>
+                            {% endif %}
+                            {% if rendered_configuration_html %}
                             <p>
                                 <h4>Configuration</h4>
                                 {{ rendered_configuration_html }}

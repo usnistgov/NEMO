@@ -4069,6 +4069,11 @@ class Task(BaseModel):
     )
     problem_description = models.TextField(blank=True, null=True)
     progress_description = models.TextField(blank=True, null=True)
+    staff_only_progress_description = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Additional progress notes visible only to staff. Never included in task update emails.",
+    )
     last_updated = models.DateTimeField(
         null=True,
         blank=True,

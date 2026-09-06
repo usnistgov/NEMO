@@ -100,6 +100,12 @@
                     </label>
                     <textarea name="description" id="description" class="form-control" rows="3"></textarea>
                 </div>
+                <div class="form-group">
+                    <label for="staff_only_description">
+                        Optionally, add notes that should only be visible to staff (e.g. service procedures or credentials). These are never sent in task update emails.
+                    </label>
+                    <textarea name="staff_only_description" id="staff_only_description" class="form-control" rows="3"></textarea>
+                </div>
                 {% if task.task_images %}
                     <div>
                         images:
@@ -124,6 +130,10 @@
             {% if task.progress_description %}
                 <h4>Progress</h4>
                 {{ task.progress_description|linebreaksbr }}
+            {% endif %}
+            {% if task.staff_only_progress_description %}
+                <h4>Staff only notes</h4>
+                <span class="danger-highlight">{{ task.staff_only_progress_description|linebreaksbr }}</span>
             {% endif %}
             {% if rendered_configuration_html %}
                 <h4>Configuration</h4>

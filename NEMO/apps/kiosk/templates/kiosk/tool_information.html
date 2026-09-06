@@ -236,6 +236,22 @@
                                 </div>
                             </div>
                         {% endif %}
+                        {% if customer|is_staff_on_tool:tool and t.staff_only_progress_description %}
+                            <div class="media">
+                                <a onclick="toggle_details(this)"
+                                   data-toggle="collapse"
+                                   data-target="#task_{{ t.id }}_staff_only_progress"
+                                   class="pointer">
+                                    <span class="glyphicon glyphicon-eye-close pull-left notification-icon warning-highlight"></span><span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+                                </a>
+                                <div class="media-body">
+                                    <span class="media-heading">Staff only notes</span>
+                                    <div id="task_{{ t.id }}_staff_only_progress" class="collapse">
+                                        <span class="danger-highlight">{{ t.staff_only_progress_description|linebreaksbr }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

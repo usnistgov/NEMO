@@ -40,6 +40,10 @@ Urgency: {{ task.get_urgency_display|lower }}
     <h4>Progress</h4>
     <p>{{ task.progress_description|linebreaksbr }}</p>
 {% endif %}
+{% if task.staff_only_progress_description %}
+    <h4>Staff only notes</h4>
+    <p class="danger-highlight">{{ task.staff_only_progress_description|linebreaksbr }}</p>
+{% endif %}
 {% if task.cancelled %}<h4 class="primary-highlight">Cancelled on {{ task.resolution_time }}</h4>{% endif %}
 {% if task.resolved %}
     <h4 class="success-highlight">Resolved by {{ task.resolver }} on {{ task.resolution_time }}</h4>
