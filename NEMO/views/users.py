@@ -24,6 +24,7 @@ from NEMO.models import (
     Reservation,
     StaffCharge,
     Tool,
+    ToolQualificationGroup,
     UsageEvent,
     User,
     UserDocuments,
@@ -77,7 +78,8 @@ def create_or_modify_user(request, user_id):
     readonly = readonly_users(request)
     dictionary = {
         "projects": Project.objects.filter(active=True, account__active=True).prefetch_related("manager_set"),
-        "tools": Tool.objects.filter(visible=True),
+        "tools": list(Tool.objects.filter(visible=True)),
+        "tool_groups": list(ToolQualificationGroup.objects.all()),
         "area_access_dict": dict_area,
         "area_access_levels": area_access_levels,
         "one_year_from_now": timezone.localdate() + timedelta(days=365),
@@ -274,7 +276,12 @@ def create_or_modify_user(request, user_id):
             del request.session["user_correlation_id"]
         record_active_state(request, user, form, "is_active", user_id == "new")
 
-        record_qualifications(request.user, user, request.POST.getlist("qualifications", []))
+        record_qualifications(
+            request.user,
+            user,
+            request.POST.getlist("qualifications", []),
+            request.POST.getlist("tool_qualification_groups", []),
+        )
         record_local_many_to_many_changes(request, user, form, "physical_access_levels")
         record_local_many_to_many_changes(request, user, form, "projects")
         form.save_m2m()
@@ -295,15 +302,20 @@ def create_or_modify_user(request, user_id):
         return HttpResponseBadRequest("Invalid method")
 
 
-def record_qualifications(request_user, user, qualifications: list[str]):
+def record_qualifications(
+    request_user, user, qualifications: list[str], tool_qualification_groups: list[str] = None
+):
     from NEMO.views.qualifications import qualify, disqualify
 
     tools = set()
     if qualifications:
         for tool_id in qualifications:
-            tool = Tool.objects.get(pk=tool_id)
-            qualify(request_user, tool, user)
-            tools.add(tool)
+            tools.add(Tool.objects.get(pk=tool_id))
+    if tool_qualification_groups:
+        for group in ToolQualificationGroup.objects.filter(pk__in=tool_qualification_groups):
+            tools.update(group.get_all_tools())
+    for tool in tools:
+        qualify(request_user, tool, user)
     for tool in set(user.qualifications.all()).difference(tools):
         disqualify(request_user, tool, user)
 

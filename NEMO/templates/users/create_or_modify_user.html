@@ -271,7 +271,7 @@
                            type="text"
                            autocomplete="off"
                            class="form-control"
-                           placeholder="Add a qualification">
+                           placeholder="Add a tool or tool group">
                 </div>
             </div>
             <div class="form-group">
@@ -523,7 +523,12 @@
 			if(dataset_name === 'projects')
 				add_project(search_selection.name, search_selection.id);
 			else if(dataset_name === 'tools')
-				add_tool_qualification(search_selection.name, search_selection.id);
+			{
+				if (search_selection.type === 'toolqualificationgroup')
+					add_tool_qualification_group(search_selection.name, search_selection.id);
+				else
+					add_tool_qualification(search_selection.name, search_selection.id);
+			}
 		}
 		function add_project(project_name, project_id)
 		{
@@ -549,6 +554,15 @@
 		{
 			remove_from_list("#qualification-list", "#qualifications_" + tool_id, "This user is not qualified to use any tools.");
 		}
+		function add_tool_qualification_group(group_name, group_id)
+		{
+            let group_text = group_name + ' <span class="light-grey">(tool group)</span>';
+			add_to_list("#qualification-list", "remove_tool_qualification_group", group_id, group_text, "Remove the " + group_name + " tool group qualification", "tool_qualification_groups", {{ readonly|yesno:"true,false" }});
+		}
+		function remove_tool_qualification_group(group_id)
+		{
+			remove_from_list("#qualification-list", "#tool_qualification_groups_" + group_id, "This user is not qualified to use any tools.");
+		}
         function mark_document_for_removal(document_id)
         {
             $("#document_"+document_id).remove();
@@ -560,7 +574,7 @@
 			$('[data-toggle="tooltip"]').tooltip();
 			$("#access_expiration").datetimepicker({format: '{{ date_input_js_format }}'});
 			$('#add_a_project').autocomplete('projects', on_search_selection, {% json_search_base_with_extra_fields projects 'application_identifier' display="display_with_status_and_managers" %});
-			$('#add_a_tool_qualification').autocomplete('tools', on_search_selection, {{ tools|json_search_base }});
+			$('#add_a_tool_qualification').autocomplete('tools', on_search_selection, {% json_search_base_with_extra_fields tools|add:tool_groups %}, {% if tool_groups %}false{% else %}true{% endif %});
 			{% if form.instance.id %} {# Only look for projects and qualifications if this is an existing user (and not a new user). #}
                 {% for project in form.instance.projects.all %}
 					add_project('{{ project.display_with_status_and_managers|safe|escapejs }}', {{ project.id }});

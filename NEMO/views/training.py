@@ -2,7 +2,7 @@ import datetime
 from logging import getLogger
 from re import search
 
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render
 from django.urls import reverse
@@ -36,10 +36,15 @@ def get_training_dictionary(request):
     tool_groups = ToolQualificationGroup.objects.all()
     if not user.is_staff and (user.is_tool_superuser or user.is_tool_staff):
         tools = set(list(tools.filter(_superusers__in=[user])) + list(tools.filter(_staff__in=[user])))
-        # Superusers can only use groups if they are superusers for all those, same for staff
-        tool_groups = (
-            tool_groups.annotate(num_tools=Count("tools")).filter(tools__in=tools).filter(num_tools=len(tools))
-        )
+        # Superusers can only use groups if they are superusers for all those tools, same for staff,
+        # including tools from any nested sub-groups
+        allowed_tool_ids = {tool.id for tool in tools}
+        allowed_tool_groups = []
+        for tool_group in tool_groups:
+            group_tool_ids = {tool.id for tool in tool_group.get_all_tools()}
+            if group_tool_ids and group_tool_ids.issubset(allowed_tool_ids):
+                allowed_tool_groups.append(tool_group)
+        tool_groups = allowed_tool_groups
     training_types = TrainingSession.Type.Choices
     training_only_type = TrainingCustomization.get_int("training_only_type")
     if training_only_type is not None:
@@ -108,7 +113,7 @@ def charge_training(request):
                         (
                             [Tool.objects.get(id=identifier)]
                             if chosen_type == "tool"
-                            else ToolQualificationGroup.objects.get(id=identifier).tools.all()
+                            else ToolQualificationGroup.objects.get(id=identifier).get_all_tools()
                         ),
                     )
                     # Even with a group of tools, we only charge training on the first one

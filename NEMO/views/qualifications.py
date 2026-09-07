@@ -3,7 +3,6 @@ from urllib.parse import urljoin
 import requests
 from django.conf import settings
 from django.contrib import messages
-from django.db.models import Count
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
@@ -23,10 +22,15 @@ def qualifications(request):
     if not request.user.is_any_part_of_staff:
         # Staff on tools can only use their tools
         tools = tools.filter(_staff__in=[request.user])
-        # Staff on tools can only use groups if they are staff for all those
-        tool_groups = (
-            tool_groups.annotate(num_tools=Count("tools")).filter(tools__in=tools).filter(num_tools=len(tools))
-        )
+        # Staff on tools can only use groups if they are staff for every tool in that group,
+        # including tools from any nested sub-groups
+        staff_tool_ids = set(tools.values_list("id", flat=True))
+        allowed_tool_groups = []
+        for tool_group in tool_groups:
+            group_tool_ids = {tool.id for tool in tool_group.get_all_tools()}
+            if group_tool_ids and group_tool_ids.issubset(staff_tool_ids):
+                allowed_tool_groups.append(tool_group)
+        tool_groups = allowed_tool_groups
     return render(
         request, "qualifications.html", {"users": users, "tools": list(tools), "tool_groups": list(tool_groups)}
     )
@@ -49,12 +53,12 @@ def modify_qualifications(request):
         or request.POST.getlist("chosen_toolqualificationgroup")
         or []
     )
-    # Add tools from tool group
+    # Add tools from tool group, including tools from any nested sub-groups
     tools.extend(
         [
             tool.id
             for tool_group in ToolQualificationGroup.objects.filter(id__in=tool_groups)
-            for tool in tool_group.tools.all()
+            for tool in tool_group.get_all_tools()
         ]
     )
     tools = Tool.objects.in_bulk(tools)
