@@ -4101,6 +4101,12 @@ class Task(BaseModel):
     resolution_category = models.ForeignKey(
         "TaskCategory", null=True, blank=True, related_name="resolution_category", on_delete=models.SET_NULL
     )
+    assigned_to = models.ManyToManyField(
+        User,
+        blank=True,
+        related_name="assigned_tasks",
+        help_text="The staff members this task is assigned to.",
+    )
 
     class Meta:
         ordering = ["-creation_time"]
@@ -4117,6 +4123,12 @@ class Task(BaseModel):
 
     def task_images(self):
         return TaskImages.objects.filter(task=self).order_by()
+
+    @classmethod
+    def get_assignable_users(cls):
+        return User.objects.filter(Q(is_staff=True) | Q(is_superuser=True), is_active=True).order_by(
+            "last_name", "first_name"
+        )
 
 
 class TaskImages(BaseModel):

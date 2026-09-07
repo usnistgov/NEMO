@@ -22,6 +22,10 @@ Urgency: {{ task.get_urgency_display|lower }}
     Problem category: {{ task.problem_category|lower }}
     <br>
 {% endif %}
+{% if task.assigned_to.all and customizations|get_item:"tool_task_assignment_enabled" == "enabled" %}
+    Assigned to: {{ task.assigned_to.all|join:", " }}
+    <br>
+{% endif %}
 <h4>Problem description</h4>
 <p>{{ task.problem_description|linebreaksbr }}</p>
 {% if task.task_images %}

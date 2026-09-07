@@ -1302,6 +1302,7 @@ class TaskAdmin(admin.ModelAdmin):
         "cancelled",
         "resolved",
         "resolution_category",
+        "get_assigned_to",
     )
     list_filter = (
         "urgency",
@@ -1311,10 +1312,15 @@ class TaskAdmin(admin.ModelAdmin):
         "creation_time",
         ("tool", admin.RelatedOnlyFieldListFilter),
         ("creator", admin.RelatedOnlyFieldListFilter),
+        ("assigned_to", admin.RelatedOnlyFieldListFilter),
     )
     date_hierarchy = "creation_time"
-    autocomplete_fields = ["tool", "creator", "last_updated_by", "resolver"]
+    autocomplete_fields = ["tool", "creator", "last_updated_by", "resolver", "assigned_to"]
     search_fields = ["tool__name", "creator__first_name", "creator__last_name", "creator__username"]
+
+    @display(description="Assigned to")
+    def get_assigned_to(self, task: Task):
+        return ", ".join(str(user) for user in task.assigned_to.all())
 
 
 @register(TaskCategory)
