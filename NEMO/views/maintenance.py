@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET
 
 from NEMO.decorators import staff_member_or_tool_staff_required
-from NEMO.models import Task, TaskCategory, TaskStatus, User
+from NEMO.models import Task, TaskCategory, TaskStatus, Tool, User
 from NEMO.utilities import as_timezone, get_tool_categories_for_filters
 
 
@@ -60,12 +60,17 @@ def maintenance(request, sort_by=""):
             Q(tool___category=tool_category) | (Q(tool___category__startswith=tool_category + "/"))
         )
     closed_tasks = closed_tasks[:20]
+    # Tools staff can report a problem for from this page, including invisible ones (resolves #245)
+    reportable_tools = Tool.objects.all() if user.is_staff else user.staff_for_tools.all()
     dictionary = {
         "pending_tasks": pending_tasks,
         "closed_tasks": closed_tasks,
         "tool_categories": get_tool_categories_for_filters(),
         "tool_category": tool_category,
         "tab": request.GET.get("tab", "pending"),
+        "reportable_tools": reportable_tools,
+        "urgency": Task.Urgency.Choices,
+        "task_categories": TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT),
     }
     return render(request, "maintenance/maintenance.html", dictionary)
 
