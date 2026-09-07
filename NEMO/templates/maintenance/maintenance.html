@@ -57,7 +57,7 @@
                             <th>
                                 <a href="{% url 'maintenance' sort_by='creation_time' %}">Created</a>
                             </th>
-                            <th>Title/Description</th>
+                            <th>{% if customizations|get_item:"tool_task_titles_enabled" == "enabled" %}Title/Description{% else %}Description{% endif %}</th>
                         </tr>
                     </thead>
                     {% for task in pending_tasks %}
@@ -112,7 +112,7 @@
                             <th>Problem category</th>
                             <th>Created</th>
                             <th>Resolved</th>
-                            <th>Title/Description</th>
+                            <th>{% if customizations|get_item:"tool_task_titles_enabled" == "enabled" %}Title/Description{% else %}Description{% endif %}</th>
                         </tr>
                     </thead>
                     {% for task in closed_tasks %}

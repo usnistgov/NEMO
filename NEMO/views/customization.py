@@ -733,6 +733,7 @@ class ToolCustomization(CustomizationBase):
         "tool_problem_send_to_all_qualified_users": "",
         "tool_problem_allow_regular_user_preferences": "",
         "tool_problem_safety_hazard_automatic_shutdown": "",
+        "tool_task_titles_enabled": "enabled",
         "tool_configuration_setting_template": "{{ current_setting }}",
         "tool_configuration_near_future_days": "1",
         "tool_configuration_change_while_in_use": "",

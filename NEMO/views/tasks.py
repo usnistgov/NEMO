@@ -276,7 +276,7 @@ A task for the {task.tool} was just modified by {task_user}.
 <br/><br/>
 The latest update is at the bottom of the description. The entirety of the task status follows:
 <br/><br/>
-{('<b>' + task.title + '</b><br/><br/>') if task.title else ''}
+{('<b>' + task.title + '</b><br/><br/>') if task.title and ToolCustomization.get_bool("tool_task_titles_enabled") else ''}
 Task problem description:<br/>
 {linebreaksbr(task.problem_description)}
 <br/><br/>

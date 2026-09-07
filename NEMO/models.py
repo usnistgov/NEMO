@@ -4123,6 +4123,10 @@ class Task(BaseModel):
 
     def title_or_description(self) -> str:
         """Returns the title if one was set, otherwise falls back to the full problem description."""
+        from NEMO.views.customization import ToolCustomization
+
+        if not ToolCustomization.get_bool("tool_task_titles_enabled"):
+            return self.problem_description
         return self.title or self.problem_description
 
     def task_images(self):

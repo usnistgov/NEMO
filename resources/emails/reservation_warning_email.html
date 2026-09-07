@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 <html lang="en">
     <head>
         <meta charset="utf-8">
@@ -49,7 +50,7 @@
                                         <em>{{ problem.problem_category }}</em>
                                         <br>
                                     {% endif %}
-                                    {% if problem.title %}
+                                    {% if problem.title and customizations|get_item:"tool_task_titles_enabled" == "enabled" %}
                                         <b>{{ problem.title }}</b>
                                         <br>
                                     {% endif %}

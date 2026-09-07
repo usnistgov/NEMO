@@ -59,7 +59,7 @@ from NEMO.utilities import (
     new_model_copy,
     quiet_int,
 )
-from NEMO.views.customization import UserRequestsCustomization
+from NEMO.views.customization import ToolCustomization, UserRequestsCustomization
 
 
 class UserForm(ModelForm):
@@ -165,6 +165,9 @@ class TaskForm(ModelForm):
         self.fields["title"].required = False
 
     def clean_title(self):
+        if not ToolCustomization.get_bool("tool_task_titles_enabled"):
+            # Task titles are disabled; ignore any submitted value and preserve whatever was already set
+            return self.instance.title
         title = self.cleaned_data["title"]
         return title.strip() or None if title else None
 

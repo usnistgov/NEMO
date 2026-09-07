@@ -5,7 +5,7 @@
 {% block title %}Resolve task{% endblock %}
 {% block content %}
     <h1>{{ task.tool.name }} task</h1>
-    {% if task.title %}<h3>{{ task.title }}</h3>{% endif %}
+    {% if task.title and customizations|get_item:"tool_task_titles_enabled" == "enabled" %}<h3>{{ task.title }}</h3>{% endif %}
     <span style="color:grey">Created by {{ task.creator }} on {{ task.creation_time }} ({{ task.creation_time|naturaltime }}).</span>
     <p>
         {% if task.last_updated and task.last_updated_by %}
