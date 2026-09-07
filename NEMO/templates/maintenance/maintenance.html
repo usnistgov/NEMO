@@ -10,6 +10,12 @@
 {% block body %}
     <div class="container-fluid">
         <h1 class="pull-left" style="margin-right:20px; margin-top:0; margin-bottom:0">Maintenance</h1>
+        <button type="button"
+                class="btn btn-primary pull-right"
+                data-toggle="modal"
+                data-target="#report_problem_modal">
+            <span class="glyphicon glyphicon-plus"></span> Report a problem
+        </button>
         <ul class="nav nav-pills" id="tabs">
             <li class="{% if not tab or tab == 'pending' %}active{% endif %}">
                 <a href="#pending">Pending</a>
@@ -136,6 +142,79 @@
             <div id="closed_task_details" class="split-screen-right-panel"></div>
         </div>
     </div>
+    <div class="modal fade" id="report_problem_modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form action="{% url 'create_task' %}"
+                      method="post"
+                      enctype="multipart/form-data"
+                      id="report_problem_form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create">
+                    <input type="hidden" name="next_page" value="maintenance">
+                    <input type="hidden" id="report_problem_tool_id" name="tool">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        <h4 class="modal-title">Report a problem</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p>
+                            Search for any tool below, including tools that are hidden from regular users, to report a problem or create a task for it.
+                        </p>
+                        <div class="form-group">
+                            <label for="report_problem_tool_search">Tool</label>
+                            <input id="report_problem_tool_search"
+                                   class="form-control"
+                                   placeholder="Search for a tool"
+                                   autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="report_problem_urgency">Urgency</label>
+                            <select id="report_problem_urgency" name="urgency" class="form-control">
+                                {% for level in urgency %}<option value="{{ level.0 }}">{{ level.1 }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        {% if task_categories %}
+                            <div class="form-group">
+                                <label for="report_problem_category">Problem category</label>
+                                <select id="report_problem_category" name="problem_category" class="form-control">
+                                    <option value="">&nbsp;</option>
+                                    {% for c in task_categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+                                </select>
+                            </div>
+                        {% endif %}
+                        <div class="form-group">
+                            <label for="report_problem_description">Description</label>
+                            <textarea id="report_problem_description"
+                                      name="description"
+                                      class="form-control"
+                                      rows="5"
+                                      required></textarea>
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" name="safety_hazard"> This problem is a safety hazard
+                            </label>
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" name="force_shutdown"> Shut down the tool until this problem is resolved
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <input aria-label="File upload" type="file" name="image" multiple>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                        {% button type="delete" submit=True icon="glyphicon-send" value="Report problem" %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     <script>
 	function pending_task_details(row, url)
 	{
@@ -208,6 +287,21 @@
         window.location.href = this_url.toString();
     }
 
+    function select_report_problem_tool(jquery_event, search_selection)
+    {
+        $('#report_problem_tool_search').typeahead('val', search_selection.name);
+        $('#report_problem_tool_id').val(search_selection.id);
+    }
+
+    function on_report_problem_submit(event)
+    {
+        if (!$('#report_problem_tool_id').val())
+        {
+            event.preventDefault();
+            alert('Please select a tool from the list before reporting a problem.');
+        }
+    }
+
 	function on_load()
 	{
 		$("#tabs a").click(switch_tab);
@@ -225,6 +319,13 @@
             {
                 filter_tool_category('', {'name': ''});
             }
+        });
+        $('#report_problem_tool_search').autocomplete('tools', select_report_problem_tool, {{ reportable_tools|json_search_base }});
+        $('#report_problem_form').on('submit', on_report_problem_submit);
+        $('#report_problem_modal').on('hidden.bs.modal', function ()
+        {
+            $('#report_problem_form')[0].reset();
+            $('#report_problem_tool_id').val('');
         });
 
 	}
