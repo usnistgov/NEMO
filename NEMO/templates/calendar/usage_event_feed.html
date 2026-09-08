@@ -5,8 +5,10 @@
 	{
 		{% if personal_schedule %}
 			"title": "{{ x.tool.name }} ({{ x.user.username }})\n {{ x.project }}",
+		    "color": "{{ x.tool.get_calendar_personal_schedule_color }}",
 		{% else %}
 			"title": "{{ x.tool.name }} ({% if x.operator.id != x.user.id %}{{ x.operator|escapejs }} on behalf of {% endif %}{{ x.user.username }})\n {% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.user %}{{ x.project }}{% endif %}",
+		    "color": "{{ x.tool.get_calendar_usage_color }}",
 		{% endif %}
 		{% if x.operator.id == x.user.id %}
 			"tooltip": "{{ x.tool.name }} usage for {{ x.user|escapejs }}{% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.user %} billed to project {{ x.project }}{% endif %}",
@@ -17,9 +19,7 @@
 		"start": "{{ x.start|date:"c" }}",
 		{# Usage events that are less than the configured minimum display length are artificially lengthened for display purposes. #}
 		"end": "{{ x.get_visual_end|date:"c" }}",
-		"details_url": "{% url 'usage_details' x.id %}",
-		"color": "{{ x.tool.tool_calendar_color|default:'#33ad33'|escapejs }}"
-
+		"details_url": "{% url 'usage_details' x.id %}"
 	}{% if not forloop.last %},{% elif area_access_events or missed_reservations %},{% endif %}
 	{% endfor %}
 	{% for x in area_access_events %}
@@ -31,7 +31,11 @@
 		{# Area access events that are less than the configured minimum display length are artificially lengthened for display purposes. #}
 		"end": "{{ x.get_visual_end|date:"c" }}",
 		"details_url": "{% url 'area_access_details' x.id %}",
-		"color": "{{ x.area.area_calendar_color|default:'#e68a00'|escapejs }}"
+        {% if personal_schedule %}
+            "color": "{{ x.area.get_calendar_personal_schedule_color }}"
+        {% else %}
+            "color": "{{ x.area.get_calendar_usage_color }}"
+        {% endif %}
 	}{% if not forloop.last %},{% elif missed_reservations %},{% endif %}
 	{% endfor %}
 	{% for x in missed_reservations %}
@@ -47,7 +51,7 @@
 			"tooltip": "Missed {{ x.reservation_item.name }} reservation for {{ x.user|escapejs }}{% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.user %} billed to project {{ x.project }}{% endif %}, created by {{ x.creator|escapejs }}",
 		{% endif %}
 		"id": {{ x.id }},
-		"color": "#ff0000",
+		"color": "{{ x.reservation_item.get_calendar_missed_reservation_color }}",
 		"start": "{{ x.start|date:"c" }}",
 		"end": "{{ x.end|date:"c" }}",
 		"details_url": "{% url 'reservation_details' x.id %}"

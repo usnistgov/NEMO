@@ -35,6 +35,12 @@ from NEMO.actions import (
     unlock_selected_interlocks,
     waive_selected_charges,
 )
+from NEMO.constants import (
+    CALENDAR_AREA_ACCESS_DEFAULT_COLOR,
+    CALENDAR_AREA_RESERVATION_DEFAULT_COLOR,
+    CALENDAR_TOOL_RESERVATION_DEFAULT_COLOR,
+    CALENDAR_TOOL_USAGE_DEFAULT_COLOR,
+)
 from NEMO.forms import BuddyRequestForm, RecurringConsumableChargeForm, UserPreferencesForm
 from NEMO.mixins import ModelAdminRedirectMixin, ObjPermissionAdminMixin
 from NEMO.models import (
@@ -265,10 +271,17 @@ class ToolAdminForm(forms.ModelForm):
     )
 
     _tool_calendar_color = forms.CharField(
-        label="Tool calendar color",
+        label="Tool usage calendar color",
         required=False,
         max_length=9,
-        initial="#33ad33",
+        initial=CALENDAR_TOOL_USAGE_DEFAULT_COLOR,
+        widget=forms.TextInput(attrs={"type": "color"}),
+    )
+    _tool_reservation_calendar_color = forms.CharField(
+        label="Tool reservation calendar color",
+        required=False,
+        max_length=9,
+        initial=CALENDAR_TOOL_RESERVATION_DEFAULT_COLOR,
         widget=forms.TextInput(attrs={"type": "color"}),
     )
 
@@ -351,7 +364,16 @@ class ToolAdmin(admin.ModelAdmin):
         ),
         (
             "Additional Information",
-            {"fields": ("_description", "_serial", "_image", "_tool_calendar_color", "_properties")},
+            {
+                "fields": (
+                    "_description",
+                    "_serial",
+                    "_image",
+                    "_tool_calendar_color",
+                    "_tool_reservation_calendar_color",
+                    "_properties",
+                )
+            },
         ),
         ("Current state", {"fields": ("visible", "_operational")}),
         (
@@ -589,7 +611,16 @@ class AreaAdminForm(MPTTAdminForm):
         fields = "__all__"
 
     area_calendar_color = forms.CharField(
-        required=False, max_length=9, initial="#88B7CD", widget=forms.TextInput(attrs={"type": "color"})
+        required=False,
+        max_length=9,
+        initial=CALENDAR_AREA_ACCESS_DEFAULT_COLOR,
+        widget=forms.TextInput(attrs={"type": "color"}),
+    )
+    area_reservation_calendar_color = forms.CharField(
+        required=False,
+        max_length=9,
+        initial=CALENDAR_AREA_RESERVATION_DEFAULT_COLOR,
+        widget=forms.TextInput(attrs={"type": "color"}),
     )
 
 
@@ -611,7 +642,7 @@ class AreaAdmin(DraggableMPTTAdmin):
     filter_horizontal = ["adjustment_request_reviewers", "access_request_reviewers"]
     fieldsets = (
         (None, {"fields": ("name", "parent_area", "category", "reservation_email", "abuse_email", "core_facility")}),
-        ("Additional Information", {"fields": ("area_calendar_color",)}),
+        ("Additional Information", {"fields": ("area_calendar_color", "area_reservation_calendar_color")}),
         (
             "Area access",
             {

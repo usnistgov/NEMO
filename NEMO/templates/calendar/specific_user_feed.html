@@ -4,7 +4,7 @@
 	{
 		"title": "Usage of the {{ x.tool.name }}",
 		"id": {{ x.id }},
-		"color": "#33ad33",
+		"color": "{{ x.tool.get_calendar_usage_color }}",
 		"start": "{{ x.start|date:"c" }}",
 		{# Usage events that are less than the configured minimum display length are artificially lengthened for display purposes. #}
 		"end": "{{ x.get_visual_end|date:"c" }}",
@@ -15,7 +15,7 @@
 	{
 		"title": "{{ x.area }} access billed to project {{ x.project }} {% if x.staff_charge %}by {{ x.staff_charge.staff_member }}{% endif %}",
 		"id": {{ x.id }},
-		"color": "#e68a00",
+		"color": "{{ x.area.get_calendar_usage_color }}",
 		"start": "{{ x.start|date:"c" }}",
 		{# Area access events that are less than the configured minimum display length are artificially lengthened for display purposes. #}
 		"end": "{{ x.get_visual_end|date:"c" }}",
@@ -26,7 +26,7 @@
 	{
 		"title": "Reservation for the {{ x.reservation_item.name }}{% if x.title %}, titled \"{{ x.title }}\"{% endif %}",
 		"id": {{ x.id }},
-		"color": {% if x.tool %}"{{ x.reservation_item.tool_calendar_color|default:'#33ad33' }}"{% elif x.area %}"{{ x.reservation_item.area_calendar_color|default:'#88B7CD' }}"{% endif %},
+        "color": "{{ x.reservation_item.get_calendar_reservation_color }}",
 		"start": "{{ x.start|date:"c" }}",
 		"end": "{{ x.get_visual_end|date:"c" }}",
 		"details_url": "{% url 'reservation_details' x.id %}"
@@ -36,7 +36,7 @@
 	{
 		"title": "Missed reservation for the {{ x.reservation_item.name }}",
 		"id": {{ x.id }},
-		"color": {% if x.tool %}"#ff0000"{% elif x.area %}"#FF6666"{% endif %},
+		"color": "{{ x.reservation_item.get_calendar_missed_reservation_color }}",
 		"start": "{{ x.start|date:"c" }}",
 		"end": "{{ x.get_visual_end|date:"c" }}",
 		"details_url": "{% url 'reservation_details' x.id %}"

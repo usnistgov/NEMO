@@ -451,6 +451,15 @@ class CalendarCustomization(CustomizationBase):
         "change_reservation_confirmation": "",
         "reservation_confirmation_date_format": "MMMM D, yyyy",
         "reservation_confirmation_time_format": "h:mma",
+        "calendar_color_tool_usage_default": "#33ad33",
+        "calendar_color_area_access_default": "#88b7cd",
+        "calendar_color_tool_reservation_default": "#88b7cd",
+        "calendar_color_area_reservation_default": "#88b7cd",
+        "calendar_color_tool_personal_schedule": "#33ad33",
+        "calendar_color_area_personal_schedule": "#84cd84",
+        "calendar_color_tool_missed_reservation": "#ff0000",
+        "calendar_color_area_missed_reservation": "#ff6666",
+        "calendar_color_outage": "#ff0000",
     }
 
     def validate(self, name, value):

@@ -36,6 +36,10 @@ from mptt.models import MPTTModel
 from NEMO import fields
 from NEMO.constants import (
     ADDITIONAL_INFORMATION_MAXIMUM_LENGTH,
+    CALENDAR_TOOL_RESERVATION_DEFAULT_COLOR,
+    CALENDAR_TOOL_USAGE_DEFAULT_COLOR,
+    CALENDAR_AREA_RESERVATION_DEFAULT_COLOR,
+    CALENDAR_AREA_ACCESS_DEFAULT_COLOR,
     CHAR_FIELD_LARGE_LENGTH,
     CHAR_FIELD_MEDIUM_LENGTH,
     CHAR_FIELD_SMALL_LENGTH,
@@ -1266,9 +1270,17 @@ class Tool(SerializationByNameModel):
     )
     _tool_calendar_color = models.CharField(
         db_column="tool_calendar_color",
-        verbose_name="tool calendar color",
+        verbose_name="tool usage calendar color",
         max_length=9,
-        default="#33ad33",
+        default=CALENDAR_TOOL_USAGE_DEFAULT_COLOR,
+        help_text="Color for tool usage in calendar overviews",
+        validators=[color_hex_validator],
+    )
+    _tool_reservation_calendar_color = models.CharField(
+        db_column="tool_reservation_calendar_color",
+        verbose_name="tool reservation calendar color",
+        max_length=9,
+        default=CALENDAR_TOOL_RESERVATION_DEFAULT_COLOR,
         help_text="Color for tool reservations in calendar overviews",
         validators=[color_hex_validator],
     )
@@ -1975,6 +1987,19 @@ class Tool(SerializationByNameModel):
         self._tool_calendar_color = value
 
     @property
+    def tool_reservation_calendar_color(self):
+        return (
+            self.parent_tool.tool_reservation_calendar_color
+            if self.is_child_tool()
+            else self._tool_reservation_calendar_color
+        )
+
+    @tool_reservation_calendar_color.setter
+    def tool_reservation_calendar_color(self, value):
+        self.raise_setter_error_if_child_tool("tool_reservation_calendar_color")
+        self._tool_reservation_calendar_color = value
+
+    @property
     def operation_mode(self):
         return self.parent_tool.operation_mode if self.is_child_tool() else self._operation_mode
 
@@ -1991,6 +2016,30 @@ class Tool(SerializationByNameModel):
     def abuse_weight(self, value):
         self.raise_setter_error_if_child_tool("abuse_weight")
         self._abuse_weight = value
+
+    def get_calendar_usage_color(self):
+        from NEMO.views.customization import CalendarCustomization
+
+        if self.tool_calendar_color.lower() == CALENDAR_TOOL_USAGE_DEFAULT_COLOR:
+            return CalendarCustomization.get("calendar_color_tool_usage_default")
+        return self.tool_calendar_color
+
+    def get_calendar_reservation_color(self):
+        from NEMO.views.customization import CalendarCustomization
+
+        if self.tool_reservation_calendar_color.lower() == CALENDAR_TOOL_RESERVATION_DEFAULT_COLOR:
+            return CalendarCustomization.get("calendar_color_tool_reservation_default")
+        return self.tool_reservation_calendar_color
+
+    def get_calendar_missed_reservation_color(self):
+        from NEMO.views.customization import CalendarCustomization
+
+        return CalendarCustomization.get("calendar_color_tool_missed_reservation")
+
+    def get_calendar_personal_schedule_color(self):
+        from NEMO.views.customization import CalendarCustomization
+
+        return CalendarCustomization.get("calendar_color_tool_personal_schedule")
 
     def allow_wait_list(self):
         return self.operation_mode in [self.OperationMode.WAIT_LIST, self.OperationMode.HYBRID]
@@ -2795,8 +2844,14 @@ class Area(MPTTModel):
     # Additional information
     area_calendar_color = models.CharField(
         max_length=9,
-        default="#88B7CD",
-        help_text="Color for tool reservations in calendar overviews",
+        default=CALENDAR_AREA_ACCESS_DEFAULT_COLOR,
+        help_text="Color for area access in calendar overviews",
+        validators=[color_hex_validator],
+    )
+    area_reservation_calendar_color = models.CharField(
+        max_length=9,
+        default=CALENDAR_AREA_RESERVATION_DEFAULT_COLOR,
+        help_text="Color for area reservations in calendar overviews",
         validators=[color_hex_validator],
     )
 
@@ -3046,6 +3101,30 @@ class Area(MPTTModel):
     @property
     def location(self):
         return self.name
+
+    def get_calendar_usage_color(self):
+        from NEMO.views.customization import CalendarCustomization
+
+        if self.area_calendar_color.lower() == CALENDAR_AREA_ACCESS_DEFAULT_COLOR:
+            return CalendarCustomization.get("calendar_color_area_access_default")
+        return self.area_calendar_color
+
+    def get_calendar_reservation_color(self):
+        from NEMO.views.customization import CalendarCustomization
+
+        if self.area_reservation_calendar_color.lower() == CALENDAR_AREA_RESERVATION_DEFAULT_COLOR:
+            return CalendarCustomization.get("calendar_color_area_reservation_default")
+        return self.area_reservation_calendar_color
+
+    def get_calendar_missed_reservation_color(self):
+        from NEMO.views.customization import CalendarCustomization
+
+        return CalendarCustomization.get("calendar_color_area_missed_reservation")
+
+    def get_calendar_personal_schedule_color(self):
+        from NEMO.views.customization import CalendarCustomization
+
+        return CalendarCustomization.get("calendar_color_area_personal_schedule")
 
     def clean(self):
         from NEMO.views.customization import CoreFacilityCustomization

@@ -3,26 +3,17 @@
 [
 	{% for x in events %}
 	{
-		{% if personal_schedule and x.tool %}
+		{% if personal_schedule and x.tool or personal_schedule and x.area %}
 			"title": "{{ x.reservation_item.name|escapejs }} ({{ x.user.username|escapejs }})\n{{ x.title|escapejs }}",
-			"color": "#33ad33",
-		{% elif personal_schedule and x.area %}
-			"title": "{{ x.reservation_item.name|escapejs }} ({{ x.user.username|escapejs }})\n{{ x.title|escapejs }}",
-			"color": "#84CD84",
-		{% elif all_tools or all_areastools and x.tool %}
-			"title": "{{ x.reservation_item.name|escapejs }} ({{ x.user.username|escapejs }}){% if user.id == x.user_id or user|is_staff_on_tool:x.tool %}\n{{ x.title|escapejs }}{% endif %}",
-			"color": "{{ x.reservation_item.tool_calendar_color|default:'#33ad33'|escapejs }}",
-		{% elif all_areas or all_areastools and x.area %}
-			"title": "{{ x.reservation_item.name|escapejs }} ({{ x.user.username|escapejs }}){% if user.id == x.user_id or user|is_staff_on_tool:x.tool %}\n{{ x.title|escapejs }}{% endif %}",
-			"color": "{{ x.reservation_item.area_calendar_color|default:'#84CD84'|escapejs }}",
+			"color": "{{ x.reservation_item.get_calendar_personal_schedule_color }}",
 		{% else %}
-            {% if display_name %}
+		    {% if all_tools or all_areastools and x.tool or all_areas or all_areastools and x.area or display_name %}
 			    "title": "{{ x.reservation_item.name|escapejs }} ({{ x.user.username|escapejs }}){% if user.id == x.user_id or user|is_staff_on_tool:x.tool %}\n{{ x.title|escapejs }}{% endif %}",
             {% else %}
                 "title": "{% if user.id == x.user_id or user|is_staff_on_tool:x.tool %}{{ x.title|default:x.user|escapejs }}{% else %}{{ x.user|escapejs }}{% endif %}{% if display_configuration %}\n{{ x.get_configuration_options_display|escapejs }}{% endif %}",
                 {% if display_configuration and x.get_configuration_options_colors %}"colors": ["{{ x.get_configuration_options_colors|join:'","' }}"],{% endif %}
             {% endif %}
-            "color": "{% if x.tool %}{% if x.reservation_item.tool_calendar_color|lower == "#33ad33" %}#88B7CD{% else %}{{ x.reservation_item.tool_calendar_color|default:"#88B7CD"|escapejs }}{% endif %}{% else %}{{ x.reservation_item.area_calendar_color|default:"#88B7CD"|escapejs }}{% endif %}",
+            "color": "{{ x.reservation_item.get_calendar_reservation_color }}",
 			{% if x.user_id == user.id %}"own-reservation": true,{% endif %}
 		{% endif %}
 		{% if x.creator.id == x.user_id %}
@@ -43,7 +34,7 @@
 		"title": "{{ x.title|escapejs }}",
 		"id": "Outage {{ x.id }}",
 		{% if user.is_staff or user|is_staff_on_tool:x.tool %}"editable": true,{% endif %}
-		"color": "#ff0000",
+		"color": "{{ calendar_outage_color }}",
 		"start": "{{ x.start|date:"c" }}",
 		"end": "{{ x.end|date:"c" }}",
 		"details_url": "{% url 'outage_details' x.id %}"

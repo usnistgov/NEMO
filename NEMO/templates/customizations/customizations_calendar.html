@@ -301,6 +301,128 @@
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
+        <h3 class="customization-section-title">Calendar colors</h3>
+        <div class="form-group">
+            <div class="col-md-12">Default colors for calendar events</div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="calendar_color_tool_usage_default">Tool usage</label>
+            <div class="col-md-3">
+                <input type="color"
+                       id="calendar_color_tool_usage_default"
+                       name="calendar_color_tool_usage_default"
+                       class="form-control"
+                       value="{{ calendar_color_tool_usage_default }}">
+            </div>
+            <div class="col-md-6 help-block light-grey">
+                Default color for tool usage events, unless customized in <a href="{% url 'admin:NEMO_tool_changelist' %}">Detailed Administration -> Tools</a>.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="calendar_color_area_access_default">Area access</label>
+            <div class="col-md-3">
+                <input type="color"
+                       id="calendar_color_area_access_default"
+                       name="calendar_color_area_access_default"
+                       class="form-control"
+                       value="{{ calendar_color_area_access_default }}">
+            </div>
+            <div class="col-md-6 help-block light-grey">
+                Default color for area access events, unless customized in <a href="{% url 'admin:NEMO_area_changelist' %}">Detailed Administration -> Areas</a>.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="calendar_color_tool_reservation_default">Tool reservation</label>
+            <div class="col-md-3">
+                <input type="color"
+                       id="calendar_color_tool_reservation_default"
+                       name="calendar_color_tool_reservation_default"
+                       class="form-control"
+                       value="{{ calendar_color_tool_reservation_default }}">
+            </div>
+            <div class="col-md-6 help-block light-grey">
+                Default color for tool reservations, unless customized in <a href="{% url 'admin:NEMO_tool_changelist' %}">Detailed Administration -> Tools</a>.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="calendar_color_area_reservation_default">Area reservation</label>
+            <div class="col-md-3">
+                <input type="color"
+                       id="calendar_color_area_reservation_default"
+                       name="calendar_color_area_reservation_default"
+                       class="form-control"
+                       value="{{ calendar_color_area_reservation_default }}">
+            </div>
+            <div class="col-md-6 help-block light-grey">
+                Default color for area reservations, unless customized in <a href="{% url 'admin:NEMO_area_changelist' %}">Detailed Administration -> Areas</a>.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="calendar_color_tool_personal_schedule">Tool personal schedule</label>
+            <div class="col-md-3">
+                <input type="color"
+                       id="calendar_color_tool_personal_schedule"
+                       name="calendar_color_tool_personal_schedule"
+                       class="form-control"
+                       value="{{ calendar_color_tool_personal_schedule }}">
+            </div>
+            <div class="col-md-6 help-block light-grey">
+                Color for tool usage and reservations shown in a user's personal schedule (global, cannot be changed per tool).
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="calendar_color_area_personal_schedule">Area personal schedule</label>
+            <div class="col-md-3">
+                <input type="color"
+                       id="calendar_color_area_personal_schedule"
+                       name="calendar_color_area_personal_schedule"
+                       class="form-control"
+                       value="{{ calendar_color_area_personal_schedule }}">
+            </div>
+            <div class="col-md-6 help-block light-grey">
+                Color for area access and reservations shown in a user's personal schedule (global, cannot be changed per area).
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="calendar_color_tool_missed_reservation">Tool missed reservation</label>
+            <div class="col-md-3">
+                <input type="color"
+                       id="calendar_color_tool_missed_reservation"
+                       name="calendar_color_tool_missed_reservation"
+                       class="form-control"
+                       value="{{ calendar_color_tool_missed_reservation }}">
+            </div>
+            <div class="col-md-6 help-block light-grey">
+                Color for missed tool reservations (global, cannot be changed per tool).
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="calendar_color_area_missed_reservation">Area missed reservation</label>
+            <div class="col-md-3">
+                <input type="color"
+                       id="calendar_color_area_missed_reservation"
+                       name="calendar_color_area_missed_reservation"
+                       class="form-control"
+                       value="{{ calendar_color_area_missed_reservation }}">
+            </div>
+            <div class="col-md-6 help-block light-grey">
+                Color for missed area reservations (global, cannot be changed per area).
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="calendar_color_outage">Outage</label>
+            <div class="col-md-3">
+                <input type="color"
+                       id="calendar_color_outage"
+                       name="calendar_color_outage"
+                       class="form-control"
+                       value="{{ calendar_color_outage }}">
+            </div>
+            <div class="col-md-6 help-block light-grey">
+                Color for scheduled tool and area outages (global, cannot be changed per tool or area).
+            </div>
+        </div>
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Calendar format</h3>
         <div class="form-group">
             <div class="col-md-12" style="margin-top: 15px">

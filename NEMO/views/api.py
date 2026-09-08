@@ -132,7 +132,7 @@ from NEMO.views.api_billing import (
     BillingFilterForm,
     get_billing_charges,
 )
-from NEMO.views.constants import MEDIA_PROTECTED
+from NEMO.constants import MEDIA_PROTECTED
 from NEMO.views.customization import ApplicationCustomization
 from NEMO.views.qualifications import disqualify, qualify
 
