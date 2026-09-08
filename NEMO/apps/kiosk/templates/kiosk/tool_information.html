@@ -236,6 +236,26 @@
                                 </div>
                             </div>
                         {% endif %}
+                        {% with update_permission=customizations|get_item:"tool_problem_update_permission" %}
+                            {% if customer.id == t.creator.id or customer in tool.superusers.all or update_permission == "all" or update_permission == "staff" and user_qualifies_for_task_updates %}
+                                <div class="media">
+                                    <span class="glyphicon glyphicon-plus-sign pull-left notification-icon success-highlight"></span>
+                                    <div class="media-body">
+                                        <a onclick="$(this).hide();$('#task_{{ t.id }}_add_info').show();" class="pointer">Add more information</a>
+                                        <div id="task_{{ t.id }}_add_info" style="display: none">
+                                            <textarea id="task_{{ t.id }}_additional_info"
+                                                      class="form-control"
+                                                      placeholder="Add more information about this problem."></textarea>
+                                            <button class="btn btn-success"
+                                                    style="margin-top:5px"
+                                                    onclick="add_task_information('{% url 'add_task_information' t.id %}', $('#task_{{ t.id }}_additional_info').val())">
+                                                Add
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endwith %}
                     </div>
                 </div>
             </div>
@@ -564,6 +584,19 @@
 {% endif %}
 <div style="height:150px">{# Spacer #}</div>
 <script>
+	function add_task_information(url, description)
+	{
+		if (!description || !description.trim())
+		{
+			return;
+		}
+		let failure_dialog = ajax_failure_callback("Unable to add information to this task");
+		ajax_post(url, {'description': description}, function()
+		{
+			tool_information('{% url 'kiosk_tool_information' tool.id customer.id back %}');
+		}, [failure_dialog]);
+	}
+
 	update_stop_button();
 	{% if customer.active_projects|length == 1 %}update_start_button();{% endif %}
 

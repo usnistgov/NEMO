@@ -5,7 +5,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.db.models import Q
-from django.http import HttpResponseBadRequest, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
 from django.utils import timezone
@@ -333,6 +333,56 @@ def update(request, task_id):
         return redirect("maintenance")
     else:
         return redirect("tool_control")
+
+
+@login_required
+@require_POST
+def add_task_information(request, task_id):
+    """
+    Lets the user who created a task (depending on the "tool_problem_update_permission"
+    customization, staff or any user) append additional information to a pending task without going
+    through the full staff-only update flow. Tool superusers can always do this regardless of that
+    setting. This can only add to the description (using the same timestamped progress log staff updates
+    use); it cannot change urgency, category, force a shutdown, or modify anything else about the task,
+    and it cannot edit text that was already entered.
+    """
+    task = get_object_or_404(Task, id=task_id)
+    user: User = request.user
+    is_tool_superuser = user in task.tool.superusers.all()
+    permission = ToolCustomization.get("tool_problem_update_permission")
+    if permission == "all":
+        authorized = True
+    elif permission == "creator":
+        authorized = user == task.creator or is_tool_superuser or user.is_superuser
+    else:
+        authorized = (
+            user == task.creator
+            or user.is_staff_on_tool(task.tool)
+            or user == task.tool.primary_owner
+            or user in task.tool.backup_owners.all()
+            or is_tool_superuser
+            or user.is_superuser
+        )
+    if not authorized:
+        return HttpResponseBadRequest("You are not authorized to update this task.")
+    if task.cancelled or task.resolved:
+        return HttpResponseBadRequest("This task can no longer be updated because it has been cancelled or resolved.")
+    description = request.POST.get("description", "").strip()
+    if not description:
+        return HttpResponseBadRequest("Please enter some information to add to this task.")
+    now = timezone.now()
+    preface = f"On {format_datetime(now)} {user.get_full_name()} updated this task:\n"
+    if task.progress_description:
+        task.progress_description += "\n\n" + preface + description
+    else:
+        task.progress_description = preface + description
+    task.progress_description = task.progress_description.strip()
+    task.last_updated = now
+    task.last_updated_by = user
+    task.save()
+    determine_tool_status(task.tool)
+    send_task_updated_email(task, get_full_url(task.tool.get_absolute_url(), request))
+    return HttpResponse()
 
 
 @staff_member_or_tool_staff_required

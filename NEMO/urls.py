@@ -325,6 +325,7 @@ urlpatterns += [
     path("create_task/", tasks.create, name="create_task"),
     path("cancel_task/<int:task_id>/", tasks.cancel, name="cancel_task"),
     path("update_task/<int:task_id>/", tasks.update, name="update_task"),
+    path("add_task_information/<int:task_id>/", tasks.add_task_information, name="add_task_information"),
     path("task_update_form/<int:task_id>/", tasks.task_update_form, name="task_update_form"),
     path("task_resolution_form/<int:task_id>/", tasks.task_resolution_form, name="task_resolution_form"),
     # Calendar:

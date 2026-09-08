@@ -320,6 +320,27 @@
                                         </div>
                                     </div>
                                 {% endif %}
+                                {% with update_permission=customizations|get_item:"tool_problem_update_permission" %}
+                                    {% if user.id == t.creator.id or user in tool.superusers.all or update_permission == "all" or update_permission == "staff" and user_qualifies_for_task_updates %}
+                                        <div class="media">
+                                            <span class="glyphicon glyphicon-plus-sign pull-left notification-icon success-highlight"></span>
+                                            <div class="media-body">
+                                                <a onclick="$(this).hide();$('#task_{{ t.id }}_add_info').show();" class="pointer">Add more information</a>
+                                                <div id="task_{{ t.id }}_add_info" style="display: none">
+                                                    <div class="input-group" style="width: 100%">
+                                                        <textarea id="task_{{ t.id }}_additional_info"
+                                                                  class="form-control"
+                                                                  oninput="auto_size_textarea(this);"
+                                                                  placeholder="Add more information about this problem. This will be appended to the progress updates above (cannot be used to edit what was already entered.)"></textarea>
+                                                        <span class="input-group-addon btn btn-success"
+                                                              style="color: #fff"
+                                                              onclick="add_task_information('{% url 'add_task_information' t.id %}', $('#task_{{ t.id }}_additional_info').val())">Add</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endwith %}
                                 {% if t.task_images %}
                                     <div>
                                         images:
@@ -1210,6 +1231,16 @@
     </a>
 {% endif %}
 <script>
+	function add_task_information(url, description)
+	{
+		if (!description || !description.trim())
+		{
+			return;
+		}
+		let failure_dialog = ajax_failure_callback("Unable to add information to this task");
+		ajax_post(url, {'description': description}, refresh_tool_status, [failure_dialog]);
+	}
+
 	$(".contact-info-tooltip").on('click', function () {
         $(".tooltip").remove();
       	$(this).tooltip({trigger: 'manual', html: 'true', title: $(this).data('title')}).tooltip('toggle');

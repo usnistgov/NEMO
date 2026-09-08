@@ -136,6 +136,12 @@ def tool_status(request, tool_id):
         or (user_is_qualified and broadcast_upcoming_reservation == "qualified")
         or broadcast_upcoming_reservation == "all",
         "tool_control_show_task_details": ToolControlCustomization.get_bool("tool_control_show_task_details"),
+        "user_qualifies_for_task_updates": (
+            user.is_staff_on_tool(tool)
+            or user.id == tool.primary_owner_id
+            or user in tool.backup_owners.all()
+            or user.is_superuser
+        ),
         "user_can_see_documents": user.is_any_part_of_staff
         or not ToolControlCustomization.get_bool("tool_control_show_documents_only_qualified_users")
         or user_is_qualified,

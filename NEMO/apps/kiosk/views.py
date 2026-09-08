@@ -529,6 +529,12 @@ def tool_information(request, tool_id, user_id, back):
         ),
         "back": back,
         "tool_control_show_task_details": ToolControlCustomization.get_bool("tool_control_show_task_details"),
+        "user_qualifies_for_task_updates": (
+            customer.is_staff_on_tool(tool)
+            or customer.id == tool.primary_owner_id
+            or customer in tool.backup_owners.all()
+            or customer.is_superuser
+        ),
         "wait_list_position": user_wait_list_position,  # 0 if not in wait list
         "wait_list": wait_list,
         "show_wait_list": (
