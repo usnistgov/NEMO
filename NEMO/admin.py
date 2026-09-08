@@ -38,6 +38,7 @@ from NEMO.actions import (
 from NEMO.constants import (
     CALENDAR_AREA_ACCESS_DEFAULT_COLOR,
     CALENDAR_AREA_RESERVATION_DEFAULT_COLOR,
+    CALENDAR_PROJECT_DEFAULT_COLOR,
     CALENDAR_TOOL_RESERVATION_DEFAULT_COLOR,
     CALENDAR_TOOL_USAGE_DEFAULT_COLOR,
 )
@@ -897,6 +898,13 @@ class ProjectAdminForm(forms.ModelForm):
     class Meta:
         model = Project
         fields = "__all__"
+
+    project_calendar_color = forms.CharField(
+        required=False,
+        max_length=9,
+        initial=CALENDAR_PROJECT_DEFAULT_COLOR,
+        widget=forms.TextInput(attrs={"type": "color"}),
+    )
 
     members = forms.ModelMultipleChoiceField(
         queryset=User.objects.all(),

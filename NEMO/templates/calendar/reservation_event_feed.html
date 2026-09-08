@@ -13,7 +13,11 @@
                 "title": "{% if user.id == x.user_id or user|is_staff_on_tool:x.tool %}{{ x.title|default:x.user|escapejs }}{% else %}{{ x.user|escapejs }}{% endif %}{% if display_configuration %}\n{{ x.get_configuration_options_display|escapejs }}{% endif %}",
                 {% if display_configuration and x.get_configuration_options_colors %}"colors": ["{{ x.get_configuration_options_colors|join:'","' }}"],{% endif %}
             {% endif %}
-            "color": "{{ x.reservation_item.get_calendar_reservation_color }}",
+            {% if x.project and x.project.get_calendar_color %}
+                "color": "{{ x.project.get_calendar_color }}",
+            {% else %}
+                "color": "{{ x.reservation_item.get_calendar_reservation_color }}",
+            {% endif %}
 			{% if x.user_id == user.id %}"own-reservation": true,{% endif %}
 		{% endif %}
 		{% if x.creator.id == x.user_id %}

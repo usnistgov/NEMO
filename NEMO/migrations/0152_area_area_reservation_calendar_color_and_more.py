@@ -93,5 +93,21 @@ class Migration(migrations.Migration):
                 verbose_name="tool usage calendar color",
             ),
         ),
+        migrations.AddField(
+            model_name="project",
+            name="project_calendar_color",
+            field=models.CharField(
+                default="#88b7cd",
+                help_text="Color for project in calendar overviews (takes precedence over tool or area colors)",
+                max_length=9,
+                validators=[
+                    django.core.validators.RegexValidator(
+                        re.compile("^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"),
+                        "Enter a valid hex color, eg. #000000",
+                        "invalid",
+                    )
+                ],
+            ),
+        ),
         migrations.RunPython(copy_custom_calendar_colors_to_reservation, migrations.RunPython.noop),
     ]

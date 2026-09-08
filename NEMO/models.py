@@ -36,6 +36,7 @@ from mptt.models import MPTTModel
 from NEMO import fields
 from NEMO.constants import (
     ADDITIONAL_INFORMATION_MAXIMUM_LENGTH,
+    CALENDAR_PROJECT_DEFAULT_COLOR,
     CALENDAR_TOOL_RESERVATION_DEFAULT_COLOR,
     CALENDAR_TOOL_USAGE_DEFAULT_COLOR,
     CALENDAR_AREA_RESERVATION_DEFAULT_COLOR,
@@ -3243,23 +3244,31 @@ class Project(SerializationByNameModel):
     project_types = models.ManyToManyField(ProjectType, blank=True)
     account = models.ForeignKey(
         Account,
-        help_text="All charges for this project will be billed to the selected account.",
+        help_text=_("All charges for this project will be billed to the selected account."),
         on_delete=models.CASCADE,
     )
     start_date = models.DateField(null=True, blank=True)
     discipline = models.ForeignKey(ProjectDiscipline, null=True, blank=True, on_delete=models.SET_NULL)
+    project_calendar_color = models.CharField(
+        max_length=9,
+        default=CALENDAR_PROJECT_DEFAULT_COLOR,
+        help_text=_("Color for project in calendar overviews (takes precedence over tool or area colors)"),
+        validators=[color_hex_validator],
+    )
     active = models.BooleanField(
         default=True,
-        help_text="Users may only charge to a project if it is active. Deactivate the project to block billable activity (such as tool usage and consumable check-outs).",
+        help_text=_(
+            "Users may only charge to a project if it is active. Deactivate the project to block billable activity (such as tool usage and consumable check-outs)."
+        ),
     )
     only_allow_tools = models.ManyToManyField(
-        Tool, blank=True, help_text="Selected tools will be the only ones allowed for this project."
+        Tool, blank=True, help_text=_("Selected tools will be the only ones allowed for this project.")
     )
     allow_consumable_withdrawals = models.BooleanField(
-        default=True, help_text="Uncheck this box if consumable withdrawals are forbidden under this project"
+        default=True, help_text=_("Uncheck this box if consumable withdrawals are forbidden under this project")
     )
     allow_staff_charges = models.BooleanField(
-        default=True, help_text="Uncheck this box if staff charges are forbidden for this project"
+        default=True, help_text=_("Uncheck this box if staff charges are forbidden for this project")
     )
 
     class Meta:
@@ -3277,6 +3286,11 @@ class Project(SerializationByNameModel):
 
     def display_with_status_and_managers(self):
         return f"{'[INACTIVE] ' if not self.active else ''}{self.display_with_managers()}"
+
+    def get_calendar_color(self):
+        if self.project_calendar_color.lower() == CALENDAR_PROJECT_DEFAULT_COLOR:
+            return None
+        return self.project_calendar_color
 
     def validate_unique(self, exclude=None):
         super().validate_unique(exclude)

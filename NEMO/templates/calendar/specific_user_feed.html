@@ -4,7 +4,11 @@
 	{
 		"title": "Usage of the {{ x.tool.name }}",
 		"id": {{ x.id }},
-		"color": "{{ x.tool.get_calendar_usage_color }}",
+        {% if x.project and x.project.get_calendar_color %}
+            "color": "{{ x.project.get_calendar_color }}",
+        {% else %}
+		    "color": "{{ x.tool.get_calendar_usage_color }}",
+        {% endif %}
 		"start": "{{ x.start|date:"c" }}",
 		{# Usage events that are less than the configured minimum display length are artificially lengthened for display purposes. #}
 		"end": "{{ x.get_visual_end|date:"c" }}",
@@ -15,7 +19,11 @@
 	{
 		"title": "{{ x.area }} access billed to project {{ x.project }} {% if x.staff_charge %}by {{ x.staff_charge.staff_member }}{% endif %}",
 		"id": {{ x.id }},
-		"color": "{{ x.area.get_calendar_usage_color }}",
+        {% if x.project and x.project.get_calendar_color %}
+            "color": "{{ x.project.get_calendar_color }}",
+        {% else %}
+		    "color": "{{ x.area.get_calendar_usage_color }}",
+        {% endif %}
 		"start": "{{ x.start|date:"c" }}",
 		{# Area access events that are less than the configured minimum display length are artificially lengthened for display purposes. #}
 		"end": "{{ x.get_visual_end|date:"c" }}",
@@ -26,7 +34,11 @@
 	{
 		"title": "Reservation for the {{ x.reservation_item.name }}{% if x.title %}, titled \"{{ x.title }}\"{% endif %}",
 		"id": {{ x.id }},
-        "color": "{{ x.reservation_item.get_calendar_reservation_color }}",
+        {% if x.project and x.project.get_calendar_color %}
+            "color": "{{ x.project.get_calendar_color }}",
+        {% else %}
+            "color": "{{ x.reservation_item.get_calendar_reservation_color }}",
+        {% endif %}
 		"start": "{{ x.start|date:"c" }}",
 		"end": "{{ x.get_visual_end|date:"c" }}",
 		"details_url": "{% url 'reservation_details' x.id %}"

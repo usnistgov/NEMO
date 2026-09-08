@@ -8,7 +8,11 @@
 		    "color": "{{ x.tool.get_calendar_personal_schedule_color }}",
 		{% else %}
 			"title": "{{ x.tool.name }} ({% if x.operator.id != x.user.id %}{{ x.operator|escapejs }} on behalf of {% endif %}{{ x.user.username }})\n {% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.user %}{{ x.project }}{% endif %}",
-		    "color": "{{ x.tool.get_calendar_usage_color }}",
+            {% if x.project and x.project.get_calendar_color %}
+                "color": "{{ x.project.get_calendar_color }}",
+            {% else %}
+		        "color": "{{ x.tool.get_calendar_usage_color }}",
+            {% endif %}
 		{% endif %}
 		{% if x.operator.id == x.user.id %}
 			"tooltip": "{{ x.tool.name }} usage for {{ x.user|escapejs }}{% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.user %} billed to project {{ x.project }}{% endif %}",
@@ -33,6 +37,8 @@
 		"details_url": "{% url 'area_access_details' x.id %}",
         {% if personal_schedule %}
             "color": "{{ x.area.get_calendar_personal_schedule_color }}"
+        {% elif x.project and x.project.get_calendar_color %}
+            "color": "{{ x.project.get_calendar_color }}",
         {% else %}
             "color": "{{ x.area.get_calendar_usage_color }}"
         {% endif %}
