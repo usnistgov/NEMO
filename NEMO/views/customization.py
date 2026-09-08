@@ -21,6 +21,7 @@ from django.core.validators import (
 )
 from django.http import HttpResponseNotFound
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.template import Context, Template, TemplateDoesNotExist
 from django.template.loader import get_template
 from django.utils import timezone
@@ -49,6 +50,7 @@ from NEMO.utilities import (
     date_input_format,
     datetime_input_format,
     quiet_int,
+    render_email_template,
 )
 
 customization_logger = getLogger(__name__)
@@ -128,7 +130,10 @@ class CustomizationBase(ABC):
                     pass
 
     def context(self) -> Dict:
-        files_dict = {name: get_media_file_contents(name + extension) for name, extension in type(self).files}
+        files_dict = {
+            name: get_media_file_contents(name + media_file_extension(extension))
+            for name, extension in type(self).files
+        }
         variables_dict = {name: type(self).get(name) for name in type(self).variables}
         return {"customization": self, **variables_dict, **files_dict}
 
@@ -142,7 +147,7 @@ class CustomizationBase(ABC):
                     item = (name, extension)
                     break
             if item:
-                store_media_file(request.FILES.get(element, ""), item[0] + item[1])
+                store_media_file(request.FILES.get(element, ""), item[0] + media_file_extension(item[1]))
         else:
             # We are saving key values here
             for key in type(self).variables.keys():
@@ -864,41 +869,111 @@ class TrainingCustomization(CustomizationBase):
 @customization(key="templates", title="File & email templates")
 class TemplatesCustomization(CustomizationBase):
     variables = {}
+    # ".email" identifies an entry as one that's actually sent as an email (as opposed to login_banner/
+    # authorization_failed/safety_introduction/facility_rules_tutorial/jumbotron_watermark, which are rendered as
+    # page content, not emails). The file is still stored and served as plain ".html"; see media_file_extension().
     files = [
         ("login_banner", ".html"),
         ("authorization_failed", ".html"),
         ("safety_introduction", ".html"),
         ("facility_rules_tutorial", ".html"),
         ("jumbotron_watermark", ".png"),
-        ("access_request_notification_email", ".html"),
-        ("adjustment_request_notification_email", ".html"),
-        ("cancellation_email", ".html"),
-        ("counter_threshold_reached_email", ".html"),
-        ("feedback_email", ".html"),
-        ("generic_email", ".html"),
-        ("missed_reservation_email", ".html"),
-        ("facility_rules_tutorial_email", ".html"),
-        ("new_task_email", ".html"),
-        ("out_of_time_reservation_email", ".html"),
-        ("reorder_supplies_reminder_email", ".html"),
-        ("reservation_ending_reminder_email", ".html"),
-        ("reservation_reminder_email", ".html"),
-        ("reservation_warning_email", ".html"),
-        ("safety_issue_email", ".html"),
-        ("scheduled_outage_reminder_email", ".html"),
-        ("staff_charge_reminder_email", ".html"),
-        ("task_status_notification", ".html"),
-        ("tool_qualification_expiration_email", ".html"),
-        ("unauthorized_tool_access_email", ".html"),
-        ("usage_reminder_email", ".html"),
-        ("user_access_expiration_reminder_email", ".html"),
-        ("reservation_created_user_email", ".html"),
-        ("reservation_cancelled_user_email", ".html"),
-        ("weekend_access_email", ".html"),
-        ("recurring_charges_reminder_email", ".html"),
-        ("wait_list_notification_email", ".html"),
-        ("tool_required_unanswered_questions_email", ".html"),
+        ("access_request_notification_email", ".email"),
+        ("adjustment_request_notification_email", ".email"),
+        ("cancellation_email", ".email"),
+        ("counter_threshold_reached_email", ".email"),
+        ("feedback_email", ".email"),
+        ("generic_email", ".email"),
+        ("missed_reservation_email", ".email"),
+        ("facility_rules_tutorial_email", ".email"),
+        ("new_task_email", ".email"),
+        ("out_of_time_reservation_email", ".email"),
+        ("reorder_supplies_reminder_email", ".email"),
+        ("reservation_ending_reminder_email", ".email"),
+        ("reservation_reminder_email", ".email"),
+        ("reservation_warning_email", ".email"),
+        ("safety_issue_email", ".email"),
+        ("scheduled_outage_reminder_email", ".email"),
+        ("staff_charge_reminder_email", ".email"),
+        ("task_status_notification", ".email"),
+        ("tool_qualification_expiration_email", ".email"),
+        ("unauthorized_tool_access_email", ".email"),
+        ("usage_reminder_email", ".email"),
+        ("user_access_expiration_reminder_email", ".email"),
+        ("reservation_created_user_email", ".email"),
+        ("reservation_cancelled_user_email", ".email"),
+        ("weekend_access_email", ".email"),
+        ("recurring_charges_reminder_email", ".email"),
+        ("wait_list_notification_email", ".email"),
+        ("tool_required_unanswered_questions_email", ".email"),
     ]
+
+    def __init__(self, *args, **kwargs):
+        # Every email template gets a customizable subject/from/cc, each a Django template string rendered
+        # with the same context as the email body. The defaults simply pass through whatever the call site
+        # already computed as its "default_subject"/"default_from_email"/"default_cc_emails" context variables,
+        # so behavior is unchanged until an admin actually overrides one of these fields.
+        for email_template_name, extension in type(self).files:
+            if extension != ".email":
+                continue
+            self.__class__.variables[f"{email_template_name}_subject"] = "{{ default_subject }}"
+            self.__class__.variables[f"{email_template_name}_from"] = "{{ default_from_email }}"
+            self.__class__.variables[f"{email_template_name}_cc"] = "{{ default_cc_emails }}"
+        super().__init__(*args, **kwargs)
+
+    def save(self, request, element=None) -> Dict[str, Dict[str, str]]:
+        # An element ending in "_fields" (as opposed to a plain email template name, which means "save this
+        # template's uploaded file") means "save only this one email template's subject/from/cc", used by the
+        # per-template save button so it doesn't touch any other template's fields.
+        if element and element.endswith(EMAIL_TEMPLATE_FIELDS_ELEMENT_SUFFIX):
+            template_name = element[: -len(EMAIL_TEMPLATE_FIELDS_ELEMENT_SUFFIX)]
+            is_email_template = any(
+                name == template_name and extension == ".email" for name, extension in type(self).files
+            )
+            if is_email_template:
+                errors = {}
+                for suffix in ("subject", "from", "cc"):
+                    key = f"{template_name}_{suffix}"
+                    new_value = request.POST.get(key, "")
+                    try:
+                        self.validate(key, new_value)
+                        type(self).set(key, new_value)
+                    except (ValidationError, InvalidCustomizationException) as e:
+                        errors[key] = {"error": str(e.message or e.msg), "value": new_value}
+                return errors
+        return super().save(request, element)
+
+
+# Names of the TemplatesCustomization.files entries marked as emails (extension ".email"), derived from the
+# files list itself so there's a single source of truth for "which templates are emails".
+EMAIL_TEMPLATE_NAMES = [name for name, extension in TemplatesCustomization.files if extension == ".email"]
+
+# Suffix used to build a distinct "element" identifier for the per-template subject/from/cc save button, so it
+# doesn't collide with the plain template name already used by that same template's file-upload form.
+EMAIL_TEMPLATE_FIELDS_ELEMENT_SUFFIX = "_fields"
+
+
+def resolve_email_customization(template_name: str, dictionary: dict, request=None):
+    """
+    Resolves the customizable subject, from address and cc addresses for the given email template
+    (one of TemplatesCustomization.EMAIL_TEMPLATE_NAMES), each rendered as a Django template string
+    using the same context dictionary as the email body.
+
+    Callers should set "default_subject", "default_from_email" and "default_cc_emails" (a comma-separated
+    string, may be blank) in `dictionary` before calling this, since the customization defaults are simply
+    "{{ default_subject }}", "{{ default_from_email }}" and "{{ default_cc_emails }}" - i.e. until an admin
+    overrides one of these fields, behavior is unchanged from whatever the caller would have used directly.
+
+    Returns a (subject, from_email, cc_list) tuple, where cc_list is a list of stripped, non-empty addresses.
+    """
+    subject_template = TemplatesCustomization.get(f"{template_name}_subject")
+    from_template = TemplatesCustomization.get(f"{template_name}_from")
+    cc_template = TemplatesCustomization.get(f"{template_name}_cc")
+    subject = render_email_template(subject_template, dictionary, request).strip()
+    from_email = render_email_template(from_template, dictionary, request).strip()
+    cc_rendered = render_email_template(cc_template, dictionary, request).strip()
+    cc = [address.strip() for address in cc_rendered.split(",") if address.strip()]
+    return subject, from_email, cc
 
 
 @customization(key="rates", title="Rates")
@@ -935,6 +1010,16 @@ def store_media_file(content, file_name):
     default_storage.delete(file_name)
     if content:
         default_storage.save(file_name, content)
+
+
+def media_file_extension(extension: str) -> str:
+    """
+    Translates a CustomizationBase.files "extension" into the extension actually used on disk. ".email" is a
+    marker extension used in `files` lists to identify entries that are sent as emails (as opposed to page
+    fragments or other assets); the underlying stored file is still plain ".html" since the content itself is
+    just an HTML template either way.
+    """
+    return ".html" if extension == ".email" else extension
 
 
 # This method should not be used anymore. Instead, use XCustomization.get(name)
@@ -991,5 +1076,18 @@ def customize(request, key, element=None):
             request, "customizations/customizations.html", {"errors": errors, **customization_instance.context()}
         )
     else:
+        template_name = (
+            element[: -len(EMAIL_TEMPLATE_FIELDS_ELEMENT_SUFFIX)]
+            if element and element.endswith(EMAIL_TEMPLATE_FIELDS_ELEMENT_SUFFIX)
+            else None
+        )
+        if template_name and template_name in EMAIL_TEMPLATE_NAMES:
+            # Scoped per-template save: redirect back anchored to that template's own panel, where an inline
+            # banner (not the generic top-of-page one) confirms just that template's fields were saved.
+            return redirect(f"{reverse('customization', args=[key])}?saved={template_name}#{template_name}_id")
+        if element and any(name == element for name, _ in getattr(customization_instance, "files", [])):
+            # A file/textarea upload: same idea, but a distinct query param so it can never be confused with
+            # (or accidentally shown alongside) the subject/from/cc banner above for the same element name.
+            return redirect(f"{reverse('customization', args=[key])}?file_saved={element}#{element}_id")
         messages.success(request, f"{customization_instance.title} settings saved successfully")
         return redirect("customization", key)
