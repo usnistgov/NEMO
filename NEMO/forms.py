@@ -59,7 +59,7 @@ from NEMO.utilities import (
     new_model_copy,
     quiet_int,
 )
-from NEMO.views.customization import UserRequestsCustomization
+from NEMO.views.customization import ToolCustomization, UserRequestsCustomization
 
 
 class UserForm(ModelForm):
@@ -155,16 +155,32 @@ class TaskForm(ModelForm):
 
     class Meta:
         model = Task
-        fields = ["tool", "urgency", "estimated_resolution_time", "force_shutdown", "safety_hazard", "lock"]
+        fields = [
+            "tool",
+            "urgency",
+            "estimated_resolution_time",
+            "force_shutdown",
+            "safety_hazard",
+            "lock",
+            "assigned_to",
+        ]
 
     def __init__(self, user, *args, **kwargs):
         super(TaskForm, self).__init__(*args, **kwargs)
         self.user = user
         self.fields["tool"].required = False
         self.fields["urgency"].required = False
+        self.fields["assigned_to"].required = False
+        self.fields["assigned_to"].queryset = Task.get_assignable_users()
 
     def clean_description(self):
         return self.cleaned_data["description"].strip()
+
+    def clean_assigned_to(self):
+        if not ToolCustomization.get_bool("tool_task_assignment_enabled"):
+            # Task assignment is disabled; ignore any submitted value and preserve whatever was already set
+            return self.instance.assigned_to.all() if self.instance.pk else User.objects.none()
+        return self.cleaned_data.get("assigned_to")
 
     def clean(self):
         if any(self.errors):

@@ -89,6 +89,7 @@ def task_details(request, task_id):
         "initial_assessment_categories": TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT),
         "completion_categories": TaskCategory.objects.filter(stage=TaskCategory.Stage.COMPLETION),
         "task_statuses": TaskStatus.objects.all(),
+        "assignable_users": Task.get_assignable_users(),
     }
 
     if task.tool.is_configurable():

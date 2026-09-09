@@ -222,6 +222,11 @@
                     {% if t.estimated_resolution_time %}
                         <span class="media-middle">Estimated resolution time is {{ t.estimated_resolution_time }}.</span>
                     {% endif %}
+                    {% if customizations|get_item:"tool_task_assignment_enabled" == "enabled" %}
+                        {% if t.assigned_to.all and customer|is_staff_on_tool:tool or t.assigned_to.all and customizations|get_item:"tool_task_assignment_visible_to_all" == "enabled" %}
+                            <span class="media-middle">Assigned to {{ t.assigned_to.all|join:", " }}.</span>
+                        {% endif %}
+                    {% endif %}
                     <div id="task_{{ t.id }}_details" class="collapse{% if tool_control_show_task_details %} in{% endif %}">
                         <span class="media-bottom">
                             This task was created by {{ t.creator }} on {{ t.creation_time }}.

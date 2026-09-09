@@ -51,6 +51,9 @@
                             <th>
                                 <a href="{% url 'maintenance' sort_by='problem_category' %}">Problem category</a>
                             </th>
+                            {% if customizations|get_item:"tool_task_assignment_enabled" == "enabled" %}
+                                <th>Assigned to</th>
+                            {% endif %}
                             <th>
                                 <a href="{% url 'maintenance' sort_by='last_updated' %}">Last updated</a>
                             </th>
@@ -74,6 +77,9 @@
                             <td>{{ task.tool.name }}</td>
                             <td>{{ task.tool.category }}</td>
                             <td>{{ task.problem_category|default_if_none:"" }}</td>
+                            {% if customizations|get_item:"tool_task_assignment_enabled" == "enabled" %}
+                                <td>{{ task.assigned_to.all|join:", " }}</td>
+                            {% endif %}
                             <td>
                                 {% if task.last_updated and task.last_updated_by %}
                                     {{ task.last_updated|naturaltime }} by {{ task.last_updated_by.first_name }}

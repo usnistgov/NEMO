@@ -1173,3 +1173,21 @@ function build_django_url(urlTemplate, placeholders, actualValues)
     // Rejoin URL segments
     return segments.join('/');
 }
+
+// Generic handler for the "assigned to" multi-user picker used on task forms.
+// Appends a removable chip (with a hidden "assigned_to" input) to #chosen_assigned_to,
+// ignoring the selection if that user is already chosen.
+function add_assigned_to(jquery_event, search_selection)
+{
+    $('#assigned_to_search').typeahead('val', '');
+    if ($("#chosen_assigned_to input[value='" + search_selection.id + "']").length)
+        return;
+    $('#chosen_assigned_to').append
+    (
+        "<span class='btn btn-default btn-xs' style='margin: 2px'>" +
+        search_selection.name +
+        " <a href='javascript:void(0)' onclick='$(this).closest(\"span\").remove()'>&nbsp;&times;</a>" +
+        "<input type='hidden' name='assigned_to' value='" + search_selection.id + "'>" +
+        "</span>"
+    );
+}

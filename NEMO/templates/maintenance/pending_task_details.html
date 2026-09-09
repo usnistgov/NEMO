@@ -100,6 +100,26 @@
                     </div>
                 </div>
             {% endif %}
+            {% if customizations|get_item:"tool_task_assignment_enabled" == "enabled" %}
+                <div class="form-group">
+                    <label for="assigned_to_search" class="control-label col-lg-3">Assigned to</label>
+                    <div class="col-lg-9">
+                        <input id="assigned_to_search" class="form-control" placeholder="Search for a user to assign">
+                        <div id="chosen_assigned_to" style="margin-top: 5px">
+                            {% for assigned_user in task.assigned_to.all %}
+                                <span class="btn btn-default btn-xs" style="margin: 2px">
+                                    {{ assigned_user.get_name }}
+                                    <a href="javascript:void(0)" onclick="$(this).closest('span').remove()">&nbsp;&times;</a>
+                                    <input type="hidden" name="assigned_to" value="{{ assigned_user.id }}">
+                                </span>
+                            {% endfor %}
+                        </div>
+                        <script>
+                            $('#assigned_to_search').autocomplete('assigned_to', add_assigned_to, {{ assignable_users|json_search_base }});
+                        </script>
+                    </div>
+                </div>
+            {% endif %}
             <div class="form-group">
                 <label for="estimated_resolution_time" class="control-label col-lg-3">Estimated resolution</label>
                 <div class="col-lg-3">
