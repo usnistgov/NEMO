@@ -57,7 +57,13 @@
                             <th>
                                 <a href="{% url 'maintenance' sort_by='creation_time' %}">Created</a>
                             </th>
-                            <th>Description</th>
+                            <th>
+                                {% if customizations|get_item:"tool_problem_title_enabled" == "enabled" %}
+                                    Title/Description
+                                {% else %}
+                                    Description
+                                {% endif %}
+                            </th>
                         </tr>
                     </thead>
                     {% for task in pending_tasks %}
@@ -80,7 +86,9 @@
                                 {% endif %}
                             </td>
                             <td>{{ task.creation_time|naturaltime }}</td>
-                            <td>{{ task.problem_description }}</td>
+                            <td>
+                                <span class="maintenance-task-title" title="{{ task.title_or_description }}">{{ task.title_or_description }}</span>
+                            </td>
                         </tr>
                     {% endfor %}
                 </table>
@@ -110,7 +118,13 @@
                             <th>Problem category</th>
                             <th>Created</th>
                             <th>Resolved</th>
-                            <th>Description</th>
+                            <th>
+                                {% if customizations|get_item:"tool_problem_title_enabled" == "enabled" %}
+                                    Title/Description
+                                {% else %}
+                                    Description
+                                {% endif %}
+                            </th>
                         </tr>
                     </thead>
                     {% for task in closed_tasks %}
@@ -128,7 +142,9 @@
                             <td>{{ task.problem_category|default_if_none:"" }}</td>
                             <td>{{ task.creation_time }}</td>
                             <td>{{ task.resolution_time }}</td>
-                            <td>{{ task.problem_description }}</td>
+                            <td>
+                                <span class="maintenance-task-title" title="{{ task.title_or_description }}">{{ task.title_or_description }}</span>
+                            </td>
                         </tr>
                     {% endfor %}
                 </table>

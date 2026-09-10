@@ -4148,6 +4148,12 @@ class Task(BaseModel):
 
     urgency = models.IntegerField(choices=Urgency.Choices)
     tool = models.ForeignKey(Tool, help_text="The tool that this task relates to.", on_delete=models.CASCADE)
+    title = models.CharField(
+        max_length=CHAR_FIELD_LARGE_LENGTH,
+        blank=True,
+        null=True,
+        help_text="A short summary of the problem. When set, this is shown instead of the full description in lists and status displays, and the full description is only shown once the task is expanded.",
+    )
     force_shutdown = models.BooleanField(
         default=None,
         help_text="Indicates that the tool this task relates to will be shutdown until the task is resolved.",
@@ -4207,6 +4213,14 @@ class Task(BaseModel):
             return TaskHistory.objects.filter(task_id=self.id).latest().status
         except TaskHistory.DoesNotExist:
             return None
+
+    def title_or_description(self) -> str:
+        """Returns the title if one was set, otherwise falls back to the full problem description."""
+        from NEMO.views.customization import ToolCustomization
+
+        if not ToolCustomization.get_bool("tool_problem_title_enabled"):
+            return self.problem_description
+        return self.title or self.problem_description
 
     def task_images(self):
         return TaskImages.objects.filter(task=self).order_by()
