@@ -41,6 +41,40 @@
 			    return true;
 			}
         }
-	
+
+        // Reads the newly selected file as text and shows it in the matching content textarea
+        function load_file_into_textarea(file_input, textarea_id)
+        {
+            if (file_input.files && file_input.files.length > 0)
+            {
+                let reader = new FileReader();
+                reader.onload = function(event)
+                {
+                    let textarea = document.getElementById(textarea_id);
+                    if (textarea)
+                    {
+                        textarea.value = event.target.result;
+                    }
+                };
+                reader.readAsText(file_input.files[0]);
+            }
+        }
+
+        // If no new file was picked, saves whatever is currently in the content textarea instead
+        // (so editing the textarea directly and clicking upload works without choosing a file first)
+        function sync_textarea_before_submit(name, extension)
+        {
+            let file_input = $('input[name='+name+']')[0];
+            let textarea = document.getElementById(name + '_content');
+            if (file_input && textarea && file_input.files.length === 0)
+            {
+                let blob = new Blob([textarea.value], {type: 'text/plain'});
+                let file = new File([blob], name + '.' + extension, {type: 'text/plain'});
+                let data_transfer = new DataTransfer();
+                data_transfer.items.add(file);
+                file_input.files = data_transfer.files;
+            }
+            return true;
+        }
     </script>
 {% endblock %}

@@ -34,6 +34,7 @@ from NEMO.views.customization import (
     ApplicationCustomization,
     ToolControlCustomization,
     get_media_file_contents,
+    resolve_email_customization,
 )
 
 logger = getLogger(__name__)
@@ -269,9 +270,9 @@ def send_broadcast_email(request):
     if not users:
         dictionary = {"error": "The audience you specified is empty. You must send the email to at least one person."}
         return render(request, "email/compose_email.html", dictionary)
-    subject = form.cleaned_data["subject"]
+    default_subject = form.cleaned_data["subject"]
     if topic:
-        subject = f"[{topic}] " + subject
+        default_subject = f"[{topic}] " + default_subject
     users = [email for user in users for email in user.get_emails(user.get_preferences().email_send_broadcast_emails)]
     sender: User = request.user
     if form.cleaned_data["copy_me"]:
@@ -280,21 +281,55 @@ def send_broadcast_email(request):
         create_email_attachment(attachment.file, attachment.name)
         for attachment in request.FILES.getlist("attachments", [])
     ]
-    try:
-        users_set = set(users)
-        chunk_size = quiet_int(getattr(settings, "EMAIL_BROADCAST_BCC_CHUNK_SIZE", len(users_set)), len(users_set))
-        for users_chunk in split_into_chunks(users_set, chunk_size):
+    dictionary.update(
+        {
+            "default_subject": default_subject,
+            "default_from_email": sender.email,
+            "default_cc_emails": "",
+        }
+    )
+    subject, from_email, cc = resolve_email_customization("generic_email", dictionary)
+    site_title = ApplicationCustomization.get("site_title")
+
+    # Sent as its own independent message (not piggybacked onto a bcc chunk) so a customized cc address gets
+    # exactly one copy of the broadcast, and its delivery doesn't depend on - or get blocked by a failure in -
+    # any particular bcc chunk.
+    cc_error = None
+    if cc:
+        try:
             send_mail(
                 subject=subject,
                 content=content,
-                from_email=sender.email,
-                bcc=users_chunk,
+                from_email=from_email,
+                to=cc,
                 attachments=attachments,
                 email_category=EmailCategory.BROADCAST_EMAIL,
                 fail_silently=False,
             )
+        except SMTPException as error:
+            cc_error = str(error)
+            logger.exception(f"Unable to send the broadcast email cc copy to {', '.join(cc)}: {cc_error}")
+
+    try:
+        # Excludes any address that's also getting the dedicated cc copy above, so someone who happens to be
+        # both the configured cc and a member of the broadcast audience (e.g. a facility manager who is cc'ed
+        # on every broadcast but is also a regular user) doesn't receive the same broadcast twice.
+        users_set = set(users) - set(cc)
+        if users_set:
+            chunk_size = quiet_int(
+                getattr(settings, "EMAIL_BROADCAST_BCC_CHUNK_SIZE", len(users_set)), len(users_set)
+            )
+            for users_chunk in split_into_chunks(users_set, chunk_size):
+                send_mail(
+                    subject=subject,
+                    content=content,
+                    from_email=from_email,
+                    bcc=users_chunk,
+                    attachments=attachments,
+                    email_category=EmailCategory.BROADCAST_EMAIL,
+                    fail_silently=False,
+                )
     except SMTPException as error:
-        site_title = ApplicationCustomization.get("site_title")
         error_message = (
             f"{site_title} was unable to send the email through the email server. The error message that was received is: "
             + str(error)
@@ -302,7 +337,17 @@ def send_broadcast_email(request):
         logger.exception(error_message)
         messages.error(request, message=error_message)
         return redirect("email_broadcast")
-    messages.success(request, message="Your email was sent successfully")
+
+    if cc_error:
+        messages.warning(
+            request,
+            message=(
+                f"Your email was sent, but {site_title} was unable to send the cc copy to {', '.join(cc)}. "
+                f"The error message that was received is: {cc_error}"
+            ),
+        )
+    else:
+        messages.success(request, message="Your email was sent successfully")
     return redirect("email_broadcast")
 
 

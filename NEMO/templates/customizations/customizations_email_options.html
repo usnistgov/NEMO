@@ -1,0 +1,57 @@
+{% load custom_tags_and_filters %}
+{% with subject_key=element|concat:"_subject" from_key=element|concat:"_from" cc_key=element|concat:"_cc" %}
+    {% if request.GET.saved == element %}
+        <div class="alert alert-success">This email's subject, from, and cc settings were saved successfully.</div>
+    {% endif %}
+    <div class="form-horizontal" style="margin-bottom: 15px">
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="{{ element }}_subject_input">Subject</label>
+            <div class="col-sm-8">
+                <input type="text"
+                       form="email_settings_form"
+                       id="{{ element }}_subject_input"
+                       name="{{ subject_key }}"
+                       class="form-control"
+                       oninput="document.getElementById('{{ element }}_hidden_subject').value = this.value"
+                       value="{{ customizations|get_item:subject_key }}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="{{ element }}_from_input">From</label>
+            <div class="col-sm-8">
+                <input type="text"
+                       form="email_settings_form"
+                       id="{{ element }}_from_input"
+                       name="{{ from_key }}"
+                       class="form-control"
+                       list="email_from_presets"
+                       oninput="document.getElementById('{{ element }}_hidden_from').value = this.value"
+                       value="{{ customizations|get_item:from_key }}">
+            </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 10px">
+            <label class="control-label col-sm-2" for="{{ element }}_cc_input">Cc</label>
+            <div class="col-sm-8">
+                <input type="text"
+                       form="email_settings_form"
+                       id="{{ element }}_cc_input"
+                       name="{{ cc_key }}"
+                       class="form-control"
+                       oninput="document.getElementById('{{ element }}_hidden_cc').value = this.value"
+                       value="{{ customizations|get_item:cc_key }}"
+                       placeholder="Comma-separated addresses or template variables">
+            </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 0">
+            <div class="col-sm-offset-2 col-sm-8">
+                <form method="POST" action="{% url 'customize' 'templates' element|concat:'_fields' %}#{{ element }}_id">
+                    {% csrf_token %}
+                    <input type="hidden" id="{{ element }}_hidden_subject" name="{{ subject_key }}" value="{{ customizations|get_item:subject_key }}">
+                    <input type="hidden" id="{{ element }}_hidden_from" name="{{ from_key }}" value="{{ customizations|get_item:from_key }}">
+                    <input type="hidden" id="{{ element }}_hidden_cc" name="{{ cc_key }}" value="{{ customizations|get_item:cc_key }}">
+                    {% button type="save" value="Save this email's settings" size="small" %}
+                </form>
+            </div>
+        </div>
+    </div>
+{% endwith %}

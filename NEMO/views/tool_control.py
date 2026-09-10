@@ -60,6 +60,7 @@ from NEMO.views.customization import (
     ToolControlCustomization,
     ToolCustomization,
     get_media_file_contents,
+    resolve_email_customization,
 )
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 from NEMO.widgets.dynamic_form import PostUsageQuestion
@@ -843,16 +844,24 @@ def email_managers_required_questions_disable_tool(
         )
         ccs = [email for user in cc_users for email in user.get_emails(EmailNotificationType.BOTH_EMAILS)]
         ccs.append(abuse_email_address)
-        rendered_message = render_email_template(
-            message, {"user": tool_user, "tool": tool, "questions": questions, "usage_event": usage_event}
-        )
+        dictionary = {
+            "user": tool_user,
+            "tool": tool,
+            "questions": questions,
+            "usage_event": usage_event,
+            "default_subject": f"Unanswered post‑usage questions after logoff from the {tool.name}",
+            "default_from_email": user_office_email,
+            "default_cc_emails": ", ".join(ccs),
+        }
+        rendered_message = render_email_template(message, dictionary)
+        subject, from_email, cc = resolve_email_customization("tool_required_unanswered_questions_email", dictionary)
         tos = tool_user.get_emails(EmailNotificationType.BOTH_EMAILS)
         send_mail(
-            subject=f"Unanswered post‑usage questions after logoff from the {tool.name}",
+            subject=subject,
             content=rendered_message,
-            from_email=user_office_email,
+            from_email=from_email,
             to=tos,
-            cc=ccs,
+            cc=cc,
             email_category=EmailCategory.ABUSE,
         )
 
@@ -861,13 +870,20 @@ def send_tool_usage_counter_email(counter: ToolUsageCounter):
     user_office_email = EmailsCustomization.get("user_office_email_address")
     message = get_media_file_contents("counter_threshold_reached_email.html")
     if user_office_email and message:
-        subject = f"Warning threshold reached for {counter.tool.name} {counter.name} counter"
-        rendered_message = render_email_template(message, {"counter": counter})
+        dictionary = {
+            "counter": counter,
+            "default_subject": f"Warning threshold reached for {counter.tool.name} {counter.name} counter",
+            "default_from_email": user_office_email,
+            "default_cc_emails": "",
+        }
+        rendered_message = render_email_template(message, dictionary)
+        subject, from_email, cc = resolve_email_customization("counter_threshold_reached_email", dictionary)
         send_mail(
             subject=subject,
             content=rendered_message,
-            from_email=user_office_email,
+            from_email=from_email,
             to=counter.warning_email,
+            cc=cc,
             email_category=EmailCategory.SYSTEM,
         )
 

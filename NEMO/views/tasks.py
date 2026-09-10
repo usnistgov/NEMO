@@ -42,6 +42,7 @@ from NEMO.views.customization import (
     RemoteWorkCustomization,
     ToolCustomization,
     get_media_file_contents,
+    resolve_email_customization,
 )
 from NEMO.views.safety import send_safety_email_notification
 from NEMO.views.tool_control import determine_tool_status
@@ -142,6 +143,11 @@ def send_new_task_emails(request, task: Task, user, task_images: List[TaskImages
         attachments = [create_email_attachment(task_image.image, task_image.image.name) for task_image in task_images]
     # Email the appropriate staff that a new task has been created:
     if message:
+        default_subject = (
+            ("SAFETY HAZARD: " if task.safety_hazard else "")
+            + task.tool.name
+            + (" shutdown" if task.force_shutdown else " problem")
+        )
         dictionary = {
             "template_color": (
                 bootstrap_primary_color("danger") if task.force_shutdown else bootstrap_primary_color("warning")
@@ -150,13 +156,12 @@ def send_new_task_emails(request, task: Task, user, task_images: List[TaskImages
             "task": task,
             "tool": task.tool,
             "tool_control_absolute_url": get_full_url(task.tool.get_absolute_url(), request),
+            "default_subject": default_subject,
+            "default_from_email": user.email,
+            "default_cc_emails": "",
         }
-        subject = (
-            ("SAFETY HAZARD: " if task.safety_hazard else "")
-            + task.tool.name
-            + (" shutdown" if task.force_shutdown else " problem")
-        )
         message = render_email_template(message, dictionary, request)
+        subject, from_email, cc = resolve_email_customization("new_task_email", dictionary)
         tos, bcc = get_task_email_recipients(task, new=True)
         if ToolCustomization.get_bool("tool_problem_send_to_all_qualified_users"):
             for qualified_user in task.tool.user_set.filter(is_active=True).select_related("preferences"):
@@ -169,8 +174,9 @@ def send_new_task_emails(request, task: Task, user, task_images: List[TaskImages
         send_mail(
             subject=subject,
             content=message,
-            from_email=user.email,
+            from_email=from_email,
             to=tos,
+            cc=cc,
             bcc=bcc,
             attachments=attachments,
             email_category=EmailCategory.TASKS,
@@ -192,33 +198,23 @@ def send_new_task_emails(request, task: Task, user, task_images: List[TaskImages
                 unique_users.add(r.user_id)
                 unique_user_reservations.append(r)
         for reservation in unique_user_reservations:
-            if not task.tool.operational:
-                subject = reservation.tool.name + " reservation problem"
-                rendered_message = render_email_template(
-                    message,
-                    {
-                        "reservation": reservation,
-                        "template_color": bootstrap_primary_color("danger"),
-                        "fatal_error": True,
-                    },
-                    request,
-                )
-            else:
-                subject = reservation.tool.name + " reservation warning"
-                rendered_message = render_email_template(
-                    message,
-                    {
-                        "reservation": reservation,
-                        "template_color": bootstrap_primary_color("warning"),
-                        "fatal_error": False,
-                    },
-                    request,
-                )
+            fatal_error = not task.tool.operational
+            reservation_dictionary = {
+                "reservation": reservation,
+                "template_color": bootstrap_primary_color("danger" if fatal_error else "warning"),
+                "fatal_error": fatal_error,
+                "default_subject": reservation.tool.name + (" reservation problem" if fatal_error else " reservation warning"),
+                "default_from_email": user_office_email,
+                "default_cc_emails": "",
+            }
+            rendered_message = render_email_template(message, reservation_dictionary, request)
+            subject, from_email, cc = resolve_email_customization("reservation_warning_email", reservation_dictionary)
             email_notification = reservation.user.get_preferences().email_send_reservation_emails
             reservation.user.email_user(
                 subject=subject,
                 message=rendered_message,
-                from_email=user_office_email,
+                from_email=from_email,
+                cc=cc,
                 email_category=EmailCategory.TASKS,
                 email_notification=email_notification,
             )
@@ -400,9 +396,12 @@ def set_task_status(request, task, status_name, user):
             "notification_message": status.notification_message,
             "task": task,
             "tool_control_absolute_url": get_full_url(task.tool.get_absolute_url(), request),
+            "default_subject": f"{task.tool} task notification",
+            "default_from_email": user.email,
+            "default_cc_emails": "",
         }
-        subject = f"{task.tool} task notification"
         message = render_email_template(message, dictionary, request)
+        subject, from_email, cc = resolve_email_customization("task_status_notification", dictionary)
         # Add primary owner if applicable
         recipient_users: List[User] = [task.tool.primary_owner] if status.notify_primary_tool_owner else []
         if status.notify_backup_tool_owners:
@@ -421,7 +420,12 @@ def set_task_status(request, task, status_name, user):
             recipients.append(task.tool.notification_email_address)
         recipients.append(status.custom_notification_email_address)
         send_mail(
-            subject=subject, content=message, from_email=user.email, to=recipients, email_category=EmailCategory.TASKS
+            subject=subject,
+            content=message,
+            from_email=from_email,
+            to=recipients,
+            cc=cc,
+            email_category=EmailCategory.TASKS,
         )
 
 

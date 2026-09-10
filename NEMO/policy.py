@@ -58,6 +58,7 @@ from NEMO.views.customization import (
     EmailsCustomization,
     ToolCustomization,
     get_media_file_contents,
+    resolve_email_customization,
 )
 
 policy_logger = getLogger(__name__)
@@ -210,13 +211,22 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
                 abuse_email_address = EmailsCustomization.get("abuse_email_address")
                 message = get_media_file_contents("unauthorized_tool_access_email.html")
                 if abuse_email_address and message:
-                    dictionary = {"operator": operator, "tool": tool, "type": "area-access"}
+                    dictionary = {
+                        "operator": operator,
+                        "tool": tool,
+                        "type": "area-access",
+                        "default_subject": "Area access requirement",
+                        "default_from_email": abuse_email_address,
+                        "default_cc_emails": "",
+                    }
                     rendered_message = render_email_template(message, dictionary)
+                    subject, from_email, cc = resolve_email_customization("unauthorized_tool_access_email", dictionary)
                     send_mail(
-                        subject="Area access requirement",
+                        subject=subject,
                         content=rendered_message,
-                        from_email=abuse_email_address,
+                        from_email=from_email,
                         to=[abuse_email_address],
+                        cc=cc,
                         email_category=EmailCategory.ABUSE,
                     )
                 return HttpResponseBadRequest(
@@ -247,13 +257,18 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
                         "operator": operator,
                         "tool": tool,
                         "type": "area-reservation",
+                        "default_subject": "Area reservation requirement",
+                        "default_from_email": abuse_email_address,
+                        "default_cc_emails": "",
                     }
                     rendered_message = render_email_template(message, dictionary)
+                    subject, from_email, cc = resolve_email_customization("unauthorized_tool_access_email", dictionary)
                     send_mail(
-                        subject="Area reservation requirement",
+                        subject=subject,
                         content=rendered_message,
-                        from_email=abuse_email_address,
+                        from_email=from_email,
                         to=[abuse_email_address],
+                        cc=cc,
                         email_category=EmailCategory.ABUSE,
                     )
                 return HttpResponseBadRequest(
