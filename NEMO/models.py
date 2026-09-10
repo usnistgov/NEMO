@@ -2333,7 +2333,7 @@ class Tool(SerializationByNameModel):
             ]
         )
 
-    def get_reservation_questions(self, project: Project = None) -> MultiDynamicForms:
+    def get_reservation_questions(self, project: Project = None, initial_data: str = None) -> MultiDynamicForms:
         from NEMO.widgets.dynamic_form import MultiDynamicForms
 
         reservation_questions = ReservationQuestions.objects.filter(enabled=True)
@@ -2347,7 +2347,7 @@ class Tool(SerializationByNameModel):
             )
         else:
             reservation_questions = reservation_questions.filter(only_for_projects=None)
-        return MultiDynamicForms(reservation_questions)
+        return MultiDynamicForms(reservation_questions, initial_data=initial_data)
 
     def _get_usage_questions(self, questions_type: str, user: User, project: Project) -> QuerySetType:
         real_id = self.tool_or_parent_id()
@@ -3085,7 +3085,7 @@ class Area(MPTTModel):
             email for area in self.get_ancestors(ascending=True, include_self=True) for email in area.reservation_email
         ]
 
-    def get_reservation_questions(self, project: Project = None) -> MultiDynamicForms:
+    def get_reservation_questions(self, project: Project = None, initial_data: str = None) -> MultiDynamicForms:
         from NEMO.widgets.dynamic_form import MultiDynamicForms
 
         reservation_questions = ReservationQuestions.objects.filter(enabled=True)
@@ -3097,7 +3097,7 @@ class Area(MPTTModel):
             )
         else:
             reservation_questions = reservation_questions.filter(only_for_projects=None)
-        return MultiDynamicForms(reservation_questions)
+        return MultiDynamicForms(reservation_questions, initial_data=initial_data)
 
     @property
     def location(self):

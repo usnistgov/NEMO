@@ -1,10 +1,18 @@
 {% load custom_tags_and_filters %}
 <div class="modal-header">
     <button type="button" class="close" data-dismiss="modal" aria-label="Modal close button">&times;</button>
-    <h4 id="modal-description-label" class="modal-title">Reservation questions</h4>
+    <h4 id="modal-description-label" class="modal-title">
+        {% if editing_reservation_id %}Edit reservation answers{% else %}Reservation questions{% endif %}
+    </h4>
 </div>
 <div class="modal-body">
-    <p>This reservation requires extra information to be provided:</p>
+    <p>
+        {% if editing_reservation_id %}
+            You may update your answers to this reservation's questions below:
+        {% else %}
+            This reservation requires extra information to be provided:
+        {% endif %}
+    </p>
     {% if error %}
         <div class="alert alert-danger">
             Oops! Something went wrong. Please correct the errors highlighted below.
@@ -23,7 +31,12 @@
 </div>
 <div class="modal-footer">
     <p id="answer_to_proceed" style="text-align:center">Please answer the required questions (above) to proceed</p>
-    {% button id="reservation_questions_submit" type="save" value="Submit" dismiss="modal" onclick="$('#dialog_cancelled').val(false);" submit=False %}
+    {% if editing_reservation_id %}
+        {% url 'edit_reservation_questions' editing_reservation_id as edit_reservation_questions_url %}
+        {% button id="reservation_questions_submit" type="save" value="Save answers" submit=False onclick="save_reservation_question_answers('"|concat:edit_reservation_questions_url|concat:"');" %}
+    {% else %}
+        {% button id="reservation_questions_submit" type="save" value="Submit" dismiss="modal" onclick="$('#dialog_cancelled').val(false);" submit=False %}
+    {% endif %}
 </div>
 <script>
 	function update_submit_button()
@@ -42,4 +55,25 @@
 
 	update_submit_button();
     $('body').on('dynamic-form-group-changed dynamic-form-field-changed', update_submit_button);
+    $('#dialog .modal-dialog').addClass('modal-lg');
+
+    {% if editing_reservation_id %}
+        function save_reservation_question_answers(url)
+        {
+            let post_data = $("#additional_event_parameters").serialize();
+            ajax_post(url, post_data, function(response, status, xml_http_request)
+            {
+                if (response)
+                {
+                    {# Validation failed server-side, so re-render the dialog with the error and previous answers #}
+                    $("#dialog .modal-content").html(response);
+                }
+                else
+                {
+                    $("#dialog").modal('hide');
+                    refresh_calendar_and_sidebar();
+                }
+            }, ajax_failure_callback("Unable to save the reservation questions"));
+        }
+    {% endif %}
 </script>

@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.timezone import make_aware
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from NEMO.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.decorators import disable_session_expiry_refresh, postpone, staff_member_or_tool_staff_required, synchronized
@@ -864,6 +864,44 @@ def change_reservation_note(request, reservation_id):
     reservation.note = request.POST.get("note", "")
     reservation.save_and_notify()
     return HttpResponse()
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def edit_reservation_questions(request, reservation_id):
+    """
+    Let a reservation's owner (or staff on the tool) re-answer the reservation questions for an
+    upcoming or in-progress reservation, pre-filled with the answers that were previously given.
+    """
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+    if not (request.user == reservation.user or request.user.is_staff_on_tool(reservation.tool)):
+        return HttpResponseBadRequest("You are not allowed to edit this reservation.")
+    if reservation.cancelled or reservation.missed:
+        return HttpResponseBadRequest("This reservation has been cancelled and its questions can no longer be edited.")
+    if not reservation.has_not_ended():
+        return HttpResponseBadRequest("You cannot edit the questions for a reservation that has already ended.")
+
+    dynamic_forms = reservation.reservation_item.get_reservation_questions(
+        reservation.project, initial_data=reservation.question_data
+    )
+    if not dynamic_forms:
+        return HttpResponseBadRequest("This reservation does not have any questions to edit.")
+
+    if request.method == "POST":
+        try:
+            reservation.question_data = dynamic_forms.extract(request)
+            reservation.save()
+            return HttpResponse()
+        except RequiredUnansweredQuestionsException as e:
+            dictionary = {
+                "error": str(e),
+                "reservation_questions": dynamic_forms.render(),
+                "editing_reservation_id": reservation.id,
+            }
+            return render(request, "calendar/reservation_questions.html", dictionary)
+
+    dictionary = {"reservation_questions": dynamic_forms.render(), "editing_reservation_id": reservation.id}
+    return render(request, "calendar/reservation_questions.html", dictionary)
 
 
 @staff_member_or_tool_staff_required
