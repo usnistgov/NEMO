@@ -21,7 +21,7 @@ from django.core.validators import MinValueValidator, validate_comma_separated_i
 from django.db import connections, models, transaction
 from django.db.models import BooleanField, Case, Exists, IntegerChoices, OuterRef, Q, Value, When
 from django.db.models.manager import Manager
-from django.db.models.signals import pre_delete
+from django.db.models.signals import m2m_changed, pre_delete
 from django.dispatch import receiver
 from django.template import loader
 from django.template.defaultfilters import linebreaksbr
@@ -2519,10 +2519,63 @@ class ToolDocuments(BaseDocumentModel):
 
 class ToolQualificationGroup(SerializationByNameModel):
     name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, unique=True, help_text="The name of this tool group")
-    tools = models.ManyToManyField(Tool, blank=False)
+    tools = models.ManyToManyField(Tool, blank=True)
+    tool_groups = models.ManyToManyField(
+        "self",
+        symmetrical=False,
+        blank=True,
+        related_name="parent_tool_groups",
+        help_text="Other tool qualification groups to include in this group. Nested groups are resolved recursively.",
+    )
 
     def __str__(self):
         return self.name
+
+    def get_all_tools(self, _visited_group_ids: Optional[Set[int]] = None) -> Set["Tool"]:
+        """Returns every tool in this group, including tools from any nested sub-groups, resolved recursively."""
+        if _visited_group_ids is None:
+            _visited_group_ids = set()
+        if self.id in _visited_group_ids:
+            return set()
+        _visited_group_ids.add(self.id)
+        tools = set(self.tools.all())
+        for sub_group in self.tool_groups.all():
+            tools.update(sub_group.get_all_tools(_visited_group_ids))
+        return tools
+
+    def get_all_sub_group_ids(self, _visited_group_ids: Optional[Set[int]] = None) -> Set[int]:
+        """Returns the ids of every sub-group nested (directly or indirectly) under this group."""
+        if _visited_group_ids is None:
+            _visited_group_ids = set()
+        for sub_group in self.tool_groups.exclude(id__in=_visited_group_ids):
+            _visited_group_ids.add(sub_group.id)
+            sub_group.get_all_sub_group_ids(_visited_group_ids)
+        return _visited_group_ids
+
+
+def _tool_qualification_group_hierarchy_would_cycle(parent_id: int, child_id: int) -> bool:
+    """True if making the group identified by `child_id` a sub-group of `parent_id` would create a circular reference."""
+    if parent_id == child_id:
+        return True
+    try:
+        child = ToolQualificationGroup.objects.get(id=child_id)
+    except ToolQualificationGroup.DoesNotExist:
+        return False
+    return parent_id in child.get_all_sub_group_ids()
+
+
+@receiver(m2m_changed, sender=ToolQualificationGroup.tool_groups.through)
+def validate_tool_qualification_group_hierarchy(sender, instance: ToolQualificationGroup, action, pk_set, reverse, **kwargs):
+    """Prevents a tool qualification group from (directly or indirectly) containing itself."""
+    if action != "pre_add" or not pk_set:
+        return
+    for other_id in pk_set:
+        parent_id, child_id = (other_id, instance.id) if reverse else (instance.id, other_id)
+        if _tool_qualification_group_hierarchy_would_cycle(parent_id, child_id):
+            other = ToolQualificationGroup.objects.filter(id=other_id).first()
+            raise ValidationError(
+                f"'{other}' cannot be added here because it would create a circular reference between tool qualification groups."
+            )
 
 
 class Qualification(BaseModel):

@@ -596,14 +596,39 @@ class ToolWaitListAdmin(admin.ModelAdmin):
     autocomplete_fields = ["tool", "user"]
 
 
+class ToolQualificationGroupAdminForm(forms.ModelForm):
+    class Meta:
+        model = ToolQualificationGroup
+        fields = "__all__"
+
+    def clean_tool_groups(self):
+        sub_groups = self.cleaned_data["tool_groups"]
+        if self.instance.pk:
+            for sub_group in sub_groups:
+                if (
+                    sub_group.pk == self.instance.pk
+                    or self.instance.pk in sub_group.get_all_sub_group_ids()
+                ):
+                    raise forms.ValidationError(
+                        f"'{sub_group}' cannot be added here because it would create a circular reference "
+                        "between tool qualification groups."
+                    )
+        return sub_groups
+
+
 @register(ToolQualificationGroup)
 class ToolQualificationGroup(admin.ModelAdmin):
-    list_display = ["name", "get_tools"]
-    filter_horizontal = ["tools"]
+    form = ToolQualificationGroupAdminForm
+    list_display = ["name", "get_tools", "get_tool_groups"]
+    filter_horizontal = ["tools", "tool_groups"]
 
-    @admin.display(description="Tools", ordering="tools")
+    @admin.display(description="Tools")
     def get_tools(self, obj: ToolQualificationGroup):
         return mark_safe("<br>".join([str(tool) for tool in obj.tools.all()]))
+
+    @admin.display(description="Includes tool groups")
+    def get_tool_groups(self, obj: ToolQualificationGroup):
+        return mark_safe("<br>".join([str(sub_group) for sub_group in obj.tool_groups.all()]))
 
 
 class AreaAdminForm(MPTTAdminForm):
