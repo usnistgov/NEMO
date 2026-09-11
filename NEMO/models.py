@@ -209,6 +209,9 @@ class BaseDocumentModel(BaseModel):
     def can_be_embedded(self):
         return any([self.link().lower().endswith(ext) for ext in supported_embedded_extensions])
 
+    def is_allowed(self, user: User):
+        raise NotImplementedError(f"{self.__class__.__name__} must provide an is_allowed method")
+
     def __str__(self):
         return self.filename()
 
@@ -1208,6 +1211,9 @@ class UserDocuments(BaseDocumentModel):
 
         username = slugify(self.user.username)
         return f"user_documents/{username}/{filename}"
+
+    def is_allowed(self, user: User):
+        return user == self.user or user.is_any_part_of_staff
 
     class Meta(BaseDocumentModel.Meta):
         verbose_name_plural = "User documents"
@@ -2513,6 +2519,9 @@ class ToolDocuments(BaseDocumentModel):
         tool_name = slugify(self.tool.name)
         return f"tool_documents/{tool_name}/{filename}"
 
+    def is_allowed(self, user: User):
+        return user.is_any_part_of_staff or user.qualifications.filter(tool=self.tool).exists()
+
     class Meta(BaseDocumentModel.Meta):
         verbose_name_plural = "Tool documents"
 
@@ -3310,6 +3319,9 @@ class ProjectDocuments(BaseDocumentModel):
 
         project_name = slugify(self.project.name)
         return f"project_documents/{project_name}/{filename}"
+
+    def is_allowed(self, user: User):
+        return user.is_any_part_of_staff or user.managed_projects.filter(project=self.project).exists()
 
     class Meta(BaseDocumentModel.Meta):
         verbose_name_plural = "Project documents"
@@ -4607,6 +4619,9 @@ class SafetyItemDocuments(BaseDocumentModel):
         item_name = slugify(self.safety_item.name)
         return f"safety_item/{item_name}/{filename}"
 
+    def is_allowed(self, user: User):
+        return True
+
     class Meta(BaseDocumentModel.Meta):
         verbose_name_plural = "Safety item documents"
 
@@ -5792,6 +5807,9 @@ class StaffKnowledgeBaseItemDocuments(BaseDocumentModel):
         item_name = slugify(self.item.name)
         return f"{MEDIA_PROTECTED}/knowledge_base/{item_name}/{filename}"
 
+    def is_allowed(self, user: User):
+        return user.is_any_part_of_staff
+
     class Meta(BaseDocumentModel.Meta):
         verbose_name_plural = "Staff knowledge base item documents"
 
@@ -5830,6 +5848,9 @@ class UserKnowledgeBaseItemDocuments(BaseDocumentModel):
 
         item_name = slugify(self.item.name)
         return f"knowledge_base/{item_name}/{filename}"
+
+    def is_allowed(self, user: User):
+        return True
 
     class Meta(BaseDocumentModel.Meta):
         verbose_name_plural = "User knowledge base item documents"
