@@ -161,13 +161,11 @@ def add_extra_policy_class(policy_class_name: str):
 
     # Append only if not already present (prevents duplicates on reload)
     if policy_class_name not in current_policies:
-        # We must re-assign the list to settings to ensure it persists
-        # (Modifying the list in place usually works, but reassignment is safer)
         current_policies.append(policy_class_name)
-        setattr(settings, EXTRA_POLICIES_SETTING, list(current_policies) + [policy_class_name])
+        setattr(settings, EXTRA_POLICIES_SETTING, current_policies)
 
-    # Force reload of policies
-    policy.policy_class = policy.NEMOPolicyChain(policy.get_policy_classes())
+    # Replace private attribute to avoid stale references
+    policy.policy_class._policies = policy.get_policy_classes()
 
 
 def add_inline_to_admin_class(model_class, inline_class):
