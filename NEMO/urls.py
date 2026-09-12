@@ -331,6 +331,11 @@ urlpatterns += [
     re_path(r"^calendar/" + reservation_item_types + r"/(?P<item_id>\d+)/$", calendar.calendar, name="calendar"),
     path("calendar/", calendar.calendar, name="calendar"),
     path("event_feed/", calendar.event_feed, name="event_feed"),
+    path(
+        "calendar_subscription/<uuid:token>/reservations.ics",
+        calendar.user_calendar_subscription_feed,
+        name="user_calendar_subscription_feed",
+    ),
     path("create_reservation/", calendar.create_reservation, name="create_reservation"),
     path("create_outage/", calendar.create_outage, name="create_outage"),
     path("resize_reservation/", calendar.resize_reservation, name="resize_reservation"),
@@ -612,6 +617,11 @@ urlpatterns += [
     path("news/publish/<int:story_id>/", news.publish, name="publish_news_update"),
     # User Preferences
     path("user_preferences/", users.user_preferences, name="user_preferences"),
+    path(
+        "user_preferences/regenerate_calendar_subscription_token/",
+        users.regenerate_calendar_subscription_token,
+        name="regenerate_calendar_subscription_token",
+    ),
     # Dynamic forms
     path(
         "render_group_question/<content_type_id>/<item_id>/<field_name>/<group_name>",

@@ -105,6 +105,40 @@
                         </label>
                     </div>
                 </div>
+                <div class="form-group col-sm-12" role="group" aria-labelledby="calendar_subscription_label">
+                    <h4 id="calendar_subscription_label" style="display: block">Calendar subscription</h4>
+                    <p>
+                        Subscribe to this link from Google Calendar, Outlook, or Apple Calendar to automatically
+                        keep your reservations in sync. Anyone with this link can view your reservation schedule,
+                        so keep it private, and reset it below if you ever need to revoke access.
+                    </p>
+                    <div style="display: flex">
+                        <input type="text"
+                               id="calendar_subscription_url"
+                               class="form-control"
+                               style="flex: 1"
+                               readonly
+                               onclick="this.select();"
+                               value="{{ calendar_subscription_url }}">
+                        <button type="button"
+                                id="calendar_subscription_copy_button"
+                                class="btn btn-default"
+                                style="margin-left: 10px"
+                                onclick="copy_calendar_subscription_url();">Copy</button>
+                        <a class="btn btn-default"
+                           style="margin-left: 10px"
+                           href="{{ calendar_subscription_webcal_url }}">Subscribe</a>
+                    </div>
+                    <p style="margin-top: 10px">
+                        <button type="submit"
+                                class="btn btn-danger btn-sm"
+                                formaction="{% url 'regenerate_calendar_subscription_token' %}"
+                                formnovalidate
+                                onclick="return confirm('This will invalidate your current calendar subscription link. Any calendar app already subscribed to it will stop updating until you subscribe again with the new link. Continue?');">
+                            Reset link
+                        </button>
+                    </p>
+                </div>
             </div>
         </div>
         <div class="panel panel-default">
@@ -369,6 +403,27 @@
         {% button type="save" value="Update preferences" %}
     </form>
     <script>
+            function copy_calendar_subscription_url()
+            {
+                var input = document.getElementById("calendar_subscription_url");
+                var button = document.getElementById("calendar_subscription_copy_button");
+                var original_text = button.innerHTML;
+                function show_copied()
+                {
+                    button.innerHTML = "Copied!";
+                    setTimeout(function() { button.innerHTML = original_text; }, 1500);
+                }
+                if (navigator.clipboard && window.isSecureContext)
+                {
+                    navigator.clipboard.writeText(input.value).then(show_copied);
+                }
+                else
+                {
+                    input.select();
+                    document.execCommand("copy");
+                    show_copied();
+                }
+            }
             function add_tool_task_notification(jquery_event, search_selection, dataset_name)
             {
                 add_to_list("#task-notification-list", "remove_tool_task_notification", search_selection.id, search_selection.name, "Remove the " + search_selection.name, "tool_task_notifications");
