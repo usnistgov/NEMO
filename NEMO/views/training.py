@@ -102,17 +102,14 @@ def charge_training(request):
                 if attribute == "chosen_tool":
                     chosen_type = request.POST.get(f"chosen_type{separator}{index}", "tool")
                     identifier = to_int_or_negative(value)
-                    setattr(
-                        charges[index],
-                        "qualify_tools",
-                        (
-                            [Tool.objects.get(id=identifier)]
-                            if chosen_type == "tool"
-                            else ToolQualificationGroup.objects.get(id=identifier).tools.all()
-                        ),
-                    )
-                    # Even with a group of tools, we only charge training on the first one
-                    charges[index].tool = next(iter(charges[index].qualify_tools))
+                    if chosen_type == "tool":
+                        tool = Tool.objects.get(id=identifier)
+                        setattr(charges[index], "qualify_tools", [tool])
+                        charges[index].tool = next(iter(charges[index].qualify_tools))
+                    else:
+                        tool_group = ToolQualificationGroup.objects.get(id=identifier)
+                        setattr(charges[index], "qualify_tools", tool_group.tools.all())
+                        charges[index].tool = tool_group.training_charge_tool
                     if not trainer.is_staff and (trainer.is_tool_superuser or trainer.is_tool_staff):
                         tools = set(list(trainer.superuser_for_tools.all()) + list(trainer.staff_for_tools.all()))
                         if not set(charges[index].qualify_tools).issubset(tools):

@@ -300,6 +300,7 @@ class ToolQualificationGroupSerializer(FlexFieldsSerializerMixin, ModelSerialize
         fields = "__all__"
         expandable_fields = {
             "tools": ("NEMO.serializers.ToolSerializer", {"many": True}),
+            "training_charge_tool": ("NEMO.serializers.ToolSerializer",),
         }
 
 

@@ -2529,6 +2529,9 @@ class ToolDocuments(BaseDocumentModel):
 class ToolQualificationGroup(SerializationByNameModel):
     name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, unique=True, help_text="The name of this tool group")
     tools = models.ManyToManyField(Tool, blank=False)
+    training_charge_tool = models.ForeignKey(
+        Tool, related_name="toolqualificationgroup_charge_set", on_delete=models.PROTECT
+    )
 
     def __str__(self):
         return self.name

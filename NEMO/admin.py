@@ -596,10 +596,30 @@ class ToolWaitListAdmin(admin.ModelAdmin):
     autocomplete_fields = ["tool", "user"]
 
 
+class ToolQualificationGroupAdminForm(forms.ModelForm):
+    class Meta:
+        model = ToolQualificationGroup
+        fields = "__all__"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        tools = cleaned_data.get("tools")
+        training_charge_tool = cleaned_data.get("training_charge_tool")
+
+        if training_charge_tool and tools and training_charge_tool not in tools:
+            raise forms.ValidationError(
+                {"training_charge_tool": "The training charge tool must be in the list of tools."}
+            )
+
+        return cleaned_data
+
+
 @register(ToolQualificationGroup)
-class ToolQualificationGroup(admin.ModelAdmin):
-    list_display = ["name", "get_tools"]
+class ToolQualificationGroupAdmin(admin.ModelAdmin):
+    list_display = ["name", "get_tools", "training_charge_tool"]
     filter_horizontal = ["tools"]
+    autocomplete_fields = ["training_charge_tool"]
+    form = ToolQualificationGroupAdminForm
 
     @admin.display(description="Tools", ordering="tools")
     def get_tools(self, obj: ToolQualificationGroup):

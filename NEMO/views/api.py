@@ -458,7 +458,12 @@ class ToolQualificationGroupViewSet(ModelViewSet):
     filename = "tool_qualification_groups"
     queryset = ToolQualificationGroup.objects.all()
     serializer_class = ToolQualificationGroupSerializer
-    filterset_fields = {"id": key_filters, "name": string_filters, "tools": manykey_filters}
+    filterset_fields = {
+        "id": key_filters,
+        "name": string_filters,
+        "tools": manykey_filters,
+        "training_charge_tool": key_filters,
+    }
 
 
 class QualificationViewSet(ModelViewSet):
