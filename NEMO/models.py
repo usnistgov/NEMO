@@ -4456,7 +4456,8 @@ class ActivityHistory(BaseModel):
 
     class Meta:
         ordering = ["-date"]
-        verbose_name_plural = "activity histories"
+        verbose_name = "Administrative history"
+        verbose_name_plural = "Administrative histories"
 
     def __str__(self):
         if self.action:
