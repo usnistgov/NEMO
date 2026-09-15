@@ -1,3 +1,4 @@
+{% load humanize %}
 {% load custom_tags_and_filters %}
 <p>
     Staff members are highlighted in <span class="bg-success">&nbsp;green&nbsp;</span>
@@ -5,6 +6,16 @@
     Service personnel are highlighted in <span class="bg-warning">&nbsp;orange&nbsp;</span>
     <br>
 </p>
+{% if dashboard_display_problem_details %}
+    <p>
+        <button type="button" id="expand_all_problem_details" class="btn btn-default btn-xs">
+            <span class="glyphicon glyphicon-resize-full"></span> Expand all problem reports
+        </button>
+        <button type="button" id="collapse_all_problem_details" class="btn btn-default btn-xs">
+            <span class="glyphicon glyphicon-resize-small"></span> Collapse all problem reports
+        </button>
+    </p>
+{% endif %}
 <table class="table table-bordered table-condensed">
     <thead>
         <tr>
@@ -17,6 +28,14 @@
         {% for tool in tool_summary %}
             <tr class="{% if tool.operator_is_any_part_of_staff %}success {% elif tool.operator_is_service_personnel %}warning {% endif %}{% if tool.problematic or not tool.operational or tool.required_resource_is_unavailable or tool.nonrequired_resource_is_unavailable %}problematic{% else %}healthy{% endif %} {% if tool.in_use %}in_use{% else %}idle{% endif %}">
                 <td>
+                    {% if dashboard_display_problem_details and tool.problematic and tool.tasks %}
+                        <a href="javascript:void(0)"
+                           class="pointer toggle-problem-details"
+                           data-tool-id="{{ tool.id }}"
+                           title="Show/hide problem report details">
+                            <span class="glyphicon glyphicon-chevron-right"></span>
+                        </a>
+                    {% endif %}
                     {{ tool.get_tool_info_html|safe }}
                     {# Output the state of the tool, summarizing any associated problems. #}
                     {% if tool.in_use %}
@@ -65,6 +84,40 @@
                     <td aria-label="Not in use"></td>
                 {% endif %}
             </tr>
+            {% if dashboard_display_problem_details and tool.problematic and tool.tasks %}
+                <tr id="problem_details_{{ tool.id }}"
+                    data-tool-id="{{ tool.id }}"
+                    class="problem-details-row {% if tool.operator_is_any_part_of_staff %}success {% elif tool.operator_is_service_personnel %}warning {% endif %}problematic {% if tool.in_use %}in_use{% else %}idle{% endif %}"
+                    style="display:none">
+                    <td colspan="3" style="padding:10px">
+                        {% for task in tool.tasks %}
+                            <div{% if not forloop.last %} style="margin-bottom:10px; padding-bottom:10px; border-bottom:dotted 1px #ddd"{% endif %}>
+                                <strong>
+                                    {{ task.urgency }} urgency{% if task.problem_category %} &ndash; {{ task.problem_category }}{% endif %}
+                                </strong>
+                                {% if task.force_shutdown %}
+                                    <span class="glyphicon glyphicon-fire danger-highlight" title="This tool is shut down until this problem is resolved"></span>
+                                {% endif %}
+                                {% if task.safety_hazard %}
+                                    <span class="glyphicon glyphicon-exclamation-sign danger-highlight" title="This problem is a safety hazard"></span>
+                                {% endif %}
+                                <br>
+                                {{ task.description|linebreaksbr }}
+                                {% if task.progress_description %}
+                                    <br>
+                                    <em>Progress: {{ task.progress_description|linebreaksbr }}</em>
+                                {% endif %}
+                                {% if task.estimated_resolution_time %}
+                                    <br>
+                                    <span class="light-grey">Estimated resolution: {{ task.estimated_resolution_time }}</span>
+                                {% endif %}
+                                <br>
+                                <span class="light-grey">Reported {{ task.creation_time|naturaltime }}</span>
+                            </div>
+                        {% endfor %}
+                    </td>
+                </tr>
+            {% endif %}
         {% endfor %}
     </tbody>
 </table>
@@ -86,4 +139,67 @@
         }
     });
     $("[data-toggle='tooltip']").tooltip({html: 'true'});
+
+    // The tools tab is reloaded wholesale every few seconds by refresh_status_dashboard(), which would otherwise
+    // reset every problem-details row back to collapsed. Persist which tool ids are expanded in localStorage,
+    // and re-apply that state below every time this partial is (re)loaded.
+    function get_expanded_problem_details_tools()
+    {
+        try { return JSON.parse(localStorage['problemDetailsExpandedTools'] || '[]'); }
+        catch (e) { return []; }
+    }
+
+    function save_expanded_problem_details_tools(tool_ids)
+    {
+        localStorage['problemDetailsExpandedTools'] = JSON.stringify(tool_ids);
+    }
+
+    function set_problem_details_row_expanded(tool_id, expanded)
+    {
+        $("#problem_details_" + tool_id).toggle(expanded);
+        $(".toggle-problem-details[data-tool-id='" + tool_id + "'] .glyphicon")
+            .toggleClass('glyphicon-chevron-down', expanded)
+            .toggleClass('glyphicon-chevron-right', !expanded);
+    }
+
+    $(".toggle-problem-details").on('click', function ()
+    {
+        let tool_id = String($(this).data('tool-id'));
+        let expanded_tools = get_expanded_problem_details_tools();
+        let now_expanded = expanded_tools.indexOf(tool_id) === -1;
+        set_problem_details_row_expanded(tool_id, now_expanded);
+        if (now_expanded)
+        {
+            expanded_tools.push(tool_id);
+        }
+        else
+        {
+            expanded_tools = expanded_tools.filter(function (id) { return id !== tool_id; });
+        }
+        save_expanded_problem_details_tools(expanded_tools);
+    });
+    $("#expand_all_problem_details").on('click', function ()
+    {
+        let all_tool_ids = $(".problem-details-row").map(function () { return String($(this).data('tool-id')); }).get();
+        all_tool_ids.forEach(function (tool_id) { set_problem_details_row_expanded(tool_id, true); });
+        save_expanded_problem_details_tools(all_tool_ids);
+    });
+    $("#collapse_all_problem_details").on('click', function ()
+    {
+        $(".problem-details-row").each(function () { set_problem_details_row_expanded($(this).data('tool-id'), false); });
+        save_expanded_problem_details_tools([]);
+    });
+    // Re-apply whatever was expanded before this (re)load
+    (function ()
+    {
+        let expanded_tools = get_expanded_problem_details_tools();
+        $(".problem-details-row").each(function ()
+        {
+            let tool_id = String($(this).data('tool-id'));
+            if (expanded_tools.indexOf(tool_id) !== -1)
+            {
+                set_problem_details_row_expanded(tool_id, true);
+            }
+        });
+    })();
 </script>

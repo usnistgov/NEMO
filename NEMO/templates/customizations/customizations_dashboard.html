@@ -74,6 +74,33 @@
                 </div>
             </div>
         </div>
+        <div class="form-group">
+            <label class="control-label col-md-3">Problem details</label>
+            <div class="col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               id="dashboard_display_problem_details_enabled"
+                               name="dashboard_display_problem_details_enabled"
+                               {% if dashboard_display_problem_details_enabled %}checked{% endif %}
+                               value="enabled">
+                        Allow expanding a problematic tool to see its problem report details
+                    </label>
+                    <div class="help-block light-grey" style="margin-bottom:0;">
+                        Shows description, category, urgency, and estimated resolution time. Staff and admins can see this by default once enabled.
+                    </div>
+                </div>
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="dashboard_display_problem_details_visible_to_all"
+                               {% if dashboard_display_problem_details_visible_to_all %}checked{% endif %}
+                               value="enabled">
+                        Show problem report details to all users
+                    </label>
+                </div>
+            </div>
+        </div>
         <div class="form-group" style="margin-bottom: 0; border-top: dotted 1px #ddd">
             <div class="col-md-5">
                 <h5>Staff status</h5>
