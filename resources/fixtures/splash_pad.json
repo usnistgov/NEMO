@@ -8572,7 +8572,10 @@
         [
           "PDMS Spin Coater"
         ]
-      ]
+      ],
+      "training_charge_tool": [
+          "PDMS Mixer"
+        ]
     }
   },
   {
@@ -8599,7 +8602,10 @@
         [
           "A103 Spinner Right"
         ]
-      ]
+      ],
+      "training_charge_tool": [
+          "A102 Spinner Hood"
+        ]
     }
   },
   {
