@@ -19,7 +19,7 @@
                 <li>
                     <b>Email</b>: {{ user.email }}
                 </li>
-                {% if user.is_any_part_of_staff and user.type %}
+                {% if request.user.is_any_part_of_staff and user.type %}
                     <li>
                         <b>Type</b>: {{ user.type }}
                     </li>
@@ -28,11 +28,16 @@
                     <b>Date joined</b>: {{ user.date_joined }}
                 </li>
                 <li>
-                    <b>Last login</b>: {{ user.last_login }}
+                    <b>Last login</b>: {{ user.last_login|default_if_none:"Never" }}
                 </li>
                 <li>
                     <b>Access expiration</b>: {{ user.access_expiration|default_if_none:"Access never expires" }}
                 </li>
+                {% if request.user.is_any_part_of_staff %}
+                    <li>
+                        <b>Badge number</b>: {{ user.badge_number }}
+                    </li>
+                {% endif %}
             </ul>
         </div>
     </div>
@@ -174,7 +179,7 @@
             </div>
         </div>
     {% endif %}
-    {% if user.is_any_part_of_staff and user.groups.exists %}
+    {% if request.user.is_any_part_of_staff and user.groups.exists %}
         <div class="panel panel-default">
             <div class="panel-body">
                 <h3 style="margin-top: 0">Groups</h3>

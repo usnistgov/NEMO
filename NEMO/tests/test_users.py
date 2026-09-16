@@ -19,10 +19,13 @@ class UserTestCase(NEMOTestCaseMixin, TestCase):
         UserCustomization.set("user_allow_profile_view", "enabled")
         response = self.client.get(reverse("view_user", args=[customer.id]))
         self.assertEqual(response.status_code, 200)
-        # Cannot see someone else's profile even as staff
-        self.login_as_staff()
+        # Cannot see someone else's profile
         response = self.client.get(reverse("view_user", args=[customer.id]))
         self.assertEqual(response.status_code, 400)
+        # Except if staff
+        self.login_as_staff()
+        response = self.client.get(reverse("view_user", args=[customer.id]))
+        self.assertEqual(response.status_code, 200)
 
     def test_impersonate_user(self):
         admin = create_user_and_project(is_staff=True)[0]

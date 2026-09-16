@@ -68,8 +68,10 @@
                         <span class="glyphicon {% if user.is_superuser %}glyphicon-ok success-highlight{% endif %}"></span>
                     </td>
                     <td class="text-center button-column-minimum">
-                        {% url 'create_or_modify_user' user.id as edit_url %}
+                        {% url 'view_user' user.id as view_url %}
+                        {% button type="view" size="small" url=view_url value="View" %}
                         {% if not readonly %}
+                            {% url 'create_or_modify_user' user.id as edit_url %}
                             {% with next=request.get_full_path|urlencode %}
                                 {% button value="Edit" type="edit" size="small" url=edit_url|concat:"?next="|concat:next %}
                                 {% url "deactivate_user" user.id as deactivate_user_url %}
@@ -77,8 +79,6 @@
                                     {% button type="warn" size="small" icon="glyphicon-ban-circle" value="Deactivate" title="Deactivate user" url=deactivate_user_url %}
                                 {% endif %}
                             {% endwith %}
-                        {% else %}
-                            {% button type="view" size="small" url=edit_url value="View" %}
                         {% endif %}
                     </td>
                 </tr>

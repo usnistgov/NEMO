@@ -519,7 +519,7 @@ def user_preferences(request):
 @login_required
 @require_GET
 def view_user(request, user_id):
-    if UserCustomization.get_bool("user_allow_profile_view"):
+    if UserCustomization.get_bool("user_allow_profile_view") or request.user.is_any_part_of_staff:
         user = (
             User.objects.filter(pk=user_id)
             .prefetch_related(
@@ -539,7 +539,7 @@ def view_user(request, user_id):
         if not user:
             raise Http404("No user matches the given query")
 
-        if request.user.id != user_id:
+        if request.user.id != user_id and not request.user.is_any_part_of_staff:
             return HttpResponseBadRequest("You are not allowed to view this user's profile")
 
         dictionary = {
