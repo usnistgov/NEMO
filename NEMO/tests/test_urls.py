@@ -105,8 +105,8 @@ url_kwargs_get_post = {
         }
     },
     "toggle_active": {"kwargs": {"kind": "project", "identifier": 3}},
-    "remove_user_from_project": {"post": {"user_id": 3, "project_id": 3}},
-    "add_user_to_project": {"post": {"user_id": 3, "project_id": 3}},
+    "remove_user_from_project": {"login_id": 1, "post": {"user_id": 3, "project_id": 3}},
+    "add_user_to_project": {"login_id": 1, "post": {"user_id": 3, "project_id": 3}},
     "history": {"kwargs": {"item_type": "user", "item_id": 1}},
     "customization": {"kwargs": {"key": "application"}},
     "customize": {"kwargs": {"key": "application"}, "post": {"facility_name": "test facility"}},
