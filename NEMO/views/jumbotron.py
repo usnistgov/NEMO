@@ -2,9 +2,10 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import render
 from django.utils import timezone
+from datetime import timedelta
 from django.views.decorators.http import require_GET
 
-from NEMO.models import Alert, Area, AreaAccessRecord, Resource, UsageEvent
+from NEMO.models import Alert, Area, AreaAccessRecord, Reservation, Resource, UsageEvent
 from NEMO.views.alerts import mark_alerts_as_expired
 from NEMO.views.customization import get_media_file_contents
 
@@ -25,6 +26,8 @@ def jumbotron_content(request):
     tool_categories = request.GET.getlist("category", [])
     display_alerts = request.GET.get("alerts", True) != "false"
     display_occupancy = request.GET.get("occupancy", True) != "false"
+    reservations = request.GET.get("reservations", 0)
+    display_reservations = str(reservations).isdigit() and int(reservations) > 0
     display_usage = request.GET.get("usage", True) != "false"
     reservations_can_expire = Area.objects.filter(requires_reservation=True)
     dictionary = {
@@ -32,6 +35,7 @@ def jumbotron_content(request):
         "display_alerts": display_alerts,
         "display_usage": display_usage,
         "display_occupancy": display_occupancy,
+        "display_reservations": display_reservations,
     }
     if display_alerts:
         dictionary["alerts"] = Alert.objects.filter(
@@ -48,6 +52,21 @@ def jumbotron_content(request):
             .filter(area_name_filter)
             .prefetch_related("customer", "project")
             .order_by("area__name", "start")
+        )
+    if display_reservations:
+        reservation_count = int(reservations)
+        category_filter = Q()
+        if tool_categories:
+            for category in tool_categories:
+                category_filter |= Q(tool___category__istartswith=category)
+        dictionary["reservations"] = (
+            Reservation.objects.filter(
+                cancelled=False, 
+                missed=False, 
+                shortened=False, 
+                start__gt=timezone.now(), 
+                start__lte=timezone.now() + timedelta(weeks=1)
+            ).filter(category_filter).order_by("start")[:reservation_count].prefetch_related("user", "tool")
         )
     if display_usage:
         category_filter = Q()
