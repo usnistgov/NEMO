@@ -63,6 +63,34 @@
             </div>
         </div>
         <div class="form-group">
+            <span class="control-label col-md-3">On area project change:</span>
+            <div class="col-md-9">
+                <div class="radio">
+                    <label>
+                        <input type="radio"
+                               name="area_access_change_project_charged"
+                               value="create_new_record"
+                               {% if area_access_change_project_charged == "create_new_record" %}checked{% endif %} />
+                        Create new record only
+                    </label>
+                    <label>
+                        <input type="radio"
+                               name="area_access_change_project_charged"
+                               value="update_current_record"
+                               {% if area_access_change_project_charged == "update_current_record" %}checked{% endif %} />
+                        Update current record
+                    </label>
+                    <label>
+                        <input type="radio"
+                               name="area_access_change_project_charged"
+                               value="ask_user"
+                               {% if area_access_change_project_charged == "ask_user" %}checked{% endif %} />
+                        Ask user
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-md-3">Area usage reminder</label>
             <div class="col-md-9">
                 <div class="checkbox">

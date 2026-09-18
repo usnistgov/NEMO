@@ -264,22 +264,45 @@ def change_project(request, new_project=None):
     except ProjectChargeException as e:
         dictionary = {"error": e.msg}
         return render(request, "area_access/change_project.html", dictionary)
-    # Stop billing the user's initial project
+
+    mode = ApplicationCustomization.get("area_access_change_project_charged")
+
+    if mode == "ask_user":
+        mode = (
+            "update_current_record"
+            if request.POST.get("area_change_project_charged") == "area_update_record"
+            else "create_new_record"
+        )
+
+    try:
+        if mode == "update_current_record":
+            update_current_record(user, new_project)
+        else:
+            create_new_record(user, new_project)
+    except ValidationError as e:
+        return render(request, "area_access/change_project.html", {"error": str(e)})
+
+    return redirect(reverse("landing"))
+
+
+def create_new_record(user, new_project):
     record = user.area_access_record()
     record.end = timezone.now()
     record.save()
     area = record.area
-    # Start billing the user's new project
-    record = AreaAccessRecord()
-    record.area = area
-    record.customer = request.user
+    new_record = AreaAccessRecord()
+    new_record.area = area
+    new_record.customer = user
+    new_record.project = new_project
+    new_record.full_clean()
+    new_record.save()
+
+
+def update_current_record(user, new_project):
+    record = user.area_access_record()
     record.project = new_project
-    try:
-        record.full_clean()
-    except ValidationError as e:
-        return render(request, "area_access/change_project.html", {"error": str(e)})
+    record.full_clean()
     record.save()
-    return redirect(reverse("landing"))
 
 
 @login_required
