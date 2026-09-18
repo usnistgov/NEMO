@@ -1,0 +1,304 @@
+{% load custom_tags_and_filters %}
+<div class="row">
+    <div class="col-md-12 col-lg-8">
+        <div class="panel panel-default" id="user-information-panel">
+            <div class="panel-body">
+                <h3 style="margin-top: 0">Basic Information</h3>
+                <ul>
+                    <li>
+                        <b>First name</b>: {{ user_profile.first_name }}
+                    </li>
+                    <li>
+                        <b>Last name</b>: {{ user_profile.last_name }}
+                    </li>
+                    <li>
+                        <b>Username</b>: {{ user_profile.username }}
+                    </li>
+                    <li>
+                        <b>Email</b>: {{ user_profile.email }}
+                    </li>
+                    {% if user.is_any_part_of_staff and user_profile.type %}
+                        <li>
+                            <b>Type</b>: {{ user_profile.type }}
+                        </li>
+                    {% endif %}
+                    <li>
+                        <b>Date joined</b>: {{ user_profile.date_joined }}
+                    </li>
+                    <li>
+                        <b>Last login</b>: {{ user_profile.last_login|default_if_none:"Never" }}
+                    </li>
+                    <li>
+                        <b>Access expiration</b>: {{ user_profile.access_expiration|default_if_none:"Access never expires" }}
+                    </li>
+                    {% if user.is_any_part_of_staff %}
+                        <li>
+                            <b>Account</b>: {{ user_profile.is_active|yesno:"Active,Inactive" }}
+                        </li>
+                        <li>
+                            <b>Role(s)</b>: {{ user_profile.roles|join:", "|default:"None" }}
+                        </li>
+                        <li>
+                            <b>{{ customizations|get_item:"facility_rules_name" }} required</b>: {{ user_profile.training_required|yesno|capfirst }}
+                        </li>
+                        {% if user_profile.badge_number %}
+                            <li>
+                                <b>Badge number</b>: {{ user_profile.badge_number }}
+                            </li>
+                        {% endif %}
+                        {% if user_profile.notes %}
+                            <li>
+                                <b>Notes</b>:
+                                <br>
+                                {{ user_profile.notes|linebreaksbr }}
+                            </li>
+                        {% endif %}
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+        <div class="panel panel-default" id="user-projects-panel">
+            <div class="panel-body">
+                <h3 style="margin-top: 0">Projects</h3>
+                {% if user_profile.projects %}
+                    <ul>
+                        {% if user_profile.active_projects %}
+                            <li>
+                                Active:
+                                <ul>
+                                    {% for project in user_profile.active_projects %}
+                                        <li>
+                                            {{ project.display_with_status_and_managers|safe }}
+                                            {% if user.is_accounting_officer or user.is_user_office or user.is_facility_manager or user.is_superuser %}
+                                                <a style="text-decoration: none;
+                                                          color: inherit"
+                                                   title="Go to the project's page"
+                                                   href="{% url "project" project.id %}"><i aria-hidden="true" style="font-size: small;" class="glyphicon glyphicon-link"></i></a>
+                                            {% endif %}
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                        {% if user_profile.inactive_projects %}
+                            <li>
+                                Inactive:
+                                <ul>
+                                    {% for project in user_profile.inactive_projects %}
+                                        <li>
+                                            {{ project.display_with_status_and_managers|safe }}
+                                            {% if user.is_accounting_officer or user.is_user_office or user.is_facility_manager or user.is_superuser %}
+                                                <a style="text-decoration: none;
+                                                          color: inherit"
+                                                   title="Go to the project's page"
+                                                   href="{% url "project" project.id %}"><i aria-hidden="true" style="font-size: small;" class="glyphicon glyphicon-link"></i></a>
+                                            {% endif %}
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                    </ul>
+                {% endif %}
+                {% if not user_profile.projects %}<p>You do not have any projects.</p>{% endif %}
+            </div>
+        </div>
+        <div class="panel panel-default" id="user-tool-qualifications-panel">
+            <div class="panel-body">
+                <h3 style="margin-top: 0">Tool Qualifications</h3>
+                {% if user_profile.qualifications.exists %}
+                    <ul>
+                        {% for tool_qualification in user_profile.qualifications.all %}<li>{{ tool_qualification }}</li>{% endfor %}
+                    </ul>
+                {% else %}
+                    <p>You are not qualified for any tools.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% if user_profile.primary_tool_owner.all or user_profile.backup_for_tools.all or user_profile.superuser_for_tools.all or user_profile.staff_for_tools.all or user_profile.adjustment_request_reviewer_on_tools.all %}
+            <div class="panel panel-default" id="user-tool-responsibilities-panel">
+                <div class="panel-body">
+                    <h3 style="margin-top: 0">Tool responsibilities</h3>
+                    <ul>
+                        {% if user_profile.primary_tool_owner.all %}
+                            <li>
+                                Primary owner:
+                                <ul>
+                                    {% for tool in user_profile.primary_tool_owner.all %}<li>{{ tool }}</li>{% endfor %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                        {% if user_profile.backup_for_tools.all %}
+                            <li>
+                                Backup owner:
+                                <ul>
+                                    {% for tool in user_profile.backup_for_tools.all %}<li>{{ tool }}</li>{% endfor %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                        {% if user_profile.staff_for_tools.all %}
+                            <li>
+                                Staff:
+                                <ul>
+                                    {% for tool in user_profile.staff_for_tools.all %}<li>{{ tool }}</li>{% endfor %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                        {% if user_profile.superuser_for_tools.all %}
+                            <li>
+                                Superuser:
+                                <ul>
+                                    {% for tool in user_profile.superuser_for_tools.all %}<li>{{ tool }}</li>{% endfor %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                        {% if user_profile.adjustment_request_reviewer_on_tools.all %}
+                            <li>
+                                Adjustment request reviewer:
+                                <ul>
+                                    {% for tool in user_profile.adjustment_request_reviewer_on_tools.all %}<li>{{ tool }}</li>{% endfor %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        {% endif %}
+        {% if user_profile.accessible_access_levels.all %}
+            <div class="panel panel-default" id="user-access-levels-panel">
+                <div class="panel-body">
+                    <h3 style="margin-top: 0">Physical access levels</h3>
+                    <ul>
+                        {% for physical_access in user_profile.accessible_access_levels.all %}<li>{{ physical_access }}</li>{% endfor %}
+                    </ul>
+                </div>
+            </div>
+        {% endif %}
+        {% if user_profile.managed_users.all or user_profile.supervisors.all or user_profile.managed_projects.all or user_profile.managed_accounts.all %}
+            <div class="panel panel-default" id="user-management-panel">
+                <div class="panel-body">
+                    <h3 style="margin-top: 0">Management</h3>
+                    <ul>
+                        {% if user_profile.managed_accounts.all %}
+                            <li>
+                                Managed accounts:
+                                <ul>
+                                    {% for managed_account in user_profile.managed_accounts.all %}
+                                        <li>
+                                            {{ managed_account.name }}
+                                            {% if user.is_accounting_officer or user.is_user_office or user.is_facility_manager or user.is_superuser %}
+                                                <a style="text-decoration: none;
+                                                          color: inherit"
+                                                   title="Go to the account's page"
+                                                   href="{% url "account" managed_account.id %}"><i aria-hidden="true" style="font-size: small;" class="glyphicon glyphicon-link"></i></a>
+                                            {% endif %}
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                        {% if user_profile.managed_projects.all %}
+                            <li>
+                                Managed projects:
+                                <ul>
+                                    {% for managed_project in user_profile.managed_projects.all %}
+                                        <li>
+                                            {{ managed_project.name }}
+                                            {% if user.is_accounting_officer or user.is_user_office or user.is_facility_manager or user.is_superuser %}
+                                                <a style="text-decoration: none;
+                                                          color: inherit"
+                                                   title="Go to the project's page"
+                                                   href="{% url "project" managed_project.id %}"><i aria-hidden="true" style="font-size: small;" class="glyphicon glyphicon-link"></i></a>
+                                            {% endif %}
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                        {% if user_profile.managed_users.all %}
+                            <li>
+                                Managed users:
+                                <ul>
+                                    {% for managed_user in user_profile.managed_users.all %}
+                                        <li>
+                                            {{ managed_user.get_name }}
+                                            {% if user.is_any_part_of_staff %}
+                                                <a style="text-decoration: none;
+                                                          color: inherit"
+                                                   title="Go to the user_profile's page"
+                                                   href="{% url "view_user" managed_user.id %}"><i aria-hidden="true" style="font-size: small;" class="glyphicon glyphicon-link"></i></a>
+                                            {% endif %}
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                        {% if user_profile.supervisors.all %}
+                            <li>
+                                Supervisors:
+                                <ul>
+                                    {% for supervisor in user_profile.supervisors.all %}
+                                        <li>
+                                            {{ supervisor.get_name }}
+                                            {% if user.is_any_part_of_staff %}
+                                                <a style="text-decoration: none;
+                                                          color: inherit"
+                                                   title="Go to the supervisor's page"
+                                                   href="{% url "view_user" supervisor.id %}"><i aria-hidden="true" style="font-size: small;" class="glyphicon glyphicon-link"></i></a>
+                                            {% endif %}
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        {% endif %}
+        {% if user.is_any_part_of_staff %}
+            {% if user_profile.groups.exists %}
+                <div class="panel panel-default" id="user-groups-panel">
+                    <div class="panel-body">
+                        <h3 style="margin-top: 0">Groups</h3>
+                        <ul>
+                            {% for group in user_profile.groups.all %}<li>{{ group }}</li>{% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            {% endif %}
+            {% if safety_trainings or onboarding_phases %}
+                <div class="panel panel-default" id="user-checklists-panel">
+                    <div class="panel-body">
+                        <h3 style="margin-top: 0">Checklists</h3>
+                        <ul>
+                            {% if safety_trainings %}
+                                <li>
+                                    Safety Trainings:
+                                    <ul>
+                                        {% for safety_training in safety_trainings %}
+                                            <li>
+                                                {{ safety_training }}: <span class="glyphicon {% if safety_training in user_profile.safety_trainings.all %}glyphicon-ok success-highlight{% else %}glyphicon-remove danger-highlight{% endif %}"></span>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </li>
+                            {% endif %}
+                            {% if onboarding_phases %}
+                                <li>
+                                    Onboarding Phases:
+                                    <ul>
+                                        {% for onboarding_phase in onboarding_phases %}
+                                            <li>
+                                                {{ onboarding_phase }}: <span class="glyphicon {% if onboarding_phase in user_profile.onboarding_phases.all %}glyphicon-ok success-highlight{% else %}glyphicon-remove danger-highlight{% endif %}"></span>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>

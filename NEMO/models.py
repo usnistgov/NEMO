@@ -961,6 +961,25 @@ class User(BaseModel, PermissionsMixin):
         is_reviewer_on_any_area = Area.objects.filter(adjustment_request_reviewers__in=[self]).exists()
         return self.is_facility_manager or is_reviewer_on_any_tool or is_reviewer_on_any_area
 
+    @property
+    def roles(self):
+        roles = []
+        if self.is_staff:
+            roles.append("Staff")
+        if self.is_user_office:
+            roles.append("User Office")
+        if self.is_accounting_officer:
+            roles.append("Accounting Officer")
+        if self.is_service_personnel:
+            roles.append("Service Personnel")
+        if self.is_technician:
+            roles.append("Technician")
+        if self.is_facility_manager:
+            roles.append("Facility Manager")
+        if self.is_superuser:
+            roles.append("Administrator")
+        return roles
+
     def get_username(self):
         return self.username
 

@@ -362,6 +362,7 @@ class UserCustomization(CustomizationBase):
         "default_user_is_inactive": "",
         "user_type_required": "",
         "user_list_active_only": "",
+        "user_list_on_search_view": "enabled",
         "user_access_expiration_reminder_days": "",
         "user_access_expiration_reminder_cc": "",
         "user_access_expiration_buffer_days": "",

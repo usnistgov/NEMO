@@ -185,7 +185,7 @@ urlpatterns += [
     ),
     path("get_projects_for_self/", get_projects.get_projects_for_self, name="get_projects_for_self"),
     # User Profile:
-    path("user/view_user/<int:user_id>/", users.view_user, name="view_user"),
+    path("user/user_profile/", users.user_profile, name="user_profile"),
     # Tool control:
     # This tool_control URL is needed to be able to reverse when choosing items on mobile using next_page.
     # (see choose_item.html for details)
@@ -728,6 +728,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
         path("users/", users.users, name="users"),
         re_path(r"^user/(?P<user_id>\d+|new)/$", users.create_or_modify_user, name="create_or_modify_user"),
         path("users/search/", users.user_search, name="user_search"),
+        path("users/<int:user_id>/", users.view_user, name="view_user"),
         path("deactivate_user/<int:user_id>/", users.deactivate, name="deactivate_user"),
         path("reset_password/<int:user_id>/", users.reset_password, name="reset_password"),
         path("unlock_account/<int:user_id>/", users.unlock_account, name="unlock_account"),
