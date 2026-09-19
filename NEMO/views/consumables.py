@@ -31,6 +31,7 @@ from NEMO.views.customization import (
     EmailsCustomization,
     RecurringChargesCustomization,
     get_media_file_contents,
+    resolve_email_customization,
 )
 from NEMO.views.pagination import SortedPaginator
 
@@ -354,12 +355,19 @@ def send_reorder_supply_reminder_email(consumable: Consumable):
     user_office_email = EmailsCustomization.get("user_office_email_address")
     message = get_media_file_contents("reorder_supplies_reminder_email.html")
     if user_office_email and message:
-        subject = f"Time to order more {consumable.name}"
-        rendered_message = render_email_template(message, {"item": consumable})
+        dictionary = {
+            "item": consumable,
+            "default_subject": f"Time to order more {consumable.name}",
+            "default_from_email": user_office_email,
+            "default_cc_emails": "",
+        }
+        rendered_message = render_email_template(message, dictionary)
+        subject, from_email, cc = resolve_email_customization("reorder_supplies_reminder_email", dictionary)
         send_mail(
             subject=subject,
             content=rendered_message,
-            from_email=user_office_email,
+            from_email=from_email,
             to=[consumable.reminder_email],
+            cc=cc,
             email_category=EmailCategory.SYSTEM,
         )

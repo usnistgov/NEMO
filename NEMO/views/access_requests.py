@@ -34,6 +34,7 @@ from NEMO.utilities import (
 from NEMO.views.customization import (
     UserRequestsCustomization,
     get_media_file_contents,
+    resolve_email_customization,
 )
 from NEMO.views.notifications import create_access_request_notification, delete_notification, get_notifications
 
@@ -219,33 +220,35 @@ def send_request_received_email(request, access_request: TemporaryPhysicalAccess
         )
         absolute_url = get_full_url(reverse("user_requests", kwargs={"tab": "access"}), request)
         color_type = "success" if status == "approved" else "danger" if status == "denied" else "info"
-        message = render_email_template(
-            access_request_notification_email,
-            {
-                "template_color": bootstrap_primary_color(color_type),
-                "access_request": access_request,
-                "status": status,
-                "access_requests_url": absolute_url,
-            },
-        )
         if status in ["received", "updated"]:
-            send_mail(
-                subject=f"Access request for the {access_request.physical_access_level.area} {status}",
-                content=message,
-                from_email=access_request.creator.email,
-                to=reviewer_emails,
-                cc=ccs,
-                email_category=EmailCategory.ACCESS_REQUESTS,
-            )
+            default_subject = f"Access request for the {access_request.physical_access_level.area} {status}"
+            default_from_email = access_request.creator.email
+            default_cc_emails = ", ".join(ccs)
+            to_addresses = reviewer_emails
         else:
-            send_mail(
-                subject=f"Your access request for the {access_request.physical_access_level.area} has been {status}",
-                content=message,
-                from_email=access_request.reviewer.email,
-                to=ccs,
-                cc=reviewer_emails,
-                email_category=EmailCategory.ACCESS_REQUESTS,
-            )
+            default_subject = f"Your access request for the {access_request.physical_access_level.area} has been {status}"
+            default_from_email = access_request.reviewer.email
+            default_cc_emails = ", ".join(reviewer_emails)
+            to_addresses = ccs
+        dictionary = {
+            "template_color": bootstrap_primary_color(color_type),
+            "access_request": access_request,
+            "status": status,
+            "access_requests_url": absolute_url,
+            "default_subject": default_subject,
+            "default_from_email": default_from_email,
+            "default_cc_emails": default_cc_emails,
+        }
+        message = render_email_template(access_request_notification_email, dictionary)
+        subject, from_email, cc = resolve_email_customization("access_request_notification_email", dictionary)
+        send_mail(
+            subject=subject,
+            content=message,
+            from_email=from_email,
+            to=to_addresses,
+            cc=cc,
+            email_category=EmailCategory.ACCESS_REQUESTS,
+        )
 
 
 @user_office_or_manager_required
