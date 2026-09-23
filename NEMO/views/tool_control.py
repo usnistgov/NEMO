@@ -77,7 +77,11 @@ def tool_control(request, item_type="tool", tool_id=None):
     # The tool-choice sidebar is not available for mobile devices, so redirect the user to choose a tool to view.
     if request.device == "mobile" and tool_id is None:
         return redirect("choose_item", next_page="tool_control")
-    tools = Tool.objects.filter(visible=True).order_by("_category", "name")
+    tools_filter = Q(visible=True)
+    if tool_id and user.is_any_part_of_staff:
+        # Allow staff to access a specific invisible tool directly via its hard link 
+        tools_filter |= Q(id=tool_id)
+    tools = Tool.objects.filter(tools_filter).order_by("_category", "name")
     dictionary = {"tools": tools, "selected_tool": tool_id}
     # The tool-choice sidebar only needs to be rendered for desktop devices, not mobile devices.
     if request.device == "desktop":
@@ -92,9 +96,11 @@ def tool_status(request, tool_id):
     from NEMO.rates import rate_class
 
     user: User = request.user
-    tool = get_object_or_404_from_queryset(
-        Tool.objects.filter(id=tool_id, visible=True).prefetch_related("qualification_set__user")
-    )
+    tool_queryset = Tool.objects.filter(id=tool_id)
+    if not user.is_any_part_of_staff:
+        # Staff can access an invisible tool's status directly via its hard link (resolves #245)
+        tool_queryset = tool_queryset.filter(visible=True)
+    tool = get_object_or_404_from_queryset(tool_queryset.prefetch_related("qualification_set__user"))
     current_usage_event = tool.get_current_usage_event()
     user_is_qualified = tool.user_set.filter(id=user.id).exists()
     broadcast_upcoming_reservation = ToolControlCustomization.get("tool_control_broadcast_upcoming_reservation")
