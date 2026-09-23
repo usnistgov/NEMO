@@ -39,7 +39,12 @@ from NEMO.utilities import (
     send_mail,
     set_default_session_variable,
 )
-from NEMO.views.customization import AdjustmentRequestsCustomization, EmailsCustomization, get_media_file_contents
+from NEMO.views.customization import (
+    AdjustmentRequestsCustomization,
+    EmailsCustomization,
+    get_media_file_contents,
+    resolve_email_customization,
+)
 from NEMO.views.notifications import (
     create_adjustment_request_notification,
     create_request_message_notification,
@@ -394,12 +399,22 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
         if enabled_for_creator:
             cc = adjustment_request.creator.get_emails(creator_notification)
         if status in ["received", "updated"]:
+            dictionary.update(
+                {
+                    "default_subject": f"Adjustment request {status}",
+                    "default_from_email": adjustment_request.creator.email,
+                    "default_cc_emails": ", ".join(cc or []),
+                }
+            )
+            subject, from_email, resolved_cc = resolve_email_customization(
+                "adjustment_request_notification_email", dictionary
+            )
             send_mail(
-                subject=f"Adjustment request {status}",
+                subject=subject,
                 content=message,
-                from_email=adjustment_request.creator.email,
+                from_email=from_email,
                 to=reviewer_emails,
-                cc=cc,
+                cc=resolved_cc,
                 email_category=EmailCategory.ADJUSTMENT_REQUESTS,
             )
         else:
@@ -408,12 +423,22 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
             if enabled_for_creator:
                 to = adjustment_request.creator.get_emails(creator_notification)
                 cc = reviewer_emails
+            dictionary.update(
+                {
+                    "default_subject": f"Your adjustment request has been {status}",
+                    "default_from_email": adjustment_request.reviewer.email,
+                    "default_cc_emails": ", ".join(cc or []),
+                }
+            )
+            subject, from_email, resolved_cc = resolve_email_customization(
+                "adjustment_request_notification_email", dictionary
+            )
             send_mail(
-                subject=f"Your adjustment request has been {status}",
+                subject=subject,
                 content=message,
-                from_email=adjustment_request.reviewer.email,
+                from_email=from_email,
                 to=to,
-                cc=cc,
+                cc=resolved_cc,
                 email_category=EmailCategory.ADJUSTMENT_REQUESTS,
             )
 
@@ -422,13 +447,23 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
         if not adjustment_request.applied and adjustment_request.status == RequestStatus.APPROVED:
             dictionary["manager_note"] = adjustment_request.manager_note
             dictionary["user_office"] = True
+            dictionary.update(
+                {
+                    "default_subject": f"{adjustment_request.creator.get_name()}'s adjustment request has been {status}",
+                    "default_from_email": adjustment_request.reviewer.email,
+                    "default_cc_emails": ", ".join(reviewer_emails),
+                }
+            )
             message = render_email_template(adjustment_request_notification_email, dictionary)
+            subject, from_email, resolved_cc = resolve_email_customization(
+                "adjustment_request_notification_email", dictionary
+            )
             send_mail(
-                subject=f"{adjustment_request.creator.get_name()}'s adjustment request has been {status}",
+                subject=subject,
                 content=message,
-                from_email=adjustment_request.reviewer.email,
+                from_email=from_email,
                 to=[user_office_email],
-                cc=reviewer_emails,
+                cc=resolved_cc,
                 email_category=EmailCategory.ADJUSTMENT_REQUESTS,
             )
 

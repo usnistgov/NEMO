@@ -56,6 +56,7 @@ from NEMO.views.customization import (
     EmailsCustomization,
     ToolCustomization,
     get_media_file_contents,
+    resolve_email_customization,
 )
 
 calendar_logger = getLogger(__name__)
@@ -1068,8 +1069,12 @@ def cancel_the_reservation(
                     "reservation": reservation,
                     "reason": reason,
                     "template_color": bootstrap_primary_color("info"),
+                    "default_subject": "Your reservation was cancelled",
+                    "default_from_email": user_cancelling_reservation.email,
+                    "default_cc_emails": "",
                 }
                 cancellation_email = render_email_template(email_contents, dictionary, request)
+                subject, from_email, cc = resolve_email_customization("cancellation_email", dictionary)
                 recipients = reservation.user.get_emails(
                     reservation.user.get_preferences().email_send_reservation_emails
                 )
@@ -1088,18 +1093,20 @@ def cancel_the_reservation(
                         location=location,
                     )
                     send_mail(
-                        subject="Your reservation was cancelled",
+                        subject=subject,
                         content=cancellation_email,
-                        from_email=user_cancelling_reservation.email,
+                        from_email=from_email,
                         to=recipients,
+                        cc=cc,
                         attachments=[attachment],
                     )
                 else:
                     send_mail(
-                        subject="Your reservation was cancelled",
+                        subject=subject,
                         content=cancellation_email,
-                        from_email=user_cancelling_reservation.email,
+                        from_email=from_email,
                         to=recipients,
+                        cc=cc,
                     )
 
         else:
@@ -1135,10 +1142,16 @@ def send_user_created_reservation_notification(reservation: Reservation):
     if reservation.area:
         recipients.extend(reservation.area.reservation_email_list())
     if recipients:
-        subject = f"Reservation for the " + str(reservation.reservation_item)
         message = get_media_file_contents("reservation_created_user_email.html")
-        message = render_email_template(message, {"reservation": reservation})
         user_office_email = EmailsCustomization.get("user_office_email_address")
+        dictionary = {
+            "reservation": reservation,
+            "default_subject": "Reservation for the " + str(reservation.reservation_item),
+            "default_from_email": user_office_email,
+            "default_cc_emails": "",
+        }
+        message = render_email_template(message, dictionary)
+        subject, from_email, cc = resolve_email_customization("reservation_created_user_email", dictionary)
         # We don't need to check for existence of reservation_created_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
         if user_office_email:
             event_name = reservation.title or f"{reservation.reservation_item.name} Reservation"
@@ -1153,7 +1166,12 @@ def send_user_created_reservation_notification(reservation: Reservation):
                 location=location,
             )
             send_mail(
-                subject=subject, content=message, from_email=user_office_email, to=recipients, attachments=[attachment]
+                subject=subject,
+                content=message,
+                from_email=from_email,
+                to=recipients,
+                cc=cc,
+                attachments=[attachment],
             )
         else:
             calendar_logger.error(
@@ -1171,10 +1189,16 @@ def send_user_cancelled_reservation_notification(reservation: Reservation):
     if reservation.area:
         recipients.extend(reservation.area.reservation_email_list())
     if recipients:
-        subject = f"Cancelled Reservation for the " + str(reservation.reservation_item)
         message = get_media_file_contents("reservation_cancelled_user_email.html")
-        message = render_email_template(message, {"reservation": reservation})
         user_office_email = EmailsCustomization.get("user_office_email_address")
+        dictionary = {
+            "reservation": reservation,
+            "default_subject": "Cancelled Reservation for the " + str(reservation.reservation_item),
+            "default_from_email": user_office_email,
+            "default_cc_emails": "",
+        }
+        message = render_email_template(message, dictionary)
+        subject, from_email, cc = resolve_email_customization("reservation_cancelled_user_email", dictionary)
         # We don't need to check for existence of reservation_cancelled_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
         if user_office_email:
             event_name = reservation.title or f"{reservation.reservation_item.name} Reservation"
@@ -1189,7 +1213,12 @@ def send_user_cancelled_reservation_notification(reservation: Reservation):
                 location=location,
             )
             send_mail(
-                subject=subject, content=message, from_email=user_office_email, to=recipients, attachments=[attachment]
+                subject=subject,
+                content=message,
+                from_email=from_email,
+                to=recipients,
+                cc=cc,
+                attachments=[attachment],
             )
         else:
             calendar_logger.error(
