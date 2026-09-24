@@ -9,10 +9,35 @@
             You are billing {{ user.area_access_record.area.name }} access to the project named {{ user.billing_to_project }} since {{ user.area_access_record.start }}.
         </p>
         {% if user.active_project_count > 1 %}
-            <p>Would you like to bill area access to a different project?</p>
+            <p>
+                Would you like to bill area access to a different project
+                {% if customizations|get_item:"area_access_change_project_charged" == "create_new_record" %}
+                    (this will create a new record starting now)
+                {% elif customizations|get_item:"area_access_change_project_charged" == "update_current_record" %}
+                    (this will update the project on the current record)
+                {% endif %}
+                ?
+            </p>
+            {% if customizations|get_item:"area_access_change_project_charged" == "ask_user" %}
+                <div class="form-group">
+                    <div class="radio">
+                        <label style="margin-right: 20px;">
+                            <input type="radio" name="area_change_project_charged" value="area_create_new_record" required />
+                            Create new record for new project
+                        </label>
+                        <label>
+                            <input type="radio" name="area_change_project_charged" value="area_update_record" />
+                            Update record with new project
+                        </label>
+                    </div>
+                </div>
+            {% endif %}
             {% for project in user.active_projects %}
                 {% if user.billing_to_project != project %}
-                    <form action="{% url 'change_project' project.id %}" method="post">
+                    <form action="{% url 'change_project' project.id %}"
+                          id="change_project_form_{{ project.id }}"
+                          method="post"
+                          onsubmit="return sync_area_change_field(this);">
                         <div class="form-group">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-warning" title="{{ project.name }}">
@@ -23,6 +48,12 @@
                 {% endif %}
             {% endfor %}
         {% endif %}
+        <script>
+            function sync_area_change_field(form) {
+                $('input[name="area_change_project_charged"]').attr('form', form.id);
+                return form.reportValidity();
+            }
+        </script>
     {% else %}
         <p>You are not currently billing area access.</p>
     {% endif %}

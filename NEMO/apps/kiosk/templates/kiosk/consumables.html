@@ -153,7 +153,7 @@
                                                                     form.append('<input type="hidden" id="consumable" name="consumable" value="{{ item.id }}">');
                                                                     form.append('<input type="hidden" id="quantity" name="quantity" value="' + selection + '">');
                                                                     form.submit();
-                                                                    revert(75);
+                                                                    revert_on_input(75, "#withdrawal_form_order");
                                                                     form.find('#consumable').remove();
                                                                     form.find('#quantity').remove();
                                                                   }
@@ -270,7 +270,7 @@
     // Customer selection
     function select_customer(user)
     {
-        revert(75);
+        revert_on_input(75, "#withdrawal_form_order");
         hide_customer_search();
         set_projects(user);
         $chosen_customer.text(user.name);
@@ -316,7 +316,7 @@
     }
     function withdrawal_select_project(element, project_id)
     {
-        revert(75);
+        revert_on_input(75, "#withdrawal_form_order");
         $(".project-choice").removeClass('active');
         $consumable_add_buttons.prop('disabled', false);
         $(element).addClass('active');

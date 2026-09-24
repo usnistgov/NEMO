@@ -50,7 +50,7 @@
         <script type="text/javascript">
             const $consumables_order = $('#consumables_order')
             $('.remove_withdrawal').submit(function(e) {
-                revert(75);
+                revert_on_input(75, "#withdrawal_form_order");
                 const data = serialize($(this));
                 e.preventDefault();
                 const failure = ajax_failure_callback('Remove Consumable Error');
@@ -58,7 +58,7 @@
                 return false;
             });
             $('#clear').submit(function(e) {
-                revert(75);
+                revert_on_input(75, "#withdrawal_form_order");
                 const data = serialize($(this));
                 e.preventDefault();
                 const failure = ajax_failure_callback('Clear Cart Error');

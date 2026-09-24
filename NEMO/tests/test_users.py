@@ -17,15 +17,15 @@ class UserTestCase(NEMOTestCaseMixin, TestCase):
         self.login_as(customer)
         # Cannot see one's profile if the feature is disabled
         UserCustomization.set("user_allow_profile_view", "")
-        response = self.client.get(reverse("view_user", args=[customer.id]))
+        response = self.client.get(reverse("user_profile"))
         self.assertEqual(response.status_code, 400)
         # Now it should work
         UserCustomization.set("user_allow_profile_view", "enabled")
-        response = self.client.get(reverse("view_user", args=[customer.id]))
+        response = self.client.get(reverse("user_profile"))
         self.assertEqual(response.status_code, 200)
-        # Cannot see someone else's profile
-        response = self.client.get(reverse("view_user", args=[other_customer.id]))
-        self.assertEqual(response.status_code, 400)
+        # Cannot see someone else's user page
+        response = self.client.get(reverse("view_user", args=[other_customer.id]), follow=True)
+        self.assert_response_is_landing_page(response)
         # Except if staff
         self.login_as_staff()
         response = self.client.get(reverse("view_user", args=[other_customer.id]))

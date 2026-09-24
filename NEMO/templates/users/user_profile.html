@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}{{ user_profile.get_name }} profile{% endblock %}
+{% block content %}
+    <div class="row">
+        <div class="col-md-12 col-lg-8">
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <h3 style="margin-top: 0; margin-bottom: 0">{{ user_profile.get_name }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% include "users/user_information.html" %}
+{% endblock %}

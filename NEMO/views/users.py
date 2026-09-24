@@ -19,9 +19,11 @@ from NEMO.models import (
     ActivityHistory,
     Area,
     AreaAccessRecord,
+    OnboardingPhase,
     PhysicalAccessLevel,
     Project,
     Reservation,
+    SafetyTraining,
     StaffCharge,
     Tool,
     UsageEvent,
@@ -290,7 +292,11 @@ def create_or_modify_user(request, user_id):
             else f"{user} has been updated successfully"
         )
         messages.success(request, message)
-        return redirect(request.GET.get("next") or "users")
+        redirect_view = request.GET.get("next")
+        if redirect_view:
+            return redirect(redirect_view)
+        else:
+            return redirect("view_user", user.id)
     else:
         return HttpResponseBadRequest("Invalid method")
 
@@ -516,40 +522,50 @@ def user_preferences(request):
     return render(request, "users/preferences.html", dictionary)
 
 
-@login_required
+@any_staff_required
 @require_GET
 def view_user(request, user_id):
-    if UserCustomization.get_bool("user_allow_profile_view") or request.user.is_any_part_of_staff:
-        user = (
-            User.objects.filter(pk=user_id)
-            .prefetch_related(
-                "qualifications",
-                "groups",
-                "physical_access_levels",
-                "primary_tool_owner",
-                "backup_for_tools",
-                "staff_for_tools",
-                "superuser_for_tools",
-                "adjustment_request_reviewer_on_tools",
-                "managed_projects",
-                "managed_accounts",
-            )
-            .first()
-        )
-        if not user:
-            raise Http404("No user matches the given query")
-
-        if request.user.id != user_id and not request.user.is_any_part_of_staff:
-            return HttpResponseBadRequest("You are not allowed to view this user's profile")
-
-        dictionary = {
-            "user": user,
-            "projects": Project.objects.filter(active=True, account__active=True),
-        }
-
-        return render(request, "users/view_user.html", dictionary)
+    if UserCustomization.get_bool("user_allow_profile_view"):
+        return render(request, "users/view_user.html", get_profile_dictionary(user_id))
     else:
         return HttpResponseBadRequest("You are not allowed to view this page")
+
+
+@login_required
+@require_GET
+def user_profile(request):
+    if UserCustomization.get_bool("user_allow_profile_view"):
+        return render(request, "users/user_profile.html", get_profile_dictionary(request.user.id))
+    else:
+        return HttpResponseBadRequest("You are not allowed to view this page")
+
+
+def get_profile_dictionary(user_id) -> dict:
+    user = (
+        User.objects.filter(pk=user_id)
+        .prefetch_related(
+            "qualifications",
+            "groups",
+            "physical_access_levels",
+            "primary_tool_owner",
+            "backup_for_tools",
+            "staff_for_tools",
+            "superuser_for_tools",
+            "adjustment_request_reviewer_on_tools",
+            "managed_projects",
+            "managed_accounts",
+        )
+        .first()
+    )
+    if not user:
+        raise Http404("No user matches the given query")
+
+    return {
+        "user_profile": user,
+        "safety_trainings": SafetyTraining.objects.all(),
+        "onboarding_phases": OnboardingPhase.objects.all(),
+        "projects": Project.objects.filter(active=True, account__active=True),
+    }
 
 
 def readonly_users(request):
