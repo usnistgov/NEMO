@@ -42,6 +42,7 @@ from NEMO.constants import (
     CALENDAR_TOOL_RESERVATION_DEFAULT_COLOR,
     CALENDAR_TOOL_USAGE_DEFAULT_COLOR,
 )
+from NEMO.fields import set_reverse_many_to_many_admin_field
 from NEMO.forms import BuddyRequestForm, RecurringConsumableChargeForm, UserPreferencesForm
 from NEMO.mixins import ModelAdminRedirectMixin, ObjPermissionAdminMixin
 from NEMO.models import (
@@ -214,16 +215,13 @@ class CoreFacilityAdminForm(forms.ModelForm):
             self.fields["core_facility_tools"].queryset = Tool.objects.filter(
                 Q(_core_facility_id=self.instance.pk) | Q(_core_facility__isnull=True)
             ).exclude(parent_tool__isnull=False)
-            if self.instance.pk:
-                self.fields["core_facility_tools"].initial = self.instance.tools.all()
+            set_reverse_many_to_many_admin_field(self, "core_facility_tools", "tools")
         if "core_facility_areas" in self.fields:
             self.fields["core_facility_areas"].queryset = Area.objects.filter(queryset_filter)
-            if self.instance.pk:
-                self.fields["core_facility_areas"].initial = self.instance.areas.all()
+            set_reverse_many_to_many_admin_field(self, "core_facility_areas", "areas")
         if "core_facility_consumables" in self.fields:
             self.fields["core_facility_consumables"].queryset = Consumable.objects.filter(queryset_filter)
-            if self.instance.pk:
-                self.fields["core_facility_consumables"].initial = self.instance.consumables.all()
+            set_reverse_many_to_many_admin_field(self, "core_facility_consumables", "consumables")
 
 
 @register(CoreFacility)
@@ -293,10 +291,9 @@ class ToolAdminForm(forms.ModelForm):
             self.fields["_interlock"].queryset = Interlock.objects.filter(
                 Q(id=self.instance._interlock_id) | Q(tool__isnull=True, door__isnull=True)
             )
-        if self.instance.pk:
-            self.fields["qualified_users"].initial = self.instance.user_set.all()
-            self.fields["required_resources"].initial = self.instance.required_resource_set.all()
-            self.fields["nonrequired_resources"].initial = self.instance.nonrequired_resource_set.all()
+        set_reverse_many_to_many_admin_field(self, "qualified_users", "user_set")
+        set_reverse_many_to_many_admin_field(self, "required_resources", "required_resource_set")
+        set_reverse_many_to_many_admin_field(self, "nonrequired_resources", "nonrequired_resource_set")
 
     def clean(self):
         cleaned_data = super().clean()
@@ -891,8 +888,7 @@ class AccountAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance.pk:
-            self.fields["managers"].initial = self.instance.manager_set.all()
+        set_reverse_many_to_many_admin_field(self, "managers", "manager_set")
 
 
 @register(Account)
@@ -944,9 +940,8 @@ class ProjectAdminForm(forms.ModelForm):
             self.fields["application_identifier"].label = ProjectsAccountsCustomization.get(
                 "project_application_identifier_name"
             )
-        if self.instance.pk:
-            self.fields["members"].initial = self.instance.user_set.all()
-            self.fields["managers"].initial = self.instance.manager_set.all()
+        set_reverse_many_to_many_admin_field(self, "members", "user_set")
+        set_reverse_many_to_many_admin_field(self, "managers", "manager_set")
 
     def clean_project_types(self):
         data = self.cleaned_data["project_types"]
@@ -1533,12 +1528,11 @@ class UserAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["training_required"].label = f'{ApplicationCustomization.get("facility_rules_name")} required'
-        if self.instance.pk:
-            self.fields["primary_owner_on_tools"].initial = self.instance.primary_tool_owner.all()
-            self.fields["tool_qualifications"].initial = self.instance.qualifications.all()
-            self.fields["backup_owner_on_tools"].initial = self.instance.backup_for_tools.all()
-            self.fields["superuser_on_tools"].initial = self.instance.superuser_for_tools.all()
-            self.fields["staff_on_tools"].initial = self.instance.staff_for_tools.all()
+        set_reverse_many_to_many_admin_field(self, "tool_qualifications", "qualifications")
+        set_reverse_many_to_many_admin_field(self, "backup_owner_on_tools", "backup_for_tools")
+        set_reverse_many_to_many_admin_field(self, "superuser_on_tools", "superuser_for_tools")
+        set_reverse_many_to_many_admin_field(self, "staff_on_tools", "staff_for_tools")
+        set_reverse_many_to_many_admin_field(self, "primary_owner_on_tools", "primary_tool_owner")
 
     def clean_managed_users(self):
         managed_users = self.cleaned_data["managed_users"]
@@ -1836,9 +1830,8 @@ class PhysicalAccessLevelForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance.pk:
-            self.fields["authorized_users"].initial = self.instance.user_set.all()
-            self.fields["closures"].initial = self.instance.closure_set.all()
+        set_reverse_many_to_many_admin_field(self, "authorized_users", "user_set")
+        set_reverse_many_to_many_admin_field(self, "closures", "closure_set")
 
     def clean(self):
         cleaned_data = super().clean()
@@ -2300,8 +2293,7 @@ class ChemicalHazardAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance.pk:
-            self.fields["chemicals"].initial = self.instance.chemical_set.all()
+        set_reverse_many_to_many_admin_field(self, "chemicals", "chemical_set")
 
     def clean(self):
         cleaned_data = super().clean()
@@ -2432,8 +2424,7 @@ class CustomGroupAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance.pk:
-            self.fields["users"].initial = self.instance.user_set.all()
+        set_reverse_many_to_many_admin_field(self, "users", "user_set")
 
     def _save_m2m(self):
         super()._save_m2m()
@@ -2459,8 +2450,7 @@ class PermissionAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance.pk:
-            self.fields["users"].initial = self.instance.user_set.all()
+        set_reverse_many_to_many_admin_field(self, "users", "user_set")
 
     def _save_m2m(self):
         super()._save_m2m()
