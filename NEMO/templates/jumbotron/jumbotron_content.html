@@ -1,7 +1,7 @@
 <div class="row" style="background:transparent">
-    {% with three_column_class="col-lg-4" two_column_class="col-lg-6" one_column_class="col-md-12 col-lg-offset-3 col-lg-6" %}
+    {% with four_column_class="col-lg-3" three_column_class="col-lg-4" two_column_class="col-lg-6" one_column_class="col-md-12 col-lg-offset-3 col-lg-6" %}
         {% if areas_exist and display_occupancy %}
-            <div class="{% if alerts and display_alerts or disabled_resources and display_alerts %}{% if tools_exist and display_usage %}{{ three_column_class }}{% else %}{{ two_column_class }}{% endif %}{% else %}{% if tools_exist and display_usage %}{{ two_column_class }}{% else %}{{ one_column_class }}{% endif %}{% endif %}"
+            <div class="{% if components == 4 %}{{ four_column_class }}{% elif components == 3 %}{{ three_column_class }}{% elif components == 2 %}{{ two_column_class }}{% elif components == 1 %}{{ one_column_class }}{% endif %}"
                  style="text-align:center;
                         background:transparent">
                 {% if not facility_occupants %}
@@ -33,7 +33,7 @@
             </div>
         {% endif %}
         {% if tools_exist and display_usage %}
-            <div class="{% if alerts and display_alerts or disabled_resources and display_alerts %}{% if areas_exist and display_occupancy %}{{ three_column_class }}{% else %}{{ two_column_class }}{% endif %}{% else %}{% if areas_exist and display_occupancy %}{{ two_column_class }}{% else %}{{ one_column_class }}{% endif %}{% endif %}"
+            <div class="{% if components == 4 %}{{ four_column_class }}{% elif components == 3 %}{{ three_column_class }}{% elif components == 2 %}{{ two_column_class }}{% elif components == 1 %}{{ one_column_class }}{% endif %}"
                  style="text-align:center;
                         background:transparent">
                 {% if usage_events %}
@@ -75,27 +75,31 @@
             </div>
         {% endif %}
         {% if tools_exist and display_reservations %}
-            <div class="{% if alerts and display_alerts or disabled_resources and display_alerts %}{% if areas_exist and display_occupancy %}{{ three_column_class }}{% else %}{{ two_column_class }}{% endif %}{% else %}{% if areas_exist and display_occupancy %}{{ two_column_class }}{% else %}{{ one_column_class }}{% endif %}{% endif %}"
+            <div class="{% if components == 4 %}{{ four_column_class }}{% elif components == 3 %}{{ three_column_class }}{% elif components == 2 %}{{ two_column_class }}{% elif components == 1 %}{{ one_column_class }}{% endif %}"
                  style="text-align:center;
                         background:transparent">
                 {% if reservations %}
-                    <h2>Upcoming reservations</h2>
+                    <h2>Upcoming{% if display_current_reservations %} &amp; current{% endif %} reservations</h2>
                     {# Panel is used to make table borders rounded. #}
                     <div class="content-wrapper-autofit">
                         <div class="panel panel-default" style="background:transparent">
                             <table class="table table-bordered table-condensed" style="background:transparent">
                                 <thead>
                                     <tr>
-                                        <th style="text-align:center">Tool</th>
+                                        <th style="text-align:center">Tool / Area</th>
                                         <th style="text-align:center">User</th>
                                         <th style="text-align:center">Start</th>
                                         <th style="text-align:center">End</th>
                                     </tr>
                                 </thead>
                                 <tbody style="background:transparent">
-                                    {% for r in reservations %}
+                                    {% for tr in reservations %}
                                         <tr style="background:transparent">
-                                            <td>{{ r.tool }}</td>
+                                            <td>
+                                                {% if r.tool %}{{ r.tool }}{% endif %}
+                                                {% if r.area %}{{ r.area }}{% endif %}
+                                                {% if r.title %}<br />{{ r.title }}{% endif %}
+                                            </td>
                                             <td>
                                                 <span>{{ r.user.first_name }} {{ r.user.last_name }}</span>
                                             </td>
@@ -108,49 +112,73 @@
                         </div>
                     </div>
                 {% else %}
-                    <h2>No {{ facility_name }} tools have upcoming reservations.</h2>
+                    <h2>No {{ facility_name }} tools or areas have upcoming reservations.</h2>
                 {% endif %}
             </div>
         {% endif %}
-        {% if alerts and display_alerts or disabled_resources and display_alerts %}
-            <div class="{% if areas_exist and display_occupancy and tools_exist and display_usage %}{{ three_column_class }}{% elif areas_exist and display_occupancy or tools_exist and display_usage %}{{ two_column_class }}{% else %}{{ one_column_class }}{% endif %}"
+        {% if alerts and display_alerts or disabled_resources and display_alerts or scheduled_outages and display_scheduled_outages %}
+            <div class="{% if components == 4 %}{{ four_column_class }}{% elif components == 3 %}{{ three_column_class }}{% elif components == 2 %}{{ two_column_class }}{% elif components == 1 %}{{ one_column_class }}{% endif %}"
                  style="text-align:center">
                 <h2>Alerts and outages</h2>
                 <p>{# For spacing #}&nbsp;</p>
-                {% for a in alerts %}
-                    <div class="alert alert-danger">
-                        <table style="width:100%">
-                            <tr>
-                                <td style="width:100px">
-                                    <span class="glyphicon glyphicon-alert danger-highlight" style="font-size:64px"></span>
-                                </td>
-                                <td>
-                                    {% if a.title %}
-                                        <span style="font-weight:bold">{{ a.title }}</span>
+                {% if display_alerts %}
+                    {% for a in alerts %}
+                        <div class="alert alert-danger">
+                            <table style="width:100%">
+                                <tr>
+                                    <td style="width:100px">
+                                        <span class="glyphicon glyphicon-alert danger-highlight" style="font-size:64px"></span>
+                                    </td>
+                                    <td>
+                                        {% if a.title %}
+                                            <span style="font-weight:bold">{{ a.title }}</span>
+                                            <br>
+                                        {% endif %}
+                                        {{ a.contents|safe|linebreaksbr }}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    {% endfor %}
+                    {% for r in disabled_resources %}
+                        <div class="alert alert-danger">
+                            <table style="width:100%">
+                                <tr>
+                                    <td style="width:100px">
+                                        <span class="glyphicon glyphicon-leaf danger-highlight" style="font-size:64px"></span>
+                                    </td>
+                                    <td>
+                                        <span style="font-weight:bold">Resource outage: {{ r }}</span>
                                         <br>
-                                    {% endif %}
-                                    {{ a.contents|safe|linebreaksbr }}
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                {% endfor %}
-                {% for r in disabled_resources %}
-                    <div class="alert alert-danger">
-                        <table style="width:100%">
-                            <tr>
-                                <td style="width:100px">
-                                    <span class="glyphicon glyphicon-leaf danger-highlight" style="font-size:64px"></span>
-                                </td>
-                                <td>
-                                    <span style="font-weight:bold">Resource outage: {{ r }}</span>
-                                    <br>
-                                    {{ r.restriction_message }}
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                {% endfor %}
+                                        {{ r.restriction_message }}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                {% if display_scheduled_outages %}
+                    {% for so in scheduled_outages %}
+                        <div class="alert alert-danger">
+                            <table style="width:100%">
+                                <tr>
+                                    <td style="width:100px">
+                                        <span class="glyphicon glyphicon-alert danger-highlight" style="font-size:64px"></span>
+                                    </td>
+                                    <td>
+                                        <span style="font-weight:bold">{{ so.title }}</span>
+                                        <br />
+                                        {% if so.area %}Area: {{ so.area.name }}{% endif %}
+                                        {% if so.resource %}Resource: {{ so.resource.name }}{% endif %}
+                                        {% if so.tool %}Tool: {{ so.tool.name }}{% endif %}<br />
+                                        {{ so.details }}<br />
+                                        {{ so.start|date:"MONTH_DAY_FORMAT" }} @ {{ so.start|time }} to {{ so.end|date:"MONTH_DAY_FORMAT" }} @ {{ so.end|time }}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    {% endfor %}
+                {% endif %}
             </div>
         {% endif %}
     {% endwith %}
