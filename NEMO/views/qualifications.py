@@ -1,7 +1,3 @@
-from urllib.parse import urljoin
-
-import requests
-from django.conf import settings
 from django.contrib import messages
 from django.db.models import Count
 from django.http import HttpResponse, HttpResponseBadRequest
@@ -10,7 +6,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import staff_member_or_tool_staff_required
 from NEMO.models import MembershipHistory, Qualification, Tool, ToolQualificationGroup, User
-from NEMO.views.users import get_identity_service
+from NEMO.identity_service import identity_service
 
 
 @staff_member_or_tool_staff_required
@@ -99,18 +95,12 @@ def record_qualification(request_user: User, action: str, tools: list[Tool], use
                 entry.child_content_object = user
                 entry.action = entry.Action.ADDED
                 entry.save()
-            if get_identity_service().get("available", False):
+            if identity_service.available:
                 for t in tools:
                     tool = Tool.objects.get(id=t.id)
                     if tool.grant_badge_reader_access_upon_qualification:
-                        parameters = {
-                            "username": user.username,
-                            "domain": user.domain,
-                            "requested_area": tool.grant_badge_reader_access_upon_qualification,
-                        }
-                        timeout = settings.IDENTITY_SERVICE.get("timeout", 3)
-                        requests.put(
-                            urljoin(settings.IDENTITY_SERVICE["url"], "/add/"), data=parameters, timeout=timeout
+                        identity_service.add_user_area(
+                            user.username, user.domain, tool.grant_badge_reader_access_upon_qualification
                         )
         elif action == "disqualify":
             user.remove_qualifications(tools)
