@@ -5594,8 +5594,24 @@ class AdjustmentRequest(BaseModel):
                 already_adjusted = already_adjusted.exclude(pk=self.pk)
             if already_adjusted.exists():
                 raise ValidationError({NON_FIELD_ERRORS: _("There is already an adjustment request for this charge")})
-            if self.new_start and self.new_end and self.new_start > self.new_end:
-                raise ValidationError({"new_end": _("The end must be later than the start")})
+            if not self.waive:
+                now = timezone.now()
+                item_start = getattr(item, "start", None)
+                item_end = getattr(item, "end", None)
+                time_errors = {}
+                if self.new_start and self.new_start >= now:
+                    time_errors["new_start"] = _("The new start must be in the past")
+                if self.new_end and self.new_end >= now:
+                    time_errors["new_end"] = _("The new end must be in the past")
+                if self.new_start and self.new_end:
+                    if self.new_start >= self.new_end:
+                        time_errors["new_end"] = _("The end must be later than the start")
+                elif self.new_start and item_end and self.new_start >= item_end:
+                    time_errors["new_start"] = _("The new start must be before the current end")
+                elif self.new_end and item_start and self.new_end <= item_start:
+                    time_errors["new_end"] = _("The new end must be after the current start")
+                if time_errors:
+                    raise ValidationError(time_errors)
             if self.new_quantity == 0:
                 from NEMO.views.customization import AdjustmentRequestsCustomization
 

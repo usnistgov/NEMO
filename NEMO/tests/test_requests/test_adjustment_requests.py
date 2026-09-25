@@ -71,6 +71,56 @@ class AdjustmentRequestTestCase(NEMOTestCaseMixin, TestCase):
         adjustment_request.save()
         self.assertEqual(adjustment_request.status, RequestStatus.PENDING)
 
+    def test_new_time_validation(self):
+        user, project = create_user_and_project()
+        start = timezone.now() - relativedelta(hours=1)
+        end = timezone.now() - relativedelta(minutes=1)
+        usage_event = UsageEvent.objects.create(
+            user=user,
+            operator=user,
+            project=project,
+            tool=Tool.objects.create(name="tool"),
+            start=start,
+            end=end,
+        )
+        # this request is never saved, so the "already adjusted" check never kicks in
+        adjustment_request = AdjustmentRequest(creator=user, description="some description")
+        adjustment_request.item = usage_event
+        # both times in the past, new start before new end => valid
+        adjustment_request.new_start = start - relativedelta(minutes=5)
+        adjustment_request.new_end = end - relativedelta(minutes=5)
+        adjustment_request.full_clean()
+        # new start in the future
+        adjustment_request.new_start = timezone.now() + relativedelta(hours=1)
+        self.validate_model_error(adjustment_request, ["new_start"])
+        # new end in the future
+        adjustment_request.new_start = start
+        adjustment_request.new_end = timezone.now() + relativedelta(hours=1)
+        self.validate_model_error(adjustment_request, ["new_end"])
+        # new start after (or equal to) new end, both in the past
+        adjustment_request.new_end = start
+        self.validate_model_error(adjustment_request, ["new_end"])
+        adjustment_request.new_start = end
+        adjustment_request.new_end = start
+        self.validate_model_error(adjustment_request, ["new_end"])
+        # only new start, set after the charge's end
+        adjustment_request.new_end = None
+        adjustment_request.new_start = end + relativedelta(seconds=30)
+        self.validate_model_error(adjustment_request, ["new_start"])
+        adjustment_request.new_start = start - relativedelta(minutes=5)
+        adjustment_request.full_clean()
+        # only new end, set before the charge's start
+        adjustment_request.new_start = None
+        adjustment_request.new_end = start - relativedelta(minutes=5)
+        self.validate_model_error(adjustment_request, ["new_end"])
+        adjustment_request.new_end = end - relativedelta(minutes=5)
+        adjustment_request.full_clean()
+        # waiving the charge skips the new time validation altogether
+        adjustment_request.waive = True
+        adjustment_request.new_start = timezone.now() + relativedelta(hours=1)
+        adjustment_request.new_end = None
+        adjustment_request.full_clean()
+
     def test_notification_created(self):
         # Test that new adjustment request => reviewers are notified (here just managers)
         reviewer = User.objects.create(
