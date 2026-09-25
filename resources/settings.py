@@ -239,6 +239,13 @@ EMAIL_BROADCAST_BCC_CHUNK_SIZE = None
 # EMAIL_HOST = "mydomain.com"
 # EMAIL_PORT = 25
 
+# -------------------- SMTP Email override --------------------
+# Uncomment the following for testing with an SMTP server
+# The 'to' field will be overwritten with the EMAIL_OVERRIDE value, and 'cc' and 'bcc' fields removed.
+# EMAIL_OVERRIDE = ["override@mydomain.com"]
+# EMAIL_BACKEND = "NEMO.backends.OverrideSmtpEmailBackend"
+
+
 # -------------------- Email written to files --------------------
 # Uncomment the following for testing
 # EMAIL_BACKEND = "django.core.mail.backends.filebased.EmailBackend"
