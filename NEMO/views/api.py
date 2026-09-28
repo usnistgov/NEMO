@@ -135,6 +135,7 @@ from NEMO.views.api_billing import (
 from NEMO.constants import MEDIA_PROTECTED
 from NEMO.views.customization import ApplicationCustomization
 from NEMO.views.qualifications import disqualify, qualify
+from NEMO.policy import policy_class as policy
 
 date_filters = ["exact", "in", "month", "year", "day", "gte", "gt", "lte", "lt", "isnull"]
 time_filters = ["exact", "in", "hour", "minute", "second", "gte", "gt", "lte", "lt", "isnull"]
@@ -506,6 +507,9 @@ class QualificationViewSet(ModelViewSet):
         for data in datas:
             tool = Tool.objects.get(pk=data["tool"])
             user = User.objects.get(pk=data["user"])
+            policy_errors = policy.check_qualifying_user_on_tools(user, [tool])
+            if policy_errors:
+                raise Exception(", ".join(policy_errors))
             qualify(self.request_user, tool, user)
 
     def destroy(self, request, *args, **kwargs):

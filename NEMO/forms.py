@@ -624,7 +624,7 @@ def save_scheduled_outage(
 
     # If there is a policy problem for the outage then return the error...
     if check_policy:
-        response = policy.check_to_create_outage(outage)
+        response = policy.check_to_create_outage(creator, outage)
         if response.status_code != 200:
             return response
 

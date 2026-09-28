@@ -5912,6 +5912,23 @@ class ToolCredentials(BaseModel):
         verbose_name_plural = "Tool credentials"
 
 
+class Policy(models.Model):
+    """This is a non managed model only used to hold policy block permissions"""
+
+    class Meta:
+        managed = False
+        default_permissions = ()
+        permissions = [
+            ("block_create_reservations", "Cannot create reservations"),
+            ("block_create_outages", "Cannot create outages"),
+            ("block_enable_tools", "Cannot enable tools"),
+            ("block_enter_any_areas", "Cannot enter any areas"),
+            ("block_bill_projects", "Cannot bill projects"),
+            ("block_qualify_on_tools", "Cannot qualify user on tools"),
+            ("block_add_physical_access_levels", "Cannot add physical access levels to user"),
+        ]
+
+
 class EmailLog(BaseModel):
     category = fields.DynamicChoicesIntegerField(choices=EmailCategory.choices, default=EmailCategory.GENERAL)
     when = models.DateTimeField(null=False, auto_now_add=True)

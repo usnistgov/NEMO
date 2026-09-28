@@ -7,6 +7,7 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO.decorators import staff_member_or_tool_staff_required
 from NEMO.models import MembershipHistory, Qualification, Tool, ToolQualificationGroup, User
 from NEMO.identity_service import identity_service
+from NEMO.policy import policy_class as policy
 
 
 @staff_member_or_tool_staff_required
@@ -60,8 +61,10 @@ def modify_qualifications(request):
         return HttpResponseBadRequest("You cannot qualify for a tool you are not staff for.")
     if tools == {}:
         return HttpResponseBadRequest("You must specify at least one tool.")
-
-    record_qualification(request.user, action, tools.values(), users.values())
+    try:
+        record_qualification(request.user, action, tools.values(), users.values())
+    except Exception as e:
+        return HttpResponseBadRequest(str(e))
 
     if request.POST.get("redirect") == "true":
         messages.success(request, "Tool qualifications were successfully modified")
@@ -74,6 +77,9 @@ def record_qualification(request_user: User, action: str, tools: list[Tool], use
     for user in users:
         original_qualifications = set(Qualification.objects.filter(user=user))
         if action == "qualify":
+            policy_errors = policy.check_qualifying_user_on_tools(user, tools)
+            if policy_errors:
+                raise Exception(", ".join(policy_errors))
             user.qualifications.add(*tools)
             original_physical_access_levels = set(user.physical_access_levels.all())
             physical_access_level_automatic_enrollment = list(

@@ -145,6 +145,9 @@ def charge_training(request):
     else:
         for c in charges.values():
             if c.qualified:
+                policy_errors = policy.check_qualifying_user_on_tools(c.trainee, c.qualify_tools)
+                if policy_errors:
+                    return HttpResponseBadRequest(", ".join(policy_errors))
                 for tool in c.qualify_tools:
                     qualify(c.trainer, tool, c.trainee)
             c.save()

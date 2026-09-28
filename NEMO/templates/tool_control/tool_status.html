@@ -10,7 +10,7 @@
                 <li style="width:48%; text-align:center">
                     <a href="#details" style="padding: 10px 5px">Details</a>
                 </li>
-                {% if not user.training_required %}
+                {% if not user.training_required and not perms.NEMO.block_enable_tools %}
                     {% if tool.configuration_set.exists %}
                         <li style="width:48%; text-align:center">
                             <a href="#config" style="padding: 10px 5px" onclick="load_config_history('{{ tool.id }}');">Config
@@ -50,7 +50,7 @@
                 <li>
                     <a href="#details">Details</a>
                 </li>
-                {% if not user.training_required %}
+                {% if not user.training_required and not perms.NEMO.block_enable_tools %}
                     {% if tool.configuration_set.exists %}
                         <li>
                             <a href="#config" onclick="load_config_history('{{ tool.id }}');">Config History</a>

@@ -795,7 +795,7 @@ def modify_outage(request, start_delta, end_delta):
         outage.start += start_delta
     if end_delta:
         outage.end += end_delta
-    response = policy.check_to_create_outage(outage)
+    response = policy.check_to_create_outage(request.user, outage)
     if response.status_code != HTTPStatus.OK:
         return response
     else:

@@ -33,6 +33,7 @@ from NEMO.utilities import queryset_search_filter
 from NEMO.views.customization import ApplicationCustomization, StatusDashboardCustomization, UserCustomization
 from NEMO.views.pagination import SortedPaginator
 from NEMO.views.status_dashboard import show_staff_status
+from NEMO.policy import policy_class as policy
 
 users_logger = getLogger(__name__)
 
@@ -180,6 +181,20 @@ def create_or_modify_user(request, user_id):
                     dictionary["identity_service_available"] = False
                 return render(request, "users/create_or_modify_user.html", dictionary)
 
+        tools = Tool.objects.filter(id__in=request.POST.getlist("qualifications", []))
+
+        policy_errors = []
+        policy_errors.extend(policy.check_qualifying_user_on_tools(user, tools))
+        policy_errors.extend(
+            policy.check_adding_physical_access_levels_to_user(
+                user, form.cleaned_data.get("physical_access_levels", [])
+            )
+        )
+        if policy_errors:
+            for error_str in policy_errors:
+                form.add_error(field=None, error=error_str)
+            return render(request, "users/create_or_modify_user.html", dictionary)
+
         # Only save the user model for now, and wait to process the many-to-many relationships.
         # This way, many-to-many changes can be recorded.
         # See this web page for more information:
@@ -195,7 +210,7 @@ def create_or_modify_user(request, user_id):
             del request.session["user_correlation_id"]
         record_active_state(request, user, form, "is_active", user_id == "new")
 
-        record_qualifications(request.user, user, request.POST.getlist("qualifications", []))
+        record_qualifications(request.user, user, tools)
         record_local_many_to_many_changes(request, user, form, "physical_access_levels")
         record_local_many_to_many_changes(request, user, form, "projects")
         form.save_m2m()
@@ -220,13 +235,12 @@ def create_or_modify_user(request, user_id):
         return HttpResponseBadRequest("Invalid method")
 
 
-def record_qualifications(request_user, user, qualifications: list[str]):
+def record_qualifications(request_user, user, qualifications: list[Tool]):
     from NEMO.views.qualifications import qualify, disqualify
 
     tools = set()
     if qualifications:
-        for tool_id in qualifications:
-            tool = Tool.objects.get(pk=tool_id)
+        for tool in qualifications:
             qualify(request_user, tool, user)
             tools.add(tool)
     for tool in set(user.qualifications.all()).difference(tools):

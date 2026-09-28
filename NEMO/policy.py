@@ -24,6 +24,7 @@ from NEMO.exceptions import (
     ScheduledOutageInProgressError,
     TrainingRequiredUserError,
     UnavailableResourcesUserError,
+    UserAccessError,
 )
 from NEMO.models import (
     Area,
@@ -123,7 +124,7 @@ class BaseNEMOPolicy(ABC):
         """
         return HttpResponse()
 
-    def check_to_create_outage(self, outage: ScheduledOutage) -> HttpResponse:
+    def check_to_create_outage(self, user: User, outage: ScheduledOutage) -> HttpResponse:
         """
         Checks the outage creation policy.
         If all checks pass, the function should return an HTTP "OK" response.
@@ -149,14 +150,30 @@ class BaseNEMOPolicy(ABC):
         self,
         project: Project,
         user: User,
-        item: Union[Tool, Area, Consumable, StaffCharge] = None,
-        charge: Union[UsageEvent, AreaAccessRecord, ConsumableWithdraw, StaffCharge, Reservation] = None,
+        item: Tool | Area | Consumable | StaffCharge | None = None,
+        charge: UsageEvent | AreaAccessRecord | ConsumableWithdraw | StaffCharge | Reservation | None = None,
     ):
         """
         Checks the billing policy for a project and a charge.
         If there are any issues, the method should throw an Exception
         """
         pass
+
+    def check_qualifying_user_on_tools(self, user, tools: list[Tool]) -> list[str]:
+        """
+        Checks the policy for qualifying a user on tools.
+        If there are any issues, the method should return a list of error strings.
+        """
+        return []
+
+    def check_adding_physical_access_levels_to_user(
+        self, user, physical_access_levels: list[PhysicalAccessLevel]
+    ) -> list[str]:
+        """
+        Checks the policy for adding physical access levels to a user.
+        If there are any issues, the method should return a list of error strings.
+        """
+        return []
 
 
 class DefaultNEMOPolicy(BaseNEMOPolicy):
@@ -166,6 +183,12 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
         """
         Check that the user is allowed to enable the tool. Enable the tool if the policy checks pass.
         """
+        if user.has_perm("NEMO.block_enable_tools"):
+            if user == operator:
+                return HttpResponseBadRequest("You do not have permission to enable tools.")
+            else:
+                return HttpResponseBadRequest(f"{user} does not have permission to enable tools.")
+
         facility_name = ApplicationCustomization.get("facility_name")
         site_title = ApplicationCustomization.get("site_title")
 
@@ -350,6 +373,12 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
         Check the reservation creation policy and return a list of policy problems if any.
         """
         user = new_reservation.user
+
+        if user.has_perm("NEMO.block_create_reservations"):
+            if user == user_creating_reservation:
+                return ["You do not have permission to create reservations."], True
+            else:
+                return [str(user) + " does not have permission to create reservations."], True
 
         facility_name = ApplicationCustomization.get("facility_name")
         site_title = ApplicationCustomization.get("site_title")
@@ -1060,7 +1089,10 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
 
         return HttpResponse()
 
-    def check_to_create_outage(self, outage: ScheduledOutage) -> HttpResponse:
+    def check_to_create_outage(self, user: User, outage: ScheduledOutage) -> HttpResponse:
+        if user.has_perm("NEMO.block_create_outages"):
+            return HttpResponseBadRequest("You do not have permission to create outages.")
+
         # Outages may not have a start time that is earlier than the end time.
         if outage.start >= outage.end:
             return HttpResponseBadRequest(
@@ -1092,6 +1124,9 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
         """
         Checks the area access policy for a user.
         """
+        if user.has_perm("NEMO.block_enter_any_areas"):
+            raise UserAccessError(user=user, msg="You do not have permission to enter any areas.")
+
         if not user.is_active:
             raise InactiveUserError(user=user)
 
@@ -1111,6 +1146,9 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
     def check_to_enter_area(self, area: Area, user: User):
         # If explicitly set on the Physical Access Level, staff & user office
         # are exempt from being granted explicit access
+        if user.has_perm("NEMO.block_enter_any_areas"):
+            raise UserAccessError(user=user, msg="You do not have permission to enter any areas.")
+
         if (user.is_staff or user.is_user_office) and any(
             [
                 access_level.accessible()
@@ -1154,10 +1192,15 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
         self,
         project: Project,
         user: User,
-        item: Union[Tool, Area, Consumable, StaffCharge] = None,
-        charge: Union[UsageEvent, AreaAccessRecord, ConsumableWithdraw, StaffCharge, Reservation] = None,
+        item: Tool | Area | Consumable | StaffCharge | None = None,
+        charge: UsageEvent | AreaAccessRecord | ConsumableWithdraw | StaffCharge | Reservation | None = None,
     ):
         if project:
+            if user.has_perm("NEMO.block_bill_projects"):
+                raise NotAllowedToChargeProjectException(
+                    project=project, user=user, msg="You do not have permission to bill any projects"
+                )
+
             # Don't validate active projects for tool question consumables, it is done by the usage validation
             consumable_within_usage = (
                 isinstance(item, Consumable) and isinstance(charge, ConsumableWithdraw) and charge.tool_usage
@@ -1188,8 +1231,20 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
                     msg = f"Staff charges are not allowed for project {project.name}"
                     raise ItemNotAllowedForProjectException(project, user, "Staff Charges", msg)
 
+    def check_qualifying_user_on_tools(self, user, tools: list[Tool]) -> list[str]:
+        if user.has_perm("NEMO.block_qualify_on_tools"):
+            return [f"{user} is not allowed to be qualified on any tools."]
+        return []
 
-def check_maximum_users_in_overlapping_reservations(reservations: List[Reservation]) -> Tuple[int, datetime]:
+    def check_adding_physical_access_levels_to_user(
+        self, user, physical_access_levels: list[PhysicalAccessLevel]
+    ) -> list[str]:
+        if user.has_perm("NEMO.block_add_physical_access_levels"):
+            return [f"{user} is not allowed to have any physical access levels."]
+        return []
+
+
+def check_maximum_users_in_overlapping_reservations(reservations: List[Reservation]) -> Tuple[int, datetime | None]:
     """
     Returns the maximum number of overlapping reservations and the earlier time the maximum is reached
     This will only count reservations made by different users. i.e. if a user has 3 reservations at the same
@@ -1215,9 +1270,9 @@ def check_maximum_users_in_overlapping_reservations(reservations: List[Reservati
 
     count = 0
     max_count = 0
-    max_time: Optional[datetime] = None
-    for time in times:
-        if time[1] == "start":
+    max_time: datetime | None = None
+    for t in times:
+        if t[1] == "start":
             count += 1  # increment on arrival/start
         else:
             count -= 1  # decrement on departure/end
@@ -1226,7 +1281,7 @@ def check_maximum_users_in_overlapping_reservations(reservations: List[Reservati
         max_count = max(count, max_count)
         # maintain earlier time max is reached
         if max_count > prev_count:
-            max_time = time[0]
+            max_time = t[0]
     return max_count, max_time
 
 
@@ -1290,6 +1345,14 @@ class NEMOPolicyChain:
                             all_problems.extend(list(problems))
                         combined_overridable = combined_overridable and bool(overridable)
                 return all_problems, combined_overridable
+
+            # Case 4: list aggregator (error string list pattern)
+            if results and isinstance(results[-1], list):
+                all_errors: List[str] = []
+                for r in results:
+                    if isinstance(r, list):
+                        all_errors.extend(r)
+                return all_errors
 
             # Default: return the last policy's result
             return results[-1]
