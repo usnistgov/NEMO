@@ -6,7 +6,7 @@
     {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
     {% if user.in_area %}
         <p>
-            You are billing {{ user.area_access_record.area.name }} access to the project named {{ user.billing_to_project }} since {{ user.area_access_record.start }}.
+            You are billing {{ user.area_access_record.area.name }} access to the project named {{ user.billing_to_project.get_display }} since {{ user.area_access_record.start }}.
         </p>
         {% if user.active_project_count > 1 %}
             <p>

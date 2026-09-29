@@ -33,7 +33,7 @@
                     {% if customizations|get_item:"dashboard_hide_project" != "enabled" and customizations|get_item:"project_hide_project_info" != "enabled" %}
                         <td>
                             <div style="width: 0; min-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                {{ o.project }}
+                                {{ o.project.get_display }}
                             </div>
                         </td>
                     {% endif %}

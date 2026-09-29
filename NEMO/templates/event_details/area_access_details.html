@@ -10,7 +10,7 @@
         Customer: {{ event.customer }}
         <br>
         {% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == event.customer %}
-            Project: {{ event.project.name }}
+            Project: {{ event.project.get_display }}
             <br>
         {% endif %}
         Start: {{ event.start }}

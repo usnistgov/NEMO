@@ -117,7 +117,7 @@
         <tr id="reservation_project">
             <td style="vertical-align: middle;">Project:</td>
             <td>
-                {{ reservation.project }}
+                {{ reservation.project.get_display }}
                 {% if reservation_project_can_be_changed %}
                     <span class="glyphicon glyphicon-pencil pull-right"
                           title="Change the project"

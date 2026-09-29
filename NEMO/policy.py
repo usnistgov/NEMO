@@ -1213,22 +1213,22 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
                 allowed_tools = project.only_allow_tools.all()
                 if allowed_tools.exists():
                     if isinstance(item, Tool) and item not in allowed_tools:
-                        msg = f"{item.name} is not allowed for project {project.name}"
+                        msg = f"{item.name} is not allowed for project {project.get_display()}"
                         raise ItemNotAllowedForProjectException(project, user, item.name, msg)
                     elif isinstance(item, Area) and item.id not in distinct_qs_value_list(
                         allowed_tools, "_requires_area_access_id"
                     ):
-                        msg = f"{item.name} is not allowed for project {project.name}"
+                        msg = f"{item.name} is not allowed for project {project.get_display()}"
                         raise ItemNotAllowedForProjectException(project, user, item.name, msg)
                 # Check if consumable withdrawals are allowed
                 # But only when doing a direct withdrawal, we cannot prevent tool usage consumable withdrawals
                 if isinstance(item, Consumable) and isinstance(charge, ConsumableWithdraw):
                     if not charge.tool_usage and not project.allow_consumable_withdrawals:
-                        msg = f"Consumable withdrawals are not allowed for project {project.name}"
+                        msg = f"Consumable withdrawals are not allowed for project {project.get_display()}"
                         raise ItemNotAllowedForProjectException(project, user, "Consumable withdrawals", msg)
                 # Check if staff charges are allowed
                 if isinstance(item, StaffCharge) and not project.allow_staff_charges:
-                    msg = f"Staff charges are not allowed for project {project.name}"
+                    msg = f"Staff charges are not allowed for project {project.get_display()}"
                     raise ItemNotAllowedForProjectException(project, user, "Staff Charges", msg)
 
     def check_qualifying_user_on_tools(self, user, tools: list[Tool]) -> list[str]:

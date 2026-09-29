@@ -19,7 +19,7 @@
                     <p>Dear {{ staff_charge.staff_member.first_name }},</p>
                     <p>
                         This is a friendly reminder that you have been charging staff time to <b>{{ staff_charge.customer }}</b> while working on
-                        the project named <b>{{ staff_charge.project }}</b> since <b>{{ staff_charge.start }}</b>.
+                        the project named <b>{{ staff_charge.project.get_display }}</b> since <b>{{ staff_charge.start }}</b>.
                         <br>
                         You can	stop charging staff time by visiting the Staff Charges page in {{ site_title }}.
                         <br>

@@ -34,7 +34,7 @@ def get_projects(request, project_filter=Q()):
     if source_template == "training":
         entry_number = int(request.GET["entry_number"])
         return render(request, "training/get_projects.html", {"projects": projects, "entry_number": entry_number})
-    return JsonResponse(dict(projects=list(projects.values("id", "name"))))
+    return JsonResponse(dict(projects=[{"id": prj.id, "name": prj.get_display()} for prj in projects]))
 
 
 @login_required

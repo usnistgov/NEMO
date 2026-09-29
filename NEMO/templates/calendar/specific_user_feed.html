@@ -17,7 +17,7 @@
 	{% endfor %}
 	{% for x in area_access_events %}
 	{
-		"title": "{{ x.area }} access billed to project {{ x.project }} {% if x.staff_charge %}by {{ x.staff_charge.staff_member }}{% endif %}",
+		"title": "{{ x.area }} access billed to project {{ x.project.get_display }} {% if x.staff_charge %}by {{ x.staff_charge.staff_member }}{% endif %}",
 		"id": {{ x.id }},
         {% if x.project and x.project.get_calendar_color %}
             "color": "{{ x.project.get_calendar_color }}",

@@ -86,7 +86,7 @@
                                 {% for project in project_by_account.list %}
                                     <option value="{{ project.id }}"
                                             {% if selected_project and selected_project.id == project.id %}selected{% endif %}>
-                                        {{ project.name }}
+                                        {{ project.get_display }}
                                     </option>
                                 {% endfor %}
                             </optgroup>
@@ -126,7 +126,7 @@
                                 {% for project in charge_project_by_account.list %}
                                     <option value="{{ project.id }}"
                                             {% if selected_user_project and selected_user_project.id == project.id %}selected{% endif %}>
-                                        {{ project.name }}
+                                        {{ project.get_display }}
                                     </option>
                                 {% endfor %}
                             </optgroup>

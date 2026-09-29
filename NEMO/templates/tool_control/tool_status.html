@@ -101,7 +101,7 @@
                                 on behalf of {{ current_usage_event.user }}
                             {% endif %}
                             {% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == current_usage_event.user %}
-                                for the project named {{ current_usage_event.project.name }}
+                                for the project named {{ current_usage_event.project.get_display }}
                             {% endif %}
                             since {{ current_usage_event.start|date:"MONTH_DAY_FORMAT" }} @ {{ current_usage_event.start|time }} (#{{ current_usage_event.id }}).
                         </h2>
@@ -543,7 +543,7 @@
                                                        class="strikethrough light-grey"
                                                        data-toggle="tooltip"
                                                        data-placement="right"
-                                                       title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.">
+                                                       title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project.get_display }} since {{ staff_charge.start }}.">
                                                     <input type="radio" disabled>
                                                     <span>
                                                         {{ customizations|get_item:"tool_control_use_for_other_staff_charge_label"|safe }}
@@ -579,7 +579,7 @@
                                                        class="strikethrough light-grey"
                                                        data-toggle="tooltip"
                                                        data-placement="right"
-                                                       title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.">
+                                                       title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project.get_display }} since {{ staff_charge.start }}.">
                                                     <input type="radio" disabled>
                                                     <span>
                                                         {{ customizations|get_item:"tool_control_use_for_other_remote_staff_charge_label"|safe }}

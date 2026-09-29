@@ -203,7 +203,7 @@
                                 <ul>
                                     {% for managed_project in user_profile.managed_projects.all %}
                                         <li>
-                                            {{ managed_project.name }}
+                                            {{ managed_project.get_display }}
                                             {% if user.is_accounting_officer or user.is_user_office or user.is_facility_manager or user.is_superuser %}
                                                 <a style="text-decoration: none;
                                                           color: inherit"

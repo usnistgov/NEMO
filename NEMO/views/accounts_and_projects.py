@@ -334,7 +334,7 @@ def transfer_charges(request):
                         do_transfer_charges(charges, new_project.id)
                         messages.success(
                             request,
-                            f"{len(charges)} charges were transferred from {project} to {new_project}",
+                            f"{len(charges)} charges were transferred from {project.get_display()} to {new_project.get_display()}",
                             extra_tags="data-speed=25000",
                         )
                     except ValidationError as e:
@@ -410,7 +410,7 @@ def do_transfer_charges(charges: List[BillableItem], new_project_id: int):
 @accounting_or_manager_required
 @require_GET
 def search_project_for_transfer(request):
-    return queryset_search_filter(Project.objects.all(), ["name", "application_identifier"], request)
+    return queryset_search_filter(Project.objects.all(), ["name", "application_identifier"], request, "get_display")
 
 
 def get_accounts_and_projects():

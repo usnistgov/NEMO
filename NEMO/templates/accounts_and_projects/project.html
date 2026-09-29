@@ -7,7 +7,7 @@
        style="text-decoration:none">
         <span id="project_{{ project.id }}_chevron"
               class="glyphicon {% if selected_project or manager_view %}glyphicon-chevron-down{% else %}glyphicon-chevron-right{% endif %} pull-left chevron"></span>
-        {{ project }}
+        {{ project.name }}
     </a>
     {% if manager_view %}
         <span class="label {% if project.active %}label-success{% else %}label-danger{% endif %}"

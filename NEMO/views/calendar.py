@@ -982,7 +982,7 @@ def change_reservation_project(request, reservation_id):
         if not reservation.has_not_started():
             return HttpResponseBadRequest("Project cannot be changed; reservation has already started")
         if project not in reservation.user.active_projects():
-            return HttpResponseForbidden(f"{project} is not one of {reservation.user}'s active projects")
+            return HttpResponseForbidden(f"{project.get_display()} is not one of {reservation.user}'s active projects")
     return HttpResponse()
 
 

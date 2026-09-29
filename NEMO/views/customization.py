@@ -335,6 +335,7 @@ class CoreFacilityCustomization(CustomizationBase):
 class ProjectsAccountsCustomization(CustomizationBase):
     variables = {
         "project_selection_template": "{{ project.name }}",
+        "project_name_template": "{{ project.name }}",
         "project_application_identifier_name": "Application identifier",
         "project_allow_document_upload": "",
         "account_list_active_only": "",
@@ -349,7 +350,7 @@ class ProjectsAccountsCustomization(CustomizationBase):
     }
 
     def validate(self, name, value):
-        if name == "project_selection_template":
+        if name in ["project_selection_template", "project_name_template"]:
             try:
                 Template(value).render(Context({"project": Project()}))
             except Exception as e:

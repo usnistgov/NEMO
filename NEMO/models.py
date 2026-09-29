@@ -23,7 +23,7 @@ from django.db.models import BooleanField, Case, Exists, IntegerChoices, OuterRe
 from django.db.models.manager import Manager
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
-from django.template import loader
+from django.template import Context, Template, loader
 from django.template.defaultfilters import linebreaksbr
 from django.urls import reverse
 from django.utils import timezone
@@ -3306,14 +3306,22 @@ class Project(SerializationByNameModel):
         ordering = ["name"]
 
     def display_with_managers(self):
-        from NEMO.templatetags.custom_tags_and_filters import project_selection_display
-
         managers = ", ".join([manager.get_name() for manager in self.manager_set.all()])
         managers = f" (PI{'s' if self.manager_set.count() > 1 else ''}: {managers})" if managers else ""
-        return f"{project_selection_display(self)}{managers}"
+        return f"{self.get_display()}{managers}"
 
     def display_with_status(self):
-        return f"{'[INACTIVE] ' if not self.active else ''}{self.name}"
+        return f"{'[INACTIVE] ' if not self.active else ''}{self.get_display()}"
+
+    def get_display(self) -> str:
+        from NEMO.views.customization import ProjectsAccountsCustomization
+
+        try:
+            template = Template(ProjectsAccountsCustomization.get("project_name_template"))
+            return template.render(Context({"project": self}, autoescape=False)).strip() or str(self)
+        except Exception as e:
+            models_logger.warning(f"Error rendering project title template for project {self.id}: {e}")
+            return str(self)
 
     def display_with_status_and_managers(self):
         return f"{'[INACTIVE] ' if not self.active else ''}{self.display_with_managers()}"
@@ -4055,7 +4063,7 @@ class RecurringConsumableCharge(BaseModel, RecurrenceMixin):
         if self.customer:
             display_attributes.append(str(self.customer))
         if self.project:
-            display_attributes.append(str(self.project))
+            display_attributes.append(self.project.get_display())
         return " - ".join(display_attributes)
 
     def __str__(self):
@@ -5373,8 +5381,8 @@ class AdjustmentRequest(BaseModel):
             if self.is_start_time_adjustable() or self.is_end_time_adjustable() or self.is_quantity_adjustable():
                 result += "\n"
             result += "- project: "
-            result += self.get_original_project().name if self.get_original_project() else ""
-            result += " -> " + self.new_project.name
+            result += self.get_original_project().get_display() if self.get_original_project() else ""
+            result += " -> " + self.new_project.get_display()
         if self.is_waivable():
             result += "- the charge will be waived entirely"
         return result

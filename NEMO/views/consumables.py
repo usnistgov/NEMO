@@ -111,7 +111,7 @@ def add_withdraw_to_session(request, withdrawal: ConsumableWithdraw):
             "customer_id": withdrawal.customer_id,
             "consumable": str(withdrawal.consumable),
             "consumable_id": withdrawal.consumable_id,
-            "project": str(withdrawal.project),
+            "project": withdrawal.project.get_display(),
             "project_id": withdrawal.project_id,
             "quantity": withdrawal.quantity,
         }
@@ -346,7 +346,7 @@ def make_withdrawal_success_message(withdraw, request_user: User):
         message = f"Your withdrawal of {withdraw.quantity} of {withdraw.consumable}"
     else:
         message = f"The withdrawal of {withdraw.quantity} of {withdraw.consumable} for {withdraw.customer}"
-    message += f" was successfully logged and will be billed to project {withdraw.project}."
+    message += f" was successfully logged and will be billed to project {withdraw.project.get_display()}."
     return message
 
 

@@ -27,8 +27,10 @@
         {% endfor %}
         <div style="height:10px">{# Vertical spacer #}</div>
         {% if reservation.project %}
-            For project {{ reservation.project }}
-            <br>
+            {% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == reservation.user %}
+                For project {{ reservation.project.get_display }}
+                <br>
+            {% endif %}
         {% endif %}
         Created by {{ reservation.creator }}
         {% if reservation.user != reservation.creator %}on behalf of {{ reservation.user }}{% endif %}

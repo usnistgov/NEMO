@@ -854,7 +854,7 @@ def add_withdraw_to_session(request, customer_id, withdrawal: ConsumableWithdraw
             "customer_id": withdrawal.customer_id,
             "consumable": str(withdrawal.consumable),
             "consumable_id": withdrawal.consumable_id,
-            "project": str(withdrawal.project),
+            "project": withdrawal.project.get_display(),
             "project_id": withdrawal.project_id,
             "quantity": withdrawal.quantity,
         }

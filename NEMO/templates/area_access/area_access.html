@@ -81,7 +81,7 @@
                             <td>{{ x.area }}</td>
                             <td>{{ x.id }}</td>
                             <td>{{ x.customer }}</td>
-                            <td>{{ x.project }}</td>
+                            <td>{{ x.project.get_display }}</td>
                             <td>{{ x.start }}</td>
                             <td>{{ x.end|default:"In progress" }}</td>
                         </tr>

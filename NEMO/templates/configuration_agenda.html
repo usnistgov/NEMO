@@ -48,7 +48,7 @@
                                     {{ reservation.user }}
                                     <br>
                                     {% if reservation.project %}
-                                        {{ reservation.project }}
+                                        {{ reservation.project.get_display }}
                                         <br>
                                     {% endif %}
                                     {{ reservation.start }}

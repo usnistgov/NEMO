@@ -34,7 +34,7 @@
                         {% endif %}
                         {{ m.start }}
                         <br>
-                        Charged to project {{ m.project }}
+                        Charged to project {{ m.project.get_display }}
                         {% if m|can_be_adjusted:user %}
                             {% include "usage/adjustment_request_button.html" with charge=m %}
                         {% endif %}
@@ -55,7 +55,7 @@
                         <br>
                         Purchased from {{ c.merchant }} on {{ c.date }}
                         <br>
-                        Charged to project {{ c.project }}
+                        Charged to project {{ c.project.get_display }}
                         {% if c|can_be_adjusted:user %}
                             {% include "usage/adjustment_request_button.html" with charge=c %}
                         {% endif %}
@@ -82,7 +82,7 @@
                         <br>
                         {{ s.end }}
                         <br>
-                        Charged to project {{ s.project }}
+                        Charged to project {{ s.project.get_display }}
                         {% if s|can_be_adjusted:user %}
                             {% include "usage/adjustment_request_button.html" with charge=s %}
                         {% endif %}
@@ -100,7 +100,7 @@
                         <br>
                         {{ t.date }} ({{ t.duration }} minutes)
                         <br>
-                        Charged to project {{ t.project }}
+                        Charged to project {{ t.project.get_display }}
                     </div>
                 {% endfor %}
             {% endif %}
@@ -129,7 +129,7 @@
                         <br>
                         {{ a.end|default_if_none:"In progress" }}
                         <br>
-                        Charged to project {{ a.project }}
+                        Charged to project {{ a.project.get_display }}
                         {% if a|can_be_adjusted:user %}
                             {% include "usage/adjustment_request_button.html" with charge=a %}
                         {% endif %}
@@ -165,7 +165,7 @@
                         <br>
                         {{ u.end }}
                         <br>
-                        Charged to project {{ u.project }}
+                        Charged to project {{ u.project.get_display }}
                         {% if u|can_be_adjusted:user %}
                             {% include "usage/adjustment_request_button.html" with charge=u %}
                         {% endif %}

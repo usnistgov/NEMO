@@ -303,7 +303,7 @@ class BillableItemMixin:
             return self.get_real_type()
 
     def get_display(self, user: User = None) -> str:
-        project_display = f", charged to {self.project}"
+        project_display = f", charged to {self.project.get_display() if self.project else None}"
         customer_display = f" for {self.get_customer()}"
         operator_display = f" {self.get_operator_action()}by {self.get_operator()}"
         user_display = ""

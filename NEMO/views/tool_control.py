@@ -928,7 +928,7 @@ def format_usage_data(
                                 )
                                 group_usage_data["end_date"] = format_datetime(usage_event.end, "SHORT_DATETIME_FORMAT")
                                 if show_project_info:
-                                    group_usage_data["project"] = usage_event.project.name
+                                    group_usage_data["project"] = usage_event.project.get_display()
                                 table_result.add_row(group_usage_data)
                 else:
                     table_result.add_header((question_key, question["title"]))
@@ -945,7 +945,7 @@ def format_usage_data(
                 format_datetime(usage_event.end, "SHORT_DATETIME_FORMAT") if usage_event.end else ""
             )
             if show_project_info:
-                usage_data["project"] = usage_event.project.name
+                usage_data["project"] = usage_event.project.get_display()
             table_result.add_row(usage_data)
     except JSONDecodeError:
         tool_control_logger.debug("error decoding run_data: " + usage_run_data)

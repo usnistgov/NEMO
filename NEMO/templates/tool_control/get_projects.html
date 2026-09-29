@@ -4,7 +4,7 @@
     <br>
     A user must be a member of at least one active project to operate a tool.
 {% elif active_projects|length == 1 %}
-    <h4>Tool usage will be billed to the project named &quot;{{ active_projects.0 }}&quot;.</h4>
+    <h4>Tool usage will be billed to the project named &quot;{{ active_projects.0.get_display }}&quot;.</h4>
     <input type="hidden" id="project_id" value="{{ active_projects.0.id }}">
     <script>
         load_pre_usage_questions("{{ tool_id }}", "{{ customer_id }}", "{{ active_projects.0.id }}");

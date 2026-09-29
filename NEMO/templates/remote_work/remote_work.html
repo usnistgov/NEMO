@@ -45,7 +45,7 @@
                 <select id="project" name="project" class="form-control">
                     <option {% if selected_project == "all projects" %}selected{% endif %}>all projects</option>
                     {% for p in project_list %}
-                        <option value="{{ p.id }}" {% if p.id == selected_project %}selected{% endif %}>{{ p }}</option>
+                        <option value="{{ p.id }}" {% if p.id == selected_project %}selected{% endif %}>{{ p.get_display }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -119,7 +119,7 @@
                     {% endif %}
                     <td>{{ c.staff_member }}</td>
                     <td>{{ c.customer }}</td>
-                    <td>{{ c.project }}</td>
+                    <td>{{ c.project.get_display }}</td>
                     <td>{{ c.start }}</td>
                     <td>{{ c.end|default_if_none:'' }}</td>
                     {% if remote_work_validation %}
@@ -204,7 +204,7 @@
                     {% endif %}
                     <td>{{ u.operator }}</td>
                     <td>{{ u.user }}</td>
-                    <td>{{ u.project }}</td>
+                    <td>{{ u.project.get_display }}</td>
                     <td>{{ u.start }}</td>
                     <td>{{ u.end|default_if_none:'' }}</td>
                     <td>{{ u.tool }}</td>
