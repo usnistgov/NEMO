@@ -6,6 +6,7 @@ from django.views.decorators.http import require_GET
 
 from NEMO.decorators import staff_member_or_tool_superuser_or_tool_staff_required
 from NEMO.models import Tool, User
+from NEMO.views.tool_control import get_current_reservation
 
 
 def projects_for_consumable_permissions(user):
@@ -33,7 +34,7 @@ def get_projects(request, project_filter=Q()):
     if source_template == "training":
         entry_number = int(request.GET["entry_number"])
         return render(request, "training/get_projects.html", {"projects": projects, "entry_number": entry_number})
-    return JsonResponse(dict(projects=list(projects.values("id", "name"))))
+    return JsonResponse(dict(projects=[{"id": prj.id, "name": prj.get_display()} for prj in projects]))
 
 
 @login_required
@@ -42,12 +43,18 @@ def get_projects_for_tool_control(request):
     if not request.user.is_any_part_of_staff and not request.user.is_tool_staff:
         return redirect("landing")
     customer_id = request.GET.get("user_id")
-    tool_id = get_object_or_404(Tool, id=request.GET.get("tool_id")).id
+    tool = get_object_or_404(Tool, id=request.GET.get("tool_id"))
     user = get_object_or_404(User, id=customer_id)
+    current_reservation = get_current_reservation(user, tool)
     return render(
         request,
         "tool_control/get_projects.html",
-        {"active_projects": user.active_projects(), "customer_id": customer_id, "tool_id": tool_id},
+        {
+            "active_projects": user.active_projects(),
+            "reservation_project": current_reservation.project if current_reservation else None,
+            "customer_id": customer_id,
+            "tool_id": tool.id,
+        },
     )
 
 
@@ -55,9 +62,15 @@ def get_projects_for_tool_control(request):
 @require_GET
 def get_projects_for_self(request):
     """Gets a list of all active projects for the current user."""
-    tool_id = get_object_or_404(Tool, id=request.GET.get("tool_id")).id
+    tool = get_object_or_404(Tool, id=request.GET.get("tool_id"))
+    current_reservation = get_current_reservation(request.user, tool)
     return render(
         request,
         "tool_control/get_projects.html",
-        {"active_projects": request.user.active_projects(), "customer_id": request.user.id, "tool_id": tool_id},
+        {
+            "active_projects": request.user.active_projects(),
+            "reservation_project": current_reservation.project if current_reservation else None,
+            "customer_id": request.user.id,
+            "tool_id": tool.id,
+        },
     )

@@ -795,7 +795,7 @@ def modify_outage(request, start_delta, end_delta):
         outage.start += start_delta
     if end_delta:
         outage.end += end_delta
-    response = policy.check_to_create_outage(outage)
+    response = policy.check_to_create_outage(request.user, outage)
     if response.status_code != HTTPStatus.OK:
         return response
     else:
@@ -840,12 +840,11 @@ def cancel_outage(request, outage_id):
         return render(request, "mobile/cancellation_result.html", dictionary)
 
 
-@staff_member_or_tool_staff_required
 @require_POST
 def set_reservation_title(request, reservation_id):
     """Change reservation title for a user."""
     reservation = get_object_or_404(Reservation, id=reservation_id)
-    if not request.user.is_staff_on_tool(reservation.tool):
+    if not (request.user.is_staff_on_tool(reservation.tool) or request.user == reservation.user):
         return HttpResponseBadRequest("You are not allowed to edit this reservation.")
     reservation.title = request.POST.get("title", "")[: reservation._meta.get_field("title").max_length]
     reservation.save_and_notify()
@@ -983,7 +982,7 @@ def change_reservation_project(request, reservation_id):
         if not reservation.has_not_started():
             return HttpResponseBadRequest("Project cannot be changed; reservation has already started")
         if project not in reservation.user.active_projects():
-            return HttpResponseForbidden(f"{project} is not one of {reservation.user}'s active projects")
+            return HttpResponseForbidden(f"{project.get_display()} is not one of {reservation.user}'s active projects")
     return HttpResponse()
 
 
@@ -1266,7 +1265,8 @@ def send_tool_free_time_notification(
                 tool_freed_time_notifications__in=[tool],
                 tool_freed_time_notifications_min_time__lte=freed_time,
                 tool_freed_time_notifications_max_future_days__gte=days_in_the_future,
-            )
+                user__is_active=True,
+            ).exclude(user__access_expiration__lte=timezone.now())
             formatted_start = format_datetime(start_time)
             formatted_time = f"{freed_time:0.0f}"
             link = get_full_url(reverse("calendar"), request)

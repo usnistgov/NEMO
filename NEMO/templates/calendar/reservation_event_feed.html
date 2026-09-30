@@ -3,36 +3,31 @@
 [
 	{% for x in events %}
 	{
-		{% if personal_schedule and x.tool %}
+		{% if personal_schedule and x.tool or personal_schedule and x.area %}
 			"title": "{{ x.reservation_item.name|escapejs }} ({{ x.user.username|escapejs }})\n{{ x.title|escapejs }}",
-			"color": "#33ad33",
-		{% elif personal_schedule and x.area %}
-			"title": "{{ x.reservation_item.name|escapejs }} ({{ x.user.username|escapejs }})\n{{ x.title|escapejs }}",
-			"color": "#84CD84",
-		{% elif all_tools or all_areastools and x.tool %}
-			"title": "{{ x.reservation_item.name|escapejs }} ({{ x.user.username|escapejs }})\n{{ x.title|escapejs }}",
-			"color": "{{ x.reservation_item.tool_calendar_color|default:'#33ad33'|escapejs }}",
-		{% elif all_areas or all_areastools and x.area %}
-			"title": "{{ x.reservation_item.name|escapejs }} ({{ x.user.username|escapejs }})\n{{ x.title|escapejs }}",
-			"color": "{{ x.reservation_item.area_calendar_color|default:'#84CD84'|escapejs }}",
+			"color": "{{ x.reservation_item.get_calendar_personal_schedule_color }}",
 		{% else %}
-            {% if display_name %}
-			    "title": "{{ x.reservation_item.name|escapejs }} ({{ x.user.username|escapejs }})\n{{ x.title|escapejs }}",
+		    {% if all_tools or all_areastools and x.tool or all_areas or all_areastools and x.area or display_name %}
+			    "title": "{{ x.reservation_item.name|escapejs }} ({{ x.user.username|escapejs }}){% if user.id == x.user_id or user|is_staff_on_tool:x.tool %}\n{{ x.title|escapejs }}{% endif %}",
             {% else %}
-                "title": "{{ x.title|default:x.user|escapejs }}{% if display_configuration %}\n{{ x.get_configuration_options_display|escapejs }}{% endif %}",
+                "title": "{% if user.id == x.user_id or user|is_staff_on_tool:x.tool %}{{ x.title|default:x.user|escapejs }}{% else %}{{ x.user|escapejs }}{% endif %}{% if display_configuration %}\n{{ x.get_configuration_options_display|escapejs }}{% endif %}",
                 {% if display_configuration and x.get_configuration_options_colors %}"colors": ["{{ x.get_configuration_options_colors|join:'","' }}"],{% endif %}
             {% endif %}
-            "color": "{% if x.tool %}{% if x.reservation_item.tool_calendar_color|lower == "#33ad33" %}#88B7CD{% else %}{{ x.reservation_item.tool_calendar_color|default:"#88B7CD"|escapejs }}{% endif %}{% else %}{{ x.reservation_item.area_calendar_color|default:"#88B7CD"|escapejs }}{% endif %}",
-			{% if x.user.id == user.id %}"own-reservation": true,{% endif %}
+            {% if x.project and x.project.get_calendar_color %}
+                "color": "{{ x.project.get_calendar_color }}",
+            {% else %}
+                "color": "{{ x.reservation_item.get_calendar_reservation_color }}",
+            {% endif %}
+			{% if x.user_id == user.id %}"own-reservation": true,{% endif %}
 		{% endif %}
-		{% if x.creator.id == x.user.id %}
-			"tooltip": "{{ x.reservation_item.name }} reservation for {{ x.user }}",
+		{% if x.creator.id == x.user_id %}
+			"tooltip": "{{ x.reservation_item.name }} reservation for {{ x.user|escapejs }}",
 		{% else %}
-			"tooltip": "{{ x.reservation_item.name }} reservation for {{ x.user }}, created by {{ x.creator }}",
+			"tooltip": "{{ x.reservation_item.name }} reservation for {{ x.user|escapejs }}, created by {{ x.creator|escapejs }}",
 		{% endif %}
 		"id": "Reservation {{ x.id }}",
 		{# The reservation creator or staff may edit the event: #}
-		{% if user.id == x.user.id or user.is_staff or user|is_staff_on_tool:x.tool %}"editable": true,{% endif %}
+		{% if user.id == x.user_id or user.is_staff or user|is_staff_on_tool:x.tool %}"editable": true,{% endif %}
 		"start": "{{ x.start|date:"c" }}",
 		"end": "{{ x.get_visual_end|date:"c" }}",
 		"details_url": "{% url 'reservation_details' x.id %}"
@@ -43,7 +38,7 @@
 		"title": "{{ x.title|escapejs }}",
 		"id": "Outage {{ x.id }}",
 		{% if user.is_staff or user|is_staff_on_tool:x.tool %}"editable": true,{% endif %}
-		"color": "#ff0000",
+		"color": "{{ calendar_outage_color }}",
 		"start": "{{ x.start|date:"c" }}",
 		"end": "{{ x.end|date:"c" }}",
 		"details_url": "{% url 'outage_details' x.id %}"

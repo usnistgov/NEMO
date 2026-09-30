@@ -294,6 +294,7 @@ class ApplicationCustomization(CustomizationBase):
         "safety_page_title": "Safety",
         "kiosk_message": "<h1>Scan your badge to control tools</h1>",
         "kiosk_numpad_size": "large",
+        "area_access_change_project_charged": "create_new_record",
         "kiosk_consumable_checkout": "",
         "area_access_kiosk_option_login_success": "",
         "area_access_kiosk_option_logout_warning": "",
@@ -311,10 +312,30 @@ class ApplicationCustomization(CustomizationBase):
         return errors
 
 
+@customization(key="core_facility", title="Core facilities")
+class CoreFacilityCustomization(CustomizationBase):
+    variables = {
+        "core_facility_external_id_name": "External ID",
+        "core_facility_required_for_tools": "",
+        "core_facility_required_for_areas": "",
+        "core_facility_required_for_consumables": "",
+        "core_facility_required_for_staff_charges": "",
+    }
+
+    @classmethod
+    def set(cls, name, value):
+        super().set(name, value)
+        from NEMO.admin import CoreFacilityAdmin
+
+        if name and name == "core_facility_external_id_name":
+            CoreFacilityAdmin.get_external_id.short_description = value
+
+
 @customization(key="projects_and_accounts", title="Projects & accounts")
 class ProjectsAccountsCustomization(CustomizationBase):
     variables = {
         "project_selection_template": "{{ project.name }}",
+        "project_name_template": "{{ project.name }}",
         "project_application_identifier_name": "Application identifier",
         "project_allow_document_upload": "",
         "account_list_active_only": "",
@@ -325,10 +346,11 @@ class ProjectsAccountsCustomization(CustomizationBase):
         "project_allow_transferring_charges": "",
         "project_type_allow_multiple": "",
         "account_enable_manager_edit_mode": "",
+        "project_hide_project_info": "",
     }
 
     def validate(self, name, value):
-        if name == "project_selection_template":
+        if name in ["project_selection_template", "project_name_template"]:
             try:
                 Template(value).render(Context({"project": Project()}))
             except Exception as e:
@@ -342,6 +364,7 @@ class UserCustomization(CustomizationBase):
         "default_user_is_inactive": "",
         "user_type_required": "",
         "user_list_active_only": "",
+        "user_list_on_search_view": "enabled",
         "user_access_expiration_reminder_days": "",
         "user_access_expiration_reminder_cc": "",
         "user_access_expiration_buffer_days": "",
@@ -431,6 +454,15 @@ class CalendarCustomization(CustomizationBase):
         "change_reservation_confirmation": "",
         "reservation_confirmation_date_format": "MMMM D, yyyy",
         "reservation_confirmation_time_format": "h:mma",
+        "calendar_color_tool_usage_default": "#33ad33",
+        "calendar_color_area_access_default": "#88b7cd",
+        "calendar_color_tool_reservation_default": "#88b7cd",
+        "calendar_color_area_reservation_default": "#88b7cd",
+        "calendar_color_tool_personal_schedule": "#33ad33",
+        "calendar_color_area_personal_schedule": "#84cd84",
+        "calendar_color_tool_missed_reservation": "#ff0000",
+        "calendar_color_area_missed_reservation": "#ff6666",
+        "calendar_color_outage": "#ff0000",
     }
 
     def validate(self, name, value):
@@ -572,6 +604,7 @@ class AdjustmentRequestsCustomization(CustomizationBase):
         "adjustment_requests_waive_area_access_enabled": "",
         "adjustment_requests_waive_consumable_withdrawal_enabled": "",
         "adjustment_requests_waive_missed_reservation_enabled": "",
+        "adjustment_requests_waive_staff_charge_enabled": "",
         "adjustment_requests_title": "Adjustment requests",
         "adjustment_requests_description": "",
         "adjustment_requests_charges_display_number": "10",
@@ -706,10 +739,13 @@ class ToolCustomization(CustomizationBase):
         "tool_task_updates_facility_managers": "enabled",
         "tool_task_updates_superusers": "",
         "tool_task_updates_allow_regular_user_preferences": "",
+        "tool_comments_hide_for_non_staff": "",
+        "tool_problem_hide_for_non_staff": "",
         "tool_problem_max_image_size_pixels": "750",
         "tool_problem_send_to_all_qualified_users": "",
         "tool_problem_allow_regular_user_preferences": "",
         "tool_problem_safety_hazard_automatic_shutdown": "",
+        "tool_problem_title_enabled": "enabled",
         "tool_configuration_setting_template": "{{ current_setting }}",
         "tool_configuration_near_future_days": "1",
         "tool_configuration_change_while_in_use": "",
@@ -752,6 +788,7 @@ class ToolControlCustomization(CustomizationBase):
         "tool_control_show_tool_credentials": "enabled",
         "tool_control_show_next_reservation_user": "",
         "tool_control_prefill_post_usage_with_pre_usage_answers": "",
+        "tool_control_prefill_pre_usage_with_reservation_answers": "",
         "tool_control_use_self_label": "Use this tool for my own project",
         "tool_control_use_for_other_enabled": "",
         "tool_control_use_for_other_label": "Use this tool on behalf of another user",

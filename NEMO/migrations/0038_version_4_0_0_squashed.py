@@ -12,7 +12,6 @@ from django.db.models import F, Q
 import NEMO.utilities
 from NEMO.migrations_utils import news_for_version_forward, news_for_version_reverse
 
-
 # Functions from the following migrations need manual copying.
 # Move them and any dependencies into this file, then update the
 # RunPython operations to refer to the local versions:

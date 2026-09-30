@@ -2,6 +2,7 @@ from django.contrib.auth.models import Permission
 from django.test import TestCase
 from django.urls import reverse
 
+from NEMO.models import User
 from NEMO.tests.test_utilities import NEMOTestCaseMixin, create_user_and_project
 from NEMO.views.customization import UserCustomization
 
@@ -10,19 +11,25 @@ class UserTestCase(NEMOTestCaseMixin, TestCase):
 
     def test_view_user_profile(self):
         customer, customer_project = create_user_and_project()
+        other_customer = User.objects.create(
+            username="jsmith", first_name="John", last_name="Smith", training_required=False
+        )
         self.login_as(customer)
         # Cannot see one's profile if the feature is disabled
         UserCustomization.set("user_allow_profile_view", "")
-        response = self.client.get(reverse("view_user", args=[customer.id]))
+        response = self.client.get(reverse("user_profile"))
         self.assertEqual(response.status_code, 400)
         # Now it should work
         UserCustomization.set("user_allow_profile_view", "enabled")
-        response = self.client.get(reverse("view_user", args=[customer.id]))
+        response = self.client.get(reverse("user_profile"))
         self.assertEqual(response.status_code, 200)
-        # Cannot see someone else's profile even as staff
+        # Cannot see someone else's user page
+        response = self.client.get(reverse("view_user", args=[other_customer.id]), follow=True)
+        self.assert_response_is_landing_page(response)
+        # Except if staff
         self.login_as_staff()
-        response = self.client.get(reverse("view_user", args=[customer.id]))
-        self.assertEqual(response.status_code, 400)
+        response = self.client.get(reverse("view_user", args=[other_customer.id]))
+        self.assertEqual(response.status_code, 200)
 
     def test_impersonate_user(self):
         admin = create_user_and_project(is_staff=True)[0]

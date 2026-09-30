@@ -34,7 +34,7 @@
                         {% for r in reservations %}
                             <tr>
                                 <td>{{ r.reservation_item }}</td>
-                                <td>{{ r.project }}</td>
+                                <td>{{ r.project.get_display }}</td>
                                 <td>{{ r.start }}</td>
                                 <td>{{ r.end }}</td>
                             </tr>
@@ -65,7 +65,7 @@
                         {% for t in tool_usage %}
                             <tr>
                                 <td>{{ t.tool }}</td>
-                                <td>{{ t.project }}</td>
+                                <td>{{ t.project.get_display }}</td>
                                 <td>{{ t.start }}</td>
                             </tr>
                         {% endfor %}
@@ -90,12 +90,12 @@
             <h2>Staff charges</h2>
             <div class="form-group">
                 {% for s in staff_charges %}
-                    {{ s.staff_member }} is working on the project named &quot;{{ s.project }}&quot; for {{ s.customer }} since {{ s.start }}.
+                    {{ s.staff_member }} is working on the project named &quot;{{ s.project.get_display }}&quot; for {{ s.customer }} since {{ s.start }}.
                     <br>
                 {% endfor %}
                 {% if user_to_deactivate.charging_staff_time %}
                     {% with user_to_deactivate.get_staff_charge as s %}
-                        {{ s.staff_member }} is working on the project named &quot;{{ s.project }}&quot; for {{ s.customer }} since {{ s.start }}.
+                        {{ s.staff_member }} is working on the project named &quot;{{ s.project.get_display }}&quot; for {{ s.customer }} since {{ s.start }}.
                         <br>
                     {% endwith %}
                 {% endif %}

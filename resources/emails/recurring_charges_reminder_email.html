@@ -25,7 +25,7 @@
                             <li>
                                 {{ charge.name }} (
                                 {% if charge.quantity != 1 %}{{ charge.quantity }}x{% endif %}
-                                {{ charge.consumable }}) - to be charged to project "{{ charge.project }}"
+                                {{ charge.consumable }}) - to be charged to project "{{ charge.project.get_display }}"
                             </li>
                         {% endfor %}
                     </ul>

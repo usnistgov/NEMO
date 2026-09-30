@@ -32,7 +32,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
 from django.db import OperationalError, ProgrammingError
 from django.db.models import FileField, IntegerChoices, Model, QuerySet
-from django.http import HttpRequest, HttpResponse, QueryDict
+from django.http import Http404, HttpRequest, HttpResponse, QueryDict
 from django.shortcuts import resolve_url
 from django.template import Template
 from django.template.context import make_context
@@ -437,7 +437,7 @@ def extract_times(
 
     try:
         new_start = float(start)
-        new_start = datetime.utcfromtimestamp(new_start)
+        new_start = datetime.fromtimestamp(new_start, timezone.utc).replace(tzinfo=None)
         new_start = localize(new_start).replace(microsecond=0)
         if beginning_and_end:
             new_start = beginning_of_the_day(new_start)
@@ -447,7 +447,7 @@ def extract_times(
 
     try:
         new_end = float(end)
-        new_end = datetime.utcfromtimestamp(new_end)
+        new_end = datetime.fromtimestamp(new_end, timezone.utc).replace(tzinfo=None)
         new_end = localize(new_end).replace(microsecond=0)
         if beginning_and_end:
             new_end = end_of_the_day(new_end)
@@ -764,6 +764,7 @@ def resize_image(image: InMemoryUploadedFile, max_size: int, quality=85) -> InMe
         width, height = img.size
         # no need to resize if width or height is already less than the max
         if width <= max_size or height <= max_size:
+            image.seek(0)
             return image
         if width > height:
             width_ratio = max_size / float(width)
@@ -936,7 +937,7 @@ def create_ics(
     method_name = "CANCEL" if cancelled else "REQUEST"
     sequence = "SEQUENCE:2\n" if cancelled else "SEQUENCE:0\n"
     priority = "PRIORITY:5\n" if cancelled else "PRIORITY:0\n"
-    now = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     start = start.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     end = end.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     lines = [
@@ -1323,3 +1324,10 @@ def set_default_session_variable(
     if session_variable_name in request.session:
         variable_value = request.session[session_variable_name]
     return variable_value
+
+
+def get_object_or_404_from_queryset(queryset: QuerySetType[Any]) -> Optional[Any]:
+    instance = queryset.first()
+    if instance is None:
+        raise Http404("No %s matches the given query." % queryset.model._meta.object_name)
+    return instance

@@ -11,23 +11,29 @@
                     <a href="#details" style="padding: 10px 5px">Details</a>
                 </li>
                 {% if not user.training_required %}
-                    {% if tool.configuration_set.exists %}
-                        <li style="width:48%; text-align:center">
-                            <a href="#config" style="padding: 10px 5px" onclick="load_config_history('{{ tool.id }}');">Config
-                            History</a>
-                        </li>
+                    {% if user.is_superuser or not perms.NEMO.block_enable_tools %}
+                        {% if tool.configuration_set.exists %}
+                            <li style="width:48%; text-align:center">
+                                <a href="#config" style="padding: 10px 5px" onclick="load_config_history('{{ tool.id }}');">Config
+                                History</a>
+                            </li>
+                        {% endif %}
+                        {% if not hide_data_history or user.is_any_part_of_staff %}
+                            <li style="width: 48%; text-align: center">
+                                <a href="#usage_data" style="padding: 10px 5px;" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a>
+                            </li>
+                        {% endif %}
+                        {% if not customizations|get_item:"tool_problem_hide_for_non_staff" == "enabled" or user.is_any_part_of_staff %}
+                            <li style="width:48%; text-align:center">
+                                <a href="#problem" style="padding: 10px 5px">Report a problem</a>
+                            </li>
+                        {% endif %}
+                        {% if not customizations|get_item:"tool_comments_hide_for_non_staff" == "enabled" or user.is_any_part_of_staff %}
+                            <li style="width:48%; text-align:center">
+                                <a href="#comment" style="padding: 10px 5px">Post a comment</a>
+                            </li>
+                        {% endif %}
                     {% endif %}
-                    {% if not hide_data_history or user.is_any_part_of_staff %}
-                        <li style="width: 48%; text-align: center">
-                            <a href="#usage_data" style="padding: 10px 5px;" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a>
-                        </li>
-                    {% endif %}
-                    <li style="width:48%; text-align:center">
-                        <a href="#problem" style="padding: 10px 5px">Report a problem</a>
-                    </li>
-                    <li style="width:48%; text-align:center">
-                        <a href="#comment" style="padding: 10px 5px">Post a comment</a>
-                    </li>
                 {% endif %}
                 {% if documents_separate_tab == "enabled" and tool.tooldocuments_set.all and user_can_see_documents %}
                     <li style="width:48%; text-align:center">
@@ -47,22 +53,28 @@
                     <a href="#details">Details</a>
                 </li>
                 {% if not user.training_required %}
-                    {% if tool.configuration_set.exists %}
-                        <li>
-                            <a href="#config" onclick="load_config_history('{{ tool.id }}');">Config History</a>
-                        </li>
+                    {% if user.is_superuser or not perms.NEMO.block_enable_tools %}
+                        {% if tool.configuration_set.exists %}
+                            <li>
+                                <a href="#config" onclick="load_config_history('{{ tool.id }}');">Config History</a>
+                            </li>
+                        {% endif %}
+                        {% if not hide_data_history or user.is_any_part_of_staff %}
+                            <li>
+                                <a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Run Data History</a>
+                            </li>
+                        {% endif %}
+                        {% if not customizations|get_item:"tool_problem_hide_for_non_staff" == "enabled" or user.is_any_part_of_staff %}
+                            <li>
+                                <a href="#problem">Report a problem</a>
+                            </li>
+                        {% endif %}
+                        {% if not customizations|get_item:"tool_comments_hide_for_non_staff" == "enabled" or user.is_any_part_of_staff %}
+                            <li>
+                                <a href="#comment">Post a comment</a>
+                            </li>
+                        {% endif %}
                     {% endif %}
-                    {% if not hide_data_history or user.is_any_part_of_staff %}
-                        <li>
-                            <a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Run Data History</a>
-                        </li>
-                    {% endif %}
-                    <li>
-                        <a href="#problem">Report a problem</a>
-                    </li>
-                    <li>
-                        <a href="#comment">Post a comment</a>
-                    </li>
                 {% endif %}
                 {% if documents_separate_tab == "enabled" and tool.tooldocuments_set.all and user_can_see_documents %}
                     <li>
@@ -92,7 +104,10 @@
                             {% if current_usage_event.operator_id != current_usage_event.user_id %}
                                 on behalf of {{ current_usage_event.user }}
                             {% endif %}
-                            for the project named {{ current_usage_event.project.name }} since {{ current_usage_event.start|date:"MONTH_DAY_FORMAT" }} @ {{ current_usage_event.start|time }}  (#{{ current_usage_event.id }}).
+                            {% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == current_usage_event.user %}
+                                for the project named {{ current_usage_event.project.get_display }}
+                            {% endif %}
+                            since {{ current_usage_event.start|date:"MONTH_DAY_FORMAT" }} @ {{ current_usage_event.start|time }} (#{{ current_usage_event.id }}).
                         </h2>
                     {% endwith %}
                 </div>
@@ -281,11 +296,14 @@
                         </a>
                         <div class="media-body">
                             {% if t.problem_category %}<span class="media-heading">{{ t.problem_category }}</span>{% endif %}
-                            <span class="media-middle">{{ t.problem_description }}</span>
+                            <span class="media-middle">{{ t.title_or_description }}</span>
                             {% if t.estimated_resolution_time %}
                                 <span class="media-middle">Estimated resolution time is {{ t.estimated_resolution_time }}.</span>
                             {% endif %}
                             <div id="task_{{ t.id }}_details" class="collapse{% if tool_control_show_task_details %} in{% endif %}">
+                                {% if t.title and customizations|get_item:"tool_problem_title_enabled" == "enabled" %}
+                                    <span class="media-middle">{{ t.problem_description|linebreaksbr }}</span>
+                                {% endif %}
                                 <span class="media-bottom">
                                     This task was created by {{ t.creator }} on {{ t.creation_time }}.
                                     {% if user|is_staff_on_tool:tool %}
@@ -529,7 +547,7 @@
                                                        class="strikethrough light-grey"
                                                        data-toggle="tooltip"
                                                        data-placement="right"
-                                                       title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.">
+                                                       title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project.get_display }} since {{ staff_charge.start }}.">
                                                     <input type="radio" disabled>
                                                     <span>
                                                         {{ customizations|get_item:"tool_control_use_for_other_staff_charge_label"|safe }}
@@ -565,7 +583,7 @@
                                                        class="strikethrough light-grey"
                                                        data-toggle="tooltip"
                                                        data-placement="right"
-                                                       title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.">
+                                                       title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project.get_display }} since {{ staff_charge.start }}.">
                                                     <input type="radio" disabled>
                                                     <span>
                                                         {{ customizations|get_item:"tool_control_use_for_other_remote_staff_charge_label"|safe }}
@@ -990,6 +1008,16 @@
                                                class="form-control">
                                     </div>
                                 </div>
+                                {% if user|is_staff_on_tool:tool %}
+                                    <div class="form-group">
+                                        <label for="comments_to_show">Comments to show:</label>
+                                        <select id="comments_to_show" name="comments_to_show" class="form-control">
+                                            <option value="all">All</option>
+                                            <option value="non_staff_only">Non-staff only</option>
+                                            <option value="staff_only">Staff only</option>
+                                        </select>
+                                    </div>
+                                {% endif %}
                                 <div class="form-group" style="margin-bottom:0">
                                     <div class="col-sm-6" style="padding-left: 0">
                                         {% button type="save" submit=False value="Go" icon="glyphicon-search" onclick="load_tasks_and_comments();" %}
@@ -1049,6 +1077,14 @@
                         <option value="">&nbsp;</option>
                         {% for s in task_statuses %}<option>{{ s.name }}</option>{% endfor %}
                     </select>
+                </div>
+            {% endif %}
+            {% if customizations|get_item:"tool_problem_title_enabled" == "enabled" %}
+                <div class="form-group">
+                    <label for="title">
+                        Optionally, give the problem a short title. If provided, this is what will be shown in lists instead of the full description below.
+                    </label>
+                    <input id="title" name="title" type="text" class="form-control" maxlength="1024">
                 </div>
             {% endif %}
             <div class="form-group">

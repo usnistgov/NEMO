@@ -4,7 +4,7 @@
     <br>
     A user must be a member of at least one active project to operate a tool.
 {% elif active_projects|length == 1 %}
-    <h4>Tool usage will be billed to the project named &quot;{{ active_projects.0 }}&quot;.</h4>
+    <h4>Tool usage will be billed to the project named &quot;{{ active_projects.0.get_display }}&quot;.</h4>
     <input type="hidden" id="project_id" value="{{ active_projects.0.id }}">
     <script>
         load_pre_usage_questions("{{ tool_id }}", "{{ customer_id }}", "{{ active_projects.0.id }}");
@@ -15,7 +15,8 @@
     <div class="list-group" style="display:table">
         {% for p in active_projects %}
             <a href="javascript:void(0)"
-               class="list-group-item project-choice"
+               class="list-group-item project-choice {% if reservation_project == p %}alert alert-success{% endif %}"
+               {% if reservation_project == p %}title="This is the project from your current reservation"{% endif %}
                onclick="select_project(this, '{{ p.id }}', '{{ customer_id }}', '{{ tool_id }}')">{% project_selection_display p %}</a>
         {% endfor %}
     </div>

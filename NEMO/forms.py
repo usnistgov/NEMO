@@ -59,7 +59,7 @@ from NEMO.utilities import (
     new_model_copy,
     quiet_int,
 )
-from NEMO.views.customization import UserRequestsCustomization
+from NEMO.views.customization import ToolCustomization, UserRequestsCustomization
 
 
 class UserForm(ModelForm):
@@ -80,6 +80,7 @@ class UserForm(ModelForm):
             "managed_accounts",
             "managed_users",
             "preferences",
+            "qualifications",
         ]
 
 
@@ -154,13 +155,21 @@ class TaskForm(ModelForm):
 
     class Meta:
         model = Task
-        fields = ["tool", "urgency", "estimated_resolution_time", "force_shutdown", "safety_hazard", "lock"]
+        fields = ["tool", "title", "urgency", "estimated_resolution_time", "force_shutdown", "safety_hazard", "lock"]
 
     def __init__(self, user, *args, **kwargs):
         super(TaskForm, self).__init__(*args, **kwargs)
         self.user = user
         self.fields["tool"].required = False
         self.fields["urgency"].required = False
+        self.fields["title"].required = False
+
+    def clean_title(self):
+        if not ToolCustomization.get_bool("tool_problem_title_enabled"):
+            # Task titles are disabled; ignore any submitted value and preserve whatever was already set
+            return self.instance.title
+        title = self.cleaned_data["title"]
+        return title.strip() or None if title else None
 
     def clean_description(self):
         return self.cleaned_data["description"].strip()
@@ -615,7 +624,7 @@ def save_scheduled_outage(
 
     # If there is a policy problem for the outage then return the error...
     if check_policy:
-        response = policy.check_to_create_outage(outage)
+        response = policy.check_to_create_outage(creator, outage)
         if response.status_code != 200:
             return response
 

@@ -48,8 +48,12 @@ def apply_oracledb_patches():
 
 
 def init_admin_site():
-    from NEMO.views.customization import ApplicationCustomization, ProjectsAccountsCustomization
-    from NEMO.admin import ProjectAdmin
+    from NEMO.views.customization import (
+        ApplicationCustomization,
+        ProjectsAccountsCustomization,
+        CoreFacilityCustomization,
+    )
+    from NEMO.admin import ProjectAdmin, CoreFacilityAdmin
     from django.contrib import admin
 
     # customize the site
@@ -58,9 +62,12 @@ def init_admin_site():
     admin.site.site_header = site_title
     admin.site.site_title = site_title
     admin.site.index_title = "Detailed administration"
-    # update the short_description for project's application identifier here after initialization
+    # update the short_description for project's application identifier and core facility's external identifier here after initialization
     ProjectAdmin.get_application_identifier.short_description = ProjectsAccountsCustomization.get(
         "project_application_identifier_name", raise_exception=False
+    )
+    CoreFacilityAdmin.get_external_id.short_description = CoreFacilityCustomization.get(
+        "core_facility_external_id_name", raise_exception=False
     )
 
 

@@ -122,7 +122,7 @@ class ProjectChargeException(NEMOException):
 
 class NotAllowedToChargeProjectException(ProjectChargeException):
     def __init__(self, project, user, msg=None):
-        new_msg = f"Permission to bill project {project.name} was denied."
+        new_msg = f"Permission to bill project {project.get_display()} was denied."
         super().__init__(project, user, msg or new_msg)
 
 

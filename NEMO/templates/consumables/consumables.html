@@ -38,10 +38,10 @@
                         {% if projects|length == 0 %}
                             <option></option>
                         {% elif projects|length == 1 %}
-                            <option value="{{ projects.0.id }}">{{ projects.0 }}</option>
+                            <option value="{{ projects.0.id }}">{{ projects.0.get_display }}</option>
                         {% elif projects %}
                             <option disabled selected value="">Choose a project to bill</option>
-                            {% for p in projects %}<option value="{{ p.id }}">{{ p }}</option>{% endfor %}
+                            {% for p in projects %}<option value="{{ p.id }}">{{ p.get_display }}</option>{% endfor %}
                         {% endif %}
                     </select>
                 </div>

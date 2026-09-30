@@ -35,6 +35,7 @@ from NEMO.models import (
     Consumable,
     ConsumableCategory,
     ConsumableWithdraw,
+    CoreFacility,
     Customization,
     Interlock,
     InterlockCard,
@@ -58,6 +59,7 @@ from NEMO.models import (
     TemporaryPhysicalAccessRequest,
     Tool,
     ToolCredentials,
+    ToolQualificationGroup,
     ToolUsageCounter,
     ToolUsageQuestions,
     TrainingSession,
@@ -67,6 +69,7 @@ from NEMO.models import (
     UserCalendarToolList,
     UserDocuments,
     UserPreferences,
+    UserType,
 )
 
 
@@ -164,6 +167,18 @@ class AlertSerializer(FlexFieldsSerializerMixin, ModelSerializer):
         }
 
 
+class CoreFacilitySerializer(ModelSerializer):
+    class Meta:
+        model = CoreFacility
+        fields = "__all__"
+
+
+class UserTypeSerializer(ModelSerializer):
+    class Meta:
+        model = UserType
+        fields = "__all__"
+
+
 class UserSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     user_documents = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
@@ -178,6 +193,7 @@ class UserSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "groups": ("NEMO.serializers.GroupSerializer", {"many": True}),
             "user_documents": ("NEMO.serializers.UserDocumentSerializer", {"many": True}),
             "user_permissions": ("NEMO.serializers.PermissionSerializer", {"many": True}),
+            "type": ("NEMO.serializers.UserTypeSerializer",),
         }
 
     def to_internal_value(self, data):
@@ -278,6 +294,16 @@ class QualificationSerializer(FlexFieldsSerializerMixin, ModelSerializer):
         }
 
 
+class ToolQualificationGroupSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = ToolQualificationGroup
+        fields = "__all__"
+        expandable_fields = {
+            "tools": ("NEMO.serializers.ToolSerializer", {"many": True}),
+            "training_charge_tool": ("NEMO.serializers.ToolSerializer",),
+        }
+
+
 class ToolSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     class Meta:
         model = Tool
@@ -289,6 +315,7 @@ class ToolSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "_superusers": ("NEMO.serializers.UserSerializer", {"many": True}),
             "_requires_area_access": "NEMO.serializers.AreaSerializer",
             "project": "NEMO.serializers.ProjectSerializer",
+            "core_facility": "NEMO.serializers.CoreFacilitySerializer",
         }
 
 
@@ -296,7 +323,10 @@ class AreaSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     class Meta:
         model = Area
         fields = "__all__"
-        expandable_fields = {"parent_area": "NEMO.serializers.AreaSerializer"}
+        expandable_fields = {
+            "parent_area": "NEMO.serializers.AreaSerializer",
+            "core_facility": "NEMO.serializers.CoreFacilitySerializer",
+        }
 
 
 class ConfigurationOptionSerializer(FlexFieldsSerializerMixin, ModelSerializer):
@@ -445,6 +475,7 @@ class StaffChargeSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "project": "NEMO.serializers.ProjectSerializer",
             "validated_by": "NEMO.serializers.UserSerializer",
             "waived_by": "NEMO.serializers.UserSerializer",
+            "core_facility": "NEMO.serializers.CoreFacilitySerializer",
         }
 
 
@@ -478,6 +509,7 @@ class ConsumableSerializer(FlexFieldsSerializerMixin, ModelSerializer):
         fields = "__all__"
         expandable_fields = {
             "category": "NEMO.serializers.ConsumableCategorySerializer",
+            "core_facility": "NEMO.serializers.CoreFacilitySerializer",
         }
 
 
@@ -692,12 +724,14 @@ class BillableItemSerializer(serializers.Serializer):
     project = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
     project_id = IntegerField(read_only=True)
     application = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
+    core_facility = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
+    core_facility_id = IntegerField(read_only=True)
     user = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
     username = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
     user_id = IntegerField(read_only=True)
     start = DateTimeField(read_only=True)
     end = DateTimeField(read_only=True)
-    quantity = DecimalField(read_only=True, decimal_places=2, max_digits=8)
+    quantity = DecimalField(read_only=True, decimal_places=2, max_digits=14)
     validated = BooleanField(read_only=True)
     validated_by = CharField(read_only=True, source="validated_by.username", allow_null=True)
     waived = BooleanField(read_only=True)

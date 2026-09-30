@@ -190,6 +190,19 @@
 				countdown --;
 			}, 1000);
 		}
+		{# Revert but resets on any input on the given container #}
+		function revert_on_input(delay, container, callback)
+		{
+			revert(delay, callback);
+			{# delegated + namespaced, so it also covers inputs added later and is safe to call again #}
+			$(container).off(".revert_on_input").on(
+				"input.revert_on_input change.revert_on_input keyboardChange.revert_on_input",
+				":input",
+				function()
+				{
+					revert(delay, callback);
+				});
+		}
 		function revert_to_default_content()
 		{
 			if (occupancy) fetch_occupancy();

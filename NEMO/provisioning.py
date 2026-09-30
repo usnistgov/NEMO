@@ -252,9 +252,7 @@ def install_systemd_service():
 
 	[Install]
 	WantedBy=multi-user.target
-	""".format(
-        **customizations
-    )
+	""".format(**customizations)
 
     with open("/etc/systemd/system/nemo.service", "w") as f:
         f.write(dedent(service))

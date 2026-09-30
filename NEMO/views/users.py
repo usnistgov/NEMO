@@ -1,11 +1,7 @@
 from datetime import timedelta
-from http import HTTPStatus
 from logging import getLogger
-from urllib.parse import urljoin
-
-import requests
-from django.conf import settings
 from django.contrib import messages
+from django.contrib.admin import ModelAdmin
 from django.contrib.auth.decorators import login_required
 from django.db.models import Max
 from django.http import Http404, HttpResponseBadRequest
@@ -19,9 +15,11 @@ from NEMO.models import (
     ActivityHistory,
     Area,
     AreaAccessRecord,
+    OnboardingPhase,
     PhysicalAccessLevel,
     Project,
     Reservation,
+    SafetyTraining,
     StaffCharge,
     Tool,
     UsageEvent,
@@ -31,10 +29,12 @@ from NEMO.models import (
     record_active_state,
     record_local_many_to_many_changes,
 )
+from NEMO.identity_service import identity_service
 from NEMO.utilities import queryset_search_filter
 from NEMO.views.customization import ApplicationCustomization, StatusDashboardCustomization, UserCustomization
 from NEMO.views.pagination import SortedPaginator
 from NEMO.views.status_dashboard import show_staff_status
+from NEMO.policy import policy_class as policy
 
 users_logger = getLogger(__name__)
 
@@ -46,9 +46,22 @@ def users(request):
     only_active = UserCustomization.get_bool("user_list_active_only")
     if only_active:
         user_list = user_list.filter(is_active=True)
+    users_query = request.GET.get("users_query")
+    if users_query:
+        admin_model = ModelAdmin(user_list.model, None)
+        admin_model.search_fields = ["first_name", "last_name", "username"]
+        user_list, search_use_distinct = admin_model.get_search_results(None, user_list, users_query)
+        if search_use_distinct:
+            user_list = user_list.distinct()
     page = SortedPaginator(user_list, request, order_by="last_name").get_current_page()
 
-    dictionary = {"page": page, "user_types": UserType.objects.all(), "readonly": readonly_users(request)}
+    dictionary = {
+        "page": page,
+        "extra_params": f"users_query={users_query}" if users_query else "",
+        "users_query": users_query,
+        "user_types": UserType.objects.all(),
+        "readonly": readonly_users(request),
+    }
 
     return render(request, "users/users.html", dictionary)
 
@@ -62,7 +75,6 @@ def user_search(request):
 @any_staff_required
 @require_http_methods(["GET", "POST"])
 def create_or_modify_user(request, user_id):
-    identity_service = get_identity_service()
     # Get access levels and sort by area category
     access_levels = list(PhysicalAccessLevel.objects.all().only("name", "area"))
     access_level_for_sort = list(
@@ -81,8 +93,8 @@ def create_or_modify_user(request, user_id):
         "area_access_dict": dict_area,
         "area_access_levels": area_access_levels,
         "one_year_from_now": timezone.localdate() + timedelta(days=365),
-        "identity_service_available": identity_service.get("available", False),
-        "identity_service_domains": identity_service.get("domains", []),
+        "identity_service_available": identity_service.available,
+        "identity_service_domains": identity_service.domains,
         "allow_document_upload": UserCustomization.get_bool("user_allow_document_upload"),
         "readonly": readonly,
     }
@@ -96,26 +108,15 @@ def create_or_modify_user(request, user_id):
     last_access = AreaAccessRecord.objects.filter(customer=user).values("area_id").annotate(max_date=Max("start"))
     dictionary["last_access"] = {item["area_id"]: item["max_date"] for item in last_access}
 
-    timeout = identity_service.get("timeout", 3)
     site_title = ApplicationCustomization.get("site_title")
-    if dictionary["identity_service_available"]:
-        try:
-            result = requests.get(urljoin(identity_service["url"], "/areas/"), timeout=timeout)
-            if result.status_code == HTTPStatus.OK:
-                dictionary["externally_managed_physical_access_levels"] = result.json()
-            else:
-                dictionary["identity_service_available"] = False
-                warning_message = f"The identity service encountered a problem while attempting to return a list of externally managed areas. The administrator has been notified to resolve the problem."
-                dictionary["warning"] = warning_message
-                warning_message += " The HTTP error was {}: {}".format(result.status_code, result.text)
-                users_logger.error(warning_message)
-        except Exception as e:
-            dictionary["identity_service_available"] = False
-            warning_message = f"There was a problem communicating with the identity service. {site_title} is unable to retrieve the list of externally managed areas. The administrator has been notified to resolve the problem."
-            dictionary["warning"] = warning_message
-            warning_message += " An exception was encountered: " + type(e).__name__ + " - " + str(e)
-            users_logger.error(warning_message)
-    elif identity_service:
+    if identity_service.available:
+        data, error = identity_service.get_externally_managed_areas()
+        if data is not None:
+            dictionary["externally_managed_physical_access_levels"] = data
+        if error:
+            dictionary["warning"] = error
+        dictionary["identity_service_available"] = False
+    elif identity_service.config:
         # display warning if identity service is defined but disabled
         dictionary["warning"] = (
             "The identity service is disabled. You will not be able to modify externally managed physical access levels, reset account passwords, or unlock accounts."
@@ -140,33 +141,14 @@ def create_or_modify_user(request, user_id):
             }
 
         dictionary["form"] = UserForm(instance=user, initial=initial_data)
-        try:
-            if dictionary["identity_service_available"] and user and user.is_active and user.domain:
-                parameters = {
-                    "username": user.username,
-                    "domain": user.domain,
-                }
-                result = requests.get(identity_service["url"], parameters, timeout=timeout)
-                if result.status_code == HTTPStatus.OK:
-                    dictionary["user_identity_information"] = result.json()
-                elif result.status_code == HTTPStatus.NOT_FOUND:
-                    dictionary["warning"] = (
-                        "The identity service could not find username {} on the {} domain. Does the user's account reside on a different domain? If so, select that domain now and save the user information.".format(
-                            user.username, user.domain
-                        )
-                    )
-                else:
+        if dictionary["identity_service_available"] and user and user.is_active and user.domain:
+            data, error = identity_service.get_user_identity_information(user.username, user.domain)
+            if data is not None:
+                dictionary["user_identity_information"] = data
+            if error:
+                dictionary["warning"] = error
+                if data is None:
                     dictionary["identity_service_available"] = False
-                    warning_message = "The identity service encountered a problem while attempting to search for a user. The administrator has been notified to resolve the problem."
-                    dictionary["warning"] = warning_message
-                    warning_message += " The HTTP error was {}: {}".format(result.status_code, result.text)
-                    users_logger.error(warning_message)
-        except Exception as e:
-            dictionary["identity_service_available"] = False
-            warning_message = f"There was a problem communicating with the identity service. {site_title} is unable to search for a user. The administrator has been notified to resolve the problem."
-            dictionary["warning"] = warning_message
-            warning_message += " An exception was encountered: " + type(e).__name__ + " - " + str(e)
-            users_logger.error(warning_message)
         return render(request, "users/create_or_modify_user.html", dictionary)
     elif request.method == "POST":
         form = UserForm(request.POST, instance=user)
@@ -182,82 +164,50 @@ def create_or_modify_user(request, user_id):
             domain_switched = form.initial["domain"] != "" and form.initial["domain"] != form.cleaned_data["domain"]
             username_changed = form.initial["username"] != form.cleaned_data["username"]
             if no_longer_active or domain_switched or username_changed:
-                parameters = {
-                    "username": form.initial["username"],
-                    "domain": form.initial["domain"],
-                }
-                try:
-                    result = requests.delete(identity_service["url"], data=parameters, timeout=timeout)
-                    # If the delete succeeds, or the user is not found, then everything is ok.
-                    if result.status_code not in (HTTPStatus.OK, HTTPStatus.NOT_FOUND):
-                        dictionary["identity_service_available"] = False
-                        users_logger.error(
-                            "The identity service encountered a problem while attempting to delete a user. The HTTP error is {}: {}".format(
-                                result.status_code, result.text
-                            )
-                        )
-                        dictionary["warning"] = (
-                            "The user information was not modified because the identity service could not delete the corresponding domain account. The administrator has been notified to resolve the problem."
-                        )
-                        return render(request, "users/create_or_modify_user.html", dictionary)
-                except Exception as e:
+                data, error = identity_service.delete_user(form.initial["username"], form.initial["domain"])
+                if error:
+                    dictionary["warning"] = error
                     dictionary["identity_service_available"] = False
-                    users_logger.error(
-                        "There was a problem communicating with the identity service while attempting to delete a user. An exception was encountered: "
-                        + type(e).__name__
-                        + " - "
-                        + str(e)
-                    )
-                    dictionary["warning"] = (
-                        "The user information was not modified because the identity service could not delete the corresponding domain account. The administrator has been notified to resolve the problem."
-                    )
                     return render(request, "users/create_or_modify_user.html", dictionary)
 
         # Ensure the user account is added and configured correctly on the current domain if the user is active...
         if dictionary["identity_service_available"] and form.cleaned_data["is_active"]:
-            parameters = {
-                "username": form.cleaned_data["username"],
-                "domain": form.cleaned_data["domain"],
-                "badge_number": form.cleaned_data.get("badge_number", ""),
-                "email": form.cleaned_data.get("email"),
-                "access_expiration": form.cleaned_data.get("access_expiration"),
-                "requested_areas": request.POST.getlist("externally_managed_access_levels"),
-            }
-            try:
-                if len(parameters["requested_areas"]) > 0 and not parameters["badge_number"]:
-                    dictionary["warning"] = (
-                        "A user must have a badge number in order to have area access. Please enter the badge number first, then grant access to areas."
-                    )
-                    return render(request, "users/create_or_modify_user.html", dictionary)
-                result = requests.put(identity_service["url"], data=parameters, timeout=timeout)
-                if result.status_code == HTTPStatus.NOT_FOUND:
-                    dictionary["warning"] = (
-                        "The username was not found on this domain. Did you spell the username correctly in this form and did you select the correct domain? Ensure the user exists on the domain in order to proceed."
-                    )
-                    return render(request, "users/create_or_modify_user.html", dictionary)
-                if result.status_code != HTTPStatus.OK:
-                    dictionary["identity_service_available"] = False
-                    users_logger.error(
-                        "The identity service encountered a problem while attempting to modify a user. The HTTP error is {}: {}".format(
-                            result.status_code, result.text
-                        )
-                    )
-                    dictionary["warning"] = (
-                        "The user information was not modified because the identity service encountered a problem while creating the corresponding domain account. The administrator has been notified to resolve the problem."
-                    )
-                    return render(request, "users/create_or_modify_user.html", dictionary)
-            except Exception as e:
-                dictionary["identity_service_available"] = False
-                users_logger.error(
-                    "There was a problem communicating with the identity service while attempting to modify a user. An exception was encountered: "
-                    + type(e).__name__
-                    + " - "
-                    + str(e)
-                )
+            badge_number = form.cleaned_data.get("badge_number", "")
+            email = form.cleaned_data.get("email")
+            access_expiration = form.cleaned_data.get("access_expiration")
+            requested_areas = request.POST.getlist("externally_managed_access_levels")
+            if len(requested_areas) > 0 and not badge_number:
                 dictionary["warning"] = (
-                    "The user information was not modified because the identity service encountered a problem while creating the corresponding domain account. The administrator has been notified to resolve the problem."
+                    "A user must have a badge number in order to have area access. Please enter the badge number first, then grant access to areas."
                 )
                 return render(request, "users/create_or_modify_user.html", dictionary)
+            data, error = identity_service.update_user(
+                form.cleaned_data["username"],
+                form.cleaned_data["domain"],
+                badge_number=badge_number,
+                email=email,
+                access_expiration=access_expiration,
+                requested_areas=requested_areas,
+            )
+            if error:
+                dictionary["warning"] = error
+                if data is None:
+                    dictionary["identity_service_available"] = False
+                return render(request, "users/create_or_modify_user.html", dictionary)
+
+        tools = Tool.objects.filter(id__in=request.POST.getlist("qualifications", []))
+
+        policy_errors = []
+        policy_errors.extend(policy.check_qualifying_user_on_tools(user, tools))
+        policy_errors.extend(
+            policy.check_adding_physical_access_levels_to_user(
+                user, form.cleaned_data.get("physical_access_levels", [])
+            )
+        )
+        if policy_errors:
+            for error_str in policy_errors:
+                form.add_error(field=None, error=error_str)
+            return render(request, "users/create_or_modify_user.html", dictionary)
 
         # Only save the user model for now, and wait to process the many-to-many relationships.
         # This way, many-to-many changes can be recorded.
@@ -273,7 +223,8 @@ def create_or_modify_user(request, user_id):
         if "user_correlation_id" in request.session:
             del request.session["user_correlation_id"]
         record_active_state(request, user, form, "is_active", user_id == "new")
-        record_local_many_to_many_changes(request, user, form, "qualifications")
+
+        record_qualifications(request.user, user, tools)
         record_local_many_to_many_changes(request, user, form, "physical_access_levels")
         record_local_many_to_many_changes(request, user, form, "projects")
         form.save_m2m()
@@ -289,9 +240,25 @@ def create_or_modify_user(request, user_id):
             else f"{user} has been updated successfully"
         )
         messages.success(request, message)
-        return redirect(request.GET.get("next") or "users")
+        redirect_view = request.GET.get("next")
+        if redirect_view:
+            return redirect(redirect_view)
+        else:
+            return redirect("view_user", user.id)
     else:
         return HttpResponseBadRequest("Invalid method")
+
+
+def record_qualifications(request_user, user, qualifications: list[Tool]):
+    from NEMO.views.qualifications import qualify, disqualify
+
+    tools = set()
+    if qualifications:
+        for tool in qualifications:
+            qualify(request_user, tool, user)
+            tools.add(tool)
+    for tool in set(user.qualifications.all()).difference(tools):
+        disqualify(request_user, tool, user)
 
 
 @user_office_or_manager_required
@@ -307,34 +274,10 @@ def deactivate(request, user_id):
     if request.method == "GET":
         return render(request, "users/safe_deactivation.html", dictionary)
     elif request.method == "POST":
-        identity_service = get_identity_service()
-        if identity_service.get("available", False):
-            parameters = {
-                "username": user_to_deactivate.username,
-                "domain": user_to_deactivate.domain,
-            }
-            try:
-                timeout = identity_service.get("timeout", 3)
-                result = requests.delete(identity_service["url"], data=parameters, timeout=timeout)
-                # If the delete succeeds, or the user is not found, then everything is ok.
-                if result.status_code not in (HTTPStatus.OK, HTTPStatus.NOT_FOUND):
-                    users_logger.error(
-                        f"The identity service encountered a problem while attempting to delete a user. The HTTP error is {result.status_code}: {result.text}"
-                    )
-                    dictionary["warning"] = (
-                        "The user information was not modified because the identity service could not delete the corresponding domain account. The administrator has been notified to resolve the problem."
-                    )
-                    return render(request, "users/safe_deactivation.html", dictionary)
-            except Exception as e:
-                users_logger.error(
-                    "There was a problem communicating with the identity service while attempting to delete a user. An exception was encountered: "
-                    + type(e).__name__
-                    + " - "
-                    + str(e)
-                )
-                dictionary["warning"] = (
-                    "The user information was not modified because the identity service could not delete the corresponding domain account. The administrator has been notified to resolve the problem."
-                )
+        if identity_service.available:
+            data, error = identity_service.delete_user(user_to_deactivate.username, user_to_deactivate.domain)
+            if error:
+                dictionary["warning"] = error
                 return render(request, "users/safe_deactivation.html", dictionary)
 
         if request.POST.get("cancel_reservations") == "on":
@@ -395,40 +338,25 @@ def deactivate(request, user_id):
 @user_office_or_manager_required
 @require_POST
 def reset_password(request, user_id):
-    try:
-        identity_service = get_identity_service()
-        if identity_service.get("available", False):
-            user = get_object_or_404(User, id=user_id)
-            timeout = identity_service.get("timeout", 3)
-            result = requests.post(
-                urljoin(identity_service["url"], "/reset_password/"),
-                {"username": user.username, "domain": user.domain},
-                timeout=timeout,
-            )
-            if result.status_code == HTTPStatus.OK:
-                dictionary = {
-                    "title": "Password reset",
-                    "heading": "The account password was set to the default",
-                }
-            else:
-                dictionary = {
-                    "title": "Oops",
-                    "heading": "There was a problem resetting the password",
-                    "content": "The identity service returned HTTP error code {}. {}".format(
-                        result.status_code, result.text
-                    ),
-                }
+    if identity_service.available:
+        user = get_object_or_404(User, id=user_id)
+        data, error = identity_service.reset_password(user.username, user.domain)
+        if data:
+            dictionary = {
+                "title": "Password reset",
+                "heading": "The account password was set to the default",
+            }
         else:
             dictionary = {
-                "title": "Identity service not available",
+                "title": "Oops",
                 "heading": "There was a problem resetting the password",
-                "content": "The identity service is not set or not available",
+                "content": error,
             }
-    except Exception as e:
+    else:
         dictionary = {
-            "title": "Oops",
-            "heading": "There was a problem communicating with the identity service",
-            "content": "Exception caught: {}. {}".format(type(e).__name__, str(e)),
+            "title": "Identity service not available",
+            "heading": "There was a problem resetting the password",
+            "content": "The identity service is not set or not available",
         }
     return render(request, "acknowledgement.html", dictionary)
 
@@ -436,40 +364,25 @@ def reset_password(request, user_id):
 @user_office_or_manager_required
 @require_POST
 def unlock_account(request, user_id):
-    try:
-        identity_service = get_identity_service()
-        if identity_service.get("available", False):
-            user = get_object_or_404(User, id=user_id)
-            timeout = identity_service.get("timeout", 3)
-            result = requests.post(
-                urljoin(identity_service["url"], "/unlock_account/"),
-                {"username": user.username, "domain": user.domain},
-                timeout=timeout,
-            )
-            if result.status_code == HTTPStatus.OK:
-                dictionary = {
-                    "title": "Account unlocked",
-                    "heading": "The account is now unlocked",
-                }
-            else:
-                dictionary = {
-                    "title": "Oops",
-                    "heading": "There was a problem unlocking the account",
-                    "content": "The identity service returned HTTP error code {}. {}".format(
-                        result.status_code, result.text
-                    ),
-                }
+    if identity_service.available:
+        user = get_object_or_404(User, id=user_id)
+        data, error = identity_service.unlock_account(user.username, user.domain)
+        if data:
+            dictionary = {
+                "title": "Account unlocked",
+                "heading": "The account is now unlocked",
+            }
         else:
             dictionary = {
-                "title": "Identity service not available",
+                "title": "Oops",
                 "heading": "There was a problem unlocking the account",
-                "content": "The identity service is not set or not available",
+                "content": error,
             }
-    except Exception as e:
+    else:
         dictionary = {
-            "title": "Oops",
-            "heading": "There was a problem communicating with the identity service",
-            "content": "Exception caught: {}. {}".format(type(e).__name__, str(e)),
+            "title": "Identity service not available",
+            "heading": "There was a problem unlocking the account",
+            "content": "The identity service is not set or not available",
         }
     return render(request, "acknowledgement.html", dictionary)
 
@@ -502,40 +415,50 @@ def user_preferences(request):
     return render(request, "users/preferences.html", dictionary)
 
 
-@login_required
+@any_staff_required
 @require_GET
 def view_user(request, user_id):
     if UserCustomization.get_bool("user_allow_profile_view"):
-        user = (
-            User.objects.filter(pk=user_id)
-            .prefetch_related(
-                "qualifications",
-                "groups",
-                "physical_access_levels",
-                "primary_tool_owner",
-                "backup_for_tools",
-                "staff_for_tools",
-                "superuser_for_tools",
-                "adjustment_request_reviewer_on_tools",
-                "managed_projects",
-                "managed_accounts",
-            )
-            .first()
-        )
-        if not user:
-            raise Http404("No user matches the given query")
-
-        if request.user.id != user_id:
-            return HttpResponseBadRequest("You are not allowed to view this user's profile")
-
-        dictionary = {
-            "user": user,
-            "projects": Project.objects.filter(active=True, account__active=True),
-        }
-
-        return render(request, "users/view_user.html", dictionary)
+        return render(request, "users/view_user.html", get_profile_dictionary(user_id))
     else:
         return HttpResponseBadRequest("You are not allowed to view this page")
+
+
+@login_required
+@require_GET
+def user_profile(request):
+    if UserCustomization.get_bool("user_allow_profile_view"):
+        return render(request, "users/user_profile.html", get_profile_dictionary(request.user.id))
+    else:
+        return HttpResponseBadRequest("You are not allowed to view this page")
+
+
+def get_profile_dictionary(user_id) -> dict:
+    user = (
+        User.objects.filter(pk=user_id)
+        .prefetch_related(
+            "qualifications",
+            "groups",
+            "physical_access_levels",
+            "primary_tool_owner",
+            "backup_for_tools",
+            "staff_for_tools",
+            "superuser_for_tools",
+            "adjustment_request_reviewer_on_tools",
+            "managed_projects",
+            "managed_accounts",
+        )
+        .first()
+    )
+    if not user:
+        raise Http404("No user matches the given query")
+
+    return {
+        "user_profile": user,
+        "safety_trainings": SafetyTraining.objects.all(),
+        "onboarding_phases": OnboardingPhase.objects.all(),
+        "projects": Project.objects.filter(active=True, account__active=True),
+    }
 
 
 def readonly_users(request):
@@ -544,7 +467,3 @@ def readonly_users(request):
     return (
         user.is_any_part_of_staff and not user.is_facility_manager and not user.is_user_office and not user.is_superuser
     )
-
-
-def get_identity_service():
-    return getattr(settings, "IDENTITY_SERVICE", {})

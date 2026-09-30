@@ -1,5 +1,7 @@
 {% load custom_tags_and_filters %}
-<h1>According to our records, you're already logged in the {{ area }} under the project named {{ project }}.</h1>
+<h1>
+    According to our records, you're already logged in the {{ area }} under the project named {{ project.get_display }}.
+</h1>
 {% if max_capacity_reached %}
     {% if max_capacity_reached.area == area %}
         <h2>However, this area has reached its maximum occupancy</h2>

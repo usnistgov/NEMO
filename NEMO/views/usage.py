@@ -226,7 +226,9 @@ def usage(
     base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request, get_month_timeframe)
     # Preloading user's managed projects' and managed users`
     base_dictionary["user"] = (
-        User.objects.filter(id=user.id).prefetch_related("managed_projects", "managed_users").first()
+        User.objects.filter(id=user.id)
+        .prefetch_related("managed_projects", "managed_accounts__project_set", "managed_users")
+        .first()
     )
     selected_managed_user_id = request.GET.get("managed_user")
     base_dictionary["selected_managed_user"] = selected_managed_user_id
@@ -324,7 +326,11 @@ def billing(request):
 def project_usage(request):
     base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request, get_day_timeframe)
     # Preloading user's managed projects'
-    base_dictionary["user"] = User.objects.filter(id=request.user.id).prefetch_related("managed_projects").first()
+    base_dictionary["user"] = (
+        User.objects.filter(id=request.user.id)
+        .prefetch_related("managed_projects", "managed_accounts__project_set")
+        .first()
+    )
 
     area_access, consumables, missed_reservations, staff_charges, training_sessions, usage_events = (
         None,
@@ -651,14 +657,12 @@ def csv_export_response(
 
 
 def get_managed_projects(user: User) -> Set[Project]:
-    # This function will get managed projects from NEMO and also attempt to get them from billing service
-    managed_projects = set(
-        list(
-            Project.objects.filter(
-                Q(id__in=user.managed_projects.values_list("id", flat=True))
-                | Q(account_id__in=user.managed_accounts.values_list("id", flat=True))
-            )
-        )
+    # This function will get managed projects from NEMO and also attempt to get them from the billing service
+    # We need to use the actual projects and accounts so we can prefetch them beforehand to speed up the process
+    managed_projects = set(user.managed_projects.all())
+    managed_accounts = set(user.managed_accounts.all())
+    managed_projects = managed_projects.union(
+        {project for account in managed_accounts for project in account.project_set.all()}
     )
     billing_service = get_billing_service()
     if billing_service.get("available", False):

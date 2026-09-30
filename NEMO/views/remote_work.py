@@ -9,7 +9,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import staff_member_or_tool_staff_required, staff_member_required
 from NEMO.exceptions import ProjectChargeException
-from NEMO.models import Area, AreaAccessRecord, Project, StaffCharge, UsageEvent, User
+from NEMO.models import Area, AreaAccessRecord, CoreFacility, Project, StaffCharge, UsageEvent, User
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import (
     BasicDisplayTable,
@@ -20,7 +20,7 @@ from NEMO.utilities import (
     remove_duplicates,
 )
 from NEMO.views.area_access import load_areas_for_use_in_template
-from NEMO.views.customization import RemoteWorkCustomization
+from NEMO.views.customization import ApplicationCustomization, RemoteWorkCustomization
 
 
 @staff_member_or_tool_staff_required
@@ -211,7 +211,14 @@ def staff_charges(request):
         projects = [project for project in customer.active_projects() if project.allow_staff_charges]
         if projects:
             dictionary["customer"] = customer
-            return render(request, "staff_charges/choose_project.html", dictionary)
+            dictionary["core_facility_id"] = request.GET.get("core_facility")
+            if (
+                not ApplicationCustomization.get_bool("core_facility_required_for_staff_charges")
+                or dictionary["core_facility_id"]
+            ):
+                return render(request, "staff_charges/choose_project.html", dictionary)
+            else:
+                error = "you must select a core facility"
         else:
             error = (
                 str(customer)
@@ -219,6 +226,7 @@ def staff_charges(request):
             )
     users = User.objects.filter(is_active=True).exclude(id=request.user.id)
     dictionary["users"] = users
+    dictionary["core_facilities"] = CoreFacility.objects.all()
     dictionary["error"] = error
     return render(request, "staff_charges/new_staff_charge.html", dictionary)
 
@@ -233,6 +241,12 @@ def begin_staff_charge(request):
     charge.customer = User.objects.get(id=request.POST["customer"])
     charge.project = Project.objects.get(id=request.POST["project"])
     charge.staff_member = request.user
+    try:
+        charge.core_facility = CoreFacility.objects.get(id=request.POST["core_facility"])
+    except:
+        pass
+    if ApplicationCustomization.get_bool("core_facility_required_for_staff_charges") and not charge.core_facility:
+        return HttpResponseBadRequest("You cannot create a new staff charge without a core facility.")
     # Check if we are allowed to bill to project
     try:
         policy.check_billing_to_project(charge.project, charge.customer, charge, charge)

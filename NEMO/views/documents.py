@@ -7,7 +7,7 @@ from typing import List
 import requests
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, render
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
@@ -25,6 +25,8 @@ from NEMO.utilities import (
 def media_view(request, popup, content_type_id, document_id):
     content_type = ContentType.objects.get_for_id(content_type_id)
     document = get_object_or_404(content_type.model_class(), pk=document_id)
+    if not document.is_allowed(request.user):
+        return HttpResponseForbidden("You do not have permission to access this document.")
     video = any([document.link().lower().endswith(ext) for ext in supported_embedded_video_extensions])
     pdf = any([document.link().lower().endswith(ext) for ext in supported_embedded_pdf_extensions])
     if not video and not pdf:
@@ -91,7 +93,9 @@ def get_documents_from_post(request) -> List[BaseDocumentModel]:
         content_type_id, document_id = info[0], info[1]
         content_type = ContentType.objects.get_for_id(content_type_id)
         try:
-            documents.append(content_type.model_class().objects.get(pk=document_id))
+            doc = content_type.model_class().objects.get(pk=document_id)
+            if isinstance(doc, BaseDocumentModel) and doc.is_allowed(request.user):
+                documents.append(doc)
         except content_type.model_class().DoesNotExist:
             pass
     return documents

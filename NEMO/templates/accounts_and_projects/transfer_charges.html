@@ -244,11 +244,11 @@
                 $('#project_search').autocomplete('projects', select_project, '{% url "search_project_for_transfer" %}');
                 $('#new_project_search').autocomplete('new_projects', select_project, '{% url "search_project_for_transfer" %}');
                 if ('{{ project|default_if_none:"" }}') select_project(null, {
-                    'name': '{{ project.name }}',
+                    'name': '{{ project.get_display|escapejs }}',
                     'id': '{{ project.id }}'
                 }, 'projects');
                 if ('{{ new_project|default_if_none:"" }}') select_project(null, {
-                    'name': '{{ new_project.name }}',
+                    'name': '{{ new_project.get_display|escapejs }}',
                     'id': '{{ new_project.id }}'
                 }, 'new_projects');
                 if ('{{ customer|default_if_none:"" }}') select_user(null, {

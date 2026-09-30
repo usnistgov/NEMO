@@ -116,4 +116,5 @@ def base_context(request):
         "safety_page_title": customization_values.get("safety_page_title"),
         "calendar_first_day_of_week": customization_values.get("calendar_first_day_of_week"),
         "allow_profile_view": customization_values.get("user_allow_profile_view", "") == "enabled",
+        "calendar_outage_color": customization_values.get("calendar_color_outage"),
     }

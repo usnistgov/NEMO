@@ -190,6 +190,7 @@ def create_account(request):
     return redirect("account", account.id)
 
 
+@login_required
 @require_POST
 def remove_user_from_project(request):
     user = get_object_or_404(User, id=request.POST["user_id"])
@@ -208,6 +209,7 @@ def remove_user_from_project(request):
     return render(request, "accounts_and_projects/users_for_project.html", dictionary)
 
 
+@login_required
 @require_POST
 def add_user_to_project(request):
     user = get_object_or_404(User, id=request.POST["user_id"])
@@ -226,8 +228,8 @@ def add_user_to_project(request):
     return render(request, "accounts_and_projects/users_for_project.html", dictionary)
 
 
-@require_POST
 @accounting_or_user_office_or_manager_required
+@require_POST
 def add_or_remove_manager_from_account_project(request, action: str, kind: str, identifier: int):
     users = User.objects.filter(id__in=request.POST.getlist("user_id[]"))
     if kind == "account":
@@ -332,7 +334,7 @@ def transfer_charges(request):
                         do_transfer_charges(charges, new_project.id)
                         messages.success(
                             request,
-                            f"{len(charges)} charges were transferred from {project} to {new_project}",
+                            f"{len(charges)} charges were transferred from {project.get_display()} to {new_project.get_display()}",
                             extra_tags="data-speed=25000",
                         )
                     except ValidationError as e:
@@ -408,7 +410,7 @@ def do_transfer_charges(charges: List[BillableItem], new_project_id: int):
 @accounting_or_manager_required
 @require_GET
 def search_project_for_transfer(request):
-    return queryset_search_filter(Project.objects.all(), ["name", "application_identifier"], request)
+    return queryset_search_filter(Project.objects.all(), ["name", "application_identifier"], request, "get_display")
 
 
 def get_accounts_and_projects():

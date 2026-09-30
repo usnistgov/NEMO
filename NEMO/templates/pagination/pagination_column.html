@@ -6,9 +6,9 @@
             {# order = -name if order_by is name and vice versa #}
             {# check if we need to call a js function or refresh the current page #}
             {% if page.paginator.js_callback %}
-                <a href="javascript:{{ page.paginator.js_callback }}('{{ extra_params }}&o={{ order }}&p={{ page.paginator.page_number }}&pp={{ page.paginator.per_page }}')">{{ name }}<span class="{% if not page.paginator.order_by or order_by not in page.paginator.order_by or order_by|length|add:1 < page.paginator.order_by|length %}invisible{% endif %} glyphicon glyphicon-triangle-{% if order == order_by %}bottom{% else %}top{% endif %}"></span></a>
+                <a href="javascript:{{ page.paginator.js_callback }}('{% if extra_params %}{{ extra_params }}&{% endif %}o={{ order }}&p={{ page.paginator.page_number }}&pp={{ page.paginator.per_page }}')">{{ name }}<span class="{% if not page.paginator.order_by or order_by not in page.paginator.order_by or order_by|length|add:1 < page.paginator.order_by|length %}invisible{% endif %} glyphicon glyphicon-triangle-{% if order == order_by %}bottom{% else %}top{% endif %}"></span></a>
             {% else %}
-                <a href="?{{ extra_params }}&o={{ order }}&p={{ page.paginator.page_number }}&pp={{ page.paginator.per_page }}">{{ name }}<span class="{% if not page.paginator.order_by or order_by not in page.paginator.order_by or order_by|length|add:1 < page.paginator.order_by|length %}invisible{% endif %} glyphicon glyphicon-triangle-{% if order == order_by %}bottom{% else %}top{% endif %}"></span></a>
+                <a href="?{% if extra_params %}{{ extra_params }}&{% endif %}o={{ order }}&p={{ page.paginator.page_number }}&pp={{ page.paginator.per_page }}">{{ name }}<span class="{% if not page.paginator.order_by or order_by not in page.paginator.order_by or order_by|length|add:1 < page.paginator.order_by|length %}invisible{% endif %} glyphicon glyphicon-triangle-{% if order == order_by %}bottom{% else %}top{% endif %}"></span></a>
             {% endif %}
         {% endwith %}
     {% endwith %}

@@ -21,7 +21,7 @@
         {% endfor %}
         <div style="height:10px">{# Vertical spacer #}</div>
         {% if reservation.project %}
-            For project {{ reservation.project }}
+            For project {{ reservation.project.get_display }}
             <br>
         {% endif %}
         <span style="white-space: pre-line">Created by {{ reservation.creator }}

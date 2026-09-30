@@ -8,7 +8,8 @@ from typing import List, Tuple
 import fastjsonschema
 from django import forms
 from django.conf import settings
-from django.contrib.admin.widgets import AutocompleteMixin, FilteredSelectMultiple
+from django.contrib import admin
+from django.contrib.admin.widgets import AutocompleteMixin, FilteredSelectMultiple, RelatedFieldWidgetWrapper
 from django.contrib.auth.models import Group, Permission
 from django.core import validators
 from django.core.cache import cache
@@ -533,6 +534,33 @@ class MultiRoleGroupPermissionChoiceField(RoleGroupPermissionChoiceField):
     def get_choices(self, *args, **kwargs):
         kwargs["include_blank"] = False
         return super().get_choices(*args, **kwargs)
+
+
+class MockManyToManyReverseRelationAdmin:
+    """
+    A mock relation object to trick RelatedFieldWidgetWrapper
+    into generating popup URLs for the reverse model.
+    """
+
+    def __init__(self, target_model):
+        self.model = target_model
+        self.limit_choices_to = {}
+        self.multiple = True
+
+    def get_related_field(self):
+        return self.model._meta.pk
+
+
+def set_reverse_many_to_many_admin_field(admin_form: forms.ModelForm, field_name: str, reverse_field_name: str):
+    field = admin_form.fields[field_name]
+
+    if admin_form.instance.pk and hasattr(admin_form.instance, reverse_field_name):
+        field.initial = getattr(admin_form.instance, reverse_field_name).all()
+
+    field.widget.choices = field.choices
+
+    rel = MockManyToManyReverseRelationAdmin(field.queryset.model)
+    field.widget = RelatedFieldWidgetWrapper(widget=field.widget, rel=rel, admin_site=admin.site)
 
 
 RoleGroupPermissionChoiceField.connect_signals()

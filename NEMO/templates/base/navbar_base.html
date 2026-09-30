@@ -134,14 +134,14 @@
                                   data-container="body"
                                   data-toggle="tooltip"
                                   data-placement="right"
-                                  title="{% with user.get_staff_charge as staff_charge %}You are charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.{% endwith %}">Charging staff time</span>
+                                  title="{% with user.get_staff_charge as staff_charge %}You are charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project.get_display }} since {{ staff_charge.start }}.{% endwith %}">Charging staff time</span>
                         </a>
                         <script>$("#staff_charge_link").tooltip();</script>
                     </li>
                 {% endif %}
                 {% if allow_profile_view %}
                     <li class="visible-xs visible-sm">
-                        <a href="{% url 'view_user' user.id %}">My profile</a>
+                        <a href="{% url 'user_profile' %}">My profile</a>
                     </li>
                 {% endif %}
                 <li class="visible-xs visible-sm">
@@ -167,7 +167,7 @@
                                data-container="body"
                                data-toggle="tooltip"
                                data-placement="bottom"
-                               title="{% with user.get_staff_charge as staff_charge %}You are charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.{% endwith %}">
+                               title="{% with user.get_staff_charge as staff_charge %}You are charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project.get_display }} since {{ staff_charge.start }}.{% endwith %}">
                                 Charging staff time
                             </a>
                         </p>
@@ -179,7 +179,7 @@
                         <p class="navbar-text">
                             Welcome,
                             {% if allow_profile_view %}
-                                <a href="{% url 'view_user' user.id %}">
+                                <a href="{% url 'user_profile' %}">
                                 {% endif %}
                             {{ user.first_name }}</a>
                         </p>

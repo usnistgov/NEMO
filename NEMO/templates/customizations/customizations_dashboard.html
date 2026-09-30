@@ -32,9 +32,11 @@
                                name="dashboard_hide_project"
                                {% if dashboard_hide_project %}checked{% endif %}
                                value="enabled">
-                        Hide projects the users are working on in occupancy
+                        Hide projects the users are working on in occupancy (Jumbotron only)
                     </label>
-                    <br />
+                    <div class="help-block light-grey" style="margin-bottom:0;">
+                        To hide project name globally go to <a href="{% url 'customization' 'projects_and_accounts' %}">Projects and Accounts</a>
+                    </div>
                 </div>
             </div>
         </div>

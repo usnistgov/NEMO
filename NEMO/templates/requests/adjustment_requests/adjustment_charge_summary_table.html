@@ -135,10 +135,10 @@
                                                 <li>
                                                     <strong style="width: 90px; display: inline-block;"><u>Project:</u></strong>
                                                     {% if request_obj.get_original_project %}
-                                                        <span class="danger-highlight"><del>{{ request_obj.get_original_project }}</del></span>
+                                                        <span class="danger-highlight"><del>{{ request_obj.get_original_project.get_display }}</del></span>
                                                     {% endif %}
                                                     ->
-                                                    <span class="success-highlight">{{ request_obj.new_project }}</span>
+                                                    <span class="success-highlight">{{ request_obj.new_project.get_display }}</span>
                                                 </li>
                                             {% endif %}
                                         {% endif %}

@@ -34,6 +34,7 @@ from NEMO.models import (
     Consumable,
     ConsumableCategory,
     ConsumableWithdraw,
+    CoreFacility,
     Customization,
     Interlock,
     InterlockCard,
@@ -56,12 +57,14 @@ from NEMO.models import (
     TemporaryPhysicalAccessRequest,
     Tool,
     ToolCredentials,
+    ToolQualificationGroup,
     ToolUsageCounter,
     ToolUsageQuestions,
     TrainingSession,
     UnplannedOutage,
     UsageEvent,
     User,
+    UserType,
     UserCalendarToolList,
     UserDocuments,
     UserPreferences,
@@ -83,6 +86,7 @@ from NEMO.serializers import (
     ConsumableSerializer,
     ConsumableWithdrawSerializer,
     ContentTypeSerializer,
+    CoreFacilitySerializer,
     CustomizationSerializer,
     GroupSerializer,
     InterlockCardCategorySerializer,
@@ -107,6 +111,7 @@ from NEMO.serializers import (
     TemporaryPhysicalAccessRequestSerializer,
     ToolCommentSerializer,
     ToolCredentialsSerializer,
+    ToolQualificationGroupSerializer,
     ToolSerializer,
     ToolStatusSerializer,
     ToolUsageCounterSerializer,
@@ -118,6 +123,7 @@ from NEMO.serializers import (
     UserDocumentSerializer,
     UserPreferenceSerializer,
     UserSerializer,
+    UserTypeSerializer,
 )
 from NEMO.templatetags.custom_tags_and_filters import app_version
 from NEMO.typing import QuerySetType
@@ -126,13 +132,28 @@ from NEMO.views.api_billing import (
     BillingFilterForm,
     get_billing_charges,
 )
-from NEMO.views.constants import MEDIA_PROTECTED
+from NEMO.constants import MEDIA_PROTECTED
 from NEMO.views.customization import ApplicationCustomization
+from NEMO.views.qualifications import disqualify, qualify
+from NEMO.policy import policy_class as policy
 
 date_filters = ["exact", "in", "month", "year", "day", "gte", "gt", "lte", "lt", "isnull"]
 time_filters = ["exact", "in", "hour", "minute", "second", "gte", "gt", "lte", "lt", "isnull"]
 datetime_filters = remove_duplicates(date_filters + time_filters + ["week"])
-string_filters = ["exact", "iexact", "in", "contains", "icontains", "isempty"]
+string_filters = [
+    "exact",
+    "iexact",
+    "in",
+    "contains",
+    "icontains",
+    "isempty",
+    "startswith",
+    "istartswith",
+    "endswith",
+    "iendswith",
+    "regex",
+    "iregex",
+]
 number_filters = ["exact", "in", "gte", "gt", "lte", "lt", "isnull"]
 key_filters = ["exact", "in", "isnull"]
 manykey_filters = ["exact", "isnull"]
@@ -227,6 +248,25 @@ class AlertViewSet(ModelViewSet):
         "dismissible": boolean_filters,
         "expired": boolean_filters,
         "deleted": boolean_filters,
+    }
+
+
+class CoreFacilityViewSet(ModelViewSet):
+    filename = "core_facilities"
+    queryset = CoreFacility.objects.all()
+    serializer_class = CoreFacilitySerializer
+    filterset_fields = {
+        "name": string_filters,
+        "external_id": string_filters,
+    }
+
+
+class UserTypeViewSet(ModelViewSet):
+    filename = "user_types"
+    queryset = UserType.objects.all()
+    serializer_class = UserTypeSerializer
+    filterset_fields = {
+        "name": string_filters,
     }
 
 
@@ -411,6 +451,19 @@ class ToolViewSet(ModelViewSet):
         "_requires_area_access": key_filters,
         "_requires_area_occupancy_minimum": number_filters,
         "_problem_shutdown_enabled": boolean_filters,
+        "_core_facility": key_filters,
+    }
+
+
+class ToolQualificationGroupViewSet(ModelViewSet):
+    filename = "tool_qualification_groups"
+    queryset = ToolQualificationGroup.objects.all()
+    serializer_class = ToolQualificationGroupSerializer
+    filterset_fields = {
+        "id": key_filters,
+        "name": string_filters,
+        "tools": manykey_filters,
+        "training_charge_tool": key_filters,
     }
 
 
@@ -424,6 +477,45 @@ class QualificationViewSet(ModelViewSet):
         "tool": key_filters,
         "qualified_on": date_filters,
     }
+
+    def get_serializer(self, *args, **kwargs):
+        """Don't allow update on user or tool (POST ok)"""
+        serializer = super().get_serializer(*args, **kwargs)
+        if self.request.method == "PUT" or self.request.method == "PATCH":
+            serializer.fields["user"].read_only = True
+            serializer.fields["tool"].read_only = True
+        return serializer
+
+    # Override create and update to set the user
+    def create(self, request, *args, **kwargs):
+        self.request_user = request.user
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        self.request_user = request.user
+        return super().update(request, *args, **kwargs)
+
+    # Override create, update and destroy to use qualify/disqualify methods
+    def perform_create(self, serializer):
+        self.qualify(serializer)
+
+    def perform_update(self, serializer):
+        self.qualify(serializer)
+
+    def qualify(self, serializer):
+        datas = serializer.data if getattr(serializer, "many", False) else [serializer.data]
+        for data in datas:
+            tool = Tool.objects.get(pk=data["tool"])
+            user = User.objects.get(pk=data["user"])
+            policy_errors = policy.check_qualifying_user_on_tools(user, [tool])
+            if policy_errors:
+                raise Exception(", ".join(policy_errors))
+            qualify(self.request_user, tool, user)
+
+    def destroy(self, request, *args, **kwargs):
+        instance: Qualification = self.get_object()
+        disqualify(request.user, instance.tool, instance.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class AreaViewSet(ModelViewSet):
@@ -440,6 +532,7 @@ class AreaViewSet(ModelViewSet):
         "maximum_capacity": number_filters,
         "count_staff_in_occupancy": boolean_filters,
         "count_service_personnel_in_occupancy": boolean_filters,
+        "core_facility": key_filters,
     }
 
 
@@ -631,6 +724,7 @@ class TaskViewSet(ModelViewSet):
         "urgency": number_filters,
         "tool_id": key_filters,
         "tool": key_filters,
+        "title": string_filters,
         "force_shutdown": boolean_filters,
         "safety_hazard": boolean_filters,
         "creator_id": key_filters,
@@ -701,6 +795,7 @@ class StaffChargeViewSet(ModelViewSet):
         "waived": boolean_filters,
         "waived_on": datetime_filters,
         "waived_by": key_filters,
+        "core_facility": key_filters,
     }
 
 
@@ -753,6 +848,7 @@ class ConsumableViewSet(ModelViewSet):
         "visible": boolean_filters,
         "reusable": boolean_filters,
         "reminder_threshold_reached": boolean_filters,
+        "core_facility": key_filters,
     }
 
 
@@ -1106,7 +1202,7 @@ class ToolStatusViewSet(XLSXFileMixin, viewsets.GenericViewSet):
             partial_outages = tool.scheduled_partial_outages()
             rss_unavailable = tool.unavailable_required_resources()
             partial_rss_unavailable = tool.unavailable_nonrequired_resources()
-            tool.problem_descriptions = ", ".join(pb.problem_description for pb in pbs) if pbs else None
+            tool.problem_descriptions = ", ".join(pb.title_or_description() for pb in pbs) if pbs else None
             tool.problematic_since = min((pb.creation_time for pb in pbs), default=None)
             tool.outages = ", ".join(outage.title for outage in outages) if outages else None
             tool.outages_since = min((outage.start for outage in outages), default=None)

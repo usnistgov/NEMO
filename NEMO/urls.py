@@ -116,6 +116,7 @@ router.register("tasks", api.TaskViewSet)
 router.register("tools", api.ToolViewSet)
 router.register("tool_comments", api.ToolCommentViewSet)
 router.register("tool_credentials", api.ToolCredentialsViewSet)
+router.register("tool_qualification_groups", api.ToolQualificationGroupViewSet)
 router.register("tool_status", api.ToolStatusViewSet, basename="tool_status")
 router.register("tool_usage_counters", api.ToolUsageCounterViewSet)
 router.register("tool_usage_questions", api.ToolUsageQuestionsViewSet)
@@ -123,6 +124,7 @@ router.register("training_sessions", api.TrainingSessionViewSet)
 router.register("unplanned_outages", api.UnplannedOutageViewSet)
 router.register("usage_events", api.UsageEventViewSet)
 router.register("users", api.UserViewSet)
+router.register("user_types", api.UserTypeViewSet)
 router.register("user_documents", api.UserDocumentsViewSet)
 router.register("user_calendar_tool_lists", api.UserCalendarToolListViewSet)
 router.register("user_preferences", api.UserPreferencesViewSet)
@@ -183,7 +185,7 @@ urlpatterns += [
     ),
     path("get_projects_for_self/", get_projects.get_projects_for_self, name="get_projects_for_self"),
     # User Profile:
-    path("user/view_user/<int:user_id>/", users.view_user, name="view_user"),
+    path("user/user_profile/", users.user_profile, name="user_profile"),
     # Tool control:
     # This tool_control URL is needed to be able to reverse when choosing items on mobile using next_page.
     # (see choose_item.html for details)
@@ -450,7 +452,7 @@ urlpatterns += [
     path("send_email/", email.send_email, name="send_email"),
     path("email_broadcast/", email.email_broadcast, name="email_broadcast"),
     re_path(
-        r"^email_broadcast/(?P<audience>tool|area|account|project|project-pis|account-managers|user|tool-reservation)/$",
+        r"^email_broadcast/(?P<audience>tool|area|account|project|project-pis|account-managers|user|tool-reservation|tool-categories)/$",
         email.email_broadcast,
         name="email_broadcast",
     ),
@@ -726,6 +728,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
         path("users/", users.users, name="users"),
         re_path(r"^user/(?P<user_id>\d+|new)/$", users.create_or_modify_user, name="create_or_modify_user"),
         path("users/search/", users.user_search, name="user_search"),
+        path("users/<int:user_id>/", users.view_user, name="view_user"),
         path("deactivate_user/<int:user_id>/", users.deactivate, name="deactivate_user"),
         path("reset_password/<int:user_id>/", users.reset_password, name="reset_password"),
         path("unlock_account/<int:user_id>/", users.unlock_account, name="unlock_account"),

@@ -99,7 +99,7 @@
                         {{ recurring_charge.customer|default_if_none:"" }}
                     </td>
                     <td {% if recurring_charge.invalid_project_text %}class="danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_project_text|default:'' }}"{% endif %}>
-                        {{ recurring_charge.project|default_if_none:"" }}
+                        {{ recurring_charge.project.get_display|default_if_none:"" }}
                     </td>
                     <td style="white-space: nowrap;">
                         {% if recurring_charge.get_recurrence_interval_display %}

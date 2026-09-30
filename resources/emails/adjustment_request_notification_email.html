@@ -111,9 +111,11 @@
                                 {% if adjustment_request.new_project %}
                                     <br>
                                     <strong style="width: 90px; display: inline-block;"><u>Project:</u></strong>
-                                    {% if adjustment_request.get_original_project %}<del>{{ adjustment_request.get_original_project }}</del>{% endif %}
+                                    {% if adjustment_request.get_original_project %}
+                                        <del>{{ adjustment_request.get_original_project.get_display }}</del>
+                                    {% endif %}
                                     ->
-                                    {{ adjustment_request.new_project }}
+                                    {{ adjustment_request.new_project.get_display }}
                                 {% endif %}
                             {% endif %}
                             <br>

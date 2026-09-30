@@ -21,7 +21,7 @@
             <div class="form-group">
                 <div class="col-sm-12">
                     {% if customer.active_project_count == 1 %}
-                        Area access will be billed to the customer's only project, &quot;{{ customer.active_projects.0 }}&quot;
+                        Area access will be billed to the customer's only project, &quot;{{ customer.active_projects.0.get_display }}&quot;
                         <input type="hidden" name="project" value="{{ customer.active_projects.0.id }}">
                     {% else %}
                         Which of the customer's projects would you like to bill?

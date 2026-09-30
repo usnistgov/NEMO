@@ -45,7 +45,9 @@ from NEMO.views.consumables import (
 from NEMO.views.customization import (
     ApplicationCustomization,
     CalendarCustomization,
+    RemoteWorkCustomization,
     ToolControlCustomization,
+    ToolCustomization,
     UserCustomization,
 )
 from NEMO.views.get_projects import get_projects
@@ -552,6 +554,7 @@ def tool_information(request, tool_id, user_id, back):
         tool=tool,
     ).last()
     if current_reservation:
+        dictionary["reservation_project"] = current_reservation.project
         remaining_reservation_duration = int((current_reservation.end - timezone.now()).total_seconds() / 60)
         # We don't need to bother telling the user their reservation will be shortened if there's less than two minutes left.
         # Staff are exempt from reservation shortening.
@@ -626,6 +629,10 @@ def report_problem(request):
     customer = User.objects.get(id=request.POST["customer_id"])
     back = request.POST["back"]
 
+    if ToolCustomization.get_bool("tool_problem_hide_for_non_staff") and not customer.is_any_part_of_staff:
+        message = "You do not have permission to report problems for this tool."
+        return render(request, "kiosk/error.html", {"message": message, "customer": customer})
+
     dictionary = {
         "tool": tool,
         "customer": customer,
@@ -658,17 +665,20 @@ def report_problem(request):
     if not settings.ALLOW_CONDITIONAL_URLS and form.cleaned_data["force_shutdown"]:
         site_title = ApplicationCustomization.get("site_title")
         dictionary["message"] = format_html(
-            '<ul class="errorlist"><li>{}</li></ul>'.format(
-                f"Tool control is only available on campus. When creating a task, you can't force a tool shutdown while using {site_title} off campus.",
-            )
+            '<ul class="errorlist"><li>{}</li></ul>',
+            f"Tool control is only available on campus. When creating a task, you can't force a tool shutdown while using {site_title} off campus.",
         )
         dictionary["form"] = form
         return render(request, "kiosk/tool_report_problem.html", dictionary)
 
     task = form.save()
     task.estimated_resolution_time = estimated_resolution_time
-    # Only staff can choose not to lock the tool
-    lock_interlock = not (customer.is_staff_on_tool(tool) and not form.cleaned_data["lock"])
+    # Only staff can choose not to lock the tool, and that's only possible if the option is enabled
+    lock_interlock = (
+        not RemoteWorkCustomization.get_bool("tool_interlock_ask_when_shutting_down_problem")
+        or not customer.is_staff_on_tool(task.tool)
+        or form.cleaned_data["lock"]
+    )
 
     save_task(request, task, customer, lock=lock_interlock)
 
@@ -699,6 +709,10 @@ def post_comment(request):
     tool = Tool.objects.get(id=request.POST["tool"])
     customer = User.objects.get(id=request.POST["customer_id"])
     back = request.POST["back"]
+
+    if ToolCustomization.get_bool("tool_comments_hide_for_non_staff") and not customer.is_any_part_of_staff:
+        message = "You do not have permission to post comments on this tool."
+        return render(request, "kiosk/error.html", {"message": message, "customer": customer})
 
     dictionary = {"back": back, "tool": tool, "customer": customer}
 
@@ -839,7 +853,7 @@ def add_withdraw_to_session(request, customer_id, withdrawal: ConsumableWithdraw
             "customer_id": withdrawal.customer_id,
             "consumable": str(withdrawal.consumable),
             "consumable_id": withdrawal.consumable_id,
-            "project": str(withdrawal.project),
+            "project": withdrawal.project.get_display(),
             "project_id": withdrawal.project_id,
             "quantity": withdrawal.quantity,
         }

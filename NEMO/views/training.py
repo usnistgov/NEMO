@@ -1,10 +1,7 @@
 import datetime
 from logging import getLogger
 from re import search
-from urllib.parse import urljoin
 
-import requests
-from django.conf import settings
 from django.db.models import Count, Q
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render
@@ -13,11 +10,11 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import staff_member_or_tool_superuser_or_tool_staff_required
 from NEMO.exceptions import ProjectChargeException
-from NEMO.models import MembershipHistory, Project, Tool, ToolQualificationGroup, TrainingSession, UsageEvent, User
+from NEMO.models import Project, Tool, ToolQualificationGroup, TrainingSession, UsageEvent, User
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import datetime_input_format
 from NEMO.views.customization import TrainingCustomization
-from NEMO.views.users import get_identity_service
+from NEMO.views.qualifications import qualify
 
 training_logger = getLogger(__name__)
 
@@ -105,17 +102,14 @@ def charge_training(request):
                 if attribute == "chosen_tool":
                     chosen_type = request.POST.get(f"chosen_type{separator}{index}", "tool")
                     identifier = to_int_or_negative(value)
-                    setattr(
-                        charges[index],
-                        "qualify_tools",
-                        (
-                            [Tool.objects.get(id=identifier)]
-                            if chosen_type == "tool"
-                            else ToolQualificationGroup.objects.get(id=identifier).tools.all()
-                        ),
-                    )
-                    # Even with a group of tools, we only charge training on the first one
-                    charges[index].tool = next(iter(charges[index].qualify_tools))
+                    if chosen_type == "tool":
+                        tool = Tool.objects.get(id=identifier)
+                        setattr(charges[index], "qualify_tools", [tool])
+                        charges[index].tool = next(iter(charges[index].qualify_tools))
+                    else:
+                        tool_group = ToolQualificationGroup.objects.get(id=identifier)
+                        setattr(charges[index], "qualify_tools", tool_group.tools.all())
+                        charges[index].tool = tool_group.training_charge_tool
                     if not trainer.is_staff and (trainer.is_tool_superuser or trainer.is_tool_staff):
                         tools = set(list(trainer.superuser_for_tools.all()) + list(trainer.staff_for_tools.all()))
                         if not set(charges[index].qualify_tools).issubset(tools):
@@ -151,8 +145,11 @@ def charge_training(request):
     else:
         for c in charges.values():
             if c.qualified:
+                policy_errors = policy.check_qualifying_user_on_tools(c.trainee, c.qualify_tools)
+                if policy_errors:
+                    return HttpResponseBadRequest(", ".join(policy_errors))
                 for tool in c.qualify_tools:
-                    qualify(c.trainer, c.trainee, tool)
+                    qualify(c.trainer, tool, c.trainee)
             c.save()
         dictionary = {
             "title": "Success!",
@@ -160,38 +157,6 @@ def charge_training(request):
             "redirect": reverse("training"),
         }
         return render(request, "display_success_and_redirect.html", dictionary)
-
-
-def qualify(authorizer, user, tool):
-    if tool in user.qualifications.all():
-        return
-    user.qualifications.add(tool)
-    entry = MembershipHistory()
-    entry.authorizer = authorizer
-    entry.parent_content_object = tool
-    entry.child_content_object = user
-    entry.action = entry.Action.ADDED
-    entry.save()
-
-    if tool.grant_physical_access_level_upon_qualification:
-        if tool.grant_physical_access_level_upon_qualification not in user.accessible_access_levels().all():
-            user.physical_access_levels.add(tool.grant_physical_access_level_upon_qualification)
-            entry = MembershipHistory()
-            entry.authorizer = authorizer
-            entry.parent_content_object = tool.grant_physical_access_level_upon_qualification
-            entry.child_content_object = user
-            entry.action = entry.Action.ADDED
-            entry.save()
-
-    if get_identity_service().get("available", False):
-        if tool.grant_badge_reader_access_upon_qualification:
-            parameters = {
-                "username": user.username,
-                "domain": user.domain,
-                "requested_area": tool.grant_badge_reader_access_upon_qualification,
-            }
-            timeout = settings.IDENTITY_SERVICE.get("timeout", 3)
-            requests.put(urljoin(settings.IDENTITY_SERVICE["url"], "/add/"), data=parameters, timeout=timeout)
 
 
 def to_int_or_negative(value: str):

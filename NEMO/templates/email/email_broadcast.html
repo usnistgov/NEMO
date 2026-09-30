@@ -13,8 +13,9 @@
             <li>
                 <a href="{% url 'email_broadcast' 'tool' %}">are qualified for a tool</a>
             </li>
-        {% endif %}
-        {% if tools_exist %}
+            <li>
+                <a href="{% url 'email_broadcast' 'tool-categories' %}">are qualified on any tool in a category</a>
+            </li>
             <li>
                 <a href="{% url 'email_broadcast' 'tool-reservation' %}">have an upcoming reservation on a tool</a>
             </li>
@@ -63,7 +64,7 @@
                     <input id="search"
                            class="form-control"
                            aria-label="Audience"
-                           placeholder="{% if audience == "project-pis" %}[Optional] Select project(s){% elif audience == "account-managers" %}[Optional] Select account(s){% else %}Which {% if audience == 'tool-reservation' %}tool{% else %}{{ audience }}{% endif %}?{% endif %}"
+                           placeholder="{% if audience == "project-pis" %}[Optional] Select project(s){% elif audience == "account-managers" %}[Optional] Select account(s){% else %}Which {% if audience == 'tool-reservation' %}tool{% elif audience == 'tool-categories' %}categories{% else %}{{ audience }}{% endif %}?{% endif %}"
                            autofocus />
                 </div>
             </div>
@@ -89,7 +90,7 @@
 			}
             function remove_selection(id)
             {
-                $("#selection_" + id).remove();
+                $("[id='selection_" + id + "']").remove();
                 if($("#selection-list").find("input").length === 0)
                 {
                     {% if audience != "project-pis" and audience != "account-managers" %}$("#confirm").hide();{% endif %}

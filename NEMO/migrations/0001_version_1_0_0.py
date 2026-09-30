@@ -55,7 +55,8 @@ class Migration(migrations.Migration):
                 ),
             ],
             options={
-                "verbose_name_plural": "activity histories",
+                "verbose_name": "Administrative history",
+                "verbose_name_plural": "Administrative histories",
                 "ordering": ["-date"],
             },
         ),

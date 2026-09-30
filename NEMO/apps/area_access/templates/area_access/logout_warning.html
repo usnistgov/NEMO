@@ -16,7 +16,7 @@
         <br>
         <p>You are currently still charging staff time to:</p>
         <ul>
-            <li>{{ staff_charge.customer }} for project {{ staff_charge.project }}</li>
+            <li>{{ staff_charge.customer }} for project {{ staff_charge.project.get_display }}</li>
         </ul>
     {% endif %}
 </h2>

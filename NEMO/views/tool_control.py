@@ -9,7 +9,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, JsonResponse
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
 from django.utils import formats, timezone
@@ -46,6 +46,7 @@ from NEMO.utilities import (
     extract_optional_beginning_and_end_times,
     format_datetime,
     get_email_from_settings,
+    get_object_or_404_from_queryset,
     quiet_int,
     render_email_template,
     response_js_redirect,
@@ -91,7 +92,9 @@ def tool_status(request, tool_id):
     from NEMO.rates import rate_class
 
     user: User = request.user
-    tool = get_object_or_404(Tool, id=tool_id, visible=True)
+    tool = get_object_or_404_from_queryset(
+        Tool.objects.filter(id=tool_id, visible=True).prefetch_related("qualification_set__user")
+    )
     current_usage_event = tool.get_current_usage_event()
     user_is_qualified = tool.user_set.filter(id=user.id).exists()
     broadcast_upcoming_reservation = ToolControlCustomization.get("tool_control_broadcast_upcoming_reservation")
@@ -148,21 +151,10 @@ def tool_status(request, tool_id):
         ),
     }
 
-    reservation_user = user
-    if current_usage_event and current_usage_event.operator_id == user.id:
-        reservation_user = current_usage_event.user
-
-    current_reservation = Reservation.objects.filter(
-        start__lt=timezone.now(),
-        end__gt=timezone.now(),
-        cancelled=False,
-        missed=False,
-        shortened=False,
-        user=reservation_user,
-        tool=tool,
-    ).last()
+    current_reservation = get_current_reservation(user, tool)
     if current_reservation:
         dictionary["time_left"] = current_reservation.end
+        dictionary["reservation_project"] = current_reservation.project
         if ToolControlCustomization.get_bool("tool_control_note_copy_reservation"):
             dictionary["reservation_note"] = current_reservation.note
 
@@ -366,6 +358,9 @@ def tool_configuration(request):
 @login_required
 @require_POST
 def create_comment(request):
+    if ToolCustomization.get_bool("tool_comments_hide_for_non_staff") and not request.user.is_any_part_of_staff:
+        return HttpResponseForbidden("You do not have permission to post comments on this tool.")
+
     form = CommentForm(request.POST)
     if not form.is_valid():
         return HttpResponseBadRequest(nice_errors(form).as_ul())
@@ -464,6 +459,8 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
     # Start staff charge before tool usage
     if staff_charge:
         new_staff_charge = StaffCharge()
+        # Set the core facility from the tool on the staff charge
+        new_staff_charge.core_facility = tool.core_facility
         new_staff_charge.staff_member = request.user
         new_staff_charge.customer = user
         new_staff_charge.project = project
@@ -659,6 +656,13 @@ def past_comments_and_tasks(request):
         comments = Comment.objects.filter(tool_id=tool_id)
         if not user.is_staff_on_tool(tool):
             comments = comments.filter(staff_only=False)
+        else:
+            # staff can decide which comments to show
+            comments_to_show = request.GET.get("comments_to_show", "all")
+            if comments_to_show == "staff_only":
+                comments = comments.filter(staff_only=True)
+            elif comments_to_show == "non_staff_only":
+                comments = comments.filter(staff_only=False)
         if start:
             tasks = tasks.filter(creation_time__gt=start)
             comments = comments.filter(creation_date__gt=start)
@@ -666,7 +670,7 @@ def past_comments_and_tasks(request):
             tasks = tasks.filter(creation_time__lt=end)
             comments = comments.filter(creation_date__lt=end)
         if search:
-            tasks = tasks.filter(problem_description__icontains=search)
+            tasks = tasks.filter(Q(title__icontains=search) | Q(problem_description__icontains=search))
             comments = comments.filter(content__icontains=search)
     except:
         return HttpResponseBadRequest("Task and comment lookup failed.")
@@ -789,6 +793,23 @@ def tool_usage_questions(
     )
 
 
+def get_current_reservation(user: User, tool: Tool):
+    current_usage_event = tool.get_current_usage_event()
+    reservation_user = user
+    if current_usage_event and current_usage_event.operator_id == user.id:
+        reservation_user = current_usage_event.user
+
+    return Reservation.objects.filter(
+        start__lt=timezone.now(),
+        end__gt=timezone.now(),
+        cancelled=False,
+        missed=False,
+        shortened=False,
+        user=reservation_user,
+        tool=tool,
+    ).last()
+
+
 def interlock_bypass_allowed(user: User, item):
     return user.is_staff_on_tool(item) or InterlockCustomization.get_bool("allow_bypass_interlock_on_failure")
 
@@ -907,7 +928,7 @@ def format_usage_data(
                                 )
                                 group_usage_data["end_date"] = format_datetime(usage_event.end, "SHORT_DATETIME_FORMAT")
                                 if show_project_info:
-                                    group_usage_data["project"] = usage_event.project.name
+                                    group_usage_data["project"] = usage_event.project.get_display()
                                 table_result.add_row(group_usage_data)
                 else:
                     table_result.add_header((question_key, question["title"]))
@@ -924,7 +945,7 @@ def format_usage_data(
                 format_datetime(usage_event.end, "SHORT_DATETIME_FORMAT") if usage_event.end else ""
             )
             if show_project_info:
-                usage_data["project"] = usage_event.project.name
+                usage_data["project"] = usage_event.project.get_display()
             table_result.add_row(usage_data)
     except JSONDecodeError:
         tool_control_logger.debug("error decoding run_data: " + usage_run_data)

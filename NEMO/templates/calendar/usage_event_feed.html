@@ -1,52 +1,63 @@
 {# djlint:off #}
+{% load custom_tags_and_filters %}
 [
 	{% for x in usage_events %}
 	{
 		{% if personal_schedule %}
-			"title": "{{ x.tool.name }} ({{ x.user.username }})\n {{ x.project }}",
+			"title": "{{ x.tool.name }} ({{ x.user.username }})\n {{ x.project.get_display }}",
+		    "color": "{{ x.tool.get_calendar_personal_schedule_color }}",
 		{% else %}
-			"title": "{{ x.tool.name }} ({% if x.operator.id != x.user.id %}{{ x.operator }} on behalf of {% endif %}{{ x.user.username }})\n {{ x.project }}",
+			"title": "{{ x.tool.name }} ({% if x.operator.id != x.user.id %}{{ x.operator|escapejs }} on behalf of {% endif %}{{ x.user.username }})\n {% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.user %}{{ x.project.get_display }}{% endif %}",
+            {% if x.project and x.project.get_calendar_color %}
+                "color": "{{ x.project.get_calendar_color }}",
+            {% else %}
+		        "color": "{{ x.tool.get_calendar_usage_color }}",
+            {% endif %}
 		{% endif %}
 		{% if x.operator.id == x.user.id %}
-			"tooltip": "{{ x.tool.name }} usage for {{ x.user }} billed to project {{ x.project }}",
+			"tooltip": "{{ x.tool.name }} usage for {{ x.user|escapejs }}{% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.user %} billed to project {{ x.project.get_display }}{% endif %}",
 		{% else %}
-			"tooltip": "{{ x.tool.name }} usage for {{ x.user }}, operated by {{ x.operator }} and billed to project {{ x.project }}",
+			"tooltip": "{{ x.tool.name }} usage for {{ x.user|escapejs }}, operated by {{ x.operator|escapejs }}{% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.user %} and billed to project {{ x.project.get_display }}{% endif %}",
 		{% endif %}
 		"id": {{ x.id }},
 		"start": "{{ x.start|date:"c" }}",
 		{# Usage events that are less than the configured minimum display length are artificially lengthened for display purposes. #}
 		"end": "{{ x.get_visual_end|date:"c" }}",
-		"details_url": "{% url 'usage_details' x.id %}",
-		"color": "{{ x.tool.tool_calendar_color|default:'#33ad33'|escapejs }}"
-
+		"details_url": "{% url 'usage_details' x.id %}"
 	}{% if not forloop.last %},{% elif area_access_events or missed_reservations %},{% endif %}
 	{% endfor %}
 	{% for x in area_access_events %}
 	{
-		"title": "{{ x.area }} access billed to project {{ x.project }} {% if x.staff_charge %}by {{ x.staff_charge.staff_member }}{% endif %}",
-		"tooltip": "{{ x.area }} access for {{ x.customer }} billed to project {{ x.project }} {% if x.staff_charge %}by {{ x.staff_charge.staff_member }}{% endif %}",
+		"title": "{{ x.area }} access {% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.user %}billed to project {{ x.project.get_display }}{% endif %} {% if x.staff_charge %}by {{ x.staff_charge.staff_member }}{% endif %}",
+		"tooltip": "{{ x.area }} access for {{ x.customer }}{% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.customer %} billed to project {{ x.project.get_display }}{% endif %} {% if x.staff_charge %}by {{ x.staff_charge.staff_member }}{% endif %}",
 		"id": {{ x.id }},
 		"start": "{{ x.start|date:"c" }}",
 		{# Area access events that are less than the configured minimum display length are artificially lengthened for display purposes. #}
 		"end": "{{ x.get_visual_end|date:"c" }}",
 		"details_url": "{% url 'area_access_details' x.id %}",
-		"color": "{{ x.area.area_calendar_color|default:'#e68a00'|escapejs }}"
+        {% if personal_schedule %}
+            "color": "{{ x.area.get_calendar_personal_schedule_color }}"
+        {% elif x.project and x.project.get_calendar_color %}
+            "color": "{{ x.project.get_calendar_color }}",
+        {% else %}
+            "color": "{{ x.area.get_calendar_usage_color }}"
+        {% endif %}
 	}{% if not forloop.last %},{% elif missed_reservations %},{% endif %}
 	{% endfor %}
 	{% for x in missed_reservations %}
 	{
 		{% if personal_schedule %}
-			"title": "Missed reservation for the {{ x.reservation_item }} \n {{ x.project }}",
+			"title": "Missed reservation for the {{ x.reservation_item }} \n {{ x.project.get_display }}",
 		{% else %}
-			"title": "Missed reservation by {{ x.user }} \n {{ x.project }}",
+			"title": "Missed reservation by {{ x.user|escapejs }} \n{% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.user %} {{ x.project.get_display }}{% endif %}",
 		{% endif %}
 		{% if x.creator.id == x.user.id %}
-			"tooltip": "Missed {{ x.reservation_item.name }} reservation for {{ x.user }} billed to project {{ x.project }}",
+			"tooltip": "Missed {{ x.reservation_item.name }} reservation for {{ x.user|escapejs }}{% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.user %} billed to project {{ x.project.get_display }}{% endif %}",
 		{% else %}
-			"tooltip": "Missed {{ x.reservation_item.name }} reservation for {{ x.user }} billed to project {{ x.project }}, created by {{ x.creator }}",
+			"tooltip": "Missed {{ x.reservation_item.name }} reservation for {{ x.user|escapejs }}{% if customizations|get_item:"project_hide_project_info" != "enabled" or user.is_any_part_of_staff or user == x.user %} billed to project {{ x.project.get_display }}{% endif %}, created by {{ x.creator|escapejs }}",
 		{% endif %}
 		"id": {{ x.id }},
-		"color": "#ff0000",
+		"color": "{{ x.reservation_item.get_calendar_missed_reservation_color }}",
 		"start": "{{ x.start|date:"c" }}",
 		"end": "{{ x.end|date:"c" }}",
 		"details_url": "{% url 'reservation_details' x.id %}"
