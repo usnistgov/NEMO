@@ -1186,7 +1186,7 @@ class User(BaseModel, PermissionsMixin):
             )
             return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.get_name()}</a>'
 
-    def has_negative_perm(self, perm: str, obj):
+    def has_negative_perm(self, perm: str, obj=None):
         # has_perm return True if the user is an active superuser, so we need to return False here
         if self.is_active and self.is_superuser:
             return False
