@@ -6,7 +6,7 @@ import os
 import warnings
 from calendar import monthrange
 from copy import deepcopy
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone, UTC
 from email import encoders
 from email.mime.base import MIMEBase
 from enum import Enum
@@ -437,7 +437,7 @@ def extract_times(
 
     try:
         new_start = float(start)
-        new_start = datetime.utcfromtimestamp(new_start)
+        new_start = datetime.fromtimestamp(new_start, UTC).replace(tzinfo=None)
         new_start = localize(new_start).replace(microsecond=0)
         if beginning_and_end:
             new_start = beginning_of_the_day(new_start)
@@ -447,7 +447,7 @@ def extract_times(
 
     try:
         new_end = float(end)
-        new_end = datetime.utcfromtimestamp(new_end)
+        new_end = datetime.fromtimestamp(new_end, UTC).replace(tzinfo=None)
         new_end = localize(new_end).replace(microsecond=0)
         if beginning_and_end:
             new_end = end_of_the_day(new_end)
@@ -937,7 +937,7 @@ def create_ics(
     method_name = "CANCEL" if cancelled else "REQUEST"
     sequence = "SEQUENCE:2\n" if cancelled else "SEQUENCE:0\n"
     priority = "PRIORITY:5\n" if cancelled else "PRIORITY:0\n"
-    now = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    now = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     start = start.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     end = end.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     lines = [

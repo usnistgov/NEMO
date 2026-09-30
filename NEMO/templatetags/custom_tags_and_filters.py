@@ -160,7 +160,7 @@ def render_template_string(template_string, obj_name, obj):
         contents = Template(template_string).render(Context({obj_name: obj}))
     except:
         pass
-    return format_html(contents)
+    return mark_safe(contents)
 
 
 dist_version: str = "0"

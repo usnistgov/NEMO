@@ -3508,7 +3508,7 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
         return colors
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
-        super().save(force_insert, force_update, using, update_fields)
+        super().save(force_insert=force_insert, force_update=force_update, using=using, update_fields=update_fields)
         deferred_related_models = getattr(self, "_deferred_related_models", None)
         if deferred_related_models:
             for deferred_related_model in deferred_related_models:

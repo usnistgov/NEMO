@@ -665,9 +665,8 @@ def report_problem(request):
     if not settings.ALLOW_CONDITIONAL_URLS and form.cleaned_data["force_shutdown"]:
         site_title = ApplicationCustomization.get("site_title")
         dictionary["message"] = format_html(
-            '<ul class="errorlist"><li>{}</li></ul>'.format(
-                f"Tool control is only available on campus. When creating a task, you can't force a tool shutdown while using {site_title} off campus.",
-            )
+            '<ul class="errorlist"><li>{}</li></ul>',
+            f"Tool control is only available on campus. When creating a task, you can't force a tool shutdown while using {site_title} off campus.",
         )
         dictionary["form"] = form
         return render(request, "kiosk/tool_report_problem.html", dictionary)

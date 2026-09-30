@@ -466,17 +466,17 @@ def get_annotations(function_def: FunctionDef) -> List[str]:
             name = n.func.attr if isinstance(n.func, ast.Attribute) else n.func.id
         else:
             name = n.attr if isinstance(n, ast.Attribute) else n.id
-        if name == "require_http_methods" and "GET" in [arg.s for arg in n.args[0].elts]:
+        if name == "require_http_methods" and "GET" in [arg.value for arg in n.args[0].elts]:
             name = "require_GET"
-        elif name == "require_http_methods" and "POST" in [arg.s for arg in n.args[0].elts]:
+        elif name == "require_http_methods" and "POST" in [arg.value for arg in n.args[0].elts]:
             name = "require_POST"
-        elif name == "permission_required" and "NEMO.trigger_timed_services" == n.args[0].s:
+        elif name == "permission_required" and "NEMO.trigger_timed_services" == n.args[0].value:
             name = "time_services_required"
-        elif name == "permission_required" and n.args[0].s == "NEMO.kiosk":
+        elif name == "permission_required" and n.args[0].value == "NEMO.kiosk":
             name = "kiosk_required"
-        elif name == "permission_required" and n.args[0].s == "NEMO.kiosk":
+        elif name == "permission_required" and n.args[0].value == "NEMO.kiosk":
             name = "kiosk_required"
-        elif name == "permission_required" and n.args[0].s in [
+        elif name == "permission_required" and n.args[0].value in [
             "NEMO.change_areaaccessrecord",
             "NEMO.add_areaaccessrecord",
         ]:
