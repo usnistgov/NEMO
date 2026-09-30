@@ -183,7 +183,7 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
         """
         Check that the user is allowed to enable the tool. Enable the tool if the policy checks pass.
         """
-        if user.has_perm("NEMO.block_enable_tools"):
+        if user.has_negative_perm("NEMO.block_enable_tools"):
             if user == operator:
                 return HttpResponseBadRequest("You do not have permission to enable tools.")
             else:
@@ -374,7 +374,7 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
         """
         user = new_reservation.user
 
-        if user.has_perm("NEMO.block_create_reservations"):
+        if user.has_negative_perm("NEMO.block_create_reservations"):
             if user == user_creating_reservation:
                 return ["You do not have permission to create reservations."], True
             else:
@@ -1090,7 +1090,7 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
         return HttpResponse()
 
     def check_to_create_outage(self, user: User, outage: ScheduledOutage) -> HttpResponse:
-        if user.has_perm("NEMO.block_create_outages"):
+        if user.has_negative_perm("NEMO.block_create_outages"):
             return HttpResponseBadRequest("You do not have permission to create outages.")
 
         # Outages may not have a start time that is earlier than the end time.
@@ -1124,7 +1124,7 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
         """
         Checks the area access policy for a user.
         """
-        if user.has_perm("NEMO.block_enter_any_areas"):
+        if user.has_negative_perm("NEMO.block_enter_any_areas"):
             raise UserAccessError(user=user, msg="You do not have permission to enter any areas.")
 
         if not user.is_active:
@@ -1146,7 +1146,7 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
     def check_to_enter_area(self, area: Area, user: User):
         # If explicitly set on the Physical Access Level, staff & user office
         # are exempt from being granted explicit access
-        if user.has_perm("NEMO.block_enter_any_areas"):
+        if user.has_negative_perm("NEMO.block_enter_any_areas"):
             raise UserAccessError(user=user, msg="You do not have permission to enter any areas.")
 
         if (user.is_staff or user.is_user_office) and any(
@@ -1196,7 +1196,7 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
         charge: UsageEvent | AreaAccessRecord | ConsumableWithdraw | StaffCharge | Reservation | None = None,
     ):
         if project:
-            if user.has_perm("NEMO.block_bill_projects"):
+            if user.has_negative_perm("NEMO.block_bill_projects"):
                 raise NotAllowedToChargeProjectException(
                     project=project, user=user, msg="You do not have permission to bill any projects"
                 )
@@ -1232,14 +1232,14 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
                     raise ItemNotAllowedForProjectException(project, user, "Staff Charges", msg)
 
     def check_qualifying_user_on_tools(self, user, tools: list[Tool]) -> list[str]:
-        if user.has_perm("NEMO.block_qualify_on_tools"):
+        if user.has_negative_perm("NEMO.block_qualify_on_tools"):
             return [f"{user} is not allowed to be qualified on any tools."]
         return []
 
     def check_adding_physical_access_levels_to_user(
         self, user, physical_access_levels: list[PhysicalAccessLevel]
     ) -> list[str]:
-        if user.has_perm("NEMO.block_add_physical_access_levels"):
+        if user.has_negative_perm("NEMO.block_add_physical_access_levels"):
             return [f"{user} is not allowed to have any physical access levels."]
         return []
 

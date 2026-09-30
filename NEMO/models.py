@@ -1186,6 +1186,12 @@ class User(BaseModel, PermissionsMixin):
             )
             return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.get_name()}</a>'
 
+    def has_negative_perm(self, perm: str, obj):
+        # has_perm return True if the user is an active superuser, so we need to return False here
+        if self.is_active and self.is_superuser:
+            return False
+        return self.has_perm(perm, obj)
+
     def has_perm(self, perm, obj=None):
         # By default we don't use the actual object, similar to django admin
         general_permission = super().has_perm(perm)
