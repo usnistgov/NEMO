@@ -26,7 +26,7 @@ dependencies = [
     "django-auditlog==3.4.1",
     "django-filter==26.1",
     "django-mptt==0.18.0",
-    "djangorestframework==3.18.0",
+    "djangorestframework==3.18.1",
     "drf-excel==2.6.0",
     "drf-flex-fields==1.0.2",
     "fastjsonschema==2.22.2",
