@@ -1,6 +1,7 @@
 from datetime import timedelta
 from logging import getLogger
 from django.contrib import messages
+from django.contrib.admin import ModelAdmin
 from django.contrib.auth.decorators import login_required
 from django.db.models import Max
 from django.http import Http404, HttpResponseBadRequest
@@ -45,9 +46,22 @@ def users(request):
     only_active = UserCustomization.get_bool("user_list_active_only")
     if only_active:
         user_list = user_list.filter(is_active=True)
+    users_query = request.GET.get("users_query")
+    if users_query:
+        admin_model = ModelAdmin(user_list.model, None)
+        admin_model.search_fields = ["first_name", "last_name", "username"]
+        user_list, search_use_distinct = admin_model.get_search_results(None, user_list, users_query)
+        if search_use_distinct:
+            user_list = user_list.distinct()
     page = SortedPaginator(user_list, request, order_by="last_name").get_current_page()
 
-    dictionary = {"page": page, "user_types": UserType.objects.all(), "readonly": readonly_users(request)}
+    dictionary = {
+        "page": page,
+        "extra_params": f"users_query={users_query}" if users_query else "",
+        "users_query": users_query,
+        "user_types": UserType.objects.all(),
+        "readonly": readonly_users(request),
+    }
 
     return render(request, "users/users.html", dictionary)
 

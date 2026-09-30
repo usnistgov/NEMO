@@ -12,14 +12,23 @@
         {% endif %}
     </div>
     <div class="row" style="margin-bottom: 25px">
-        <div class="col-sm-6">
-            <input id="search"
-                   type="text"
-                   aria-label="Search for user"
-                   placeholder="Search for a user"
-                   class="form-control"
-                   autofocus>
-        </div>
+        <form method="get" action="{% url 'users' %}">
+            <div class="col-sm-6">
+                <div class="input-group">
+                    <input id="search"
+                           type="text"
+                           name="users_query"
+                           aria-label="Search for user"
+                           placeholder="Search for a user"
+                           class="form-control"
+                           autofocus
+                           value="{{ users_query|default_if_none:'' }}">
+                    <span class="input-group-btn">
+                        <input type="submit" class="btn btn-success" value="Search">
+                    </span>
+                </div>
+            </div>
+        </form>
     </div>
 {% endblock %}
 {% block pagination_content %}
