@@ -17,6 +17,7 @@ from django.core.exceptions import FieldError, ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.db.models.signals import post_delete, post_save
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from NEMO.typing import QuerySetType
@@ -173,7 +174,7 @@ class AdminAutocompleteSelectWidget(forms.Select):
 
     def render(self, name, value, attrs=None, renderer=None):
         select_html = super().render(name, value, attrs, renderer)
-        select2_script = f"""
+        select2_script = mark_safe(f"""
         <script type="text/javascript">
             (function($) {{
                 $(document).ready(function() {{
@@ -181,7 +182,7 @@ class AdminAutocompleteSelectWidget(forms.Select):
                 }});
             }})(django.jQuery);
         </script>
-        """
+        """)
         return select_html + select2_script
 
     @property
