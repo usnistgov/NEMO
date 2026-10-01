@@ -113,9 +113,10 @@ def create_or_modify_user(request, user_id):
         data, error = identity_service.get_externally_managed_areas()
         if data is not None:
             dictionary["externally_managed_physical_access_levels"] = data
-        if error:
-            dictionary["warning"] = error
-        dictionary["identity_service_available"] = False
+        else:
+            if error:
+                dictionary["warning"] = error
+            dictionary["identity_service_available"] = False
     elif identity_service.config:
         # display warning if identity service is defined but disabled
         dictionary["warning"] = (
