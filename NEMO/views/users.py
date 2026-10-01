@@ -198,12 +198,13 @@ def create_or_modify_user(request, user_id):
         tools = Tool.objects.filter(id__in=request.POST.getlist("qualifications", []))
 
         policy_errors = []
-        policy_errors.extend(policy.check_qualifying_user_on_tools(user, tools))
-        policy_errors.extend(
-            policy.check_adding_physical_access_levels_to_user(
-                user, form.cleaned_data.get("physical_access_levels", [])
+        if user:
+            policy_errors.extend(policy.check_qualifying_user_on_tools(user, tools))
+            policy_errors.extend(
+                policy.check_adding_physical_access_levels_to_user(
+                    user, form.cleaned_data.get("physical_access_levels", [])
+                )
             )
-        )
         if policy_errors:
             for error_str in policy_errors:
                 form.add_error(field=None, error=error_str)
