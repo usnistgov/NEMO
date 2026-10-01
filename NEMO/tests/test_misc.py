@@ -45,10 +45,10 @@ class MiscTests(NEMOTestCaseMixin, TestCase):
         # escaped, match
         self.assertTrue(re.match(re.escape("test?[]]"), "test?[]]"))
         # escaped + number
-        self.assertTrue(re.match(re.escape("test?[]]") + "\d+$", "test?[]]5"))
-        self.assertTrue(re.match(re.escape("test?[]]") + "\d+$", "test?[]]124"))
+        self.assertTrue(re.match(re.escape("test?[]]") + r"\d+$", "test?[]]5"))
+        self.assertTrue(re.match(re.escape("test?[]]") + r"\d+$", "test?[]]124"))
         # number is mandatory
-        self.assertFalse(re.match(re.escape("test?[]]") + "\d+$", "test?[]]"))
+        self.assertFalse(re.match(re.escape("test?[]]") + r"\d+$", "test?[]]"))
 
 
 class IsEmptyLookupTests(NEMOTestCaseMixin, TestCase):

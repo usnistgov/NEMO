@@ -20,7 +20,7 @@ from NEMO.utilities import (
     remove_duplicates,
 )
 from NEMO.views.area_access import load_areas_for_use_in_template
-from NEMO.views.customization import ApplicationCustomization, RemoteWorkCustomization
+from NEMO.views.customization import CoreFacilityCustomization, RemoteWorkCustomization
 
 
 @staff_member_or_tool_staff_required
@@ -213,7 +213,7 @@ def staff_charges(request):
             dictionary["customer"] = customer
             dictionary["core_facility_id"] = request.GET.get("core_facility")
             if (
-                not ApplicationCustomization.get_bool("core_facility_required_for_staff_charges")
+                not CoreFacilityCustomization.get_bool("core_facility_required_for_staff_charges")
                 or dictionary["core_facility_id"]
             ):
                 return render(request, "staff_charges/choose_project.html", dictionary)
@@ -245,7 +245,7 @@ def begin_staff_charge(request):
         charge.core_facility = CoreFacility.objects.get(id=request.POST["core_facility"])
     except:
         pass
-    if ApplicationCustomization.get_bool("core_facility_required_for_staff_charges") and not charge.core_facility:
+    if CoreFacilityCustomization.get_bool("core_facility_required_for_staff_charges") and not charge.core_facility:
         return HttpResponseBadRequest("You cannot create a new staff charge without a core facility.")
     # Check if we are allowed to bill to project
     try:

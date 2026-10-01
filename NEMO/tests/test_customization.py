@@ -18,7 +18,7 @@ class CustomizationGetMethodsTestCase(NEMOTestCaseMixin, TestCase):
     def test_get_returns_set_value_wrong_class(self):
         # facility_name is a ToolCustomization, but it should work anyway (and display a warning)
         ApplicationCustomization.set("facility_name", "My Lab")
-        value = ToolCustomization.get("facility_name")
+        value = ApplicationCustomization.get("facility_name")
         self.assertEqual(value, "My Lab")
 
     def test_get_returns_set_value(self):

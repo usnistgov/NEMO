@@ -277,6 +277,14 @@ class JsonField(models.JSONField):
         return super().formfield(**kwargs)
 
 
+class WrappedFilteredSelectMultiple(FilteredSelectMultiple):
+    """Wrapper to make the custom FilteredSelectMultiple widget render like the regular ManyToMany one"""
+
+    def render(self, name, value, attrs=None, renderer=None):
+        html = super().render(name, value, attrs, renderer)
+        return mark_safe(f'<div class="related-widget-wrapper">{html}</div>')
+
+
 class DynamicChoicesMixin:
     """
     Mixin class to handle dynamic choices for a field.
@@ -499,7 +507,7 @@ class MultiRoleGroupPermissionChoiceField(RoleGroupPermissionChoiceField):
     def formfield(self, **kwargs):
         choices = kwargs.pop("choices", self.role_choices(admin_display=True, include_blank=False))
         is_stacked = kwargs.pop("is_stacked", False)
-        kwargs["widget"] = FilteredSelectMultiple("Roles", is_stacked=is_stacked)
+        kwargs["widget"] = WrappedFilteredSelectMultiple("Roles", is_stacked=is_stacked)
         return super(models.TextField, self).formfield(
             choices=choices, form_class=CommaSeparatedTextMultipleChoiceField, **kwargs
         )
