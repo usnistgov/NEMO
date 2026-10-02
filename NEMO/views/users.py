@@ -420,10 +420,7 @@ def user_preferences(request):
 @any_staff_required
 @require_GET
 def view_user(request, user_id):
-    if UserCustomization.get_bool("user_allow_profile_view"):
-        return render(request, "users/view_user.html", get_profile_dictionary(user_id))
-    else:
-        return HttpResponseBadRequest("You are not allowed to view this page")
+    return render(request, "users/view_user.html", get_profile_dictionary(user_id))
 
 
 @login_required
