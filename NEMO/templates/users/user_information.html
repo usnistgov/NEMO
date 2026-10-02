@@ -60,7 +60,7 @@
         <div class="panel panel-default" id="user-projects-panel">
             <div class="panel-body">
                 <h3 style="margin-top: 0">Projects</h3>
-                {% if user_profile.projects %}
+                {% if user_profile.projects.exists %}
                     <ul>
                         {% if user_profile.active_projects %}
                             <li>
@@ -99,8 +99,15 @@
                             </li>
                         {% endif %}
                     </ul>
+                {% else %}
+                    <ul>
+                        {% if user == user_profile %}
+                            You do not have any projects.
+                        {% else %}
+                            This user does not have any projects.
+                        {% endif %}
+                    </ul>
                 {% endif %}
-                {% if not user_profile.projects %}<p>You do not have any projects.</p>{% endif %}
             </div>
         </div>
         <div class="panel panel-default" id="user-tool-qualifications-panel">
@@ -111,7 +118,13 @@
                         {% for tool_qualification in user_profile.qualifications.all %}<li>{{ tool_qualification }}</li>{% endfor %}
                     </ul>
                 {% else %}
-                    <p>You are not qualified for any tools.</p>
+                    <ul>
+                        {% if user == user_profile %}
+                            You are not qualified for any tools.
+                        {% else %}
+                            This user is not qualified for any tools.
+                        {% endif %}
+                    </ul>
                 {% endif %}
             </div>
         </div>
