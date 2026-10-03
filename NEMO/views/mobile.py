@@ -85,8 +85,9 @@ def make_reservation(request):
     user: User = request.user
     try:
         date = parse_date(request.POST["date"])
+        end_date = parse_date(request.POST["end_date"]) if request.POST.get("end_date") else date
         start = localize(datetime.combine(date, parse_time(request.POST["start"])))
-        end = localize(datetime.combine(date, parse_time(request.POST["end"])))
+        end = localize(datetime.combine(end_date, parse_time(request.POST["end"])))
     except:
         return render(
             request,
@@ -135,6 +136,7 @@ def make_reservation(request):
         dictionary = {
             "request_date": request.POST["date"],
             "request_start": request.POST["start"],
+            "request_end_date": request.POST.get("end_date") or request.POST["date"],
             "request_end": request.POST["end"],
             "reservation": reservation,
         }

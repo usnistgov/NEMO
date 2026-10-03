@@ -1,6 +1,13 @@
 {% extends 'base.html' %}
+{% load static %}
 {% load custom_tags_and_filters %}
 {% block title %}{{ item }} calendar{% endblock %}
+{% block extrahead %}
+    <script type="text/javascript" src="{% static "pickadate/picker.js" %}"></script>
+    <script type="text/javascript" src="{% static "pickadate/picker.date.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "pickadate/default.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "pickadate/default.date.css" %}" />
+{% endblock %}
 {% block content %}
     <div class="row" style="font-size:1.7em; margin-bottom:20px">
         <div class="col-xs-2">
@@ -10,9 +17,12 @@
             {{ item }}
             {% include 'snippets/item_status_icons.html' with icon_size='large' %}
             <br>
-            {{ current_day|date:"l" }}
-            <br>
-            {{ current_day|date:"F jS" }}
+            <a id="jump_to_date_link" href="javascript:void(0)" style="color:inherit; text-decoration:underline dotted; display:block">
+                {{ current_day|date:"l" }}
+                <br>
+                {{ current_day|date:"F jS" }}
+            </a>
+            <input type="text" id="jump_to_date" style="position:absolute; opacity:0; height:0; width:0; padding:0; border:0" aria-label="Jump to date">
         </div>
         <div class="col-xs-2">
             <a href="{% url 'view_calendar' item_type item.id %}{{ next_day|date:"Y-m-d" }}/"><span class="glyphicon glyphicon-chevron-right"></span></a>
@@ -44,4 +54,26 @@
             </svg>
         </a>
     {% endif %}
+    <script>
+        window.addEventListener('load', function () {
+            let jump_to_date_picker = $('#jump_to_date').pickadate({
+                format: "{{ pickadate_date_format }}",
+                formatSubmit: "yyyy-mm-dd",
+                firstDay: 1,
+                container: 'body',
+                onSet: function (thing) {
+                    if (thing.select) {
+                        let picker = jump_to_date_picker.pickadate('picker');
+                        let selected_date = picker.get('select', 'yyyy-mm-dd');
+                        window.location.href = "{% url 'view_calendar' item_type item.id %}" + selected_date + "/";
+                    }
+                }
+            });
+            jump_to_date_picker.pickadate('picker').set('select', '{{ current_day.date|input_date_format }}', {format: '{{ pickadate_date_format }}', muted: true});
+            $('#jump_to_date_link').on('click', function (e) {
+                e.stopPropagation();
+                jump_to_date_picker.pickadate('picker').open();
+            });
+        });
+    </script>
 {% endblock %}
