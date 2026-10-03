@@ -32,11 +32,13 @@
                     <p>
                         {% if fatal_error %}
                             There is a problem with your <b>{{ reservation.start|time }}</b> reservation for the <b>{{ reservation.tool }}</b>.
-                            The tool was <b>shut down</b> when this email was sent. Please visit {{ site_title }} to view current tool status.
+                            The tool was <b>shut down</b> when this email was sent.
                         {% else %}
                             There may be a problem with your <b>{{ reservation.start|time }}</b> reservation for the <b>{{ reservation.tool }}</b>.
-                            The tool may be operating in a diminished capacity or may not be able to perform certain processes. Please visit {{ site_title }} to view current tool status.
+                            The tool may be operating in a diminished capacity or may not be able to perform certain processes.
                         {% endif %}
+                        Please visit <a href="{{ site_url }}">{{ site_title }}</a> to view
+                        {% if tool_control_absolute_url %}<a href="{{ tool_control_absolute_url }}">current tool status</a>{% else %}current tool status{% endif %}.
                     </p>
                     <h4>What's wrong and when will it be resolved?</h4>
                     {% with reservation.tool.problems as problems %}

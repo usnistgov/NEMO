@@ -8,6 +8,7 @@ from django.db.models import Q
 from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
@@ -200,6 +201,8 @@ def send_new_task_emails(request, task: Task, user, task_images: List[TaskImages
                         "reservation": reservation,
                         "template_color": bootstrap_primary_color("danger"),
                         "fatal_error": True,
+                        "site_url": get_full_url(reverse("landing"), request),
+                        "tool_control_absolute_url": get_full_url(task.tool.get_absolute_url(), request),
                     },
                     request,
                 )
@@ -211,6 +214,8 @@ def send_new_task_emails(request, task: Task, user, task_images: List[TaskImages
                         "reservation": reservation,
                         "template_color": bootstrap_primary_color("warning"),
                         "fatal_error": False,
+                        "site_url": get_full_url(reverse("landing"), request),
+                        "tool_control_absolute_url": get_full_url(task.tool.get_absolute_url(), request),
                     },
                     request,
                 )
