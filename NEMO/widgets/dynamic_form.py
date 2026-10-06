@@ -406,7 +406,7 @@ class PostUsageFloatFieldQuestion(PostUsageTextFieldQuestion):
 
     def render_input(self, readonly: str, required: str, pattern: str, placeholder: str, default_value: str) -> str:
         precision = self.precision if self.precision else 2
-        pattern = f'pattern="^\s*(?=.*[0-9])\d*(?:\.\d{"{1," + str(precision) + "}"})?\s*$"'
+        pattern = rf'pattern="^\s*(?=.*[0-9])\d*(?:\.\d{"{1," + str(precision) + "}"})?\s*$"'
         return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {placeholder} {pattern} {default_value} {required} {readonly} spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
     def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
@@ -1102,7 +1102,7 @@ def sort_question_for_grid(questions: List[PostUsageQuestion]) -> List[List[Post
 
 def match_group_index(form_name: str) -> Optional[re.Pattern]:
     # This will match form_name or any combination of form_name_1, form_name_2 etc.
-    return re.compile("^" + form_name + "(_(\d+))?$")
+    return re.compile("^" + form_name + r"(_(\d+))?$")
 
 
 def get_js_event_data(item, dynamic_field_name: str, extra_data=None) -> str:

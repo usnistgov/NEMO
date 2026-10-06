@@ -87,7 +87,7 @@ class UserForm(ModelForm):
 class ProjectForm(ModelForm):
     class Meta:
         model = Project
-        exclude = ["only_allow_tools", "allow_consumable_withdrawals", "allow_staff_charges"]
+        exclude = ["only_allow_tools", "allow_consumable_withdrawals", "allow_staff_charges", "project_calendar_color"]
 
     managers = ModelMultipleChoiceField(
         queryset=User.objects.all(),
