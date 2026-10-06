@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods
 
 from NEMO.decorators import disable_session_expiry_refresh, facility_manager_required
-from NEMO.forms import StaffAbsenceForm
+from NEMO.forms import StaffAbsenceForm, save_staff_absence
 from NEMO.model_tree import ModelTreeHelper, TreeItem, get_area_model_tree
 from NEMO.models import (
     Alert,
@@ -32,6 +32,7 @@ from NEMO.models import (
 from NEMO.typing import QuerySetType
 from NEMO.utilities import (
     BasicDisplayTable,
+    RecurrenceFrequency,
     as_timezone,
     beginning_of_the_day,
     end_of_the_day,
@@ -202,15 +203,18 @@ def create_staff_absence(request, absence_id=None):
                 absence.staff_member = StaffAvailability.objects.get(pk=staff_id)
         except (StaffAvailability.DoesNotExist, ValueError):
             pass
+    editing = absence.pk is not None
     form = StaffAbsenceForm(request.POST or None, instance=absence)
     timestamp = request.GET.get("timestamp", "")
     view = request.GET.get("view", "")
     if request.POST and form.is_valid():
-        form.save()
+        save_staff_absence(form)
         return HttpResponse()
     dictionary = {
         "form": form,
+        "editing": editing,
         "staff_members": StaffAvailability.objects.filter(visible=True),
+        "recurrence_intervals": RecurrenceFrequency.choices(),
         "page_timestamp": timestamp,
         "page_view": view,
     }

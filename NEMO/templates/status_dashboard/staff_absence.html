@@ -106,6 +106,68 @@
                 <div class="col-sm-9 col-sm-offset-3" style="color:red">{{ form.manager_note.errors|striptags }}</div>
             {% endif %}
         </div>
+        {% if not editing %}
+            <div class="form-group">
+                <label class="col-sm-3 control-label">Recurring</label>
+                <div class="col-sm-9">
+                    <div class="checkbox">
+                        <label>
+                            <input id="recurring_absence"
+                                   name="recurring_absence"
+                                   type="checkbox"
+                                   data-toggle="collapse"
+                                   data-target="#absence_recurrence"
+                                   {% if form.recurring_absence.value %}checked{% endif %} />
+                            Make recurring
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div id="absence_recurrence" class="collapse {{ form.recurring_absence.value|yesno:"in," }}">
+                <div class="form-group">
+                    <label class="col-sm-3 control-label" for="recurrence_interval">Every</label>
+                    <div class="col-sm-3">
+                        <input id="recurrence_interval"
+                               name="recurrence_interval"
+                               type="number"
+                               min="1"
+                               class="form-control"
+                               value="{{ form.recurrence_interval.value|default_if_none:'1' }}" />
+                        {% if form.recurrence_interval.errors %}
+                            <span style="color:red">{{ form.recurrence_interval.errors|striptags }}</span>
+                        {% endif %}
+                    </div>
+                    <label class="col-sm-2 control-label" for="recurrence_frequency">Frequency</label>
+                    <div class="col-sm-4">
+                        <select class="form-control" name="recurrence_frequency" id="recurrence_frequency">
+                            {% for choice in recurrence_intervals %}
+                                <option value="{{ choice.0 }}"
+                                        {% if form.recurrence_frequency.value == choice.0|stringformat:'i' %}selected{% endif %}>
+                                    {{ choice.1 }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if form.recurrence_frequency.errors %}
+                            <span style="color:red">{{ form.recurrence_frequency.errors|striptags }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-3 control-label" for="recurrence_until">Until</label>
+                    <div class="col-sm-9">
+                        <input type="text"
+                               id="recurrence_until"
+                               name="recurrence_until"
+                               class="form-control select-date"
+                               value="{{ form.recurrence_until.value|input_date_format }}"
+                               placeholder="Choose a date">
+                        {% if form.recurrence_until.errors %}
+                            <span style="color:red">{{ form.recurrence_until.errors|striptags }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
         <div class="form-group">
             {% if form.instance.pk %}
                 <div class="col-sm-5 col-sm-offset-3 text-left">
@@ -169,6 +231,16 @@
         viewDate: new Date({% widthratio page_timestamp 1 1000 %})
     };
     set_start_end_datetime_pickers($('#start_date'), $('#end_date'), timepicker_properties);
+    {% if not editing %}
+        let end_date_jq = $('#end_date');
+        let recurrence_until_jq = $('#recurrence_until');
+        recurrence_until_jq.datetimepicker({format: '{{ date_input_js_format }}', useCurrent: false});
+        let recurrence_until_picker = recurrence_until_jq.data("DateTimePicker");
+        end_date_jq.on("dp.change", function (e)
+        {
+            recurrence_until_picker.minDate(e.date);
+        });
+    {% endif %}
     $("#dialog").one('shown.bs.modal', function()
     {
         auto_size_textarea(document.getElementById('absence_description'));

@@ -15,6 +15,8 @@
             <br>
             Staff absence is highlighted in <span style="display: inline-block; padding: 3px" class="alert-danger">red</span>
             <br>
+            Staff working remotely is highlighted in <span style="display: inline-block; padding: 3px" class="alert-info">blue</span>
+            <br>
             <br>
             Extra information (if available) can be found by hovering over a time block
             <br>
@@ -116,7 +118,7 @@
                                 {% with staff_available=staff.weekly_availability|get_item:day.weekday staff_absent=staff_absences|get_item:staff.id|get_item:day.day closure_time=closure_times|get_item:day.day %}
                                     {% with start_closure_time=closure_time.start_time|localtime end_closure_time=closure_time.end_time|localtime %}
                                         <td {% if prev and next and days_length == 1 %}colspan="3" {% elif forloop.first and prev or forloop.last and next %}colspan="2"{% endif %}
-                                            class="staff-status-availability text-center {% if staff_absent or closure_time %}{% if staff_absent and not staff_absent.full_day %}alert-warning{% elif closure_time %}{% if start_closure_time.date == day.date and start_closure_time.hour > 0 or start_closure_time.date == day.date and start_closure_time.minute > 0 %}alert-warning{% elif end_closure_time.date == day.date and end_closure_time.hour < 23 or end_closure_time.date == day.date and end_closure_time.minute < 59 %}alert-warning{% else %}alert-danger{% endif %}{% else %}alert-danger{% endif %}{% elif staff_available %}alert-success{% elif not user.is_facility_manager %}alert-danger{% endif %}">
+                                            class="staff-status-availability text-center {% if staff_absent or closure_time %}{% if staff_absent.absence_type.remote_work %}alert-info{% elif staff_absent and not staff_absent.full_day %}alert-warning{% elif closure_time %}{% if start_closure_time.date == day.date and start_closure_time.hour > 0 or start_closure_time.date == day.date and start_closure_time.minute > 0 %}alert-warning{% elif end_closure_time.date == day.date and end_closure_time.hour < 23 or end_closure_time.date == day.date and end_closure_time.minute < 59 %}alert-warning{% else %}alert-danger{% endif %}{% else %}alert-danger{% endif %}{% elif staff_available %}alert-success{% elif not user.is_facility_manager %}alert-danger{% endif %}">
                                             {% if closure_time %}
                                                 {% with custom_data_template="<div class='tooltip' role='tooltip'><div class='arrow'></div><div class='tooltip-inner' style='text-align:left; max-width: 300px'></div></div>" %}
                                                 <div data-toggle="tooltip"
