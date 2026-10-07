@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from NEMO.decorators import user_office_or_manager_required
@@ -21,6 +22,7 @@ from NEMO.utilities import (
     as_timezone,
     export_format_datetime,
     format_datetime,
+    get_full_url,
     queryset_search_filter,
     render_email_template,
     send_mail,
@@ -355,7 +357,19 @@ def send_reorder_supply_reminder_email(consumable: Consumable):
     message = get_media_file_contents("reorder_supplies_reminder_email.html")
     if user_office_email and message:
         subject = f"Time to order more {consumable.name}"
-        rendered_message = render_email_template(message, {"item": consumable})
+        # This is called from pre_save, so a new consumable doesn't have an id yet
+        if consumable.id:
+            consumable_admin_url = reverse("admin:NEMO_consumable_change", args=[consumable.id])
+        else:
+            consumable_admin_url = reverse("admin:NEMO_consumable_changelist")
+        rendered_message = render_email_template(
+            message,
+            {
+                "item": consumable,
+                "site_url": get_full_url(reverse("landing")),
+                "consumable_admin_url": get_full_url(consumable_admin_url),
+            },
+        )
         send_mail(
             subject=subject,
             content=rendered_message,
