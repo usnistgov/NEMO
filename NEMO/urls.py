@@ -345,6 +345,11 @@ urlpatterns += [
         calendar.change_reservation_note,
         name="change_reservation_note",
     ),
+    path(
+        "edit_reservation_questions/<int:reservation_id>/",
+        calendar.edit_reservation_questions,
+        name="edit_reservation_questions",
+    ),
     path("change_outage_title/<int:outage_id>/", calendar.change_outage_title, name="change_outage_title"),
     path("change_outage_details/<int:outage_id>/", calendar.change_outage_details, name="change_outage_details"),
     path("change_reservation_date/", calendar.change_reservation_date, name="change_reservation_date"),

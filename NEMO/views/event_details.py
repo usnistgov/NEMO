@@ -19,14 +19,20 @@ def reservation_details(request, reservation_id):
         return HttpResponseNotFound(error_message)
     reservation_project_can_be_changed = (
         (request.user.is_staff or request.user.is_staff_on_tool(reservation.tool) or request.user == reservation.user)
-        and reservation.has_not_ended
-        and reservation.has_not_started
+        and reservation.has_not_ended()
+        and reservation.has_not_started()
         and reservation.user.active_project_count() > 1
+    )
+    reservation_questions_can_be_edited = (
+        not reservation.missed
+        and reservation.has_not_ended()
+        and (request.user == reservation.user or request.user.is_staff_on_tool(reservation.tool))
     )
 
     template_data = {
         "reservation": reservation,
         "reservation_project_can_be_changed": reservation_project_can_be_changed,
+        "reservation_questions_can_be_edited": reservation_questions_can_be_edited,
         "popup_view": popup_view,
     }
 

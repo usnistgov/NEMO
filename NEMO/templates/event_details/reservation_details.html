@@ -243,7 +243,14 @@
 {% endif %}
 {% if reservation.question_data_json.items %}
     <tr>
-        <td>Reservation questions:</td>
+        <td style="vertical-align: middle">
+            Reservation questions:
+            {% if reservation_questions_can_be_edited %}
+                <span class="glyphicon glyphicon-pencil pull-right"
+                      title="Edit answers"
+                      onclick="ajax_get('{% url 'edit_reservation_questions' reservation.id %}', undefined, ajax_success_callback)"></span>
+            {% endif %}
+        </td>
         <td style="padding: 0;">
             <table class="table table-striped" style="margin-bottom: 0;">
                 {% for question_name, data in reservation.question_data_json.items %}
