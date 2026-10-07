@@ -1,5 +1,44 @@
 {% load custom_tags_and_filters %}
 <div class="panel-body">
+    <h3 class="customization-section-title" id="email_settings_id">Email settings</h3>
+    <p>
+        Each email below has a customizable subject, "from" address and "cc" addresses. Each of these three fields is
+        rendered with the Django template engine using the same context variables listed for that email, plus three
+        extra variables always available on every email:
+    </p>
+    <ul>
+        <li>
+            <code>default_subject</code> - {{ site_title }}'s original, built-in subject for that specific email
+        </li>
+        <li>
+            <code>default_from_email</code> - {{ site_title }}'s original, built-in "from" address for that specific email
+        </li>
+        <li>
+            <code>default_cc_emails</code> - {{ site_title }}'s original, built-in "cc" addresses for that specific email
+        </li>
+    </ul>
+    <p>
+        Note that you can generally edit these fields for each specific email through different customization settings. The From field will autopopulate with different presets you may use to access different email addresses.<br><br>
+        Leaving a field blank restores it to its original behavior. You may use any valid Django template syntax, including template variables (e.g.
+        <code>{% templatetag openvariable %} customizations|get_item:"user_office_email_address" {% templatetag closevariable %}</code>).
+        <br><br>
+        Each email has its own "Save this email's settings" button right below its subject/from/cc fields, which saves only that email. The
+        "Save all email settings" buttons here and at the bottom of the page save every email at once.
+    </p>
+    <form id="email_settings_form" method="POST" action="{% url 'customize' 'templates' %}" style="margin-bottom: 20px; margin-top: 20px">
+        {% csrf_token %}
+        <div class="text-center">{% button type="save" value="Save all email settings" %}</div>
+    </form>
+    <datalist id="email_from_presets">
+        <option value="{% templatetag openvariable %} default_from_email {% templatetag closevariable %}" label="Default (unchanged)"></option>
+        <option value="{% templatetag openvariable %} customizations|get_item:&quot;user_office_email_address&quot; {% templatetag closevariable %}" label="User office"></option>
+        <option value="{% templatetag openvariable %} customizations|get_item:&quot;abuse_email_address&quot; {% templatetag closevariable %}" label="Abuse"></option>
+        <option value="{% templatetag openvariable %} customizations|get_item:&quot;safety_email_address&quot; {% templatetag closevariable %}" label="Safety"></option>
+        <option value="{% templatetag openvariable %} customizations|get_item:&quot;feedback_email_address&quot; {% templatetag closevariable %}" label="Feedback"></option>
+    </datalist>
+    <div class="customization-separation"></div>
+</div>
+<div class="panel-body">
     <h3 class="customization-section-title" id="login_banner_id">Login banner</h3>
     <p>
         The login banner is an informational message displayed underneath the username and password text boxes on the login page. You can customize this to convey rules for {{ site_title }} users at your organization.
@@ -62,7 +101,7 @@
         <br>
         The image you upload should be a valid image file (recommended size is 1500x1000).
     </p>
-    {% include 'customizations/customizations_upload.html' with element=jumbotron_watermark name='jumbotron watermark' extension='png' key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=jumbotron_watermark name='jumbotron watermark' extension='png' uneditable=True key='templates' %}
     <div class="customization-separation"></div>
 </div>
 <div id="panel-sort">
@@ -76,18 +115,19 @@
         <p>The following context variables are provided when the email is rendered:</p>
         <ul>
             <li>
-                <b>template_color</b> - the color: green if approved, red if denied, blue otherwise
+                <code>template_color</code> - the color: green if approved, red if denied, blue otherwise
             </li>
             <li>
-                <b>access_request</b> - the user's access request that was created or updated
+                <code>access_request</code> - the user's access request that was created or updated
             </li>
             <li>
-                <b>status</b> - the status of the request: received, updated, approved or denied
+                <code>status</code> - the status of the request: received, updated, approved or denied
             </li>
             <li>
-                <b>access_requests_url</b> - the URL to the access requests page
+                <code>access_requests_url</code> - the URL to the access requests page
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='access_request_notification_email' %}
         {% include 'customizations/customizations_upload.html' with element=access_request_notification_email name='access request notification email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -102,24 +142,25 @@
         <p>The following context variables are provided when the email is rendered:</p>
         <ul>
             <li>
-                <b>template_color</b> - the color: green if approved, red if denied, blue otherwise
+                <code>template_color</code> - the color: green if approved, red if denied, blue otherwise
             </li>
             <li>
-                <b>adjustment_request</b> - the user's adjustment request that was created or updated
+                <code>adjustment_request</code> - the user's adjustment request that was created or updated
             </li>
             <li>
-                <b>status</b> - the status of the request: received, updated, approved or denied
+                <code>status</code> - the status of the request: received, updated, approved or denied
             </li>
             <li>
-                <b>adjustment_requests_url</b> - the URL to the adjustment requests page
+                <code>adjustment_requests_url</code> - the URL to the adjustment requests page
             </li>
             <li>
-                <b>manager_note</b> - an extra (optional) note from the manager sent to the user when the request is denied or to the user office when it is approved
+                <code>manager_note</code> - an extra (optional) note from the manager sent to the user when the request is denied or to the user office when it is approved
             </li>
             <li>
-                <b>user_office</b> - a flag that is true when the email is addressed to the User Office
+                <code>user_office</code> - a flag that is true when the email is addressed to the User Office
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='adjustment_request_notification_email' %}
         {% include 'customizations/customizations_upload.html' with element=adjustment_request_notification_email name='adjustment request notification email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -129,15 +170,16 @@
         <p>The following context variables are provided when the email is rendered:</p>
         <ul>
             <li>
-                <b>user</b> - the user in the wait list
+                <code>user</code> - the user in the wait list
             </li>
             <li>
-                <b>tool</b> - the tool that the user is in the wait list for
+                <code>tool</code> - the tool that the user is in the wait list for
             </li>
             <li>
-                <b>time_to_expiration</b> - the time left for the user to use the tool
+                <code>time_to_expiration</code> - the time left for the user to use the tool
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='wait_list_notification_email' %}
         {% include 'customizations/customizations_upload.html' with element=wait_list_notification_email name='wait list notification email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -148,15 +190,16 @@
         </p>
         <ul>
             <li>
-                <b>reservation</b> - the user's reservation that was cancelled
+                <code>reservation</code> - the user's reservation that was cancelled
             </li>
             <li>
-                <b>staff_member</b> - the user object of the staff member who cancelled the reservation
+                <code>staff_member</code> - the user object of the staff member who cancelled the reservation
             </li>
             <li>
-                <b>reason</b> - the reason the staff member provided for cancelling the reservation
+                <code>reason</code> - the reason the staff member provided for cancelling the reservation
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='cancellation_email' %}
         {% include 'customizations/customizations_upload.html' with element=cancellation_email name='cancellation email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -168,9 +211,10 @@
         </p>
         <ul>
             <li>
-                <b>counter</b> - the counter which value reached the warning threshold
+                <code>counter</code> - the counter which value reached the warning threshold
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='counter_threshold_reached_email' %}
         {% include 'customizations/customizations_upload.html' with element=counter_threshold_reached_email name='counter threshold reached email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -182,12 +226,13 @@
         </p>
         <ul>
             <li>
-                <b>contents</b> - the user's feedback
+                <code>contents</code> - the user's feedback
             </li>
             <li>
-                <b>user</b> - the user object of the user who submitted the feedback
+                <code>user</code> - the user object of the user who submitted the feedback
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='feedback_email' %}
         {% include 'customizations/customizations_upload.html' with element=feedback_email name='feedback email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -198,18 +243,19 @@
         </p>
         <ul>
             <li>
-                <b>title</b> - the user specified title of the email
+                <code>title</code> - the user specified title of the email
             </li>
             <li>
-                <b>greeting</b> - a greeting to the recipients of the email
+                <code>greeting</code> - a greeting to the recipients of the email
             </li>
             <li>
-                <b>contents</b> - the body of the email
+                <code>contents</code> - the body of the email
             </li>
             <li>
-                <b>template_color</b> - the color to emphasize
+                <code>template_color</code> - the color to emphasize
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='generic_email' %}
         {% include 'customizations/customizations_upload.html' with element=generic_email name='generic email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -222,9 +268,10 @@
         </p>
         <ul>
             <li>
-                <b>reservation</b> - the reservation that the user missed
+                <code>reservation</code> - the reservation that the user missed
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='missed_reservation_email' %}
         {% include 'customizations/customizations_upload.html' with element=missed_reservation_email name='missed reservation email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -239,12 +286,16 @@
         </p>
         <ul>
             <li>
-                <b>user</b> - the user's model instance
+                <code>user</code> - the user's model instance
             </li>
             <li>
-                <b>making_reservations_rule_summary</b> - a free-response answer provided by the user. Normally, this is provided by the user to summarize their understanding of the {{ facility_name }} rules and proceedures.
+                <code>making_reservations_rule_summary</code> - a free-response answer provided by the user. Normally, this is provided by the user to summarize their understanding of the {{ facility_name }} rules and proceedures.
+            </li>
+            <li>
+                <code>facility_name</code> - the name of the facility
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='facility_rules_tutorial_email' %}
         {% include 'customizations/customizations_upload.html' with element=facility_rules_tutorial_email name='facility rules tutorial email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -256,21 +307,22 @@
         </p>
         <ul>
             <li>
-                <b>user</b> - the user who created the task
+                <code>user</code> - the user who created the task
             </li>
             <li>
-                <b>task</b> - the task information
+                <code>task</code> - the task information
             </li>
             <li>
-                <b>tool</b> - the tool that the task is associated with
+                <code>tool</code> - the tool that the task is associated with
             </li>
             <li>
-                <b>tool_control_absolute_url</b> - the URL of the tool control page for the tool
+                <code>tool_control_absolute_url</code> - the URL of the tool control page for the tool
             </li>
             <li>
-                <b>template_color</b> - an HTML color code indicating the severity of the problem. Orange for warning, red for shutdown.
+                <code>template_color</code> - an HTML color code indicating the severity of the problem. Orange for warning, red for shutdown.
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='new_task_email' %}
         {% include 'customizations/customizations_upload.html' with element=new_task_email name='new task email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -282,9 +334,10 @@
         </p>
         <ul>
             <li>
-                <b>reservation</b> - the reservation that the user is out of time on
+                <code>reservation</code> - the reservation that the user is out of time on
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='out_of_time_reservation_email' %}
         {% include 'customizations/customizations_upload.html' with element=out_of_time_reservation_email name='out of time reservation email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -298,16 +351,20 @@
         </p>
         <ul>
             <li>
-                <b>user</b> - the user who is assigned to the items
+                <code>user</code> - the user who is assigned to the items
             </li>
             <li>
-                <b>charges</b> - the list of {{ recurring_charges_name|lower }}
+                <code>charges</code> - the list of {{ recurring_charges_name|lower }}
             </li>
             <li>
-                <b>reminder_days</b> - the number of days until the items are charged
+                <code>reminder_days</code> - the number of days until the items are charged
+            </li>
+            <li>
+                <code>recurring_charges_name</code> - the configured name for {{ recurring_charges_name|lower }}
             </li>
         </ul>
         {% with button_name=recurring_charges_name|lower %}
+            {% include 'customizations/customizations_email_options.html' with element='recurring_charges_reminder_email' %}
             {% include 'customizations/customizations_upload.html' with element=recurring_charges_reminder_email name="recurring charges reminder email" button_name="Upload "|concat:button_name|concat:" reminder email" element_link_name=button_name.split|join:"_"|concat:"_reminder_email" key='templates' %}
         {% endwith %}
         <div class="customization-separation"></div>
@@ -320,9 +377,10 @@
         </p>
         <ul>
             <li>
-                <b>item</b> - the item which quantity fell below the reminder threshold
+                <code>item</code> - the item which quantity fell below the reminder threshold
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='reorder_supplies_reminder_email' %}
         {% include 'customizations/customizations_upload.html' with element=reorder_supplies_reminder_email name='reorder supplies reminder email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -336,9 +394,10 @@
         </p>
         <ul>
             <li>
-                <b>reservation</b> - the user's reservation ending
+                <code>reservation</code> - the user's reservation ending
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='reservation_ending_reminder_email' %}
         {% include 'customizations/customizations_upload.html' with element=reservation_ending_reminder_email name='reservation ending reminder email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -351,9 +410,10 @@
         </p>
         <ul>
             <li>
-                <b>reservation</b> - the user's upcoming reservation
+                <code>reservation</code> - the user's upcoming reservation
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='reservation_reminder_email' %}
         {% include 'customizations/customizations_upload.html' with element=reservation_reminder_email name='reservation reminder email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -366,15 +426,16 @@
         </p>
         <ul>
             <li>
-                <b>reservation</b> - the user's upcoming reservation
+                <code>reservation</code> - the user's upcoming reservation
             </li>
             <li>
-                <b>fatal_error</b> - boolean value that, when true, indicates that it will be impossible for the user to use the tool/access the area during their reservation (due to maintenance, outages or a missing required dependency)
+                <code>fatal_error</code> - boolean value that, when true, indicates that it will be impossible for the user to use the tool/access the area during their reservation (due to maintenance, outages or a missing required dependency)
             </li>
             <li>
-                <b>template_color</b> - an HTML color code indicating the severity of the problem. Orange for warning, red for shutdown.
+                <code>template_color</code> - an HTML color code indicating the severity of the problem. Orange for warning, red for shutdown.
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='reservation_warning_email' %}
         {% include 'customizations/customizations_upload.html' with element=reservation_warning_email name='reservation warning email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -386,12 +447,13 @@
         </p>
         <ul>
             <li>
-                <b>issue</b> - the issue information
+                <code>issue</code> - the issue information
             </li>
             <li>
-                <b>issue_absolute_url</b> - the URL for the detailed view of the issue
+                <code>issue_absolute_url</code> - the URL for the detailed view of the issue
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='safety_issue_email' %}
         {% include 'customizations/customizations_upload.html' with element=safety_issue_email name='safety issue email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -403,9 +465,10 @@
         </p>
         <ul>
             <li>
-                <b>outage</b> - the upcoming scheduled outage
+                <code>outage</code> - the upcoming scheduled outage
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='scheduled_outage_reminder_email' %}
         {% include 'customizations/customizations_upload.html' with element=scheduled_outage_reminder_email name='scheduled outage reminder email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -417,9 +480,10 @@
         </p>
         <ul>
             <li>
-                <b>staff_charge</b> - the staff charge that is in progress
+                <code>staff_charge</code> - the staff charge that is in progress
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='staff_charge_reminder_email' %}
         {% include 'customizations/customizations_upload.html' with element=staff_charge_reminder_email name='staff charge reminder email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -431,24 +495,25 @@
         </p>
         <ul>
             <li>
-                <b>template_color</b> - the color to emphasize
+                <code>template_color</code> - the color to emphasize
             </li>
             <li>
-                <b>title</b> - a title indicating that the message is a task status notification
+                <code>title</code> - a title indicating that the message is a task status notification
             </li>
             <li>
-                <b>task</b> - the task that was updated
+                <code>task</code> - the task that was updated
             </li>
             <li>
-                <b>status_message</b> - the current status message for the task
+                <code>status_message</code> - the current status message for the task
             </li>
             <li>
-                <b>notification_message</b> - the notification message that is configured (via the admin site) for the status
+                <code>notification_message</code> - the notification message that is configured (via the admin site) for the status
             </li>
             <li>
-                <b>tool_control_absolute_url</b> - the URL of the tool control page for the task
+                <code>tool_control_absolute_url</code> - the URL of the tool control page for the task
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='task_status_notification' %}
         {% include 'customizations/customizations_upload.html' with element=task_status_notification name='task status notification' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -462,24 +527,25 @@
         </p>
         <ul>
             <li>
-                <b>remaining_days</b> - the number of days left before the qualification expires. This variable is only provided when a reminder is sent
+                <code>remaining_days</code> - the number of days left before the qualification expires. This variable is only provided when a reminder is sent
             </li>
             <li>
-                <b>expiration_date</b> - the date the tool qualification expires
+                <code>expiration_date</code> - the date the tool qualification expires
             </li>
             <li>
-                <b>user</b> - the user whose qualification is expiring
+                <code>user</code> - the user whose qualification is expiring
             </li>
             <li>
-                <b>tool</b> - the tool whose qualification is expiring
+                <code>tool</code> - the tool whose qualification is expiring
             </li>
             <li>
-                <b>last_tool_use</b> - the last time the tool was used. Blank if the user never used the tool
+                <code>last_tool_use</code> - the last time the tool was used. Blank if the user never used the tool
             </li>
             <li>
-                <b>qualification_date</b> - the time the user was last qualified on that tool
+                <code>qualification_date</code> - the time the user was last qualified on that tool
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='tool_qualification_expiration_email' %}
         {% include 'customizations/customizations_upload.html' with element=tool_qualification_expiration_email name='tool qualification expiration email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -493,18 +559,19 @@
         <p>The following context variables are provided when the email is rendered:</p>
         <ul>
             <li>
-                <b>user</b> - the user who was using the tool
+                <code>user</code> - the user who was using the tool
             </li>
             <li>
-                <b>tool</b> - the tool the user was using
+                <code>tool</code> - the tool the user was using
             </li>
             <li>
-                <b>questions</b> - the questions the user needs to answer
+                <code>questions</code> - the questions the user needs to answer
             </li>
             <li>
-                <b>usage_event</b> - the usage event
+                <code>usage_event</code> - the usage event
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='tool_required_unanswered_questions_email' %}
         {% include 'customizations/customizations_upload.html' with element=tool_required_unanswered_questions_email name='tool required unanswered questions email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -518,15 +585,16 @@
         <p>The following context variables are provided when the email is rendered:</p>
         <ul>
             <li>
-                <b>operator</b> - the person who attempted to use the tool
+                <code>operator</code> - the person who attempted to use the tool
             </li>
             <li>
-                <b>tool</b> - the tool that the user was denied access to
+                <code>tool</code> - the tool that the user was denied access to
             </li>
             <li>
-                <b>type</b> - the type of abuse ('area-access' or 'area-reservation')
+                <code>type</code> - the type of abuse ('area-access' or 'area-reservation')
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='unauthorized_tool_access_email' %}
         {% include 'customizations/customizations_upload.html' with element=unauthorized_tool_access_email name='unauthorized tool access email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -538,12 +606,16 @@
         </p>
         <ul>
             <li>
-                <b>user</b> - the user who is using a tool or logged in to an area
+                <code>user</code> - the user who is using a tool or logged in to an area
             </li>
             <li>
-                <b>resources_in_use</b> - the resources the user is still using/logged in to (tools or areas)
+                <code>resources_in_use</code> - the resources the user is still using/logged in to (tools or areas)
+            </li>
+            <li>
+                <code>facility_name</code> - the name of the facility
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='usage_reminder_email' %}
         {% include 'customizations/customizations_upload.html' with element=usage_reminder_email name='usage reminder email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -557,12 +629,16 @@
         </p>
         <ul>
             <li>
-                <b>user</b> - the user whose access is expiring
+                <code>user</code> - the user whose access is expiring
             </li>
             <li>
-                <b>remaining_days</b> - the remaining days before the access expires
+                <code>remaining_days</code> - the remaining days before the access expires
+            </li>
+            <li>
+                <code>facility_name</code> - the name of the facility
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='user_access_expiration_reminder_email' %}
         {% include 'customizations/customizations_upload.html' with element=user_access_expiration_reminder_email name='user access expiration reminder email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -578,9 +654,10 @@
         </p>
         <ul>
             <li>
-                <b>reservation</b> - the user's reservation that was created
+                <code>reservation</code> - the user's reservation that was created
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='reservation_created_user_email' %}
         {% include 'customizations/customizations_upload.html' with element=reservation_created_user_email name='reservation created user email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -596,9 +673,10 @@
         </p>
         <ul>
             <li>
-                <b>reservation</b> - the user's reservation that was cancelled
+                <code>reservation</code> - the user's reservation that was cancelled
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='reservation_cancelled_user_email' %}
         {% include 'customizations/customizations_upload.html' with element=reservation_cancelled_user_email name='reservation cancelled user email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
@@ -620,16 +698,29 @@
         <p>The following context variables are provided when the email is rendered:</p>
         <ul>
             <li>
-                <b>weekend_access</b> - true/false, whether there are approved weekend access requests for the current week.
+                <code>weekend_access</code> - true/false, whether there are approved weekend access requests for the current week.
+            </li>
+            <li>
+                <code>facility_name</code> - the name of the facility
+            </li>
+            <li>
+                <code>sat</code> - the date of the upcoming Saturday, already formatted for display
+            </li>
+            <li>
+                <code>sun</code> - the date of the upcoming Sunday, already formatted for display
             </li>
         </ul>
+        {% include 'customizations/customizations_email_options.html' with element='weekend_access_email' %}
         {% include 'customizations/customizations_upload.html' with element=weekend_access_email name='weekend access email' key='templates' %}
     </div>
-    {% for customization_instance in customization.instances %}
-        {% if customization_instance.template_templates %}
-            {% include customization_instance.template_templates %}
-        {% endif %}
-    {% endfor %}
+</div>
+{% for customization_instance in customization.instances %}
+    {% if customization_instance.template_templates %}
+        {% include customization_instance.template_templates %}
+    {% endif %}
+{% endfor %}
+<div class="text-center" style="margin-bottom: 20px;">
+    {% button type="save" value="Save all email settings" form="email_settings_form" %}
 </div>
 <script>
     function sort_comp(element)

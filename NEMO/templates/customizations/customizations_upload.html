@@ -9,7 +9,11 @@
             <input type="file"
                    name="{{ element_name }}"
                    class="customization-input-file"
-                   onchange="this.style.color = 'inherit';$('#{{ element_name }}_span').hide()">
+                   {% if uneditable %}
+                   onchange="this.style.color = 'inherit';$('#{{ element_name }}_span').hide()"
+                   {% else %}
+                   onchange="this.style.color = 'inherit';$('#{{ element_name }}_span').hide();load_file_into_textarea(this, '{{ element_name }}_content');"
+                   {% endif %}>
             {% if element %}
                 <a id="{{ element_name }}_span"
                    href="{% get_media_prefix %}{{ element_name }}.{{ extension }}"
@@ -17,10 +21,23 @@
                    target="_blank">{{ element_link_name|default:element_name }}.{{ extension }}</a>
             {% endif %}
         </div>
+        {% if not uneditable %}
+            <div class="form-group" style="margin-top: 10px">
+                <textarea id="{{ element_name }}_content"
+                          class="form-control"
+                          style="font-family: monospace, monospace; font-size: 12px;"
+                          rows="12"
+                          spellcheck="false">{{ element }}</textarea>
+            </div>
+        {% endif %}
         <div class="form-group">
             <div style="display: inline-block;margin-right:15px;margin-top: 15px">
                 {% with upload_button_name="Upload "|concat:name %}
-                    {% button type="save" value=button_name|default:upload_button_name onclick="return check_delete_file_before_submit('"|concat:element_name|concat:"') && submit_and_disable(this);" icon="glyphicon-floppy-open" %}
+                    {% if uneditable %}
+                        {% button type="save" value=button_name|default:upload_button_name onclick="return check_delete_file_before_submit('"|concat:element_name|concat:"') && submit_and_disable(this);" icon="glyphicon-floppy-open" %}
+                    {% else %}
+                        {% button type="save" value=button_name|default:upload_button_name onclick="return sync_textarea_before_submit('"|concat:element_name|concat:"', '"|concat:extension|concat:"') && submit_and_disable(this);" icon="glyphicon-floppy-open" %}
+                    {% endif %}
                 {% endwith %}
             </div>
             {% if element and not hide_content %}
@@ -30,5 +47,8 @@
                 </div>
             {% endif %}
         </div>
+        {% if request.GET.file_saved == element_name %}
+            <div class="alert alert-success">{{ name|capfirst }} was saved successfully.</div>
+        {% endif %}
     </form>
 {% endwith %}

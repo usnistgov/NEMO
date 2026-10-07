@@ -19,7 +19,12 @@ from NEMO.utilities import (
     render_email_template,
     send_mail,
 )
-from NEMO.views.customization import EmailsCustomization, SafetyCustomization, get_media_file_contents
+from NEMO.views.customization import (
+    EmailsCustomization,
+    SafetyCustomization,
+    get_media_file_contents,
+    resolve_email_customization,
+)
 from NEMO.views.notifications import create_safety_notification, delete_notification, get_notifications
 
 
@@ -125,15 +130,22 @@ def send_safety_email_notification(request, issue):
     recipient = EmailsCustomization.get("safety_email_address")
     message = get_media_file_contents("safety_issue_email.html")
     if recipient and message:
-        subject = "Safety issue"
-        dictionary = {"issue": issue, "issue_absolute_url": get_full_url(issue.get_absolute_url(), request)}
-        rendered_message = render_email_template(message, dictionary, request)
         from_email = issue.reporter.email if issue.reporter else recipient
+        dictionary = {
+            "issue": issue,
+            "issue_absolute_url": get_full_url(issue.get_absolute_url(), request),
+            "default_subject": "Safety issue",
+            "default_from_email": from_email,
+            "default_cc_emails": "",
+        }
+        rendered_message = render_email_template(message, dictionary, request)
+        subject, from_email, cc = resolve_email_customization("safety_issue_email", dictionary)
         send_mail(
             subject=subject,
             content=rendered_message,
             from_email=from_email,
             to=[recipient],
+            cc=cc,
             email_category=EmailCategory.SAFETY,
         )
 

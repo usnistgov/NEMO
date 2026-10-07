@@ -60,6 +60,7 @@ from NEMO.views.customization import (
     UserCustomization,
     UserRequestsCustomization,
     get_media_file_contents,
+    resolve_email_customization,
 )
 from NEMO.views.qualifications import disqualify
 
@@ -168,16 +169,23 @@ def send_missed_reservation_notification(reservation, request=None):
     user_office_email = EmailsCustomization.get("user_office_email_address")
     abuse_email = EmailsCustomization.get("abuse_email_address")
     if message and user_office_email:
-        subject = "Missed reservation for the " + str(reservation.reservation_item)
-        message = render_email_template(message, {"reservation": reservation}, request)
+        dictionary = {
+            "reservation": reservation,
+            "default_subject": "Missed reservation for the " + str(reservation.reservation_item),
+            "default_from_email": user_office_email,
+            "default_cc_emails": "",
+        }
+        message = render_email_template(message, dictionary, request)
+        subject, from_email, cc = resolve_email_customization("missed_reservation_email", dictionary)
         recipients = reservation.user.get_emails(reservation.user.get_preferences().email_send_reservation_emails)
         recipients.append(abuse_email)
         recipients.append(user_office_email)
         send_mail(
             subject=subject,
             content=message,
-            from_email=user_office_email,
+            from_email=from_email,
             to=recipients,
+            cc=cc,
             email_category=EmailCategory.TIMED_SERVICES,
         )
     else:
@@ -361,16 +369,23 @@ def get_reservation_end(reservation):
 def notify_next_user_in_wait_list(entry, time_to_expiration):
     message = get_media_file_contents("wait_list_notification_email.html")
     if message:
-        subject = "Your turn for the " + str(entry.tool)
-        message = render_email_template(
-            message, {"user": entry.user, "tool": entry.tool, "time_to_expiration": time_to_expiration}
-        )
+        dictionary = {
+            "user": entry.user,
+            "tool": entry.tool,
+            "time_to_expiration": time_to_expiration,
+            "default_subject": "Your turn for the " + str(entry.tool),
+            "default_from_email": get_email_from_settings(),
+            "default_cc_emails": "",
+        }
+        message = render_email_template(message, dictionary)
+        subject, from_email, cc = resolve_email_customization("wait_list_notification_email", dictionary)
         recipients = entry.user.get_emails(entry.user.get_preferences().email_send_wait_list_notification_emails)
         send_mail(
             subject=subject,
             content=message,
-            from_email=get_email_from_settings(),
+            from_email=from_email,
             to=recipients,
+            cc=cc,
             email_category=EmailCategory.TIMED_SERVICES,
         )
     else:
@@ -459,8 +474,16 @@ def send_out_of_time_reservation_notification(reservation: Reservation, request=
     user_office_email = EmailsCustomization.get("user_office_email_address")
     if message and user_office_email:
         name = str(reservation.area.name)
-        subject = "Out of time for the " + name if reservation.start else "Out of allowed schedule for the " + name
-        message = render_email_template(message, {"reservation": reservation}, request)
+        dictionary = {
+            "reservation": reservation,
+            "default_subject": (
+                "Out of time for the " + name if reservation.start else "Out of allowed schedule for the " + name
+            ),
+            "default_from_email": user_office_email,
+            "default_cc_emails": "",
+        }
+        message = render_email_template(message, dictionary, request)
+        subject, from_email, cc = resolve_email_customization("out_of_time_reservation_email", dictionary)
         recipients = reservation.user.get_emails(
             reservation.user.get_preferences().email_send_reservation_ending_reminders
         )
@@ -468,8 +491,9 @@ def send_out_of_time_reservation_notification(reservation: Reservation, request=
         send_mail(
             subject=subject,
             content=message,
-            from_email=user_office_email,
+            from_email=from_email,
             to=recipients,
+            cc=cc,
             email_category=EmailCategory.TIMED_SERVICES,
         )
     else:
@@ -526,15 +550,20 @@ def send_email_reservation_ending_reminders(request=None):
         )
         if starting_reservation.exists():
             continue
-        subject = reservation.reservation_item.name + " reservation ending soon"
-        rendered_message = render_email_template(
-            reservation_ending_reminder_message, {"reservation": reservation}, request
-        )
+        dictionary = {
+            "reservation": reservation,
+            "default_subject": reservation.reservation_item.name + " reservation ending soon",
+            "default_from_email": user_office_email,
+            "default_cc_emails": "",
+        }
+        rendered_message = render_email_template(reservation_ending_reminder_message, dictionary, request)
+        subject, from_email, cc = resolve_email_customization("reservation_ending_reminder_email", dictionary)
         email_notification = reservation.user.get_preferences().email_send_reservation_ending_reminders
         reservation.user.email_user(
             subject=subject,
             message=rendered_message,
-            from_email=user_office_email,
+            from_email=from_email,
+            cc=cc,
             email_category=EmailCategory.TIMED_SERVICES,
             email_notification=email_notification,
         )
@@ -594,20 +623,28 @@ def send_email_usage_reminders(projects_to_exclude=None, request=None):
     message = get_media_file_contents("usage_reminder_email.html")
     facility_name = ApplicationCustomization.get("facility_name")
     if message:
-        subject = f"{facility_name} usage"
+        default_subject = f"{facility_name} usage"
         for value in aggregate.values():
             user: User = value["user"]
             resources_in_use = value["resources_in_use"]
             # for backwards compatibility, add it to the user object (that's how it was defined and used in the template)
             user.resources_in_use = resources_in_use
-            rendered_message = render_email_template(
-                message, {"user": user, "resources_in_use": resources_in_use}, request
-            )
+            dictionary = {
+                "user": user,
+                "resources_in_use": resources_in_use,
+                "facility_name": facility_name,
+                "default_subject": default_subject,
+                "default_from_email": user_office_email,
+                "default_cc_emails": "",
+            }
+            rendered_message = render_email_template(message, dictionary, request)
+            subject, from_email, cc = resolve_email_customization("usage_reminder_email", dictionary)
             email_notification = user.get_preferences().email_send_usage_reminders
             user.email_user(
                 subject=subject,
                 message=rendered_message,
-                from_email=user_office_email,
+                from_email=from_email,
+                cc=cc,
                 email_category=EmailCategory.TIMED_SERVICES,
                 email_notification=email_notification,
             )
@@ -616,13 +653,20 @@ def send_email_usage_reminders(projects_to_exclude=None, request=None):
     if message:
         busy_staff = StaffCharge.objects.filter(end=None)
         for staff_charge in busy_staff:
-            subject = "Active staff charge since " + format_datetime(staff_charge.start)
-            rendered_message = render_email_template(message, {"staff_charge": staff_charge}, request)
+            dictionary = {
+                "staff_charge": staff_charge,
+                "default_subject": "Active staff charge since " + format_datetime(staff_charge.start),
+                "default_from_email": user_office_email,
+                "default_cc_emails": "",
+            }
+            rendered_message = render_email_template(message, dictionary, request)
+            subject, from_email, cc = resolve_email_customization("staff_charge_reminder_email", dictionary)
             email_notification = staff_charge.staff_member.get_preferences().email_send_usage_reminders
             staff_charge.staff_member.email_user(
                 subject=subject,
                 message=rendered_message,
-                from_email=user_office_email,
+                from_email=from_email,
+                cc=cc,
                 email_category=EmailCategory.TIMED_SERVICES,
                 email_notification=email_notification,
             )
@@ -661,6 +705,7 @@ def send_email_reservation_reminders(request=None):
     for reservation in upcoming_reservations:
         item = reservation.reservation_item
         item_type = reservation.reservation_item_type
+        user_office_email = EmailsCustomization.get("user_office_email_address")
         if (
             item_type == ReservationItemType.TOOL
             and item.operational
@@ -669,38 +714,46 @@ def send_email_reservation_reminders(request=None):
             or item_type == ReservationItemType.AREA
             and not item.required_resource_is_unavailable()
         ):
-            subject = item.name + " reservation reminder"
-            rendered_message = render_email_template(
-                reservation_reminder_message,
-                {"reservation": reservation, "template_color": bootstrap_primary_color("success")},
-                request,
-            )
+            template_name = "reservation_reminder_email"
+            dictionary = {
+                "reservation": reservation,
+                "template_color": bootstrap_primary_color("success"),
+                "default_subject": item.name + " reservation reminder",
+                "default_from_email": user_office_email,
+                "default_cc_emails": "",
+            }
+            rendered_message = render_email_template(reservation_reminder_message, dictionary, request)
         elif (
             item_type == ReservationItemType.TOOL and not item.operational
         ) or item.required_resource_is_unavailable():
-            subject = item.name + " reservation problem"
-            rendered_message = render_email_template(
-                reservation_warning_message,
-                {"reservation": reservation, "template_color": bootstrap_primary_color("danger"), "fatal_error": True},
-                request,
-            )
+            template_name = "reservation_warning_email"
+            dictionary = {
+                "reservation": reservation,
+                "template_color": bootstrap_primary_color("danger"),
+                "fatal_error": True,
+                "default_subject": item.name + " reservation problem",
+                "default_from_email": user_office_email,
+                "default_cc_emails": "",
+            }
+            rendered_message = render_email_template(reservation_warning_message, dictionary, request)
         else:
-            subject = item.name + " reservation warning"
-            rendered_message = render_email_template(
-                reservation_warning_message,
-                {
-                    "reservation": reservation,
-                    "template_color": bootstrap_primary_color("warning"),
-                    "fatal_error": False,
-                },
-                request,
-            )
-        user_office_email = EmailsCustomization.get("user_office_email_address")
+            template_name = "reservation_warning_email"
+            dictionary = {
+                "reservation": reservation,
+                "template_color": bootstrap_primary_color("warning"),
+                "fatal_error": False,
+                "default_subject": item.name + " reservation warning",
+                "default_from_email": user_office_email,
+                "default_cc_emails": "",
+            }
+            rendered_message = render_email_template(reservation_warning_message, dictionary, request)
+        subject, from_email, cc = resolve_email_customization(template_name, dictionary)
         email_notification = reservation.user.get_preferences().email_send_reservation_reminders
         reservation.user.email_user(
             subject=subject,
             message=rendered_message,
-            from_email=user_office_email,
+            from_email=from_email,
+            cc=cc,
             email_category=EmailCategory.TIMED_SERVICES,
             email_notification=email_notification,
         )
@@ -781,14 +834,23 @@ def send_weekend_email_access(access, user_office_email, email_to, contents, beg
     sat = format_datetime(beginning_of_the_week + timedelta(days=5), "SHORT_DATE_FORMAT", as_current_timezone=False)
     sun = format_datetime(beginning_of_the_week + timedelta(days=6), "SHORT_DATE_FORMAT", as_current_timezone=False)
 
-    subject = f"{'NO w' if not access else 'W'}eekend access for the {facility_name} {sat} - {sun}"
-    message = render_email_template(contents, {"weekend_access": access})
+    dictionary = {
+        "weekend_access": access,
+        "facility_name": facility_name,
+        "sat": sat,
+        "sun": sun,
+        "default_subject": f"{'NO w' if not access else 'W'}eekend access for the {facility_name} {sat} - {sun}",
+        "default_from_email": user_office_email,
+        "default_cc_emails": ", ".join(ccs),
+    }
+    message = render_email_template(contents, dictionary)
+    subject, from_email, cc = resolve_email_customization("weekend_access_email", dictionary)
     send_mail(
         subject=subject,
         content=message,
-        from_email=user_office_email,
+        from_email=from_email,
         to=recipients,
-        cc=ccs,
+        cc=cc,
         email_category=EmailCategory.ACCESS_REQUESTS,
     )
 
@@ -811,14 +873,24 @@ def send_email_user_access_expiration_reminders(request=None):
         for remaining_days in [int(days) for days in access_expiration_reminder_days.split(",")]:
             expiration_date = date.today() + timedelta(days=remaining_days)
             for user in User.objects.filter(is_active=True, access_expiration=expiration_date):
-                subject = f"Your {facility_name} access expires in {remaining_days} days ({format_datetime(user.access_expiration)})"
-                message = render_email_template(template, {"user": user, "remaining_days": remaining_days}, request)
+                dictionary = {
+                    "user": user,
+                    "remaining_days": remaining_days,
+                    "facility_name": facility_name,
+                    "default_subject": f"Your {facility_name} access expires in {remaining_days} days ({format_datetime(user.access_expiration)})",
+                    "default_from_email": user_office_email,
+                    "default_cc_emails": ", ".join(ccs),
+                }
+                message = render_email_template(template, dictionary, request)
+                subject, from_email, cc = resolve_email_customization(
+                    "user_access_expiration_reminder_email", dictionary
+                )
                 email_notification = user.get_preferences().email_send_access_expiration_emails
                 user.email_user(
                     subject=subject,
                     message=message,
-                    from_email=user_office_email,
-                    cc=ccs,
+                    from_email=from_email,
+                    cc=cc,
                     email_notification=email_notification,
                     email_category=EmailCategory.ACCESS_EXPIRATION_REMINDERS,
                 )
@@ -901,7 +973,6 @@ def send_tool_qualification_expiring_email(
         subject_expiration = f" expires in {remaining_days} days!"
     else:
         subject_expiration = " has expired"
-    subject = f"Your {qualification.tool.name} qualification {subject_expiration}"
     dictionary = {
         "user": qualification.user,
         "tool": qualification.tool,
@@ -909,14 +980,18 @@ def send_tool_qualification_expiring_email(
         "expiration_date": expiration_date,
         "qualification_date": qualification.qualified_on,
         "remaining_days": remaining_days,
+        "default_subject": f"Your {qualification.tool.name} qualification {subject_expiration}",
+        "default_from_email": user_office_email,
+        "default_cc_emails": ", ".join(cc_email or []),
     }
     message = render_email_template(template, dictionary, request)
+    subject, from_email, cc = resolve_email_customization("tool_qualification_expiration_email", dictionary)
     email_notification = qualification.user.get_preferences().email_send_tool_qualification_expiration_emails
     qualification.user.email_user(
         subject=subject,
         message=message,
-        from_email=user_office_email,
-        cc=cc_email,
+        from_email=from_email,
+        cc=cc,
         email_notification=email_notification,
     )
 
@@ -978,14 +1053,21 @@ def send_recurring_charge_reminders(request, reminders: Iterable[Dict]):
     recurring_charges_name = RecurringChargesCustomization.get("recurring_charges_name")
     if message and user_office_email:
         for user_reminders in reminders:
-            subject = f"{recurring_charges_name} will be charged in {user_reminders['reminder_days']} day(s)"
+            user_reminders["recurring_charges_name"] = recurring_charges_name
+            user_reminders["default_subject"] = (
+                f"{recurring_charges_name} will be charged in {user_reminders['reminder_days']} day(s)"
+            )
+            user_reminders["default_from_email"] = user_office_email
+            user_reminders["default_cc_emails"] = ""
             user_instance: User = user_reminders["user"]
             rendered_message = render_email_template(message, user_reminders, request)
+            subject, from_email, cc = resolve_email_customization("recurring_charges_reminder_email", user_reminders)
             email_notification = user_instance.get_preferences().email_send_recurring_charges_reminder_emails
             user_instance.email_user(
                 subject=subject,
                 message=rendered_message,
-                from_email=user_office_email,
+                from_email=from_email,
+                cc=cc,
                 email_category=EmailCategory.TIMED_SERVICES,
                 email_notification=email_notification,
             )
@@ -1042,13 +1124,20 @@ def send_email_scheduled_outage_reminders(request=None) -> HttpResponse:
                 if is_date_in_datetime_range(outage_date, start, end):
                     outages_to_send_reminders_for.add(future_outage)
     for outage in outages_to_send_reminders_for:
-        subject = f"{outage.title} reminder"
-        rendered_message = render_email_template(message, {"outage": outage}, request)
+        dictionary = {
+            "outage": outage,
+            "default_subject": f"{outage.title} reminder",
+            "default_from_email": get_email_from_settings(),
+            "default_cc_emails": "",
+        }
+        rendered_message = render_email_template(message, dictionary, request)
+        subject, from_email, cc = resolve_email_customization("scheduled_outage_reminder_email", dictionary)
         send_mail(
             subject=subject,
             content=rendered_message,
-            from_email=get_email_from_settings(),
+            from_email=from_email,
             to=outage.reminder_emails,
+            cc=cc,
             email_category=EmailCategory.TIMED_SERVICES,
         )
     return HttpResponse()
