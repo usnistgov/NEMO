@@ -82,7 +82,21 @@ def status_dashboard(request, tab=None):
 
 def get_tools_dictionary(request):
     tool_categories = request.GET.getlist("category", [])
-    return {"tool_summary": create_tool_summary(tooltip_info=True, tool_categories=tool_categories)}
+    problem_details_enabled = StatusDashboardCustomization.get_bool("dashboard_display_problem_details_enabled")
+    problem_details_visible_to_all = StatusDashboardCustomization.get_bool(
+        "dashboard_display_problem_details_visible_to_all"
+    )
+    # Staff and admins can see problem details by default once the feature is enabled;
+    # everyone else needs the "visible to all" option turned on too.
+    include_problem_details = problem_details_enabled and (
+        request.user.is_any_part_of_staff or problem_details_visible_to_all
+    )
+    return {
+        "tool_summary": create_tool_summary(
+            tooltip_info=True, tool_categories=tool_categories, include_problem_details=include_problem_details
+        ),
+        "dashboard_display_problem_details": include_problem_details,
+    }
 
 
 def get_occupancy_dictionary(request):
@@ -353,7 +367,7 @@ def area_tree_helper(
     yield "out"
 
 
-def create_tool_summary(tooltip_info=False, tool_categories=None):
+def create_tool_summary(tooltip_info=False, tool_categories=None, include_problem_details=False):
     category_filter = Q()
     if tool_categories:
         for category in tool_categories:
@@ -369,6 +383,8 @@ def create_tool_summary(tooltip_info=False, tool_categories=None):
         )
     )
     tasks = Task.objects.filter(cancelled=False, resolved=False, tool__visible=True, tool__in=tools)
+    if include_problem_details:
+        tasks = tasks.select_related("tool", "problem_category")
     unavailable_resources = Resource.objects.filter(available=False).prefetch_related(
         "fully_dependent_tools", "partially_dependent_tools"
     )
@@ -381,7 +397,9 @@ def create_tool_summary(tooltip_info=False, tool_categories=None):
     scheduled_outages = ScheduledOutage.objects.filter(
         start__lte=timezone.now(), end__gt=timezone.now(), area__isnull=True
     ).prefetch_related("tool", "resource__fully_dependent_tools", "resource__partially_dependent_tools")
-    tool_summary = merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages, tooltip_info)
+    tool_summary = merge(
+        tools, tasks, unavailable_resources, usage_events, scheduled_outages, tooltip_info, include_problem_details
+    )
     tool_summary = list(tool_summary.values())
     tool_sort = StatusDashboardCustomization.get("dashboard_tool_sort")
     max_date_aware = datetime.max.replace(tzinfo=timezone.get_default_timezone())
@@ -493,7 +511,7 @@ def create_area_summary(area_tree: ModelTreeHelper = None, add_resources=True, a
     return area_summary
 
 
-def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages, tooltip_info=False):
+def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages, tooltip_info=False, include_problem_details=False):
     result = {}
     tools_with_delayed_logoff_in_effect = [
         x.tool.tool_or_parent_id() for x in UsageEvent.objects.filter(end__gt=timezone.now()).prefetch_related("tool")
@@ -521,8 +539,28 @@ def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages, 
         }
         if tooltip_info:
             result[tool.tool_or_parent_id()]["get_tool_info_html"] = tool.get_tool_info_html()
-    for tool_id in tasks.values_list("tool_id", flat=True):
-        result[tool_id]["problematic"] = True
+        if include_problem_details:
+            result[tool.tool_or_parent_id()]["tasks"] = []
+    if include_problem_details:
+        for task in tasks:
+            tool_key = task.tool.tool_or_parent_id()
+            if tool_key in result:
+                result[tool_key]["problematic"] = True
+                result[tool_key]["tasks"].append(
+                    {
+                        "urgency": task.get_urgency_display(),
+                        "problem_category": task.problem_category.name if task.problem_category else None,
+                        "description": task.problem_description,
+                        "progress_description": task.progress_description,
+                        "force_shutdown": task.force_shutdown,
+                        "safety_hazard": task.safety_hazard,
+                        "estimated_resolution_time": task.estimated_resolution_time,
+                        "creation_time": task.creation_time,
+                    }
+                )
+    else:
+        for tool_id in tasks.values_list("tool_id", flat=True):
+            result[tool_id]["problematic"] = True
     for event in usage_events:
         result[event.tool.tool_or_parent_id()]["operator"] = str(event.operator)
         result[event.tool.tool_or_parent_id()]["user"] = str(event.operator)
