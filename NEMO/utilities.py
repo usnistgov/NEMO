@@ -335,7 +335,7 @@ class RecurrenceFrequency(Enum):
         return [(freq.index, freq.display_value) for freq in cls]
 
 
-def quiet_int(value_to_convert, default_upon_failure=0):
+def quiet_int(value_to_convert, default_upon_failure: int = 0) -> int:
     """
     Attempt to convert the given value to an integer. If there is any problem
     during the conversion, return 'default_upon_failure'.
