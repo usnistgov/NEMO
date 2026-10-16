@@ -1165,6 +1165,9 @@ def formula_preview(request, content_type_id, item_id, field_name, formula_name)
             data = loads(e.run_data)
         input_data = find_input_value_for_field(data, formula_name)
         return HttpResponse(input_data if input_data is not None else "")
+    except ValueError:
+        # These are usually partial or non-numeric input while the user is typing, no need to log as exception
+        dynamic_form_logger.debug("Error getting formula preview", exc_info=True)
     except:
         dynamic_form_logger.exception("Error getting formula preview")
     return HttpResponse()
