@@ -4722,6 +4722,13 @@ class ContactInformationCategory(BaseCategory):
 
 class ContactInformation(BaseModel):
     name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
+    user = models.OneToOneField(
+        to=User,
+        blank=True,
+        null=True,
+        help_text="Select a user to associate with this contact. When set, this contact information will be shown instead of the user information on pages like tool details.",
+        on_delete=models.CASCADE,
+    )
     title = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, blank=True, null=True)
     image = models.ImageField(
         blank=True,
@@ -4736,13 +4743,6 @@ class ContactInformation(BaseModel):
         default=True,
         verbose_name="Mobile phone is SMS capable",
         help_text="Is the mobile phone capable of receiving text messages? If so, a link will be displayed for users to click to send a text message to the recipient when viewing the 'Contact information' page.",
-    )
-    user = models.OneToOneField(
-        to=User,
-        blank=True,
-        null=True,
-        help_text="Select a user to associate with this contact. When set, this contact information will be shown instead of the user information on pages like tool details.",
-        on_delete=models.CASCADE,
     )
 
     class Meta:
