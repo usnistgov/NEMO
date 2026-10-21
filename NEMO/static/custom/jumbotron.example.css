@@ -1,0 +1,53 @@
+/*
+ * A sample CSS file for the jumbotron.  This file is not used by default, but can be used as a starting point for 
+ * customizing the jumbotron.  Copy this file and place it at static/custom/jumbotron.css.  Delete any rules that
+ * are not needed.
+ * 
+ * This file will outline the IDs available for customizing display output and are presented in roughly 
+ * a hierarchical DOM order.  Additional classes inside of each component area also available for customizing.
+ * See /nemo/templates/jumbotron/jumbotron_content.html for the full DOM structure and classes.
+ */
+
+/* 
+ * The watermark is typically set on this element.  This will disable the watermark if using the banner 
+ * logo and title option.
+ */
+#jumbotron-body {
+    background: transparent !important;
+}
+
+/* 
+ * The target of the JS that refreshes the content
+ */
+#content {
+    background: transparent;
+}
+
+/* 
+ * Component sections and tables
+ */
+#jumbotron-component-occupancy,
+#jumbotron-table-occupancy,
+#jumbotron-component-usage,
+#jumbotron-table-usage,
+#jumbotron-component-reservations,
+#jumbotron-table-reservations,
+#jumbotron-component-alerts,
+#jumbotron-table-alerts,
+#jumbotron-table-disabled-resources,
+#jumbotron-table-scheduled-outages {
+    background: transparent;
+}
+
+/* 
+ * The offline message container styles.
+ */
+#offline-message div {
+    background: transparent;
+    text-align: center;
+}
+
+#offline-message span {
+    font-size: 250px;
+    color: red;
+}
