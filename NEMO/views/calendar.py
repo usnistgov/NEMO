@@ -1068,6 +1068,7 @@ def cancel_the_reservation(
                     "reservation": reservation,
                     "reason": reason,
                     "template_color": bootstrap_primary_color("info"),
+                    "site_url": get_full_url(reverse("landing"), request),
                 }
                 cancellation_email = render_email_template(email_contents, dictionary, request)
                 recipients = reservation.user.get_emails(

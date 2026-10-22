@@ -169,7 +169,21 @@ def send_missed_reservation_notification(reservation, request=None):
     abuse_email = EmailsCustomization.get("abuse_email_address")
     if message and user_office_email:
         subject = "Missed reservation for the " + str(reservation.reservation_item)
-        message = render_email_template(message, {"reservation": reservation}, request)
+        dictionary = {
+            "reservation": reservation,
+            "site_url": get_full_url(reverse("landing"), request),
+            "calendar_url": get_full_url(
+                reverse(
+                    "calendar",
+                    kwargs={
+                        "item_type": reservation.reservation_item_type.value,
+                        "item_id": reservation.reservation_item.id,
+                    },
+                ),
+                request,
+            ),
+        }
+        message = render_email_template(message, dictionary, request)
         recipients = reservation.user.get_emails(reservation.user.get_preferences().email_send_reservation_emails)
         recipients.append(abuse_email)
         recipients.append(user_office_email)
@@ -601,7 +615,13 @@ def send_email_usage_reminders(projects_to_exclude=None, request=None):
             # for backwards compatibility, add it to the user object (that's how it was defined and used in the template)
             user.resources_in_use = resources_in_use
             rendered_message = render_email_template(
-                message, {"user": user, "resources_in_use": resources_in_use}, request
+                message,
+                {
+                    "user": user,
+                    "resources_in_use": resources_in_use,
+                    "site_url": get_full_url(reverse("landing"), request),
+                },
+                request,
             )
             email_notification = user.get_preferences().email_send_usage_reminders
             user.email_user(
@@ -617,7 +637,15 @@ def send_email_usage_reminders(projects_to_exclude=None, request=None):
         busy_staff = StaffCharge.objects.filter(end=None)
         for staff_charge in busy_staff:
             subject = "Active staff charge since " + format_datetime(staff_charge.start)
-            rendered_message = render_email_template(message, {"staff_charge": staff_charge}, request)
+            rendered_message = render_email_template(
+                message,
+                {
+                    "staff_charge": staff_charge,
+                    "site_url": get_full_url(reverse("landing"), request),
+                    "staff_charges_url": get_full_url(reverse("staff_charges"), request),
+                },
+                request,
+            )
             email_notification = staff_charge.staff_member.get_preferences().email_send_usage_reminders
             staff_charge.staff_member.email_user(
                 subject=subject,
@@ -661,6 +689,9 @@ def send_email_reservation_reminders(request=None):
     for reservation in upcoming_reservations:
         item = reservation.reservation_item
         item_type = reservation.reservation_item_type
+        tool_control_absolute_url = (
+            get_full_url(reservation.tool.get_absolute_url(), request) if reservation.tool else None
+        )
         if (
             item_type == ReservationItemType.TOOL
             and item.operational
@@ -672,7 +703,11 @@ def send_email_reservation_reminders(request=None):
             subject = item.name + " reservation reminder"
             rendered_message = render_email_template(
                 reservation_reminder_message,
-                {"reservation": reservation, "template_color": bootstrap_primary_color("success")},
+                {
+                    "reservation": reservation,
+                    "template_color": bootstrap_primary_color("success"),
+                    "site_url": get_full_url(reverse("landing"), request),
+                },
                 request,
             )
         elif (
@@ -681,7 +716,13 @@ def send_email_reservation_reminders(request=None):
             subject = item.name + " reservation problem"
             rendered_message = render_email_template(
                 reservation_warning_message,
-                {"reservation": reservation, "template_color": bootstrap_primary_color("danger"), "fatal_error": True},
+                {
+                    "reservation": reservation,
+                    "template_color": bootstrap_primary_color("danger"),
+                    "fatal_error": True,
+                    "site_url": get_full_url(reverse("landing"), request),
+                    "tool_control_absolute_url": tool_control_absolute_url,
+                },
                 request,
             )
         else:
@@ -692,6 +733,8 @@ def send_email_reservation_reminders(request=None):
                     "reservation": reservation,
                     "template_color": bootstrap_primary_color("warning"),
                     "fatal_error": False,
+                    "site_url": get_full_url(reverse("landing"), request),
+                    "tool_control_absolute_url": tool_control_absolute_url,
                 },
                 request,
             )
