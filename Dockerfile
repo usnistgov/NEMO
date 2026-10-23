@@ -1,4 +1,4 @@
-FROM python:3.13
+FROM python:3.14
 
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y less vim wget
