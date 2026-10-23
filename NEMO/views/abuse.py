@@ -1,17 +1,21 @@
 from collections import defaultdict
 
+from django.contrib.auth.decorators import user_passes_test
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
 from mptt.forms import TreeNodeChoiceField
 
-from NEMO.decorators import facility_manager_required
 from NEMO.forms import ReservationAbuseForm
 from NEMO.models import Area, Reservation, ReservationItemType, Tool, User
 
 
-@facility_manager_required
+def abuse_permissions(user: User):
+    return user.is_active and (user.is_facility_manager or user.is_superuser or user.has_perm("NEMO.use_abuse"))
+
+
+@user_passes_test(abuse_permissions)
 @require_GET
 def abuse(request):
     dictionary = {
@@ -67,7 +71,7 @@ def abuse(request):
     return render(request, "abuse/abuse.html", dictionary)
 
 
-@facility_manager_required
+@user_passes_test(abuse_permissions)
 @require_GET
 def user_drill_down(request):
     try:

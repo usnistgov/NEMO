@@ -335,7 +335,7 @@ class RecurrenceFrequency(Enum):
         return [(freq.index, freq.display_value) for freq in cls]
 
 
-def quiet_int(value_to_convert, default_upon_failure: int = 0) -> int:
+def quiet_int(value_to_convert, default_upon_failure: int | None = 0) -> int | None:
     """
     Attempt to convert the given value to an integer. If there is any problem
     during the conversion, return 'default_upon_failure'.
@@ -377,7 +377,7 @@ def month_list(since=datetime(year=2013, month=11, day=1)):
     return result
 
 
-def get_month_timeframe(date_str: str = None):
+def get_month_timeframe(date_str: str | None = None):
     if date_str:
         start = parse(date_str)
     else:
@@ -389,7 +389,7 @@ def get_month_timeframe(date_str: str = None):
     return first_of_the_month, last_of_the_month
 
 
-def get_day_timeframe(day_date: date = None):
+def get_day_timeframe(day_date: date):
     start = day_date
     if not day_date:
         start = date.today()
@@ -717,7 +717,7 @@ def get_task_image_filename(task_images, filename):
     from django.template.defaultfilters import slugify
 
     task: Task = task_images.task
-    tool_name = slugify(task.tool)
+    tool_name = slugify(task.tool.name)
     now = datetime.now()
     today = export_format_datetime(now, t_format=False, as_current_timezone=False)
     year = now.strftime("%Y")
