@@ -7,7 +7,7 @@ from collections import Counter
 from copy import copy
 from json import JSONDecodeError, dumps, loads
 from logging import getLogger
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+from typing import Any, Callable, Type
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -37,7 +37,7 @@ class PostUsageQuestion:
 
     required_span = '<span class="required-question-star">*</span>'
 
-    def __init__(self, properties: Dict, index: int = None, initial_data=None):
+    def __init__(self, properties: dict, index: int | None = None, initial_data=None):
         self.properties = properties
         self.name = self._init_property("name")
         self.initial_name = self.name
@@ -81,7 +81,7 @@ class PostUsageQuestion:
             self.name = f"{self.name}_{index}"
         # form_name is used in forms and extraction to avoid potential conflicts with other data
         self.form_name = f"df_{slugify_underscore(self.name)}"
-        self.all_questions: List[PostUsageQuestion] = []
+        self.all_questions: list[PostUsageQuestion] = []
         self.is_sub_question: bool = False
         self.initial_data = initial_data
 
@@ -129,7 +129,7 @@ class PostUsageQuestion:
     def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
         return ""
 
-    def extract(self, request, index=None) -> Dict:
+    def extract(self, request, index=None) -> dict:
         answered_question = copy(self.properties)
         user_input = request.POST.get(f"{self.form_name}_{index}" if index else self.form_name)
         if user_input:
@@ -163,10 +163,10 @@ class PostUsageQuestion:
                 raise Exception("When using labels you need one for each choice")
 
     @staticmethod
-    def load_questions(questions: Optional[List[Dict]], index: int = None, initial_data: Union[Dict, str] = None):
+    def load_questions(questions: list[dict] | None, index: int | None = None, initial_data: dict | str | None = None):
         user_inputs = get_submitted_user_inputs(initial_data)
         questions_to_load = questions or []
-        usage_questions: List[PostUsageQuestion] = []
+        usage_questions: list[PostUsageQuestion] = []
         for question in questions_to_load:
             question_initial_data = user_inputs[question["name"]] if question["name"] in user_inputs else None
             usage_questions.append(
@@ -214,7 +214,7 @@ class PostUsageCheckboxQuestion(PostUsageQuestion):
         max_width = f"max-width:{self.max_width}px" if self.max_width else ""
         result = f'<div class="form-group {extra_class}" style="{max_width}>'
         result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
-        result += f'<input aria-label="hidden field used for required answer" id="required_{ self.form_name }" type="checkbox" value="" style="opacity: 0;height: 1px;width: 1px;" { "required" if self.required else "" } {"checked" if self.get_default_value() else ""}/>'
+        result += f'<input aria-label="hidden field used for required answer" id="required_{self.form_name}" type="checkbox" value="" style="opacity: 0;height: 1px;width: 1px;" {"required" if self.required else ""} {"checked" if self.get_default_value() else ""}/>'
         result += f"<div class='{'form-control-static' if self.inline else ''}'>"
         for index, choice in enumerate(self.choices):
             label = self.labels[index] if self.labels else choice
@@ -225,7 +225,7 @@ class PostUsageCheckboxQuestion(PostUsageQuestion):
                 if self.get_default_value() is not None
                 and (
                     self.get_default_value() == choice
-                    or isinstance(self.get_default_value(), List)
+                    or isinstance(self.get_default_value(), list)
                     and choice in self.get_default_value()
                 )
                 else ""
@@ -247,7 +247,7 @@ class PostUsageCheckboxQuestion(PostUsageQuestion):
         result += "</script>"
         return result
 
-    def extract(self, request, index=None) -> Dict:
+    def extract(self, request, index=None) -> dict:
         answered_question = copy(self.properties)
         user_input = request.POST.getlist(f"{self.form_name}_{index}" if index else self.form_name)
         if user_input:
@@ -478,7 +478,7 @@ class PostUsageFormulaQuestion(PostUsageQuestion):
             http_request.POST.update(formula_and_values)
             int(self.extract_for_formula(http_request))
 
-    def extract(self, request, index=None) -> Dict:
+    def extract(self, request, index=None) -> dict:
         answered_question = copy(self.properties)
         value = self.extract_for_formula(request, index)
         if value is not None:
@@ -535,7 +535,7 @@ class PostUsageFormulaQuestion(PostUsageQuestion):
 class PostUsageRadioReportProblemQuestion(PostUsageRadioQuestion):
     question_type = "Question of type radio report problem"
 
-    def __init__(self, properties: Dict, index: int = None, initial_data=None):
+    def __init__(self, properties: dict, index: int | None = None, initial_data=None):
         properties["choices"] = ["true", "false"]
         if not properties.get("labels"):
             properties["labels"] = ["Yes", "No"]
@@ -556,11 +556,12 @@ class PostUsageRadioReportProblemQuestion(PostUsageRadioQuestion):
 class PostUsageGroupQuestion(PostUsageQuestion):
     question_type = "Question of type group"
 
-    def __init__(self, properties: Dict, index: int = None, initial_data=None):
+    def __init__(self, properties: dict, index: int | None = None, initial_data=None):
         super().__init__(properties, index, initial_data)
         self.max_number = self._init_property("max_number")
         # we need a safe group name to use in js function and variable names
         self.group_name = slugify_underscore(self.name)
+        self.sub_questions = []
         self.load_sub_questions(index)
         for sub_question in self.sub_questions:
             sub_question.is_sub_question = True
@@ -625,7 +626,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
             result += question.render_as_text()
         return result
 
-    def extract(self, request, index=None) -> Dict:
+    def extract(self, request, index=None) -> dict:
         # For group question, we also have to look for answers submitted
         # with a numbered suffix (i.e. question, question_1, question_2 etc.)
         # The result of the extraction will be a dictionary, with the keys being the group number,
@@ -645,12 +646,12 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 
 
 class DynamicForm:
-    def __init__(self, questions, initial_data: dict = None):
+    def __init__(self, questions, initial_data: dict | None = None):
         self.untreated_questions = []
         self.questions = []
         if questions:
             self.untreated_questions = loads(questions)
-            self.questions: List[PostUsageQuestion] = PostUsageQuestion.load_questions(
+            self.questions: list[PostUsageQuestion] = PostUsageQuestion.load_questions(
                 self.untreated_questions, initial_data=initial_data
             )
         # Add all the questions to each question, for extra processing if needed (in Formula for example)
@@ -784,8 +785,8 @@ class DynamicForm:
         return run_data
 
     def _check_for_required_unanswered_questions(
-        self, results: Dict, question: PostUsageQuestion
-    ) -> Optional[List[PostUsageQuestion]]:
+        self, results: dict, question: PostUsageQuestion
+    ) -> list[PostUsageQuestion]:
         # This method will check for required unanswered questions and if some are found, will fill them with blank and return them
         required_unanswered_questions = []
         user_input = results[question.name].get("user_input")
@@ -803,7 +804,7 @@ class DynamicForm:
                 results[question.name]["user_input"] = blank_user_input
         return required_unanswered_questions
 
-    def filter_questions(self, function: Callable[[PostUsageQuestion], bool]) -> List[PostUsageQuestion]:
+    def filter_questions(self, function: Callable[[PostUsageQuestion], bool]) -> list[PostUsageQuestion]:
         results = []
         for question in self.questions:
             if function(question):
@@ -819,13 +820,13 @@ class DynamicForm:
             try:
                 run_data_json = loads(run_data)
             except Exception:
-                dynamic_form_logger.debug(exc_info=True)
+                dynamic_form_logger.debug("Error processing run data", exc_info=True)
                 return
             self._charge_for_consumables(usage_event, run_data_json, request)
             self._update_tool_counters(usage_event, run_data_json)
             self._report_problems(usage_event, run_data_json, request)
 
-    def _charge_for_consumables(self, usage_event, run_data_json: Dict, request=None):
+    def _charge_for_consumables(self, usage_event, run_data_json: dict, request=None):
         customer = usage_event.user
         merchant = usage_event.operator
         project = usage_event.project
@@ -838,7 +839,7 @@ class DynamicForm:
                         sub_question, input_data, customer, merchant, project, usage_event, request
                     )
 
-    def _update_tool_counters(self, usage_event: UsageEvent, run_data_json: Dict):
+    def _update_tool_counters(self, usage_event: UsageEvent, run_data_json: dict):
         # This function increments/decrements all counters associated with the given tool
         pre_post = "post"
         if run_data_json:
@@ -867,7 +868,7 @@ class DynamicForm:
                 counter.value += counter.counter_direction * additional_value
                 counter.save()
 
-    def _report_problems(self, usage_event: UsageEvent, run_data_json: Dict, request):
+    def _report_problems(self, usage_event: UsageEvent, run_data_json: dict, request):
         for question in self.questions:
             input_data = run_data_json[question.name] if question.name in run_data_json else None
             if isinstance(question, PostUsageRadioReportProblemQuestion):
@@ -895,7 +896,7 @@ class MultiDynamicForms:
         self,
         items: QuerySetType[ToolUsageQuestions],
         dynamic_field_name: str = "questions",
-        initial_data: dict = None,
+        initial_data: dict | None = None,
     ):
         self.items = items
         self.dynamic_field_name = dynamic_field_name
@@ -922,7 +923,7 @@ class MultiDynamicForms:
             try:
                 run_data_json = loads(run_data)
             except Exception:
-                dynamic_form_logger.debug(exc_info=True)
+                dynamic_form_logger.debug("Error processing run data", exc_info=True)
                 return
             self.merged_dynamic_forms._charge_for_consumables(usage_event, run_data_json, request)
             self.merged_dynamic_forms._update_tool_counters(usage_event, run_data_json)
@@ -932,7 +933,7 @@ class MultiDynamicForms:
         return bool(self.items)
 
 
-def get_submitted_user_inputs(user_data: Union[str, dict]) -> Dict:
+def get_submitted_user_inputs(user_data: str | dict | None) -> dict:
     """Takes the user data as a string or dict and returns a dictionary of inputs or a list of inputs for group fields"""
     user_input = {}
     try:
@@ -952,7 +953,7 @@ def get_submitted_user_inputs(user_data: Union[str, dict]) -> Dict:
 def render_group_questions(request, item, field_name: str, group_name: str) -> str:
     question_index = request.GET["index"]
     virtual_inputs = bool(strtobool((request.GET["virtual_inputs"])))
-    dynamic_field = getattr(item, field_name, None)
+    dynamic_field: str | None = getattr(item, field_name, None)
     if dynamic_field:
         for question in PostUsageQuestion.load_questions(loads(dynamic_field), question_index):
             if isinstance(question, PostUsageGroupQuestion) and question.group_name == group_name:
@@ -1034,7 +1035,7 @@ def get_counter_value_for_question(question, input_data, counter_question):
     return additional_value
 
 
-def validate_dynamic_form_model(dynamic_form_json: str, item, dynamic_field_name: str) -> List[str]:
+def validate_dynamic_form_model(dynamic_form_json: str, item, dynamic_field_name: str) -> list[str]:
     errors = []
     if dynamic_form_json:
         exceptions = []
@@ -1079,8 +1080,8 @@ def admin_render_dynamic_form_preview(item, dynamic_field_name: str):
     )
 
 
-def sort_question_for_grid(questions: List[PostUsageQuestion]) -> List[List[PostUsageQuestion]]:
-    rows: List[List[PostUsageQuestion]] = []
+def sort_question_for_grid(questions: list[PostUsageQuestion]) -> list[list[PostUsageQuestion]]:
+    rows: list[list[PostUsageQuestion]] = []
 
     # Sorting the list of questions by row, None last
     row_cells = sorted(questions, key=lambda x: (x.form_row is None, x.form_row))
@@ -1100,7 +1101,7 @@ def sort_question_for_grid(questions: List[PostUsageQuestion]) -> List[List[Post
     return rows
 
 
-def match_group_index(form_name: str) -> Optional[re.Pattern]:
+def match_group_index(form_name: str) -> re.Pattern:
     # This will match form_name or any combination of form_name_1, form_name_2 etc.
     return re.compile("^" + form_name + r"(_(\d+))?$")
 
@@ -1119,7 +1120,7 @@ def get_js_event_data(item, dynamic_field_name: str, extra_data=None) -> str:
     )
 
 
-def find_input_value_for_field(user_data: Union[str, dict], question_name) -> Optional[str]:
+def find_input_value_for_field(user_data: str | dict | None, question_name) -> str | None:
     try:
         user_data_json: dict = loads(user_data) if isinstance(user_data, str) and user_data else user_data
         if user_data_json:
@@ -1180,7 +1181,7 @@ class PostUsageRatingQuestion(PostUsageQuestion):
     DEFAULT_COLOR = "#f0ad4e"
     DEFAULT_EMPTY_COLOR = "#ccc"
 
-    def __init__(self, properties: Dict, index: int = None, initial_data=None):
+    def __init__(self, properties: dict, index: int | None = None, initial_data=None):
         super().__init__(properties, index, initial_data)
         self.max_rating = int(self._init_property("max_rating") or self.DEFAULT_MAX_RATING)
         self.symbol = self._init_property("symbol") or self.DEFAULT_SYMBOL
@@ -1254,7 +1255,7 @@ class PostUsageRatingQuestion(PostUsageQuestion):
 }})();</script>"""
 
 
-question_types: Dict[str, Type[PostUsageQuestion]] = {
+question_types: dict[str, Type[PostUsageQuestion]] = {
     "number": PostUsageNumberFieldQuestion,
     "float": PostUsageFloatFieldQuestion,
     "textbox": PostUsageTextFieldQuestion,
