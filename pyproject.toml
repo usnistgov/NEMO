@@ -14,12 +14,13 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Framework :: Django :: 5.2",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
 ]
-requires-python = ">=3.10, <4"
+requires-python = ">=3.11, <4"
 dependencies = [
     "cryptography==50.0.1",
     "Django==5.2.17",
@@ -32,7 +33,7 @@ dependencies = [
     "fastjsonschema==2.22.2",
     "ldap3==2.9.1",
     "packaging==26.3",
-    "Pillow==12.3.0",
+    "Pillow==13.0.0",
     "pymodbus==3.15.0",
     "python-dateutil==2.9.0",
     "requests==2.34.2",
@@ -63,7 +64,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.black]
 line-length = 120
-target-version = ['py311']
+target-version = ['py313']
 
 [tool.djlint]
 profile = "django"
