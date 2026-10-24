@@ -22,12 +22,12 @@ classifiers = [
 ]
 requires-python = ">=3.11, <4"
 dependencies = [
-    "cryptography==50.0.1",
-    "Django==5.2.17",
+    "cryptography==50.0.2",
+    "Django==5.2.18",
     "django-auditlog==3.4.1",
-    "django-filter==26.1",
-    "django-mptt==0.18.0",
-    "djangorestframework==3.18.1",
+    "django-filter==26.2",
+    "django-mptt==0.20.0",
+    "djangorestframework==3.18.3",
     "drf-excel==2.6.0",
     "drf-flex-fields==1.0.2",
     "fastjsonschema==2.22.2",
