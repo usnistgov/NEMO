@@ -140,18 +140,13 @@
 		$('#status option[value="{{ form.status.value }}"]').prop('selected', true);
 	{% endif %}
 
-	let date_picker = $('#estimated_resolution_dt').pickadate({format: "yyyy-mm-dd", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true});
-	let start_time_picker = $('#estimated_resolution_tm').pickatime({interval: 15, format: "H:i",formatSubmit: "H:i", hiddenName: true});
+	$('#estimated_resolution_dt').pickadate({format: "yyyy-mm-dd", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true});
+	$('#estimated_resolution_tm').pickatime({interval: 15, format: "H:i",formatSubmit: "H:i", hiddenName: true});
 
-    const shutdown_jq = $("#force_shutdown");
-    function toggle_lock_field()
-	{
-    	const checked = shutdown_jq.is(":checked");
-    	$("#tool_problem_lock").toggle(checked); // show if checked, hide if not
-  	}
-
-  	shutdown_jq.on("change", toggle_lock_field);
-  	toggle_lock_field();
+    $("#force_shutdown").on("change", function ()
+    {
+        $("#tool_problem_lock").toggle(this.checked);
+    }).trigger("change");
 
 	revert_on_input(60, "#tool_report_problem");
 </script>

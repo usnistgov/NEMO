@@ -179,6 +179,7 @@
     <div id="consumables_order" class="affix">{% include 'kiosk/consumables_order.html' %}</div>
 </div>
 <script type="text/javascript">
+(() => {
     const $search_results_list = $("#search_results_list");
     const $search_results_container = $("#search_results_container");
     const $customer_search_container = $("#customer_search_container");
@@ -191,7 +192,7 @@
     const $projects_list = $("#project-list");
     const $consumable_add_buttons = $(".consumable-add");
     const $withdrawal_order_form = $('#withdrawal_form_order');
-    const $consumables_order = $('#consumables_order')
+    const $consumables_order = $('#consumables_order');
 
     $('[data-toggle="notes-tooltip"]').tooltip({"html": true});
 
@@ -348,9 +349,8 @@
 
     $(window).scroll(function(e)
     {
-      const consumables_order = $consumables_order;
-      if ($(this).scrollTop() > 50) consumables_order.css({'top': '30px'});
-      else consumables_order.css({'top': 'inherit'});
+      if ($(this).scrollTop() > 50) $consumables_order.css({'top': '30px'});
+      else $consumables_order.css({'top': 'inherit'});
     });
 
     {# Prevent refresh resubmit #}
@@ -358,4 +358,5 @@
     {
         window.history.replaceState(null, null, window.location.href);
     }
+})();
 </script>

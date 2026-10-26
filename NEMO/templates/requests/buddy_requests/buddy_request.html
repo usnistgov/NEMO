@@ -87,7 +87,7 @@
 		function clear_area_selection()
 		{
 			$("#selected_area").hide();
-			$('#area_search').typeahead('val', '').show().focus();
+			$('#area_search').typeahead('val', '').show().trigger('focus');
 		}
 		function on_load()
 		{

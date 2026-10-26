@@ -141,7 +141,7 @@
 		}
 		function on_load()
 		{
-			$("#search").autocomplete('recurring_charges', get_charge, '{% url 'search_recurring_charges' %}', true).focus();
+			$("#search").autocomplete('recurring_charges', get_charge, '{% url 'search_recurring_charges' %}', true).trigger('focus');
 		}
         $("#consumable_id").select2();
 		window.addEventListener('load', on_load, true);

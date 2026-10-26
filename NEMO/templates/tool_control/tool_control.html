@@ -282,7 +282,7 @@
 				$("#start").hide();
                 $("#pre_usage_questions").html("");
                 $("#note").prop("disabled", true).parents("#usage_note").hide();
-				$("#user_search").show().focus();
+				$("#user_search").show().trigger('focus');
 			}
 
 			function add_qualified_user(jquery_event, search_selection, dataset_name)
@@ -425,7 +425,7 @@
 				set_item_link_callback(refresh_tool_status);
 				enable_item_tree_toggling();
 				$('#item_search').autocomplete('tools', on_item_search_selection, {% json_search_base_with_extra_fields tools %}, true);
-				$("#item_search").focus();
+				$("#item_search").trigger('focus');
 				load_sidebar_state();
                 {% if user.is_staff or customizations|get_item:"calendar_qualified_tools" == "enabled" %}
                     {# Filter "my tools" depending on the status of the button. #}

@@ -190,7 +190,7 @@
             function clear_account_selection()
             {
                 $("#selected_account").hide();
-                $('#account_search').prop('required', true).typeahead('val', '').show().focus();
+                $('#account_search').prop('required', true).typeahead('val', '').show().trigger('focus');
             }
             window.addEventListener("load", function ()
             {

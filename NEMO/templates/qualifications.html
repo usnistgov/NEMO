@@ -63,7 +63,7 @@
 
 		function on_load()
 		{
-			$('#user_search').autocomplete('user', create_entry, {{ users|json_search_base }}).focus();
+			$('#user_search').autocomplete('user', create_entry, {{ users|json_search_base }}).trigger('focus');
 			$('#tool_search').autocomplete('tool', create_entry, {% json_search_base_with_extra_fields tools|add:tool_groups %}, {% if tool_groups %}false{% else %}true{% endif %});
 		}
 

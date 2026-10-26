@@ -19,7 +19,7 @@ window.addEventListener('load', function () {
                 d = new Date(1970, 1, 1, val, 0, 0, 0);
             }
             DateTimeShortcuts.clockInputs[num].value = d.strftime(get_format('TIME_INPUT_FORMATS')[0]);
-            DateTimeShortcuts.clockInputs[num].focus();
+            DateTimeShortcuts.clockInputs[num].trigger('focus');
             DateTimeShortcuts.dismissClock(num);
         }
     });

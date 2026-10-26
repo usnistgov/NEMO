@@ -148,7 +148,7 @@
     function clear_staff_member_selection()
     {
         $("#selected_staff_member").hide();
-        staff_member_search_jq.typeahead('val', '').show().focus();
+        staff_member_search_jq.typeahead('val', '').show().trigger('focus');
     }
     staff_member_search_jq.autocomplete('staff_member', select_staff_member, {{ staff_members|json_search_base }});
     {% if form.cleaned_data %}

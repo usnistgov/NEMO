@@ -372,7 +372,7 @@
             function add_tool_task_notification(jquery_event, search_selection, dataset_name)
             {
                 add_to_list("#task-notification-list", "remove_tool_task_notification", search_selection.id, search_selection.name, "Remove the " + search_selection.name, "tool_task_notifications");
-                $("#tool_task_notification_search").typeahead('val', '').focus();
+                $("#tool_task_notification_search").typeahead('val', '').trigger('focus');
             }
             function remove_tool_task_notification(tool_id)
             {
@@ -381,7 +381,7 @@
             function add_tool_notification(jquery_event, search_selection, dataset_name)
             {
                 add_to_list("#notification-list", "remove_tool_notification", search_selection.id, search_selection.name, "Remove the " + search_selection.name, "tool_freed_time_notifications");
-                $("#tool_notification_search").typeahead('val', '').focus();
+                $("#tool_notification_search").typeahead('val', '').trigger('focus');
             }
             function remove_tool_notification(tool_id)
             {

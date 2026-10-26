@@ -23,7 +23,7 @@
 			let submit_button = $('#impersonate_submit');
 			let search_user_input = $('#search_users')
 			search_user_input.autocomplete('users', impersonate_user, {{ users|json_search_base }});
-			search_user_input.focus()
+			search_user_input.trigger('focus');
 			function impersonate_user(jquery_event, search_selection)
 			{
 				$('#user_id').val(search_selection.id);

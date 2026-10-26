@@ -232,7 +232,7 @@
     function clear_selected_user()
     {
         $("#chosen_user").val('').hide();
-        $("#user_search").typeahead('val', '').show().focus();
+        $("#user_search").typeahead('val', '').show().trigger('focus');
         $("#data_history_user_id").val('');
     }
     function select_user(jquery_event, search_selection, dataset_name)

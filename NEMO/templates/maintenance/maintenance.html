@@ -87,7 +87,7 @@
                             </td>
                             <td>{{ task.creation_time|naturaltime }}</td>
                             <td>
-                                <span class="maintenance-task-title" title="{{ task.title_or_description }}">{{ task.title_or_description }}</span>
+                                <span class="maintenance-task-title" title="{{ task.title_or_description }}">{{ task.title_or_description|linebreaksbr }}</span>
                             </td>
                         </tr>
                     {% endfor %}

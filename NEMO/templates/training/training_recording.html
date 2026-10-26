@@ -46,7 +46,7 @@
 	function enable_autocompletion(entry_number)
 	{
 		let id = "#user_textbox__" + entry_number;
-		$(id).autocomplete('user', on_autocomplete_selection, {{ users|json_search_base }}).prop('required', true).focus();
+		$(id).autocomplete('user', on_autocomplete_selection, {{ users|json_search_base }}).prop('required', true).trigger('focus');
 		id = "#tool_textbox__" + entry_number;
 		$(id).autocomplete('tool', on_autocomplete_selection, {% json_search_base_with_extra_fields tools|add:tool_groups %}, {% if tool_groups %}false{% else %}true{% endif %}).prop('required', true);
         $("#date__" + entry_number).datetimepicker(timepicker_properties);
@@ -82,16 +82,16 @@
 		if(type === "user")
 		{
 			if($(tool_textbox_id).is(":visible"))
-				$(tool_textbox_id).focus();
+				$(tool_textbox_id).trigger('focus');
 			else
-				$(duration_id).focus();
+				$(duration_id).trigger('focus');
 		}
 		else if(type === "tool")
 		{
 			if($(project_select_id).length > 0)
-				$(project_select_id).focus();
+				$(project_select_id).trigger('focus');
 			else
-				$(duration_id).focus();
+				$(duration_id).trigger('focus');
 		}
 	}
 
@@ -120,13 +120,13 @@
 	{
 		$("#user_button__" + row).hide();
 		$("#project__" + row).html("");
-		$("#user_textbox__" + row).typeahead('val', '').prop('required', true).show().focus();
+		$("#user_textbox__" + row).typeahead('val', '').prop('required', true).show().trigger('focus');
 	}
 
 	function purge_tool(row)
 	{
 		$("#tool_button__" + row).hide();
-		$("#tool_textbox__" + row).typeahead('val', '').prop('required', true).show().focus();
+		$("#tool_textbox__" + row).typeahead('val', '').prop('required', true).show().trigger('focus');
 		$("#tool_textbox_type__" + row).typeahead('val', '');
         $("select[name=technique__" + row + "] option:selected").removeAttr("selected");
         $("select[name=technique__" + row + "] option.technique-option").hide();

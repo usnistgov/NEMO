@@ -103,7 +103,7 @@
 		}
 		function on_load()
 		{
-			$("#search").autocomplete('users', get_user, '{% url 'user_search' %}', true).focus();
+			$("#search").autocomplete('users', get_user, '{% url 'user_search' %}', true).trigger('focus');
 		}
 		window.addEventListener('load', on_load, true);
 	

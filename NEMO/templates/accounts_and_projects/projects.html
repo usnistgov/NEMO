@@ -44,7 +44,7 @@
 		function add_user_to_project(jquery_event, search_selection, dataset_name)
 		{
 			let project_id = $(this).data('project-id');
-			$(this).typeahead('val', '').focus();
+			$(this).typeahead('val', '').trigger('focus');
 			let complete_callback = ajax_complete_callback('Unable to add user to project');
 			$("#project_" + project_id + "_users").load("{% url 'add_user_to_project' %}", {'user_id': search_selection.id, 'project_id': project_id, 'csrfmiddlewaretoken': '{{ csrf_token }}'}, complete_callback);
 		}

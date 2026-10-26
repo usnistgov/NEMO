@@ -218,7 +218,7 @@
         function clear_selected_customer()
 		{
 			$("#chosen_customer").val('').hide();
-			$("#customer_search").typeahead('val', '').show().focus();
+			$("#customer_search").typeahead('val', '').show().trigger('focus');
 			$("#customer").val('');
 			$('#project').find('option').remove().end().attr('disabled', 'disabled').prop('required', false);
 		}

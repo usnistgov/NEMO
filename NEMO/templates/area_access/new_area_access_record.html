@@ -30,7 +30,7 @@
 			$("#customer").val(search_selection.id);
 			$("#new_area_access_record").submit();
 		}
-		$('#customer_search').autocomplete('users', select_user, {{ customers|json_search_base }}).focus();
+		$('#customer_search').autocomplete('users', select_user, {{ customers|json_search_base }}).trigger('focus');
 	
     </script>
 {% endblock %}

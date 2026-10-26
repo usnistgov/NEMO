@@ -61,5 +61,5 @@
     </div>
 </div>
 <script>
-	$('#add_qualified_user_search_box').autocomplete('users', add_qualified_user, {{ users|json_search_base }}).focus();
+	$('#add_qualified_user_search_box').autocomplete('users', add_qualified_user, {{ users|json_search_base }}).trigger('focus');
 </script>
