@@ -236,7 +236,9 @@ def usage_data_history(request, tool_id):
         # Default to last 25 records
         last = 25
     tool_family_ids = Tool.objects.get(pk=tool_id).get_family_tool_ids()
-    usage_events = UsageEvent.objects.filter(tool_id__in=tool_family_ids)
+    usage_events = UsageEvent.objects.filter(tool_id__in=tool_family_ids).select_related(
+        "user", "operator", "project", "tool"
+    )
 
     if start:
         usage_events = usage_events.filter(end__gte=start)

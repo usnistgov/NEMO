@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from NEMO.models import Account, Area, AreaAccessRecord, Customization, Project, StaffCharge, Tool, UsageEvent, User
 from NEMO.tests.test_utilities import NEMOTestCaseMixin
@@ -245,3 +248,28 @@ class ToolControlTestCase(NEMOTestCaseMixin, TestCase):
         self.assertTrue(event.training)
         self.assertIsNone(event.staff_charge)
         self.assertFalse(event.remote_work)
+
+    def test_usage_data_history(self):
+        """Test usage data history view with project info and csv export."""
+        self.login_as(self.user)
+        now = timezone.now()
+        for i in range(10):
+            UsageEvent.objects.create(
+                user=self.user,
+                operator=self.staff,
+                project=self.project,
+                tool=self.tool,
+                start=now - timedelta(hours=i + 1),
+                end=now - timedelta(hours=i),
+            )
+        url = reverse("usage_data_history", kwargs={"tool_id": self.tool.id})
+        response = self.client.post(url, {"show_project_info": "true"})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.project.name)
+        self.assertContains(response, self.user.first_name)
+        self.assertContains(response, self.staff.first_name)
+
+        # Test CSV export
+        csv_response = self.client.post(url, {"csv": "all", "show_project_info": "true"})
+        self.assertEqual(csv_response.status_code, 200)
+        self.assertEqual(csv_response["Content-Type"], "text/csv")
