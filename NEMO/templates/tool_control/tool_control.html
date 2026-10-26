@@ -11,6 +11,9 @@
     <link rel="stylesheet" type="text/css" href="{% static "select2/css/select2-bootstrap.min.css" %}" />
 {% endblock %}
 {% block body %}
+    <div id="loading-div-page" class="spinner-full-page spinner-container" style="display: none">
+        <div class="glyphicon glyphicon-repeat normal-right-spinner"></div>
+    </div>
     <div id="main-content">
         <style>
 		h3
@@ -376,6 +379,7 @@
 
 		function load_usage_data(tool_id, csv_export)
 		{
+			if (!csv_export) show_spinner();
 			let failure_dialog = ajax_complete_callback("Unable to find usage data", "There was a problem looking up usage data.");
 			let data = serialize("#usage_data_form");
 			data.csrfmiddlewaretoken= "{{ csrf_token }}";
@@ -393,6 +397,7 @@
 
         function load_config_history(tool_id, request_params)
         {
+            show_spinner();
             let failure_dialog = ajax_complete_callback("Unable to find the configuration history", "There was a problem looking up the configuration history.");
             let url = build_django_url("{% url 'tool_config_history' 999 %}", ["999"], [tool_id]);
             if (request_params)
