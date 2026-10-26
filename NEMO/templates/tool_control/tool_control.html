@@ -391,10 +391,15 @@
 			}
 		}
 
-        function load_config_history(tool_id)
+        function load_config_history(tool_id, request_params)
         {
             let failure_dialog = ajax_complete_callback("Unable to find the configuration history", "There was a problem looking up the configuration history.");
-            $("#config").load("{% url 'tool_config_history' 999 %}".replace('999', tool_id), undefined, failure_dialog);
+            let url = build_django_url("{% url 'tool_config_history' 999 %}", ["999"], [tool_id]);
+            if (request_params)
+            {
+                url += "?" + request_params;
+            }
+            $("#config").load(url, undefined, failure_dialog);
         }
 
         function load_pre_usage_questions(tool_id, customer_id, project_id)

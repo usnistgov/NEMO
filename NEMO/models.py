@@ -3231,6 +3231,13 @@ class ConfigurationHistory(BaseModel):
     slot = models.PositiveIntegerField()
     setting = models.TextField()
 
+    def get_config_history_setting(self) -> str:
+        try:
+            self.configuration.current_settings = self.setting
+            return self.configuration.get_current_setting(0)
+        except IndexError:
+            return ""
+
     class Meta:
         ordering = ["-modification_time"]
         verbose_name_plural = "Configuration histories"
