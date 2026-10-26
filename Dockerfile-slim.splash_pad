@@ -1,0 +1,51 @@
+FROM python:3.13-slim
+
+ENV PIP_ROOT_USER_ACTION=ignore
+
+RUN apt-get update && apt-get upgrade -y && apt-get install -y systemctl rsync vim less wget
+
+COPY . /nemo/
+RUN python3 -m pip install --upgrade pip
+RUN python3 -m pip install /nemo/
+RUN rm --recursive --force /nemo
+
+RUN mkdir /nemo
+RUN mkdir /nemo/media
+RUN mkdir /nemo/systemd
+WORKDIR /nemo
+
+COPY resources/icons/ /nemo/media
+COPY resources/people/ /nemo/media/
+COPY resources/sounds/ /nemo/media/
+COPY resources/images/ /nemo/media/
+COPY resources/emails/ /nemo/media/
+COPY resources/systemd/ /nemo/systemd/
+COPY resources/splash_pad_rates.json /nemo/media/rates.json
+COPY resources/splash_pad_settings.py /nemo/
+COPY resources/fixtures/splash_pad.json /nemo/
+
+ENV DJANGO_SETTINGS_MODULE="splash_pad_settings"
+ENV PYTHONPATH="/nemo/"
+
+RUN django-admin makemigrations NEMO
+RUN django-admin migrate
+RUN django-admin loaddata splash_pad.json
+
+# Install systemd services after replacing docker command
+WORKDIR /nemo/systemd
+# Replace docker command by direct django-admin command
+RUN find . -type f -name '*.service' | xargs sed -i "s/\/usr\/bin\/docker exec nemo django-admin/\/usr\/local\/bin\/django-admin/g"
+RUN rsync * /etc/systemd/system
+RUN systemctl daemon-reload
+RUN (cd /nemo/systemd && ls *.timer) | xargs -t -I % systemctl enable %
+
+WORKDIR /nemo
+
+ENV REMOTE_USER="captain"
+EXPOSE 8000/tcp
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD wget -qO- http://localhost:8000/health/ || exit 1
+
+# We have to start systemd jobs manually here unfortunately
+CMD (cd /nemo/systemd && ls *.timer) | sed -e 's/\.timer$//' | xargs -t -I % systemctl start % ; exec django-admin runserver 0.0.0.0:8000
