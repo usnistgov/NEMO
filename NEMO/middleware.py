@@ -20,16 +20,24 @@ middleware_logger = getLogger(__name__)
 class RemoteUserAuthenticationMiddleware(RemoteUserMiddleware):
     def __init__(self, get_response=None):
         self.api_url = None
+        self.health_check_url = None
         try:
             self.api_url = reverse("api-root")
+        except NoReverseMatch:
+            pass
+        try:
+            self.health_check_url = reverse("health_check")
         except NoReverseMatch:
             pass
         super().__init__(get_response)
 
     def process_request(self, request):
-        # REST API has its own authentication
-        if request.path and self.api_url and request.path.startswith(self.api_url):
-            return
+        # REST API has its own authentication and health check does not require authentication
+        if request.path and (
+            (self.api_url and request.path.startswith(self.api_url))
+            or (self.health_check_url and request.path == self.health_check_url)
+        ):
+            return None
 
         try:
             try:
