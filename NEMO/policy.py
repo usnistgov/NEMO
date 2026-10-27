@@ -1336,23 +1336,23 @@ class NEMOPolicyChain:
             # Case 3: (problems, overridable) aggregator (reservation policy pattern)
             # If the *last* result looks like that shape, we aggregate/combine the results.
             if results and isinstance(results[-1], tuple) and len(results[-1]) == 2:
-                all_problems: List[str] = []
+                all_problems: set[str] = set()
                 combined_overridable = True
                 for r in results:
                     if isinstance(r, tuple) and len(r) == 2 and isinstance(r[0], Iterable):
                         problems, overridable = r
                         if problems:
-                            all_problems.extend(list(problems))
+                            all_problems.update(list(problems))
                         combined_overridable = combined_overridable and bool(overridable)
-                return all_problems, combined_overridable
+                return list(all_problems), combined_overridable
 
             # Case 4: list aggregator (error string list pattern)
             if results and isinstance(results[-1], list):
-                all_errors: List[str] = []
+                all_errors: set[str] = set()
                 for r in results:
                     if isinstance(r, list):
-                        all_errors.extend(r)
-                return all_errors
+                        all_errors.update(r)
+                return list(all_errors)
 
             # Default: return the last policy's result
             return results[-1]
