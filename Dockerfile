@@ -1,4 +1,5 @@
-FROM python:3.14
+ARG PYTHON_IMAGE=python:3.14
+FROM ${PYTHON_IMAGE}
 
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y less vim wget

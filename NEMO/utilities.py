@@ -389,7 +389,7 @@ def get_month_timeframe(date_str: str | None = None):
     return first_of_the_month, last_of_the_month
 
 
-def get_day_timeframe(day_date: date):
+def get_day_timeframe(day_date: date | None = None):
     start = day_date
     if not day_date:
         start = date.today()
