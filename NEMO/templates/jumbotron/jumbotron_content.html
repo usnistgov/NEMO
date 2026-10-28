@@ -1,8 +1,8 @@
-<div id="jumbotron-wrapper"class="row jumbotron_container components-{{ components }}">
+<div id="jumbotron-wrapper" class="row jumbotron_container components-{{ components }}">
     {% with four_column_class="col-lg-3" three_column_class="col-lg-4" two_column_class="col-lg-6" one_column_class="col-md-12 col-lg-offset-3 col-lg-6" %}
         {% if areas_exist and display_occupancy %}
             <div class="{% if components == 4 %}{{ four_column_class }}{% elif components == 3 %}{{ three_column_class }}{% elif components == 2 %}{{ two_column_class }}{% elif components == 1 %}{{ one_column_class }}{% endif %} content-component"
-                id="jumbotron-component-occupancy">
+                 id="jumbotron-component-occupancy">
                 {% if not facility_occupants %}
                     <h2>
                         Nobody is in an access controlled
@@ -33,7 +33,7 @@
         {% endif %}
         {% if tools_exist and display_usage %}
             <div class="{% if components == 4 %}{{ four_column_class }}{% elif components == 3 %}{{ three_column_class }}{% elif components == 2 %}{{ two_column_class }}{% elif components == 1 %}{{ one_column_class }}{% endif %} content-component"
-                id="jumbotron-component-usage">
+                 id="jumbotron-component-usage">
                 {% if usage_events %}
                     <h2>Tool usage</h2>
                     <p>
@@ -74,7 +74,7 @@
         {% endif %}
         {% if tools_exist and display_reservations %}
             <div class="{% if components == 4 %}{{ four_column_class }}{% elif components == 3 %}{{ three_column_class }}{% elif components == 2 %}{{ two_column_class }}{% elif components == 1 %}{{ one_column_class }}{% endif %} content-component"
-                id="jumbotron-component-reservations">
+                 id="jumbotron-component-reservations">
                 {% if reservations %}
                     <h2>
                         Upcoming
@@ -122,7 +122,7 @@
         {% endif %}
         {% if alerts or disabled_resources or scheduled_outages %}
             <div class="{% if components == 4 %}{{ four_column_class }}{% elif components == 3 %}{{ three_column_class }}{% elif components == 2 %}{{ two_column_class }}{% elif components == 1 %}{{ one_column_class }}{% endif %} content-component"
-                id="jumbotron-component-alerts">
+                 id="jumbotron-component-alerts">
                 <h2>Alerts and outages</h2>
                 <p>{# For spacing #}&nbsp;</p>
                 {% for a in alerts %}

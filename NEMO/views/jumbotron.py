@@ -5,7 +5,16 @@ from django.utils import timezone
 from datetime import timedelta
 from django.views.decorators.http import require_GET
 
-from NEMO.models import Alert, Area, AreaAccessRecord, Reservation, Resource, ScheduledOutage, UsageEvent
+from NEMO.models import (
+    Alert,
+    Area,
+    AreaAccessRecord,
+    Reservation,
+    Resource,
+    ScheduledOutage,
+    Tool,
+    UsageEvent,
+)
 from NEMO.utilities import quiet_int
 from NEMO.views.alerts import mark_alerts_as_expired
 from NEMO.views.customization import get_media_file_contents
@@ -100,9 +109,9 @@ def jumbotron_content(request):
             bool(
                 dictionary.get("alerts") or dictionary.get("disabled_resources") or dictionary.get("scheduled_outages")
             ),
-            bool(dictionary.get("facility_occupants")),
-            bool(dictionary.get("reservations")),
-            bool(dictionary.get("usage_events")),
+            bool(Area.objects.exists() and dictionary.get("display_occupancy")),
+            bool(Tool.objects.exists() and dictionary.get("display_reservations")),
+            bool(Tool.objects.exists() and dictionary.get("display_usage")),
         ]
     )
     return render(request, "jumbotron/jumbotron_content.html", dictionary)
