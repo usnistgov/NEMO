@@ -26,7 +26,7 @@ dependencies = [
     "Django==5.2.18",
     "django-auditlog==3.4.1",
     "django-filter==26.2",
-    "django-mptt==0.20.0",
+    "django-mptt==0.21.0",
     "djangorestframework==3.18.3",
     "drf-excel==2.6.0",
     "drf-flex-fields==1.0.2",
@@ -34,8 +34,8 @@ dependencies = [
     "ldap3==2.9.1",
     "packaging==26.3",
     "Pillow==13.0.0",
-    "pymodbus==3.15.0",
-    "python-dateutil==2.9.0",
+    "pymodbus==3.16.1",
+    "python-dateutil==3.0.0",
     "requests==2.34.2",
 ]
 license = {file = "LICENSE"}
