@@ -1,9 +1,12 @@
 from datetime import timedelta
+from unittest.mock import Mock, patch
 
+from django.http import HttpResponse
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.models import Account, Area, AreaAccessRecord, Customization, Project, StaffCharge, Tool, UsageEvent, User
 from NEMO.tests.test_utilities import NEMOTestCaseMixin
 from NEMO.views.customization import CustomizationBase
@@ -59,6 +62,27 @@ class ToolControlTestCase(NEMOTestCaseMixin, TestCase):
         CustomizationBase.invalidate_cache()
         return tool, area
 
+    def _disable_tool_with_unanswered_questions(self, actor, event_user, operator, extra_post=None):
+        usage_event = UsageEvent.objects.create(
+            user=event_user,
+            operator=operator,
+            project=self.project,
+            tool=self.tool,
+            start=timezone.now() - timedelta(hours=1),
+        )
+        self.login_as(actor)
+
+        dynamic_forms = Mock()
+        dynamic_forms.extract.side_effect = RequiredUnansweredQuestionsException("incomplete", [])
+        with (
+            patch("NEMO.views.tool_control.policy.check_to_disable_tool", return_value=HttpResponse()),
+            patch("NEMO.views.tool_control.shorten_reservation"),
+            patch("NEMO.views.tool_control.Tool.get_usage_questions", return_value=dynamic_forms),
+            patch("NEMO.views.tool_control.email_managers_required_questions_disable_tool") as send_email,
+        ):
+            response = self.client.post(reverse("disable_tool", kwargs={"tool_id": self.tool.id}), extra_post or {})
+        return response, send_email, usage_event
+
     # --- Scenario 1: User using tool for their own project ---
 
     def test_user_self_usage(self):
@@ -81,6 +105,39 @@ class ToolControlTestCase(NEMOTestCaseMixin, TestCase):
         self.login_as(self.user)
         response = self.client.post(self._enable_tool_url(self.tool, self.user, self.project, True), follow=True)
         self.assertEqual(response.status_code, 400, response.content.decode())
+
+    def test_user_cannot_disable_with_unanswered_required_questions(self):
+        response, send_email, usage_event = self._disable_tool_with_unanswered_questions(
+            self.user, self.user, self.user
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(send_email.called)
+        usage_event.refresh_from_db()
+        self.assertIsNone(usage_event.end)
+
+    def test_third_party_disable_notifies(self):
+        response, send_email, usage_event = self._disable_tool_with_unanswered_questions(
+            self.staff, self.user, self.user
+        )
+
+        self.assertEqual(response.status_code, 200, response.content.decode())
+        send_email.assert_called_once()
+        usage_event.refresh_from_db()
+        self.assertEqual(usage_event.run_data, "incomplete")
+
+    def test_configuration_agenda_disable_does_not_notify(self):
+        response, send_email, usage_event = self._disable_tool_with_unanswered_questions(
+            self.staff,
+            self.user,
+            self.user,
+            extra_post={"skip_usage_questions": "true"},
+        )
+
+        self.assertEqual(response.status_code, 200, response.content.decode())
+        self.assertFalse(send_email.called)
+        usage_event.refresh_from_db()
+        self.assertEqual(usage_event.run_data, "incomplete")
 
     # --- Scenario 2: Staff using tool for someone else (no charges) ---
 

@@ -575,12 +575,17 @@ def disable_tool(request, tool_id):
     try:
         current_usage_event.run_data = dynamic_forms.extract(request)
     except RequiredUnansweredQuestionsException as e:
-        if user != current_usage_event.operator and current_usage_event.user != user:
-            # if someone else is forcing somebody off the tool and there are required questions, send an email and proceed
+        skip_usage_questions = request.POST.get("skip_usage_questions") == "true"
+        if skip_usage_questions:
             current_usage_event.run_data = e.run_data
-            email_managers_required_questions_disable_tool(current_usage_event, user, e.questions)
         else:
-            return HttpResponseBadRequest(str(e))
+            third_party_disable = user != current_usage_event.operator and current_usage_event.user != user
+            if third_party_disable:
+                # if someone else is forcing somebody off the tool and there are required questions, send an email and proceed
+                current_usage_event.run_data = e.run_data
+                email_managers_required_questions_disable_tool(current_usage_event, user, e.questions)
+            else:
+                return HttpResponseBadRequest(str(e))
 
     try:
         dynamic_forms.process_run_data(current_usage_event, current_usage_event.run_data, request)
