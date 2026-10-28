@@ -1,6 +1,4 @@
-from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.contrib.staticfiles import finders
 from django.db.models import Q
 from django.shortcuts import render
 from django.utils import timezone
@@ -16,21 +14,8 @@ from NEMO.views.customization import get_media_file_contents
 @login_required
 @require_GET
 def jumbotron(request):
-    # Check for custom css/js files in any of the pre-collection static directories to verify if they should be included
-    custom_staticfiles_dirs = getattr(settings, "STATICFILES_DIRS", [])
-    include_custom_css = False
-    include_custom_js = False
-    for dir in custom_staticfiles_dirs:
-        include_custom_css = include_custom_css or bool(finders.find(f"{dir}/custom/jumbotron.css"))
-        include_custom_js = include_custom_css or bool(finders.find(f"{dir}/custom/jumbotron.js"))
     return render(
-        request, 
-        "jumbotron/jumbotron.html", 
-        {
-            "watermark": bool(get_media_file_contents("jumbotron_watermark.png")),
-            "include_custom_css": include_custom_css,
-            "include_custom_js": include_custom_js,
-        }
+        request, "jumbotron/jumbotron.html", {"watermark": bool(get_media_file_contents("jumbotron_watermark.png"))}
     )
 
 

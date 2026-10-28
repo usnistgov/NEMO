@@ -16,13 +16,6 @@
         <link rel="shortcut icon" type="image/x-icon" href="{% static 'favicon.ico' %}" />
         <script type="text/javascript" src="{% static "nemo.js" %}"></script>
         <link rel="stylesheet" type="text/css" href="{% static "nemo.css" %}" />
-        {# Organization Customizations #}
-        {% if include_custom_css %}
-            <link rel="stylesheet" type="text/css" href="{% static "custom/jumbotron.css" %}" />
-        {% endif %}
-        {% if include_custom_js %}
-            <script type="text/javascript" src="{% static "custom/jumbotron.js" %}"></script>
-        {% endif %}
         <title>Jumbotron</title>
         <style>
 			{# Style for autofit #}
