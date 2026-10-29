@@ -183,11 +183,10 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
         """
         Check that the user is allowed to enable the tool. Enable the tool if the policy checks pass.
         """
-        if user.has_negative_perm("NEMO.block_enable_tools"):
-            if user == operator:
-                return HttpResponseBadRequest("You do not have permission to enable tools.")
-            else:
-                return HttpResponseBadRequest(f"{user} does not have permission to enable tools.")
+        if user == operator and user.has_negative_perm("NEMO.block_enable_tools"):
+            return HttpResponseBadRequest("You do not have permission to enable tools.")
+        elif user != operator and user.has_negative_perm("NEMO.block_enable_tools_on_behalf"):
+            return HttpResponseBadRequest(f"{user} does not have permission to enable tools, even on their behalf.")
 
         facility_name = ApplicationCustomization.get("facility_name")
         site_title = ApplicationCustomization.get("site_title")
@@ -374,11 +373,10 @@ class DefaultNEMOPolicy(BaseNEMOPolicy):
         """
         user = new_reservation.user
 
-        if user.has_negative_perm("NEMO.block_create_reservations"):
-            if user == user_creating_reservation:
-                return ["You do not have permission to create reservations."], True
-            else:
-                return [str(user) + " does not have permission to create reservations."], True
+        if user == user_creating_reservation and user.has_negative_perm("NEMO.block_create_reservations"):
+            return ["You do not have permission to create reservations."], True
+        elif user != user_creating_reservation and user.has_negative_perm("NEMO.block_create_reservations_on_behalf"):
+            return [str(user) + " does not have permission to create reservations, even on their behalf."], True
 
         facility_name = ApplicationCustomization.get("facility_name")
         site_title = ApplicationCustomization.get("site_title")

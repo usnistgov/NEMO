@@ -5942,8 +5942,10 @@ class Policy(models.Model):
         default_permissions = ()
         permissions = [
             ("block_create_reservations", "Cannot create reservations"),
+            ("block_create_reservations_on_behalf", "Cannot create reservations on behalf of user"),
             ("block_create_outages", "Cannot create outages"),
             ("block_enable_tools", "Cannot enable tools"),
+            ("block_enable_tools_on_behalf", "Cannot enable tools on behalf of user"),
             ("block_enter_any_areas", "Cannot enter any areas"),
             ("block_bill_projects", "Cannot bill projects"),
             ("block_qualify_on_tools", "Cannot qualify user on tools"),
