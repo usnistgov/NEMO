@@ -28,7 +28,7 @@
                             The tool was not used for more than
                         {% endif %}
                         {{ reservation.reservation_item.missed_reservation_threshold }} minutes after the start
-                        of your reservation, therefore your reservation time has been marked as 'missed' in {{ site_title }} and cancelled on the calendar.
+                        of your reservation, therefore your reservation time has been marked as 'missed' in <a href="{{ site_url }}">{{ site_title }}</a> and cancelled on <a href="{{ calendar_url }}">the calendar</a>.
                     </p>
                     <p>
                         Please remember that the facility is a shared resource, and missing a reservation may inhibit the productivity of other facility users.
