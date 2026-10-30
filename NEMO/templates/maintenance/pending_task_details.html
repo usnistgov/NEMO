@@ -127,12 +127,10 @@
                            value="{{ estimated_resolution_time|input_date_format }}">
                 </div>
                 <script>
-			let timepicker_properties =
-			{
-                format: '{{ datetime_input_js_format }}',
-			};
-			$('#estimated_resolution_time').datetimepicker(timepicker_properties);
-		
+                    $('#estimated_resolution_time').datetimepicker(
+                    {
+                        format: '{{ datetime_input_js_format }}',
+                    });
                 </script>
             </div>
             <div class="form-group">

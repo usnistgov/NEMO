@@ -75,7 +75,20 @@ class PolicyPermissionsTestCase(NEMOTestCaseMixin, TestCase):
         )
         self.assertEqual(response.status_code, 200)
 
-        # With block_enable_tools permission, enabling tool should be blocked (status 400)
+        # Staff enabling tool on behalf of a user who has no policy permissions
+        staff, staff_project = create_user_and_project(is_staff=True)
+        staff.training_required = False
+        staff.save()
+        response = policy.check_to_enable_tool(
+            tool=self.tool,
+            operator=staff,
+            user=self.user,
+            project=self.project,
+            staff_charge=False,
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # With block_enable_tools permission, user enabling tool for themselves should be blocked (status 400)
         self._add_permission(self.user, "policy", "block_enable_tools")
         response = policy.check_to_enable_tool(
             tool=self.tool,
@@ -87,10 +100,29 @@ class PolicyPermissionsTestCase(NEMOTestCaseMixin, TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.content.decode(), "You do not have permission to enable tools.")
 
-        # Staff enabling tool on behalf of a user who has block_enable_tools permission
-        staff, staff_project = create_user_and_project(is_staff=True)
-        staff.training_required = False
-        staff.save()
+        # Staff enabling tool on behalf of a user who only has block_enable_tools permission should succeed
+        response = policy.check_to_enable_tool(
+            tool=self.tool,
+            operator=staff,
+            user=self.user,
+            project=self.project,
+            staff_charge=False,
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # With block_enable_tools_on_behalf permission, user enabling tool for themselves should succeed
+        self._remove_permission(self.user, "block_enable_tools")
+        self._add_permission(self.user, "policy", "block_enable_tools_on_behalf")
+        response = policy.check_to_enable_tool(
+            tool=self.tool,
+            operator=self.user,
+            user=self.user,
+            project=self.project,
+            staff_charge=False,
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # Staff enabling tool on behalf of a user who has block_enable_tools_on_behalf permission should be blocked
         response = policy.check_to_enable_tool(
             tool=self.tool,
             operator=staff,
@@ -99,7 +131,9 @@ class PolicyPermissionsTestCase(NEMOTestCaseMixin, TestCase):
             staff_charge=False,
         )
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.content.decode(), f"{self.user} does not have permission to enable tools.")
+        self.assertEqual(
+            response.content.decode(), f"{self.user} does not have permission to enable tools, even on their behalf."
+        )
 
     def test_block_create_reservations_permission(self):
         start = timezone.now() + timedelta(days=1)
@@ -134,7 +168,7 @@ class PolicyPermissionsTestCase(NEMOTestCaseMixin, TestCase):
         self.assertEqual(problems, ["You do not have permission to create reservations."])
         self.assertTrue(overridable)
 
-        # When creating for another user who has block_create_reservations permission
+        # Creating on behalf of user who only has block_create_reservations permission should succeed
         other_user, other_project = create_user_and_project()
         other_user.training_required = False
         other_user.qualifications.add(self.tool)
@@ -156,7 +190,38 @@ class PolicyPermissionsTestCase(NEMOTestCaseMixin, TestCase):
             user_creating_reservation=self.user,
             explicit_policy_override=False,
         )
-        self.assertEqual(problems, [f"{other_user} does not have permission to create reservations."])
+        self.assertEqual(problems, [])
+
+        # User who has block_create_reservations_on_behalf creating for themselves should succeed
+        self._remove_permission(other_user, "block_create_reservations")
+        self._add_permission(other_user, "policy", "block_create_reservations_on_behalf")
+        reservation_for_self = Reservation(
+            tool=self.tool,
+            user=other_user,
+            creator=other_user,
+            project=other_project,
+            start=start,
+            end=end,
+            short_notice=False,
+        )
+        problems, overridable = policy.check_to_save_reservation(
+            cancelled_reservation=None,
+            new_reservation=reservation_for_self,
+            user_creating_reservation=other_user,
+            explicit_policy_override=False,
+        )
+        self.assertEqual(problems, [])
+
+        # When creating on behalf of another user who has block_create_reservations_on_behalf permission
+        problems, overridable = policy.check_to_save_reservation(
+            cancelled_reservation=None,
+            new_reservation=reservation_for_other,
+            user_creating_reservation=self.user,
+            explicit_policy_override=False,
+        )
+        self.assertEqual(
+            problems, [f"{other_user} does not have permission to create reservations, even on their behalf."]
+        )
         self.assertTrue(overridable)
 
     def test_block_create_outages_permission(self):

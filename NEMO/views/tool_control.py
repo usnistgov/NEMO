@@ -13,7 +13,6 @@ from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbid
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
 from django.utils import formats, timezone
-from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import staff_member_or_tool_staff_required, synchronized
@@ -51,6 +50,7 @@ from NEMO.utilities import (
     render_email_template,
     response_js_redirect,
     send_mail,
+    slugify_underscore,
 )
 from NEMO.views.area_access import able_to_self_log_out_of_area
 from NEMO.views.calendar import shorten_reservation
@@ -61,7 +61,7 @@ from NEMO.views.customization import (
     ToolCustomization,
     get_media_file_contents,
 )
-from NEMO.widgets.configuration_editor import ConfigurationEditor
+from NEMO.views.pagination import SortedPaginator
 from NEMO.widgets.dynamic_form import PostUsageQuestion
 from NEMO.widgets.item_tree import ItemTree
 
@@ -188,25 +188,38 @@ def use_tool_for_other(request):
 @login_required
 @require_GET
 def tool_config_history(request, tool_id):
-    # tool config by user and tool and time
-    configs = []
-    config_history = ConfigurationHistory.objects.filter(configuration__tool_id=tool_id).order_by("-modification_time")[
-        :20
-    ]
-    for history in config_history:
-        configuration = ConfigurationEditor()
-        conf = history.configuration
-        conf.name = history.item_name
-        conf.current_settings = history.setting
-        configs.append(
-            {
-                "modification_time": history.modification_time,
-                "configuration": history.configuration,
-                "user": history.user,
-                "html": mark_safe(configuration._render_for_one(conf, render_as_form=False)),
-            }
-        )
-    return render(request, "tool_control/config_history.html", {"configs": configs})
+    tool = get_object_or_404(Tool, id=tool_id)
+    config_history = (
+        ConfigurationHistory.objects.filter(configuration__tool_id=tool_id)
+        .select_related("user")
+        .order_by("-modification_time")
+    )
+
+    if request.user.is_staff_on_tool(tool) and bool(request.GET.get("csv", False)):
+        table = BasicDisplayTable()
+        table.add_header(("modification_time", "Date"))
+        table.add_header(("user", "Operator"))
+        table.add_header(("config", "Configuration"))
+        table.add_header(("setting", "Setting"))
+
+        for config_history in config_history:
+            table.add_row(
+                {
+                    "modification_time": config_history.modification_time,
+                    "user": config_history.user,
+                    "config": config_history.item_name,
+                    "setting": config_history.get_config_history_setting(),
+                }
+            )
+
+        filename = f"tool_configuration_history_{slugify_underscore(tool.name)}_{export_format_datetime()}.csv"
+        return table.to_csv_http_response(filename)
+
+    page = SortedPaginator(
+        config_history, request, order_by="-modification_time", js_callback="load_config_history_page"
+    ).get_current_page()
+
+    return render(request, "tool_control/config_history.html", {"page": page, "tool": tool})
 
 
 @login_required
@@ -223,7 +236,9 @@ def usage_data_history(request, tool_id):
         # Default to last 25 records
         last = 25
     tool_family_ids = Tool.objects.get(pk=tool_id).get_family_tool_ids()
-    usage_events = UsageEvent.objects.filter(tool_id__in=tool_family_ids)
+    usage_events = UsageEvent.objects.filter(tool_id__in=tool_family_ids).select_related(
+        "user", "operator", "project", "tool"
+    )
 
     if start:
         usage_events = usage_events.filter(end__gte=start)
@@ -560,12 +575,17 @@ def disable_tool(request, tool_id):
     try:
         current_usage_event.run_data = dynamic_forms.extract(request)
     except RequiredUnansweredQuestionsException as e:
-        if user != current_usage_event.operator and current_usage_event.user != user:
-            # if someone else is forcing somebody off the tool and there are required questions, send an email and proceed
+        skip_usage_questions = request.POST.get("skip_usage_questions") == "true"
+        if skip_usage_questions:
             current_usage_event.run_data = e.run_data
-            email_managers_required_questions_disable_tool(current_usage_event, user, e.questions)
         else:
-            return HttpResponseBadRequest(str(e))
+            third_party_disable = user != current_usage_event.operator and current_usage_event.user != user
+            if third_party_disable:
+                # if someone else is forcing somebody off the tool and there are required questions, send an email and proceed
+                current_usage_event.run_data = e.run_data
+                email_managers_required_questions_disable_tool(current_usage_event, user, e.questions)
+            else:
+                return HttpResponseBadRequest(str(e))
 
     try:
         dynamic_forms.process_run_data(current_usage_event, current_usage_event.run_data, request)

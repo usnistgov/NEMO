@@ -211,10 +211,10 @@
             function clear_project_selection(dataset_name) {
                 if (dataset_name === "projects") {
                     $("#selected_project").hide();
-                    $('#project_search').prop('required', true).typeahead('val', '').show().focus();
+                    $('#project_search').prop('required', true).typeahead('val', '').show().trigger('focus');
                 } else {
                     $("#selected_new_project").hide();
-                    $('#new_project_search').typeahead('val', '').show().focus();
+                    $('#new_project_search').typeahead('val', '').show().trigger('focus');
                 }
             }
 
@@ -230,7 +230,7 @@
 
             function clear_user_selection(dataset_name) {
                 $("#selected_user").hide();
-                $('#user_search').typeahead('val', '').show().focus();
+                $('#user_search').typeahead('val', '').show().trigger('focus');
             }
 
             function select_user(jquery_event, search_selection) {

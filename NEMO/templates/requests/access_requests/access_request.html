@@ -147,7 +147,7 @@
         function add_other_user(jquery_event, search_selection, dataset_name)
 		{
 		    $('#other_users_label').show();
-			$(this).typeahead('val', '').focus();
+			$(this).typeahead('val', '').trigger('focus');
 			if (!$("input[name='other_users'][value='"+search_selection.id+"']").length)
             {
                 $('#other_users').append('<li style="list-style: none"><input type="hidden" name="other_users" value="' + search_selection.id + '" />' + search_selection.name + ' <a class="grey hover-black" href="javascript:void" onclick="remove_other_user(this)"><span class="glyphicon glyphicon-remove-circle"></span></a></li>');

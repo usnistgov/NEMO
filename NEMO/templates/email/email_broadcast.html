@@ -85,7 +85,7 @@
 			function set_selection(jquery_event, search_selection, dataset_name)
 			{
                 add_to_list("#selection-list", "remove_selection", search_selection.id, search_selection.name, "Remove", "selection");
-                $(this).typeahead('val', '').focus();
+                $(this).typeahead('val', '').trigger('focus');
                 $("#confirm").show();
 			}
             function remove_selection(id)

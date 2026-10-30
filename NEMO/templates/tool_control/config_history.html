@@ -1,19 +1,51 @@
-{% for config in configs %}
-    <div class="media" style="margin-top: 15px">
-        <a onclick="toggle_details(this)"
-           data-toggle="collapse"
-           data-target="#config_{{ forloop.counter }}_details"
-           class="pointer">
-            <span class="glyphicon pull-left chevron glyphicon-chevron-right"></span>
-        </a>
-        <div class="media-body">
-            <div class="media-heading">
-                On <span style="font-size: small">{{ config.modification_time|default:'Current' }}</span> {{ config.user }}
-                changed the {{ config.name }} configuration
+{% load custom_tags_and_filters %}
+{% if page %}
+    <div class="row" style="margin-bottom: 10px">
+        {% if user|is_staff_on_tool:tool %}
+            <div class="col-sm-6">
+                {% url 'tool_config_history' tool.id as export_config_history_url %}
+                {% button type="export" value="Export" url=export_config_history_url|concat:"?csv=true" target="_blank" %}
             </div>
-            <div id="config_{{ forloop.counter }}_details" class="media-middle collapse" style="margin-top: 10px">
-                {{ config.html }}
-            </div>
+        {% endif %}
+        <div class="{% if user|is_staff_on_tool:tool %}col-sm-6{% else %}col-sm-12{% endif %} text-right">
+            {% with paginator=page.paginator %}
+                <div class="pagination" style="margin: 0">{% include "pagination/pagination_selector.html" %}</div>
+            {% endwith %}
         </div>
     </div>
-{% endfor %}
+    <table class="table table-bordered table-condensed">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Operator</th>
+                <th>Configuration change</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for config_history in page %}
+                <tr>
+                    <td class="text-nowrap">{{ config_history.modification_time|default:'Current' }}</td>
+                    <td>{{ config_history.user }}</td>
+                    <td>
+                        {{ config_history.item_name }}:
+                        {% render_template_string customizations|get_item:"tool_configuration_setting_template" "current_setting" config_history.get_config_history_setting %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% with paginator=page.paginator %}
+        <div class="pagination pull-right">{% include "pagination/pagination_pages.html" %}</div>
+    {% endwith %}
+    <script>
+        function load_config_history_page(request_params)
+        {
+            load_config_history('{{ tool.id }}', request_params);
+        }
+    </script>
+{% else %}
+    <div class="pull-left form-control-static">
+        <i>There is no configuration history for this tool.</i>
+    </div>
+{% endif %}
+<div style="height: 200px"></div>

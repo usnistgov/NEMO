@@ -66,7 +66,7 @@
                                 {# This allows items to be easily removed from the public facing version. #}
                                 {% navigation_url 'admin:index' 'Detailed administration' user.is_superuser user.get_all_permissions %}
                                 {% if user.is_any_part_of_staff %}
-                                    {% navigation_url 'abuse' 'Abuse' user.is_facility_manager user.is_superuser %}
+                                    {% navigation_url 'abuse' 'Abuse' user.is_facility_manager user.is_superuser perms.NEMO.use_abuse %}
                                     {% navigation_url 'accounts_and_projects' 'Accounts and projects' user.is_accounting_officer user.is_user_office user.is_facility_manager user.is_superuser %}
                                     {% navigation_url 'alerts' 'Alerts' user.is_staff user.is_user_office user.is_superuser %}
                                     {% navigation_url 'api-root' 'API' user.is_superuser %}
@@ -116,6 +116,9 @@
                                     {% navigation_url 'impersonate' 'Impersonate' %}
                                 {% endif %}
                                 {% if not user.is_any_part_of_staff %}
+                                    {% if perms.NEMO.use_abuse %}
+                                        {% navigation_url 'abuse' 'Abuse' %}
+                                    {% endif %}
                                     {% if perms.NEMO.use_project_billing %}
                                         {% navigation_url 'project_billing' 'Project billing' %}
                                     {% endif %}

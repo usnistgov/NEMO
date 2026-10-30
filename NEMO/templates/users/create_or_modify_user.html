@@ -519,7 +519,7 @@
 <script>
 		function on_search_selection(jquery_event, search_selection, dataset_name)
 		{
-			$(this).typeahead('val', '').focus();
+			$(this).typeahead('val', '').trigger('focus');
 			if(dataset_name === 'projects')
 				add_project(search_selection.name, search_selection.id);
 			else if(dataset_name === 'tools')

@@ -1105,13 +1105,11 @@
                                class="form-control"
                                autocomplete="off">
                         <script>
-							let timepicker_properties =
-							{
+							$('#estimated_resolution_time').datetimepicker(
+                            {
                                 format: "{{ datetime_input_js_format }}",
 								sideBySide: true
-							};
-							$('#estimated_resolution_time').datetimepicker(timepicker_properties);
-						
+							});
                         </script>
                     </div>
                 </div>
@@ -1234,16 +1232,10 @@
 	$('#task_and_comment_end').datetimepicker({format: '{{ date_input_js_format }}', 'widgetParent': '#task_and_comment_end_form_group'});
 	$('#delayed_logoff_help').popover();
 
-    const shutdown_jq = $("#force_shutdown");
-    function toggle_lock_field()
-	{
-    	const checked = shutdown_jq.is(":checked");
-    	$("#tool_problem_lock").toggle(checked); // show if checked, hide if not
-  	}
-
-    shutdown_jq.on("change", toggle_lock_field);
-  	toggle_lock_field();
-
+    $("#force_shutdown").on("change", function ()
+    {
+        $("#tool_problem_lock").toggle(this.checked);
+    }).trigger("change");
 
     show_alerts();
 	update_stop_button();

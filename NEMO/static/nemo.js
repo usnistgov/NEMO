@@ -4,10 +4,13 @@ String.prototype.capitalize = function()
 }
 
 // Add case-insensitive "icontains" jquery selector
-jQuery.expr[':'].icontains = function(a, i, m)
+jQuery.expr.pseudos.icontains = jQuery.expr.createPseudo(function (text)
 {
-  return jQuery(a).text().toUpperCase().indexOf(m[3].toUpperCase()) >= 0;
-};
+    return function (elem)
+	{
+        return jQuery(elem).text().toUpperCase().indexOf(text.toUpperCase()) >= 0;
+    };
+});
 
 // This function allows making regular interval calls to a function only when the tab/window is visible.
 // It also gets called when the tab/window becomes visible (changing tabs, minimizing the window, etc.)
@@ -55,7 +58,7 @@ function set_item_link_callback(callback)
 {
 	$("a[data-item-type='tool'], a[data-item-type='area'], a[data-item-type='personal-schedule']").each(function()
 	{
-		$(this).click({"callback": callback}, callback);
+		$(this).on("click", {"callback": callback}, callback);
 	});
 }
 
@@ -63,7 +66,7 @@ function set_item_checkbox_callback(callback)
 {
 	$("input[type='checkbox'][data-item-type='tool'], input[type='checkbox'][data-item-type='area'], input[type='checkbox'][data-item-type='personal-schedule']").each(function()
 	{
-		$(this).click({"callback": callback}, callback);
+		$(this).on("click", {"callback": callback}, callback);
 	});
 }
 
@@ -71,7 +74,7 @@ function set_item_checkbox_callback(callback)
 // It must be called upon loading any page that uses the tool tree.
 function enable_item_tree_toggling()
 {
-	$('label.tree-toggler').click(toggle_branch);
+	$('label.tree-toggler').on('click', toggle_branch);
 }
 
 // This function toggles a tool category branch for the sidebar in the calendar and tool control pages.
@@ -91,7 +94,7 @@ function expand_to_item(id, type)
 {
 	let item = $("#"+type+"-"+id);
 	set_selected_item(item, true);
-	item.click().parents('ul.tree').show();
+	item.trigger('click').parents('ul.tree').show();
 }
 
 function toggle_categories()
@@ -105,7 +108,7 @@ function expand_all_categories()
 {
 	$(".item_tree ul.tree.area-list").show();
 	$(".item_tree ul.tree.tool-list").show();
-	$("#search").focus();
+	$("#search").trigger('focus');
 	$("#sidebar").attr("aria-expanded", true);
 	$("#expand_collapse_icon").removeClass("glyphicon-resize-full").removeClass("glyphicon-resize-small").addClass("glyphicon-resize-small");
 	save_sidebar_state();
@@ -116,7 +119,7 @@ function collapse_all_categories()
 {
 	$(".item_tree ul.tree.tool-list").hide();
 	$(".item_tree ul.tree.area-list").hide();
-	$("#search").focus();
+	$("#search").trigger('focus');
 	$("#sidebar").attr("aria-expanded", false);
 	$("#expand_collapse_icon").removeClass("glyphicon-resize-full").removeClass("glyphicon-resize-small").addClass("glyphicon-resize-full");
 	save_sidebar_state();
@@ -315,7 +318,7 @@ function toggle_item_categories(item_type)
 	{
 		$(".item_tree ul.tree." + item_type + "-list").show();
 	}
-	$("#search").focus();
+	$("#search").trigger('focus');
 	save_sidebar_state();
 }
 
@@ -701,7 +704,7 @@ function autofocus(selector)
 {
 	$("#dialog").one('shown.bs.modal', function()
 	{
-		$(selector).focus();
+		$(selector).trigger('focus');
 	});
 }
 
@@ -880,7 +883,7 @@ function matcher(items, search_fields)
 			},
 			dataset
 		);
-		this.bind('typeahead:selected', on_select);
+		this.on('typeahead:selected', on_select);
 		let el = this;
 		if (show_on_focus)
 		{

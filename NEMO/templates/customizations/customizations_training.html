@@ -64,7 +64,7 @@
 <script>
 	function add_tool(jquery_event, search_selection, dataset_name)
 	{
-        $(this).typeahead('val', '').focus();
+        $(this).typeahead('val', '').trigger('focus');
 		add_to_list("#include-hidden-list", "remove_tool", search_selection.id, search_selection.name, "Remove " + search_selection.name, "training_included_hidden_tools_list");
 	}
 

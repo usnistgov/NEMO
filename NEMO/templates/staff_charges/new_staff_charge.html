@@ -48,7 +48,7 @@
 			$("#customer").val(search_selection.id);
 			$('#customer_search').prop("required", false);
 		}
-		$('#customer_search').autocomplete('users', select_user, {{ users|json_search_base }}).focus();
+		$('#customer_search').autocomplete('users', select_user, {{ users|json_search_base }}).trigger('focus');
 	
     </script>
 {% endblock %}

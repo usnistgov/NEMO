@@ -48,6 +48,7 @@
             {% button type="save" value="Confirm" %}
         </form>
         <script type="text/javascript">
+        (() => {
             const $consumables_order = $('#consumables_order')
             $('.remove_withdrawal').submit(function(e) {
                 revert_on_input(75, "#withdrawal_form_order");
@@ -74,6 +75,7 @@
                 }, failure);
                 return false;
             });
+        })();
         </script>
     {% endif %}
 {% endwith %}

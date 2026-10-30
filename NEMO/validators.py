@@ -14,7 +14,7 @@ color_hex_validator = RegexValidator(
 
 
 color_hex_list_validator = RegexValidator(
-    re.compile(r"^" + COLOR_HEX_RE + "(?:,\s*" + COLOR_HEX_RE + ")*$"),
+    re.compile(r"^" + COLOR_HEX_RE + r"(?:,\s*" + COLOR_HEX_RE + ")*$"),
     message=_("Enter a valid hex color list, eg. #000000,#111111"),
     code="invalid",
 )

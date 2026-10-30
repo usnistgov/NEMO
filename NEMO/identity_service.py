@@ -131,6 +131,8 @@ class IdentityService:
             result = requests.put(urljoin(self.url, "/add/"), data=parameters, timeout=self.timeout)
             if result.status_code == HTTPStatus.OK:
                 return True, None
+            elif result.status_code == HTTPStatus.METHOD_NOT_ALLOWED:
+                return self.none
             else:
                 identity_service_logger.error(
                     f"The identity service encountered a problem while attempting to add an area to a user. The HTTP error is {result.status_code}: {result.text}"

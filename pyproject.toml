@@ -1,6 +1,6 @@
 [project]
 name = "NEMO"
-version = "8.1.5"
+version = "8.2.0"
 description = "NEMO is a laboratory logistics web application. Use it to schedule reservations, control tool access, track maintenance issues, and more."
 keywords = ["NEMO"]
 readme = "README.md"
@@ -14,27 +14,28 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Framework :: Django :: 5.2",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
 ]
-requires-python = ">=3.10, <4"
+requires-python = ">=3.11, <4"
 dependencies = [
-    "cryptography==50.0.1",
-    "Django==5.2.17",
+    "cryptography==50.0.2",
+    "Django==5.2.18",
     "django-auditlog==3.4.1",
-    "django-filter==26.1",
-    "django-mptt==0.18.0",
-    "djangorestframework==3.18.1",
+    "django-filter==26.2",
+    "django-mptt==0.21.0",
+    "djangorestframework==3.18.3",
     "drf-excel==2.6.0",
     "drf-flex-fields==1.0.2",
     "fastjsonschema==2.22.2",
     "ldap3==2.9.1",
     "packaging==26.3",
-    "Pillow==12.3.0",
-    "pymodbus==3.15.0",
-    "python-dateutil==2.9.0",
+    "Pillow==13.0.0",
+    "pymodbus==3.16.1",
+    "python-dateutil==3.0.0",
     "requests==2.34.2",
 ]
 license = {file = "LICENSE"}
@@ -63,7 +64,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.black]
 line-length = 120
-target-version = ['py311']
+target-version = ['py314']
 
 [tool.djlint]
 profile = "django"

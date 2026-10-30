@@ -133,7 +133,7 @@
         else
         {
             form_element.parents('div').fadeIn('50');
-            form_element.children('textarea').focus();
+            form_element.children('textarea').trigger('focus');
             $(button_element).html('<i aria-hidden="true" class="glyphicon glyphicon-send"></i> Send');
         }
     }

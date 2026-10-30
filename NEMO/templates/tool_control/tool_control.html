@@ -11,6 +11,9 @@
     <link rel="stylesheet" type="text/css" href="{% static "select2/css/select2-bootstrap.min.css" %}" />
 {% endblock %}
 {% block body %}
+    <div id="loading-div-page" class="spinner-full-page spinner-container" style="display: none">
+        <div class="glyphicon glyphicon-repeat normal-right-spinner"></div>
+    </div>
     <div id="main-content">
         <style>
 		h3
@@ -282,7 +285,7 @@
 				$("#start").hide();
                 $("#pre_usage_questions").html("");
                 $("#note").prop("disabled", true).parents("#usage_note").hide();
-				$("#user_search").show().focus();
+				$("#user_search").show().trigger('focus');
 			}
 
 			function add_qualified_user(jquery_event, search_selection, dataset_name)
@@ -376,6 +379,7 @@
 
 		function load_usage_data(tool_id, csv_export)
 		{
+			if (!csv_export) show_spinner();
 			let failure_dialog = ajax_complete_callback("Unable to find usage data", "There was a problem looking up usage data.");
 			let data = serialize("#usage_data_form");
 			data.csrfmiddlewaretoken= "{{ csrf_token }}";
@@ -391,10 +395,16 @@
 			}
 		}
 
-        function load_config_history(tool_id)
+        function load_config_history(tool_id, request_params)
         {
+            show_spinner();
             let failure_dialog = ajax_complete_callback("Unable to find the configuration history", "There was a problem looking up the configuration history.");
-            $("#config").load("{% url 'tool_config_history' 999 %}".replace('999', tool_id), undefined, failure_dialog);
+            let url = build_django_url("{% url 'tool_config_history' 999 %}", ["999"], [tool_id]);
+            if (request_params)
+            {
+                url += "?" + request_params;
+            }
+            $("#config").load(url, undefined, failure_dialog);
         }
 
         function load_pre_usage_questions(tool_id, customer_id, project_id)
@@ -425,7 +435,7 @@
 				set_item_link_callback(refresh_tool_status);
 				enable_item_tree_toggling();
 				$('#item_search').autocomplete('tools', on_item_search_selection, {% json_search_base_with_extra_fields tools %}, true);
-				$("#item_search").focus();
+				$("#item_search").trigger('focus');
 				load_sidebar_state();
                 {% if user.is_staff or customizations|get_item:"calendar_qualified_tools" == "enabled" %}
                     {# Filter "my tools" depending on the status of the button. #}

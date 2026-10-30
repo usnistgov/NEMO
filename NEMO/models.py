@@ -1219,7 +1219,8 @@ class User(BaseModel, PermissionsMixin):
         permissions = (
             ("trigger_timed_services", "Can trigger timed services"),
             ("use_billing_api", "Can use billing API"),
-            ("use_project_billing", "Can use project billing"),
+            ("use_project_billing", "Can use project billing feature"),
+            ("use_abuse", "Can use abuse feature"),
             ("kiosk", "Kiosk services"),
             ("can_impersonate_users", "Can impersonate other users"),
         )
@@ -3230,6 +3231,13 @@ class ConfigurationHistory(BaseModel):
     slot = models.PositiveIntegerField()
     setting = models.TextField()
 
+    def get_config_history_setting(self) -> str:
+        try:
+            self.configuration.current_settings = self.setting
+            return self.configuration.get_current_setting(0)
+        except IndexError:
+            return ""
+
     class Meta:
         ordering = ["-modification_time"]
         verbose_name_plural = "Configuration histories"
@@ -4722,6 +4730,13 @@ class ContactInformationCategory(BaseCategory):
 
 class ContactInformation(BaseModel):
     name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
+    user = models.OneToOneField(
+        to=User,
+        blank=True,
+        null=True,
+        help_text="Select a user to associate with this contact. When set, this contact information will be shown instead of the user information on pages like tool details.",
+        on_delete=models.CASCADE,
+    )
     title = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, blank=True, null=True)
     image = models.ImageField(
         blank=True,
@@ -4736,13 +4751,6 @@ class ContactInformation(BaseModel):
         default=True,
         verbose_name="Mobile phone is SMS capable",
         help_text="Is the mobile phone capable of receiving text messages? If so, a link will be displayed for users to click to send a text message to the recipient when viewing the 'Contact information' page.",
-    )
-    user = models.OneToOneField(
-        to=User,
-        blank=True,
-        null=True,
-        help_text="Select a user to associate with this contact. When set, this contact information will be shown instead of the user information on pages like tool details.",
-        on_delete=models.CASCADE,
     )
 
     class Meta:
@@ -5934,8 +5942,10 @@ class Policy(models.Model):
         default_permissions = ()
         permissions = [
             ("block_create_reservations", "Cannot create reservations"),
+            ("block_create_reservations_on_behalf", "Cannot create reservations on behalf of user"),
             ("block_create_outages", "Cannot create outages"),
             ("block_enable_tools", "Cannot enable tools"),
+            ("block_enable_tools_on_behalf", "Cannot enable tools on behalf of user"),
             ("block_enter_any_areas", "Cannot enter any areas"),
             ("block_bill_projects", "Cannot bill projects"),
             ("block_qualify_on_tools", "Cannot qualify user on tools"),

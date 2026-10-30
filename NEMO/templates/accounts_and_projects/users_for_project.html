@@ -35,6 +35,6 @@
     $(function()
     {
         reset_autocomplete();
-	    $("#search_user_for_project_" + "{{ project.id }}").focus();
+	    $("#search_user_for_project_" + "{{ project.id }}").trigger('focus');
     });
 </script>

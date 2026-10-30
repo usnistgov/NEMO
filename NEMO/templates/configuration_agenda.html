@@ -143,7 +143,7 @@
 			function disable_tool(url)
 			{
 				let failure_dialog = ajax_failure_callback("Unable to disable tool");
-				ajax_post(url, undefined, reload_page, failure_dialog);
+				ajax_post(url, {"skip_usage_questions": "true"}, reload_page, failure_dialog);
 			}
 
 			function reload_page(response, status, xml_http_request)

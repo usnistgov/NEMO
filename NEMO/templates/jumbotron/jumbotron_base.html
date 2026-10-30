@@ -1,0 +1,232 @@
+{% load static %}
+{% load custom_tags_and_filters %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        {# This meta-tag forcefully disables 'compatibility mode' in Internet Explorer because it causes rendering problems. #}
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta charset="UTF-8">
+        {% block head %}
+            {# jQuery #}
+            <script type="text/javascript" src="{% static "jquery.min.js" %}"></script>
+            {# Bootstrap #}
+            <script type="text/javascript" src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
+            <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.min.css" %}" />
+            <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-theme.min.css" %}" />
+        {% endblock %}
+        {# NEMO #}
+        <link rel="shortcut icon" type="image/x-icon" href="{% static 'favicon.ico' %}" />
+        <script type="text/javascript" src="{% static "nemo.js" %}"></script>
+        <link rel="stylesheet" type="text/css" href="{% static "nemo.css" %}" />
+        <style>
+            {# Style for autofit #}
+
+            .content-wrapper-autofit
+            {
+                overflow: hidden;
+            }
+
+            .content-wrapper-autofit .panel,
+            .content-wrapper-autofit .content-autofit
+            {
+                margin-bottom: 0;
+            }
+
+            {# Style for content containers #}
+
+            .row,
+            .content-wrapper-autofit .panel,
+            .content-wrapper-autofit table,
+            .content-wrapper-autofit tbody,
+            .content-normal,
+            .content-component
+            {
+                background: transparent;
+            }
+
+            .table th,
+            .content-component
+            {
+                text-align: center;
+            }
+
+            #jumbotron-component-alerts table
+            {
+                width: 100%;
+            }
+
+            #jumbotron-component-alerts td:first-child
+            {
+                width: 100px;
+            }
+
+            #jumbotron-component-alerts .glyphicon
+            {
+                font-size: 64px;
+            }
+
+            .content-outage-title
+            {
+                font-weight: bold;
+            }
+
+            #offline-message div
+            {
+                text-align: center;
+            }
+
+            #offline-message span
+            {
+                font-size: 250px;
+                color: red;
+            }
+        </style>
+        {% block extrahead %}{% endblock %}
+        <title>
+            {% block title %}Jumbotron{% endblock %}
+        </title>
+    </head>
+    <body class="jumbotron-body"
+          style="{% if watermark %}background-image:linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0.5)), url('{{ MEDIA_URL }}jumbotron_watermark.png'){% endif %}">
+        {% block jumbotron_container %}
+            <div id="jumbotron-container" style="min-height: calc(100vh - 61px); padding:10px 30px 0 30px">
+                <div class="container-fluid" style="background:transparent">
+                    {% block content %}<div class="row" id="content"></div>{% endblock %}
+                    {% block offline_message %}
+                        <div class="row" id="offline-message" style="display:none">
+                            <div class="col-lg-12">
+                                <span>{{ site_title }} is offline</span>
+                            </div>
+                        </div>
+                    {% endblock %}
+                </div>
+            </div>
+        {% endblock %}
+        {% block base_footer %}
+            {% include 'base/footer.html' %}
+        {% endblock %}
+        <script>
+		function resize_content_to_fit()
+		{
+            {# No need to do all that if we are not on a large screen, since the items will stack vertically #}
+            const break_point_lg = 1200;
+            if (window.innerWidth < break_point_lg)
+            {
+                return;
+			}
+
+			$.each($(".content-wrapper-autofit"), function (index, wrapper_element)
+			{
+                const autoscroll_id = "autoscroll-" + index;
+
+				if (!wrapper_element) return;
+
+				const rect = wrapper_element.getBoundingClientRect();
+				const top = rect.top; // distance from top of viewport
+				const viewport_height = window.innerHeight;
+
+				// Leave a margin at bottom (70px here)
+				const available = viewport_height - top - 70;
+                const content_height = wrapper_element.scrollHeight;
+
+                // By default, we look for a table, but it could be anything
+                const find_element = $(wrapper_element).data("autofit-element") || "table";
+                let content_element = $(wrapper_element).find(find_element);
+                if (!content_element) return;
+
+				// Add 15 px so the content doesn't flicker (make sure we are not auto-scrolling for just a few px)
+				if (available + 15 < content_height)
+				{
+                    content_element.addClass(`content-autofit content-autofit-${index}`);
+
+                    {# Remove old keyframes before adding new ones #}
+                    const oldStyle = document.getElementById(autoscroll_id + "-keyframes");
+  					if (oldStyle) oldStyle.remove();
+
+                    const overflow = content_height - available; // overflow we need to display
+                    const animation_speed = 15; // px per seconds
+					const duration = overflow / animation_speed;
+
+                    {# Create new keyframes and add them via class #}
+                    const style = document.createElement("style");
+    				style.id = autoscroll_id + "-keyframes";
+    				style.innerHTML = `
+      					@keyframes ${autoscroll_id}
+      					{
+        					0%, 35%   { transform: translateY(0); }
+        					55%, 100% { transform: translateY(-${overflow}px); }
+      					}
+    				`;
+                    if (find_element === "table")
+                    {
+                        style.innerHTML += `
+                        .content-autofit-${index} th
+                        {
+                            position: sticky;
+                            top: 0;
+                            z-index: 11;
+                            opacity: 1 !important;
+                            border: 1px solid transparent;
+                        }
+
+                        .content-autofit-${index} td
+                        {
+                            border: 1px solid transparent;
+                        }
+
+                        .content-autofit-${index} tbody
+                        {
+                            overflow: hidden;
+                            animation: ${autoscroll_id} ${duration}s linear infinite;
+                        }
+                        `
+                    }
+                    else
+                    {
+                        style.innerHTML += `
+                        .content-autofit-${index}
+      					{
+      						animation: ${autoscroll_id} ${duration}s linear infinite;
+      					}
+                        `
+                    }
+    				document.head.appendChild(style);
+				}
+				else
+				{
+					content_element.removeClass(`content-autofit content-autofit-${index}`);
+				}
+
+				wrapper_element.style.maxHeight = available + 'px';
+			});
+		}
+
+		function on_complete(response, status)
+		{
+			if (status === "success")
+			{
+				$("#offline-message").hide();
+				$("#content").show();
+			}
+			if (status === "error")
+			{
+				$("#content").hide();
+				$("#offline-message").show();
+			}
+            resize_content_to_fit();
+		}
+		function refresh_jumbotron()
+		{
+			$("#content").load("{% url 'jumbotron_content' %}" + window.location.search, undefined, on_complete);
+		}
+		function on_load()
+		{
+			refresh_jumbotron();
+			set_interval_when_visible(document, refresh_jumbotron, 10000);
+			window.addEventListener('resize', resize_content_to_fit);
+		}
+		$(on_load);
+	
+        </script>
+    </body>
+</html>

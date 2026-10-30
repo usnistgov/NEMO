@@ -227,7 +227,7 @@
         <td id="reservation_note_display">
             <span class="glyphicon glyphicon-pencil pull-right"
                   title="Change the reservation note"
-                  onclick="$('#reservation_note_display').hide();$('#reservation_note_change').show();auto_size_textarea(document.getElementById('reservation_note'));$('#reservation_note').focus()"></span>
+                  onclick="$('#reservation_note_display').hide();$('#reservation_note_change').show();auto_size_textarea(document.getElementById('reservation_note'));$('#reservation_note').trigger('focus')"></span>
             {{ reservation.note|default_if_none:""|linebreaksbr }}
         </td>
         <td id="reservation_note_change" style="display: none">

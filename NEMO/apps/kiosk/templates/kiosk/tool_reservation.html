@@ -64,6 +64,7 @@
 </form>
 <div style="height:350px"></div>
 <script>
+(() => {
 	let unavailable_times = [];
 	{% for item in tool_reservation_times %}
 	unavailable_times.push([{{ item.start|date:"U" }},{{ item.end|date:"U" }}]);
@@ -127,5 +128,6 @@
             return '{{ pickadate_time_format }}';
         }
     }
-	revert_on_input(60, "#tool_reservation")
+	revert_on_input(60, "#tool_reservation");
+})();
 </script>
