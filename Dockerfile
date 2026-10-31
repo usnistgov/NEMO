@@ -1,8 +1,7 @@
 ARG PYTHON_IMAGE=python:3.14
 FROM ${PYTHON_IMAGE}
 
-RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y less vim wget
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends less vim wget && rm -rf /var/lib/apt/lists/*
 
 # Intall NEMO (in the current directory) and Gunicorn
 COPY . /nemo/
