@@ -1078,7 +1078,6 @@ class ToolCredentialsViewSet(ModelViewSet):
         "id": key_filters,
         "tool": key_filters,
         "username": string_filters,
-        "password": string_filters,
         "comments": string_filters,
         "authorized_staff": manykey_filters,
     }
