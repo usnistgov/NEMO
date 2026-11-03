@@ -159,7 +159,7 @@
         {# Remove associated data to prevent toggling issues #}
         $(this).removeData('bs.tooltip');
         $(".tooltip").remove();
-      	$(this).tooltip({trigger: 'manual', html: 'true', container: '#contact-info-tooltip-container'}).tooltip('toggle');
+      	$(this).tooltip({trigger: 'manual', html: true, sanitize: false, container: '#contact-info-tooltip-container'}).tooltip('toggle');
     });
-    $("[data-toggle='tooltip']").tooltip({html: 'true'});
+    $("[data-toggle='tooltip']").tooltip({html: true, sanitize: false});
 </script>

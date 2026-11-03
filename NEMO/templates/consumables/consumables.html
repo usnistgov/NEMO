@@ -123,7 +123,7 @@
                 "</div>" +
                 "<button id='order_add_button' class='btn btn-sm btn-success' type='submit'>Add to order</button>" +
                 "</div>"
-            $(element).tooltip({trigger: 'manual', placement: 'right', html: 'true', title: consumable_tooltip_content}).tooltip('show');
+            $(element).tooltip({trigger: 'manual', placement: 'right', html: true, sanitize: false, title: consumable_tooltip_content}).tooltip('show');
         }
 		function clear_selected_customer()
 		{
@@ -166,7 +166,7 @@
         window.addEventListener("load", function ()
         {
             $("#search").keyup(table_search("consumable-table"));
-			$('[data-toggle="notes-tooltip"]').tooltip({"html": true, container: 'body'});
+			$('[data-toggle="notes-tooltip"]').tooltip({"html": true, sanitize: false, container: 'body'});
             $('#customer_search').autocomplete('users', fetch_projects, {{ users|json_search_base }}).trigger('focus');
             let withdrawal_order_form = $('#withdrawal_form_order');
             withdrawal_order_form.on('shown.bs.tooltip', function(e)
