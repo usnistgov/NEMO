@@ -1225,7 +1225,7 @@
 <script>
 	$(".contact-info-tooltip").on('click', function () {
         $(".tooltip").remove();
-      	$(this).tooltip({trigger: 'manual', html: 'true', title: $(this).data('title')}).tooltip('toggle');
+      	$(this).tooltip({trigger: 'manual', html: true, sanitize: false, title: $(this).data('title')}).tooltip('toggle');
     });
 	$("#tabs").find("a").click(switch_tab);
 	$('#task_and_comment_start').datetimepicker({format: '{{ date_input_js_format }}', 'widgetParent': '#task_and_comment_start_form_group'});
