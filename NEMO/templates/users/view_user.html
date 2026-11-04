@@ -14,8 +14,12 @@
                             {% if user.is_facility_manager or user.is_user_office or user.is_superuser %}
                                 {% url 'create_or_modify_user' user_profile.id as edit_url %}
                                 {% button value="Edit user" type="edit" url=edit_url %}
+                            {% endif %}
+                            {% if user.is_any_part_of_staff %}
                                 {% url 'history' 'user' user_profile.id as user_history_url %}
                                 {% button type="export" icon="glyphicon-list" value="View history" url=user_history_url %}
+                            {% endif %}
+                            {% if user.is_facility_manager or user.is_user_office or user.is_superuser %}
                                 {% url "deactivate_user" user_profile.id as deactivate_user_url %}
                                 {% if user_profile.is_active %}
                                     {% button type="warn" icon="glyphicon-ban-circle" value="Deactivate user" title="Deactivate user" url=deactivate_user_url %}
