@@ -33,18 +33,14 @@
         {% if warning %}<div class="col-sm-6 alert alert-warning">{{ warning }}</div>{% endif %}
     </div>
     <div class="h1 row" style="margin-bottom: 25px">
-        {% url 'history' 'user' form.instance.id as user_history_url %}
         {% if form.instance.id %}
-            <div class="col-xs-6 col-sm-4" style="padding-right: 0">
+            <div class="col-sm-6">
                 {% if readonly %}
                     View
                 {% else %}
                     Modify
                 {% endif %}
                 user
-            </div>
-            <div class="col-sm-2 text-right" style="padding-left: 0">
-                {% button type="info" icon="glyphicon-list" value="View user history" url=user_history_url %}
             </div>
         {% else %}
             <div class="col-sm-6">New user</div>
