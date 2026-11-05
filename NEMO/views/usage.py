@@ -308,7 +308,7 @@ def billing(request):
     if not base_dictionary["billing_service"]:
         return redirect("user_usage")
     user_project_applications = (
-        list(user.active_projects().values_list("application_identifier", flat=True))
+        list(user.projects.values_list("application_identifier", flat=True))
         + list(user.managed_projects.values_list("application_identifier", flat=True))
         + list(user.managed_accounts.values_list("project__application_identifier", flat=True))
     )
@@ -362,7 +362,7 @@ def project_usage(request):
             selection = account.name
         elif kind == "user":
             user = User.objects.get(id=identifier)
-            projects = user.active_projects()
+            projects = user.projects.all()
             selection = str(user)
 
         area_access = AreaAccessRecord.objects.filter(end__gt=start_date, end__lte=end_date).order_by("-start")
@@ -481,7 +481,7 @@ def project_billing(request):
             selection = projects[0].name
         elif kind == "account":
             account = Account.objects.get(id=identifier)
-            projects = Project.objects.filter(account=account, active=True, account__active=True)
+            projects = Project.objects.filter(account=account)
             formatted_applications = (
                 ",".join(map(str, set(projects.values_list("application_identifier", flat=True)))) if projects else None
             )
@@ -489,7 +489,7 @@ def project_billing(request):
             selection = account.name
         elif kind == "user":
             user = User.objects.get(id=identifier)
-            projects = user.active_projects()
+            projects = user.projects.all()
             formatted_applications = (
                 ",".join(map(str, set(projects.values_list("application_identifier", flat=True)))) if projects else None
             )
