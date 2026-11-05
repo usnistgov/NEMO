@@ -555,7 +555,7 @@ class ReservationTestCase(NEMOTestCaseMixin, TransactionTestCase):
         now_before = timezone.now()
         self.client.post(reverse("disable_tool", args=[self.tool.id]), follow=True)
         # Wait a second since the freed time notification is asynchronous
-        sleep(0.5)
+        sleep(1)
         # This time it should work, but only for the first one (consumer)
         self.assertFalse(EmailLog.objects.filter(to=self.staff.email).exists())
         minutes = (now_before - reservation.end).total_seconds() // 60
