@@ -31,6 +31,14 @@ class RemoteUserAuthenticationMiddleware(RemoteUserMiddleware):
             pass
         super().__init__(get_response)
 
+    def __call__(self, request):
+        if self.is_async:
+            return self.__acall__(request)
+        response = self.process_request(request)
+        if response is not None:
+            return response
+        return self.get_response(request)
+
     def process_request(self, request):
         # REST API has its own authentication and health check does not require authentication
         if request.path and (
@@ -58,7 +66,9 @@ class RemoteUserAuthenticationMiddleware(RemoteUserMiddleware):
 
 
 class HTTPHeaderAuthenticationMiddleware(RemoteUserAuthenticationMiddleware):
-    header = "HTTP_" + getattr(settings, "AUTHENTICATION_HEADER", "AUTHORIZATION")
+    def __init__(self, get_response=None):
+        super().__init__(get_response)
+        self.header = "HTTP_" + getattr(settings, "AUTHENTICATION_HEADER", "AUTHORIZATION")
 
 
 class SessionTimeout:
