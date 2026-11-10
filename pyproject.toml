@@ -10,7 +10,6 @@ classifiers = [
     "Environment :: Web Environment",
     "Intended Audience :: Science/Research",
     "Intended Audience :: System Administrators",
-    "License :: Public Domain",
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Framework :: Django :: 5.2",
@@ -38,7 +37,8 @@ dependencies = [
     "python-dateutil==3.0.0",
     "requests==2.34.2",
 ]
-license = {file = "LICENSE"}
+license = "NIST-Software"
+license-files = ["LICENSE.md"]
 
 [project.urls]
 Homepage = "https://github.com/usnistgov/NEMO"
@@ -59,7 +59,7 @@ exclude = ["resources", "resources.*", "build", "build.*"]
 "NEMO" = ["**/templates/**/*", "**/static/**/*"]
 
 [build-system]
-requires = ["setuptools>=61", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.black]
