@@ -201,6 +201,28 @@ class ToolControlTestCase(NEMOTestCaseMixin, TestCase):
         self.assertEqual(area_record.project, self.project)
         self.assertIsNone(area_record.end)
 
+    def test_staff_use_for_other_with_staff_charge_and_area_time_user_already_in_area(self):
+        """Staff uses the tool on behalf of another user who is already in the area: ignore area access time."""
+        tool, area = self._enable_tool_with_area()
+        user_area_record = AreaAccessRecord.objects.create(customer=self.user, area=area, project=self.project)
+        self.login_as(self.staff)
+        response = self.client.post(self._enable_tool_url(tool, self.user, self.project, True), follow=True)
+        self.assertEqual(response.status_code, 200, response.content.decode())
+
+        event = UsageEvent.objects.get(tool=tool)
+        self.assertIsNotNone(event.staff_charge)
+        self.assertFalse(event.remote_work)
+        self.assertFalse(event.training)
+
+        staff_charge = event.staff_charge
+        self.assertEqual(staff_charge.customer, self.user)
+        self.assertEqual(staff_charge.project, self.project)
+
+        # No new area access record created for the staff charge
+        self.assertFalse(AreaAccessRecord.objects.filter(staff_charge=staff_charge).exists())
+        self.assertEqual(AreaAccessRecord.objects.count(), 1)
+        self.assertEqual(AreaAccessRecord.objects.first(), user_area_record)
+
     # --- Scenario 5: Staff using tool for a remote project (no staff charge) ---
 
     def test_remote_project_no_staff_charge(self):
@@ -267,6 +289,32 @@ class ToolControlTestCase(NEMOTestCaseMixin, TestCase):
         self.assertEqual(area_record.customer, self.user)
         self.assertEqual(area_record.project, self.project)
         self.assertIsNone(area_record.end)
+
+    def test_remote_project_with_staff_charge_and_area_time_user_already_in_area(self):
+        """Staff uses the tool for a remote project when user is already in the area: ignore area access time."""
+        tool, area = self._enable_tool_with_area()
+        user_area_record = AreaAccessRecord.objects.create(customer=self.user, area=area, project=self.project)
+        self.login_as(self.staff)
+        response = self.client.post(
+            self._enable_tool_url(tool, self.user, self.project, True),
+            {"remote_work": "true"},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200, response.content.decode())
+
+        event = UsageEvent.objects.get(tool=tool)
+        self.assertTrue(event.remote_work)
+        self.assertIsNotNone(event.staff_charge)
+        self.assertFalse(event.training)
+
+        staff_charge = event.staff_charge
+        self.assertEqual(staff_charge.customer, self.user)
+        self.assertEqual(staff_charge.project, self.project)
+
+        # No new area access record created for the staff charge
+        self.assertFalse(AreaAccessRecord.objects.filter(staff_charge=staff_charge).exists())
+        self.assertEqual(AreaAccessRecord.objects.count(), 1)
+        self.assertEqual(AreaAccessRecord.objects.first(), user_area_record)
 
     # --- Scenario 8: Staff member uses tool for their own training ---
 
