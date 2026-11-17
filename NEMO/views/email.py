@@ -313,7 +313,7 @@ def email_preview(request):
     if generic_email_template:
         form = EmailBroadcastForm(request.POST)
         email_context = {
-            "title": form.data["title"],
+            "title": form.data["title"].upper() if form.data["title"] else form.data["title"],
             "greeting": form.data["greeting"],
             "contents": form.data["contents"],
             "template_color": form.data["color"],
