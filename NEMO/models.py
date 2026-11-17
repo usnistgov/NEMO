@@ -11,6 +11,7 @@ from json import loads
 from logging import getLogger
 from re import match
 from typing import Dict, List, Optional, Set, TYPE_CHECKING, Union
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.contrib.auth.models import BaseUserManager, Group, Permission, PermissionsMixin
@@ -65,11 +66,13 @@ from NEMO.utilities import (
     get_model_instance,
     get_task_image_filename,
     get_tool_image_filename,
+    is_same_origin,
     load_properties_schemas,
     new_model_copy,
     render_email_template,
     send_mail,
-    supported_embedded_extensions,
+    supported_embedded_pdf_extensions,
+    supported_embedded_video_extensions,
     update_media_file_on_model_update,
 )
 from NEMO.validators import color_hex_list_validator, color_hex_validator
@@ -206,8 +209,15 @@ class BaseDocumentModel(BaseModel):
     def full_link(self, request=None):
         return get_full_url(self.document.url, request) if self.document else self.url
 
-    def can_be_embedded(self):
-        return any([self.link().lower().endswith(ext) for ext in supported_embedded_extensions])
+    def can_be_embedded(self, request=None) -> str | None:
+        clean_link = urlparse(self.link()).path.lower() if self.link() else ""
+        embed_hosts = getattr(settings, "EMBEDDABLE_DOCUMENT_HOSTS", [])
+        if bool(self.document) or is_same_origin(self.url, request, extra_hosts=embed_hosts):
+            if any([clean_link.endswith(ext) for ext in supported_embedded_pdf_extensions]):
+                return "pdf"
+            if any([clean_link.endswith(ext) for ext in supported_embedded_video_extensions]):
+                return "video"
+        return None
 
     def is_allowed(self, user: User):
         raise NotImplementedError(f"{self.__class__.__name__} must provide an is_allowed method")

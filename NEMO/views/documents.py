@@ -27,21 +27,18 @@ def media_view(request, popup, content_type_id, document_id):
     document = get_object_or_404(content_type.model_class(), pk=document_id)
     if not document.is_allowed(request.user):
         return HttpResponseForbidden("You do not have permission to access this document.")
-    video = any([document.link().lower().endswith(ext) for ext in supported_embedded_video_extensions])
-    pdf = any([document.link().lower().endswith(ext) for ext in supported_embedded_pdf_extensions])
-    if not video and not pdf:
+    embedded_type = document.can_be_embedded(request)
+    if not embedded_type:
         return HttpResponseBadRequest(
-            mark_safe(
-                f'Unsupported file format. Click <a href="{document.link()}" target="_blank">here</a> to download the document'
-            )
+            mark_safe(f'Click <a href="{document.link()}" target="_blank">here</a> to download the document')
         )
     dictionary = {
         "popup_view": popup == "true",
         "document": document,
         "controls": True,
         "autoplay": False,
-        "video": video,
-        "pdf": pdf,
+        "video": embedded_type == "video",
+        "pdf": embedded_type == "pdf",
     }
     return render(request, "snippets/embedded_document.html", dictionary)
 

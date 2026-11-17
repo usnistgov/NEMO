@@ -40,6 +40,7 @@ from django.urls import NoReverseMatch, resolve, reverse
 from django.utils import timezone as django_timezone
 from django.utils.formats import date_format, get_format, time_format
 from django.utils.html import format_html
+from django.utils.http import is_same_domain
 from django.utils.module_loading import import_string
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
@@ -843,6 +844,44 @@ def get_full_url(location, request=None):
     else:
         domain = getattr(settings, "SERVER_DOMAIN", "https://{}".format(settings.ALLOWED_HOSTS[0]))
         return urljoin(domain, location)
+
+
+def is_same_origin(url: str | None, request=None, extra_hosts: list[str] | None = None) -> bool:
+    if not url:
+        return False
+    parsed = urlparse(str(url).strip())
+    # If the URL is a relative path, it is considered to be from the same origin
+    if not parsed.netloc and not parsed.scheme and not str(url).strip().startswith("//"):
+        return True
+    # Otherwise, let's build up a list of server_hosts (lowercase) for the request and the server
+    server_hosts = set()
+    if request and hasattr(request, "get_host"):
+        try:
+            server_hosts.add(request.get_host().lower())
+        except Exception:
+            pass
+    server_domain = getattr(settings, "SERVER_DOMAIN", None)
+    if server_domain:
+        server_netloc = urlparse(server_domain).netloc
+        if server_netloc:
+            server_hosts.add(server_netloc.lower())
+    for allowed in getattr(settings, "ALLOWED_HOSTS", []):
+        if allowed and allowed != "*":
+            server_hosts.add(allowed.lower())
+    if extra_hosts:
+        for extra_host in extra_hosts:
+            if extra_host:
+                server_hosts.add(extra_host.lower())
+
+    url_host = parsed.netloc.lower() if parsed.netloc else ""
+    url_hostname = parsed.hostname.lower() if parsed.hostname else ""
+    for server_host in server_hosts:
+        if url_host and url_host == server_host:
+            return True
+        host_without_port = server_host.split(":")[0]
+        if host_without_port and url_hostname and is_same_domain(url_hostname, host_without_port):
+            return True
+    return False
 
 
 def capitalize(string: Optional[str]) -> str:

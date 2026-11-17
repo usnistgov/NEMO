@@ -346,6 +346,10 @@ ALLOW_CONDITIONAL_URLS = True
 # When false, the feature will be disabled
 INTERLOCKS_ENABLED = False
 
+# List of additional trusted hosts allowed to embed documents (e.g. PDFs/videos) in the popup viewer.
+# By default, same origin URLs (matching SERVER_DOMAIN or ALLOWED_HOSTS) are embeddable.
+# EMBEDDABLE_DOCUMENT_HOSTS = []
+
 # There are three options out-of-the-box to authenticate users (uncomment the one you decide on):
 #   1) A decoupled remote user via HTTP HEADER method (such as Kerberos authentication from a reverse proxy etc.)
 # AUTHENTICATION_BACKENDS = ["NEMO.views.authentication.NginxKerberosAuthorizationHeaderAuthenticationBackend"]
