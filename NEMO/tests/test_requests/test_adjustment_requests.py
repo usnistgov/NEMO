@@ -2,12 +2,15 @@ from calendar import monthrange
 from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
+from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
 from NEMO.models import (
     AdjustmentRequest,
+    Consumable,
+    ConsumableWithdraw,
     Notification,
     RequestMessage,
     RequestStatus,
@@ -120,6 +123,58 @@ class AdjustmentRequestTestCase(NEMOTestCaseMixin, TestCase):
         adjustment_request.new_start = timezone.now() + relativedelta(hours=1)
         adjustment_request.new_end = None
         adjustment_request.full_clean()
+
+    def test_new_quantity_validation_and_waive(self):
+        user, project = create_user_and_project()
+        consumable = Consumable.objects.create(name="Sample Consumable", quantity=100)
+        withdraw = ConsumableWithdraw.objects.create(
+            customer=user, merchant=user, project=project, consumable=consumable, quantity=2
+        )
+        content_type = ContentType.objects.get_for_model(withdraw)
+
+        # Model validation with new_quantity = 0 and waive = False should fail
+        adjustment_request = AdjustmentRequest(creator=user, description="test description", item=withdraw)
+        adjustment_request.new_quantity = 0
+        self.validate_model_error(adjustment_request, ["new_quantity"])
+
+        # When waive = True, new_quantity = 0 should pass validation and save without error
+        adjustment_request.waive = True
+        adjustment_request.full_clean()
+        adjustment_request.save()
+        self.assertIsNone(adjustment_request.new_quantity)
+        self.assertTrue(adjustment_request.waive)
+
+        # Form / View submission test:
+        self.login_as(user)
+        # 1. Posting new_quantity=0 without waive should return a form error
+        AdjustmentRequest.objects.all().delete()
+        response = self.client.post(
+            reverse("create_adjustment_request"),
+            data={
+                "item_type": content_type.id,
+                "item_id": withdraw.id,
+                "description": "request zero quantity",
+                "new_quantity": 0,
+            },
+        )
+        self.assertFormError(response.context["form"], "new_quantity", "The quantity must be greater than zero")
+
+        # 2. Posting new_quantity=0 with waive="waive" should succeed and create the request
+        AdjustmentRequest.objects.all().delete()
+        response = self.client.post(
+            reverse("create_adjustment_request"),
+            data={
+                "item_type": content_type.id,
+                "item_id": withdraw.id,
+                "description": "waive consumable withdrawal",
+                "new_quantity": 0,
+                "waive": "waive",
+            },
+        )
+        self.assertRedirects(response, reverse("user_requests", args=["adjustment"]))
+        created_request = AdjustmentRequest.objects.get(item_type=content_type, item_id=withdraw.id)
+        self.assertTrue(created_request.waive)
+        self.assertIsNone(created_request.new_quantity)
 
     def test_notification_created(self):
         # Test that new adjustment request => reviewers are notified (here just managers)

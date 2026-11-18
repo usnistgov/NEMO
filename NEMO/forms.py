@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime, time, timedelta
-from typing import Union
 
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
@@ -177,7 +176,7 @@ class TaskForm(ModelForm):
     def clean(self):
         if any(self.errors):
             return
-        cleaned_data = super().clean()
+        cleaned_data = super().clean() or {}
         action = cleaned_data["action"]
         if action == "create":
             if not cleaned_data["description"]:
@@ -187,13 +186,13 @@ class TaskForm(ModelForm):
                 raise ValidationError(
                     "This task can't be resolved because it is marked as 'cancelled' or 'resolved' already."
                 )
-        tool = cleaned_data.get("tool")
+        tool: Tool | None = cleaned_data.get("tool")
         if tool and not tool.problem_shutdown_enabled and not is_staff_on_tool(self.user, tool):
             cleaned_data["force_shutdown"] = False
         return cleaned_data
 
     def save(self, commit=True):
-        instance = super(TaskForm, self).save(commit=False)
+        instance: Task = super(TaskForm, self).save(commit=False)
         action = self.cleaned_data["action"]
         description = self.cleaned_data["description"]
         instance.problem_category = self.cleaned_data["problem_category"]
@@ -296,7 +295,7 @@ class SafetyIssueUpdateForm(ModelForm):
         return self.cleaned_data["update"].strip()
 
     def save(self, commit=True):
-        instance = super(SafetyIssueUpdateForm, self).save(commit=False)
+        instance: SafetyIssue = super(SafetyIssueUpdateForm, self).save(commit=False)
         progress_type = "resolved" if self.cleaned_data["resolved"] else "updated"
         if progress_type == "resolved":
             instance.resolution = self.cleaned_data["update"]
@@ -567,8 +566,8 @@ class AdjustmentRequestForm(ModelForm):
             "item_area",
         ]
 
-    def clean(self) -> dict:
-        cleaned_data = super().clean()
+    def clean(self) -> dict | None:
+        cleaned_data = super().clean() or {}
         item_type = cleaned_data.get("item_type")
         item_id = cleaned_data.get("item_id")
         if item_type and item_id:
@@ -589,6 +588,11 @@ class AdjustmentRequestForm(ModelForm):
             new_project = cleaned_data.get("new_project")
             if new_project and new_project == item.project:
                 cleaned_data["new_project"] = None
+        if cleaned_data.get("waive"):
+            cleaned_data["new_start"] = None
+            cleaned_data["new_end"] = None
+            cleaned_data["new_quantity"] = None
+            cleaned_data["new_project"] = None
         return cleaned_data
 
 
@@ -601,10 +605,10 @@ class StaffAbsenceForm(ModelForm):
 def save_scheduled_outage(
     form: ScheduledOutageForm,
     creator: User,
-    item: Union[Resource, Tool, Area],
-    start: datetime = None,
-    end: datetime = None,
-    title: str = None,
+    item: Resource | Tool | Area,
+    start: datetime | None = None,
+    end: datetime | None = None,
+    title: str | None = None,
     check_policy=True,
 ):
     outage: ScheduledOutage = form.save(commit=False)

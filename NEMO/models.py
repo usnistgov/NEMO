@@ -4910,7 +4910,7 @@ class ScheduledOutage(BaseModel):
         validators=[validate_comma_separated_integer_list],
         help_text="The number of days to send a reminder before a scheduled outage. A comma-separated list can be used for multiple reminders.",
     )
-    reminder_emails: List[str] = fields.MultiEmailField(
+    reminder_emails: List[str] | None = fields.MultiEmailField(
         null=True,
         blank=True,
         help_text="The reminder email(s) will be sent to this address. A comma-separated list can be used.",
@@ -5644,13 +5644,15 @@ class AdjustmentRequest(BaseModel):
                     time_errors["new_end"] = _("The new end must be after the current start")
                 if time_errors:
                     raise ValidationError(time_errors)
-            if self.new_quantity == 0:
-                from NEMO.views.customization import AdjustmentRequestsCustomization
+                if self.new_quantity == 0:
+                    from NEMO.views.customization import AdjustmentRequestsCustomization
 
-                message = "The quantity must be greater than zero"
-                if AdjustmentRequestsCustomization.get_bool("adjustment_requests_waive_consumable_withdrawal_enabled"):
-                    message += ", otherwise please request to waive the charge"
-                raise ValidationError({"new_quantity": message})
+                    message = "The quantity must be greater than zero"
+                    if AdjustmentRequestsCustomization.get_bool(
+                        "adjustment_requests_waive_consumable_withdrawal_enabled"
+                    ):
+                        message += ", otherwise please request to waive the charge"
+                    raise ValidationError({"new_quantity": message})
 
     class Meta:
         ordering = ["-creation_time"]
