@@ -136,6 +136,12 @@ class IsEmptyLookupTests(NEMOTestCaseMixin, TestCase):
         self.assertIn(self.populated_record, results)
 
 
+@override_settings(
+    STORAGES={
+        "default": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
+)
 class DocumentEmbeddingTests(NEMOTestCaseMixin, TestCase):
     def setUp(self):
         self.user, _ = create_user_and_project()
