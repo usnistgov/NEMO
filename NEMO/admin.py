@@ -11,7 +11,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.admin import GroupAdmin
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.admin import GenericStackedInline
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 from django.db.models.fields.files import FieldFile
 from django.forms import BaseInlineFormSet, ModelMultipleChoiceField
 from django.template.defaultfilters import linebreaksbr, urlencode
@@ -1154,6 +1154,7 @@ class UsageEventAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.Mo
         "remote_work",
         "waived",
         "has_staff_charge",
+        "has_consumable_withdraw",
     )
     list_filter = (
         "remote_work",
@@ -1162,6 +1163,7 @@ class UsageEventAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.Mo
         "end",
         "waived",
         has_fk_filter("staff_charge", "Staff Charge"),
+        has_fk_filter("consumablewithdraw", "Consumable Withdraw"),
         ("tool", admin.RelatedOnlyFieldListFilter),
         ("project__project_types", admin.RelatedOnlyFieldListFilter),
         ("project__account__type", admin.RelatedOnlyFieldListFilter),
@@ -1174,9 +1176,17 @@ class UsageEventAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.Mo
     actions = [waive_selected_charges]
     search_fields = ["user__username", "user__first_name", "user__last_name", "tool__name"]
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.annotate(_has_consumables=Exists(ConsumableWithdraw.objects.filter(usage_event=OuterRef("pk"))))
+
     @admin.display(boolean=True, description="Staff Charge")
     def has_staff_charge(self, obj) -> bool:
         return obj.staff_charge_id is not None
+
+    @admin.display(boolean=True, description="Consumable Withdraw")
+    def has_consumable_withdraw(self, obj) -> bool:
+        return getattr(obj, "_has_consumables", obj.consumablewithdraw_set.exists())
 
 
 @register(Consumable)
