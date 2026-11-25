@@ -212,7 +212,7 @@ class PostUsageCheckboxQuestion(PostUsageQuestion):
     def render_element(self, virtual_inputs: bool, item, dynamic_field_name: str, extra_class="") -> str:
         title = self.title_html or self.title
         max_width = f"max-width:{self.max_width}px" if self.max_width else ""
-        result = f'<div class="form-group {extra_class}" style="{max_width}>'
+        result = f'<div class="form-group {extra_class}" style="{max_width}">'
         result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
         result += f'<input aria-label="hidden field used for required answer" id="required_{self.form_name}" type="checkbox" value="" style="opacity: 0;height: 1px;width: 1px;" {"required" if self.required else ""} {"checked" if self.get_default_value() else ""}/>'
         result += f"<div class='{'form-control-static' if self.inline else ''}'>"
