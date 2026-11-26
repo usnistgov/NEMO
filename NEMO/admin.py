@@ -1050,6 +1050,7 @@ class ReservationAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.M
         "waived",
     )
     readonly_fields = ("descendant",)
+    list_select_related = ("user", "creator", "tool", "area", "project")
     list_filter = (
         "cancelled",
         "missed",
@@ -1067,10 +1068,6 @@ class ReservationAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.M
     inlines = [ConfigurationOptionInline]
     autocomplete_fields = ["user", "creator", "tool", "area", "project", "cancelled_by", "validated_by", "waived_by"]
     actions = [waive_selected_charges]
-
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.prefetch_related("tool", "area", "project")
 
 
 class ReservationQuestionsForm(forms.ModelForm):
