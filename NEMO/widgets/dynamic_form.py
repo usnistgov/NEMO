@@ -8,6 +8,7 @@ from copy import copy
 from json import JSONDecodeError, dumps, loads
 from logging import getLogger
 from typing import Any, Callable, Type
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -30,6 +31,31 @@ dynamic_form_logger = getLogger(__name__)
 
 
 GROUP_TYPE_FIELD_KEY = "group"
+
+
+def apply_editable_fields(questions: list[dict], editable_fields: list[str] | None) -> None:
+    if editable_fields is None:
+        return
+
+    editable_field_names = set(editable_fields)
+    for question in questions:
+        # regular questions, readonly if it's not in the list
+        if question.get("type") != GROUP_TYPE_FIELD_KEY:
+            if question["name"] not in editable_field_names:
+                question["readonly"] = True
+            continue
+
+        # group questions
+        sub_questions = question.get("questions", [])
+        group_is_editable = question["name"] in editable_field_names
+        editable_sub_questions = [
+            sub_question for sub_question in sub_questions if sub_question["name"] in editable_field_names
+        ]
+        # sub question is readonly only if in the list
+        if editable_sub_questions or not group_is_editable:
+            for sub_question in sub_questions:
+                if sub_question["name"] not in editable_field_names:
+                    sub_question["readonly"] = True
 
 
 class PostUsageQuestion:
@@ -558,6 +584,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 
     def __init__(self, properties: dict, index: int | None = None, initial_data=None):
         super().__init__(properties, index, initial_data)
+        self.editable_fields = None
         self.max_number = self._init_property("max_number")
         # we need a safe group name to use in js function and variable names
         self.group_name = slugify_underscore(self.name)
@@ -571,6 +598,13 @@ class PostUsageGroupQuestion(PostUsageQuestion):
         if initial_data:
             for sub_question in self.sub_questions:
                 sub_question.initial_data = initial_data.get(sub_question.initial_name, None)
+
+    @property
+    def has_editable_sub_questions(self):
+        return any(
+            not sub_question.readonly and not isinstance(sub_question, PostUsageFormulaQuestion)
+            for sub_question in self.sub_questions
+        )
 
     def validate(self):
         super().validate()
@@ -598,7 +632,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
             result += self.render_group_question(virtual_inputs, item, dynamic_field_name)
             result += "</div>"
         result += "</div>"
-        if self.max_number > 1:
+        if self.max_number > 1 and self.has_editable_sub_questions:
             result += '<div class="form-group">'
             add_group_url = (
                 reverse(
@@ -607,6 +641,15 @@ class PostUsageGroupQuestion(PostUsageQuestion):
                 )
                 + f"?virtual_inputs={virtual_inputs}"
             )
+            if self.editable_fields is not None:
+                # add to the URL so we can know when rendering the new group
+                sub_question_names = {sub_question.name for sub_question in self.sub_questions}
+                relevant_editable_fields = [
+                    field_name
+                    for field_name in self.editable_fields
+                    if field_name == self.name or field_name in sub_question_names
+                ]
+                add_group_url += f"&{urlencode({'editable_fields': dumps(relevant_editable_fields)})}"
             result += f'<button class="{self.group_name}_add_button" type="button" onclick="add_group_question(this, \'{self.group_name}\', {self.max_number}, \'{add_group_url}\')">{self.group_add_button_name}</button>'
             result += "</div>"
         result += "</div>"
@@ -616,7 +659,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
         result = ""
         result += f'<div class="{self.group_name}_question" data-group-index="{self.index or 0}" style="padding-top: 10px; padding-bottom: 10px; border-top: 1px solid lightgray">'
         result += render_grid_questions(self.sub_questions, item, field_name, virtual_inputs)
-        if self.index:
+        if self.index and self.has_editable_sub_questions:
             result += f'<button type="button" onclick="remove_group_question(this, \'{self.group_name}\', {self.max_number});">Remove</button>'
         return result
 
@@ -646,11 +689,16 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 
 
 class DynamicForm:
-    def __init__(self, questions, initial_data: dict | None = None):
+    def __init__(self, questions, initial_data: dict | None = None, editable_fields: list[str] | None = None):
+        """Make only the named questions editable when editable_fields is provided.
+
+        Listing a group makes all its sub-questions editable unless individual sub-question names are listed.
+        """
         self.untreated_questions = []
         self.questions = []
         if questions:
             self.untreated_questions = loads(questions)
+            apply_editable_fields(self.untreated_questions, editable_fields)
             self.questions: list[PostUsageQuestion] = PostUsageQuestion.load_questions(
                 self.untreated_questions, initial_data=initial_data
             )
@@ -660,6 +708,7 @@ class DynamicForm:
         for initialized_question in self.questions:
             initialized_question.all_questions = all_questions
             if isinstance(initialized_question, PostUsageGroupQuestion):
+                initialized_question.editable_fields = editable_fields
                 for sub_question in initialized_question.sub_questions:
                     sub_question.all_questions = all_questions
 
@@ -897,10 +946,12 @@ class MultiDynamicForms:
         items: QuerySetType[ToolUsageQuestions],
         dynamic_field_name: str = "questions",
         initial_data: dict | None = None,
+        editable_fields: list[str] | None = None,
     ):
         self.items = items
         self.dynamic_field_name = dynamic_field_name
         self.initial_data = initial_data
+        self.editable_fields = editable_fields
         forms_json = []
         for item in self.items:
             forms_json.extend(loads(getattr(item, self.dynamic_field_name)))
@@ -910,9 +961,9 @@ class MultiDynamicForms:
     def render(self, virtual_inputs: bool = False) -> str:
         rendered_forms = ""
         for item in self.items:
-            rendered_forms += DynamicForm(getattr(item, self.dynamic_field_name), self.initial_data).render(
-                item, self.dynamic_field_name, virtual_inputs
-            )
+            rendered_forms += DynamicForm(
+                getattr(item, self.dynamic_field_name), self.initial_data, self.editable_fields
+            ).render(item, self.dynamic_field_name, virtual_inputs)
         return mark_safe(rendered_forms)
 
     def extract(self, request):
@@ -955,7 +1006,10 @@ def render_group_questions(request, item, field_name: str, group_name: str) -> s
     virtual_inputs = bool(strtobool((request.GET["virtual_inputs"])))
     dynamic_field: str | None = getattr(item, field_name, None)
     if dynamic_field:
-        for question in PostUsageQuestion.load_questions(loads(dynamic_field), question_index):
+        questions = loads(dynamic_field)
+        editable_fields = loads(request.GET["editable_fields"]) if "editable_fields" in request.GET else None
+        apply_editable_fields(questions, editable_fields)
+        for question in PostUsageQuestion.load_questions(questions, question_index):
             if isinstance(question, PostUsageGroupQuestion) and question.group_name == group_name:
                 return question.render_group_question(virtual_inputs, item, field_name)
     return ""
