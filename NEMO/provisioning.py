@@ -107,7 +107,7 @@ def query_public_key():
     print("Port 636 is commonly used for secure LDAP.")
     print("Port 443 is commonly used for secure HTTP.")
     name = input("DNS name or IP address = ")
-    port = input("Port = ")
+    port = int(input("Port = "))
 
     try:
         ip_addresses = gethostbyname_ex(name)[2]
@@ -139,7 +139,7 @@ def query_public_key():
 
 
 def test_ldap_authentication():
-    """Opens an encrypted connection (using only TLS 1.2) to an LDAP directory (such as Active Directory) and tests authentication"""
+    """Opens an encrypted connection (using TLS 1.2 or newer) to an LDAP directory (such as Active Directory) and tests authentication"""
     name = input("DNS name or IP address = ")
     domain = input("Domain = ")
     username = input("Username = ")
