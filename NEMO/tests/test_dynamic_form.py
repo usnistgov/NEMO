@@ -48,6 +48,30 @@ class TestDynamicForm(NEMOTestCaseMixin, TestCase):
         self.assertIn("readonly", rendered[1])
         self.assertIn("readonly", rendered[2])
 
+    def test_readonly_fields_override_editable_fields(self):
+        questions = [
+            {"name": "editable", "type": "textbox", "title": "Editable"},
+            {"name": "restricted", "type": "textbox", "title": "Restricted"},
+            {"name": "configured_readonly", "type": "textbox", "title": "Configured", "readonly": True},
+        ]
+        form = DynamicForm(
+            json.dumps(questions),
+            editable_fields=["editable", "restricted", "configured_readonly"],
+            readonly_fields=["restricted"],
+        )
+
+        rendered = [question.render(False, self.tool, "pre_usage_question") for question in form.questions]
+        self.assertNotIn("readonly", rendered[0])
+        self.assertIn("readonly", rendered[1])
+        self.assertIn("readonly", rendered[2])
+
+        readonly_only_form = DynamicForm(json.dumps(questions), readonly_fields=["restricted"])
+        readonly_only_rendered = [
+            question.render(False, self.tool, "pre_usage_question") for question in readonly_only_form.questions
+        ]
+        self.assertNotIn("readonly", readonly_only_rendered[0])
+        self.assertIn("readonly", readonly_only_rendered[1])
+
     def test_editable_fields_group_applies_to_group_and_existing_rows(self):
         questions = [
             {
@@ -98,6 +122,45 @@ class TestDynamicForm(NEMOTestCaseMixin, TestCase):
         editable_rows_render = editable_rows_form.render(self.tool, "pre_usage_question")
         self.assertEqual(editable_rows_render.count("readonly"), 4)
         self.assertIn('onclick="remove_group_question', editable_rows_render)
+
+    def test_readonly_fields_can_lock_group_or_individual_children(self):
+        questions = [
+            {
+                "name": "group",
+                "type": "group",
+                "title": "Group",
+                "max_number": 3,
+                "questions": [
+                    {"name": "child", "type": "textbox", "title": "Child"},
+                    {"name": "other", "type": "textbox", "title": "Other"},
+                ],
+            }
+        ]
+
+        child_locked_form = DynamicForm(json.dumps(questions), editable_fields=["group"], readonly_fields=["child"])
+        child_locked_render = child_locked_form.render(self.tool, "pre_usage_question")
+        child_element = re.search(r'<input[^>]*name="df_child"[^>]*>', child_locked_render).group(0)
+        other_element = re.search(r'<input[^>]*name="df_other"[^>]*>', child_locked_render).group(0)
+        self.assertIn("readonly", child_element)
+        self.assertNotIn("readonly", other_element)
+        self.assertIn('class="group_add_button"', child_locked_render)
+
+        initial_data = {
+            "group": {
+                "type": "group",
+                "user_input": {
+                    "0": {"child": "first", "other": "one"},
+                    "1": {"child": "second", "other": "two"},
+                },
+            }
+        }
+        group_locked_form = DynamicForm(
+            json.dumps(questions), initial_data, editable_fields=["group"], readonly_fields=["group"]
+        )
+        group_locked_render = group_locked_form.render(self.tool, "pre_usage_question")
+        self.assertEqual(group_locked_render.count("readonly"), 4)
+        self.assertNotIn('class="group_add_button"', group_locked_render)
+        self.assertNotIn('onclick="remove_group_question', group_locked_render)
 
     def test_formula_only_editable_group_hides_add_and_remove_buttons(self):
         questions = [
@@ -171,16 +234,27 @@ class TestDynamicForm(NEMOTestCaseMixin, TestCase):
             }
         ]
         self.tool.pre_usage_question = json.dumps(questions)
-        rendered = DynamicForm(self.tool.pre_usage_question, editable_fields=["child"]).render(
-            self.tool, "pre_usage_question"
+        form = DynamicForm(
+            self.tool.pre_usage_question,
+            editable_fields=["group"],
+            readonly_fields=["other"],
         )
+        rendered = form.render(self.tool, "pre_usage_question")
         add_button_url = re.search(r"add_group_question\(this, 'group', 3, '([^']+)'\)", rendered).group(1)
         query = parse_qs(urlsplit(add_button_url).query)
-        self.assertEqual(json.loads(query["editable_fields"][0]), ["child"])
+        self.assertEqual(json.loads(query["editable_fields"][0]), ["group"])
+        self.assertEqual(json.loads(query["readonly_fields"][0]), ["other"])
 
         request = EmptyHttpRequest()
         request.GET = QueryDict("", mutable=True)
-        request.GET.update({"index": "1", "virtual_inputs": "False", "editable_fields": query["editable_fields"][0]})
+        request.GET.update(
+            {
+                "index": "1",
+                "virtual_inputs": "False",
+                "editable_fields": query["editable_fields"][0],
+                "readonly_fields": query["readonly_fields"][0],
+            }
+        )
         new_row = render_group_questions(request, self.tool, "pre_usage_question", "group")
         self.assertEqual(new_row.count("readonly"), 2)
         child_element = re.search(r'<input[^>]*name="df_child_1"[^>]*>', new_row).group(0)
@@ -189,6 +263,7 @@ class TestDynamicForm(NEMOTestCaseMixin, TestCase):
         self.assertIn("readonly", other_element)
 
         request.GET.pop("editable_fields")
+        request.GET.pop("readonly_fields")
         unrestricted_new_row = render_group_questions(request, self.tool, "pre_usage_question", "group")
         self.assertEqual(unrestricted_new_row.count("readonly"), 1)
 
@@ -209,6 +284,14 @@ class TestDynamicForm(NEMOTestCaseMixin, TestCase):
     def test_multi_dynamic_forms_passes_editable_fields_to_rendered_forms(self):
         self.tool.pre_usage_question = json.dumps([{"name": "text", "type": "textbox", "title": "Text"}])
         forms = MultiDynamicForms([self.tool], "pre_usage_question", editable_fields=[])
+
+        rendered = forms.render()
+        self.assertIn("readonly", rendered)
+        self.assertFalse(forms.merged_dynamic_forms.questions[0].readonly)
+
+    def test_multi_dynamic_forms_passes_readonly_fields_to_rendered_forms(self):
+        self.tool.pre_usage_question = json.dumps([{"name": "text", "type": "textbox", "title": "Text"}])
+        forms = MultiDynamicForms([self.tool], "pre_usage_question", readonly_fields=["text"])
 
         rendered = forms.render()
         self.assertIn("readonly", rendered)

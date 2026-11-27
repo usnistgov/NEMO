@@ -4,6 +4,7 @@ import random
 import re
 import sys
 from collections import Counter
+from collections.abc import Iterable
 from copy import copy
 from json import JSONDecodeError, dumps, loads
 from logging import getLogger
@@ -33,28 +34,43 @@ dynamic_form_logger = getLogger(__name__)
 GROUP_TYPE_FIELD_KEY = "group"
 
 
-def apply_editable_fields(questions: list[dict], editable_fields: list[str] | None) -> None:
-    if editable_fields is None:
-        return
-
-    editable_field_names = set(editable_fields)
+def apply_editable_fields(
+    questions: list[dict], editable_fields: list[str] | None, readonly_fields: list[str] | None = None
+) -> None:
+    editable_field_names = set(editable_fields) if editable_fields is not None else None
+    readonly_field_names = set(readonly_fields or [])
     for question in questions:
-        # regular questions, readonly if it's not in the list
+        question_name = question["name"]
+
+        # regular questions: readonly if:
+        # - the question is in the readonly_fields list or
+        # - if we have editable_fields and the question is not in editable_fields
         if question.get("type") != GROUP_TYPE_FIELD_KEY:
-            if question["name"] not in editable_field_names:
+            if question_name in readonly_field_names or (
+                editable_field_names is not None and question_name not in editable_field_names
+            ):
                 question["readonly"] = True
             continue
 
-        # group questions
+        # group sub questions: readonly if:
+        # - the sub question is in the readonly_fields list or
+        # - the group itself is in the readonly_fields list or
+        # - we have editable_fields and the group is not in editable_fields and the sub question is not either
         sub_questions = question.get("questions", [])
-        group_is_editable = question["name"] in editable_field_names
-        editable_sub_questions = [
-            sub_question for sub_question in sub_questions if sub_question["name"] in editable_field_names
-        ]
-        # sub question is readonly only if in the list
-        if editable_sub_questions or not group_is_editable:
-            for sub_question in sub_questions:
-                if sub_question["name"] not in editable_field_names:
+        group_is_readonly = question_name in readonly_field_names
+        group_is_editable = editable_field_names is not None and question_name in editable_field_names
+        has_editable_sub_questions = editable_field_names is not None and any(
+            sub_question["name"] in editable_field_names for sub_question in sub_questions
+        )
+        for sub_question in sub_questions:
+            sub_question_name = sub_question["name"]
+            if group_is_readonly or sub_question_name in readonly_field_names:
+                sub_question["readonly"] = True
+            elif editable_field_names is not None:
+                editable_by_allow_list = sub_question_name in editable_field_names or (
+                    group_is_editable and not has_editable_sub_questions
+                )
+                if not editable_by_allow_list:
                     sub_question["readonly"] = True
 
 
@@ -585,6 +601,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
     def __init__(self, properties: dict, index: int | None = None, initial_data=None):
         super().__init__(properties, index, initial_data)
         self.editable_fields = None
+        self.readonly_fields = None
         self.max_number = self._init_property("max_number")
         # we need a safe group name to use in js function and variable names
         self.group_name = slugify_underscore(self.name)
@@ -641,15 +658,24 @@ class PostUsageGroupQuestion(PostUsageQuestion):
                 )
                 + f"?virtual_inputs={virtual_inputs}"
             )
+            sub_question_names = {sub_question.name for sub_question in self.sub_questions}
+            field_policy = {}
             if self.editable_fields is not None:
-                # add to the URL so we can know when rendering the new group
-                sub_question_names = {sub_question.name for sub_question in self.sub_questions}
                 relevant_editable_fields = [
                     field_name
                     for field_name in self.editable_fields
                     if field_name == self.name or field_name in sub_question_names
                 ]
-                add_group_url += f"&{urlencode({'editable_fields': dumps(relevant_editable_fields)})}"
+                field_policy["editable_fields"] = dumps(relevant_editable_fields)
+            if self.readonly_fields is not None:
+                relevant_readonly_fields = [
+                    field_name
+                    for field_name in self.readonly_fields
+                    if field_name == self.name or field_name in sub_question_names
+                ]
+                field_policy["readonly_fields"] = dumps(relevant_readonly_fields)
+            if field_policy:
+                add_group_url += f"&{urlencode(field_policy)}"
             result += f'<button class="{self.group_name}_add_button" type="button" onclick="add_group_question(this, \'{self.group_name}\', {self.max_number}, \'{add_group_url}\')">{self.group_add_button_name}</button>'
             result += "</div>"
         result += "</div>"
@@ -689,16 +715,25 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 
 
 class DynamicForm:
-    def __init__(self, questions, initial_data: dict | None = None, editable_fields: list[str] | None = None):
-        """Make only the named questions editable when editable_fields is provided.
+    def __init__(
+        self,
+        questions,
+        initial_data: dict | None = None,
+        editable_fields: list[str] | None = None,
+        readonly_fields: list[str] | None = None,
+    ):
+        """Restrict question editing using optional allow- and deny-lists.
 
-        Listing a group makes all its sub-questions editable unless individual sub-question names are listed.
+        When editable_fields is provided, only the named questions are editable. readonly_fields always makes
+        the named questions readonly and takes precedence over editable_fields. For groups, listing the group
+        makes all its sub-questions editable unless individual sub-question names are listed; listing the group
+        in readonly_fields makes all sub-questions readonly.
         """
         self.untreated_questions = []
         self.questions = []
         if questions:
             self.untreated_questions = loads(questions)
-            apply_editable_fields(self.untreated_questions, editable_fields)
+            apply_editable_fields(self.untreated_questions, editable_fields, readonly_fields)
             self.questions: list[PostUsageQuestion] = PostUsageQuestion.load_questions(
                 self.untreated_questions, initial_data=initial_data
             )
@@ -709,6 +744,7 @@ class DynamicForm:
             initialized_question.all_questions = all_questions
             if isinstance(initialized_question, PostUsageGroupQuestion):
                 initialized_question.editable_fields = editable_fields
+                initialized_question.readonly_fields = readonly_fields
                 for sub_question in initialized_question.sub_questions:
                     sub_question.all_questions = all_questions
 
@@ -919,7 +955,7 @@ class DynamicForm:
 
     def _report_problems(self, usage_event: UsageEvent, run_data_json: dict, request):
         for question in self.questions:
-            input_data = run_data_json[question.name] if question.name in run_data_json else None
+            input_data = run_data_json[question.name] if question.name in run_data_json else {}
             if isinstance(question, PostUsageRadioReportProblemQuestion):
                 if "user_input" in input_data and input_data["user_input"] == "true":
                     from NEMO.views.tasks import save_task
@@ -943,15 +979,17 @@ class DynamicForm:
 class MultiDynamicForms:
     def __init__(
         self,
-        items: QuerySetType[ToolUsageQuestions],
+        items: Iterable,
         dynamic_field_name: str = "questions",
         initial_data: dict | None = None,
         editable_fields: list[str] | None = None,
+        readonly_fields: list[str] | None = None,
     ):
         self.items = items
         self.dynamic_field_name = dynamic_field_name
         self.initial_data = initial_data
         self.editable_fields = editable_fields
+        self.readonly_fields = readonly_fields
         forms_json = []
         for item in self.items:
             forms_json.extend(loads(getattr(item, self.dynamic_field_name)))
@@ -962,7 +1000,7 @@ class MultiDynamicForms:
         rendered_forms = ""
         for item in self.items:
             rendered_forms += DynamicForm(
-                getattr(item, self.dynamic_field_name), self.initial_data, self.editable_fields
+                getattr(item, self.dynamic_field_name), self.initial_data, self.editable_fields, self.readonly_fields
             ).render(item, self.dynamic_field_name, virtual_inputs)
         return mark_safe(rendered_forms)
 
@@ -1008,7 +1046,8 @@ def render_group_questions(request, item, field_name: str, group_name: str) -> s
     if dynamic_field:
         questions = loads(dynamic_field)
         editable_fields = loads(request.GET["editable_fields"]) if "editable_fields" in request.GET else None
-        apply_editable_fields(questions, editable_fields)
+        readonly_fields = loads(request.GET["readonly_fields"]) if "readonly_fields" in request.GET else None
+        apply_editable_fields(questions, editable_fields, readonly_fields)
         for question in PostUsageQuestion.load_questions(questions, question_index):
             if isinstance(question, PostUsageGroupQuestion) and question.group_name == group_name:
                 return question.render_group_question(virtual_inputs, item, field_name)
@@ -1176,7 +1215,7 @@ def get_js_event_data(item, dynamic_field_name: str, extra_data=None) -> str:
 
 def find_input_value_for_field(user_data: str | dict | None, question_name) -> str | None:
     try:
-        user_data_json: dict = loads(user_data) if isinstance(user_data, str) and user_data else user_data
+        user_data_json: dict | None = loads(user_data) if isinstance(user_data, str) and user_data else user_data
         if user_data_json:
             for field_name, data in user_data_json.items():
                 if "user_input" in data:
