@@ -93,10 +93,17 @@
                         If you have any questions about the tool or your reservation, please contact the primary tool owner,
                         <a href="mailto:{{ reservation.tool.primary_owner.email }}">{{ reservation.tool.primary_owner.first_name }} {{ reservation.tool.primary_owner.last_name }}</a>.
                     </p>
-                    <p>
-                        If you are unable to reach the primary tool owner then you can contact the secondary tool owner,
-                        <a href="mailto:{{ reservation.tool.secondary_owner.email }}">{{ reservation.tool.secondary_owner.first_name }} {{ reservation.tool.secondary_owner.last_name }}</a>.
-                    </p>
+                    {% with reservation.tool.backup_owners.all as backup_owners %}
+                        {% if backup_owners %}
+                            <p>
+                                If you are unable to reach the primary tool owner then you can contact
+                                {% if backup_owners|length == 1 %}the backup tool owner{% else %}one of the backup tool owners{% endif %}:
+                                {% for backup in backup_owners %}
+                                    <a href="mailto:{{ backup.email }}">{{ backup.first_name }} {{ backup.last_name }}</a>{% if not forloop.last %}, {% else %}.{% endif %}
+                                {% endfor %}
+                            </p>
+                        {% endif %}
+                    {% endwith %}
                     <p>The staff can provide answers to general inquiries.</p>
                 </td>
             </tr>
