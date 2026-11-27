@@ -316,6 +316,7 @@ class ToolDocumentsInline(DocumentModelAdmin):
 @register(Tool)
 class ToolAdmin(admin.ModelAdmin):
     inlines = [ToolDocumentsInline]
+    list_select_related = ("_core_facility",)
     list_display = (
         "name_display",
         "_category",
@@ -588,6 +589,7 @@ class ToolUsageQuestionsAdmin(admin.ModelAdmin):
 
 @register(ToolWaitList)
 class ToolWaitListAdmin(admin.ModelAdmin):
+    list_select_related = ("tool", "user")
     list_display = ["tool", "user", "date_entered", "date_exited", "expired", "deleted"]
     list_filter = ["deleted", "expired", "tool"]
     autocomplete_fields = ["tool", "user"]
@@ -613,6 +615,7 @@ class ToolQualificationGroupAdminForm(forms.ModelForm):
 
 @register(ToolQualificationGroup)
 class ToolQualificationGroupAdmin(admin.ModelAdmin):
+    list_select_related = ("training_charge_tool",)
     list_display = ["name", "get_tools", "training_charge_tool"]
     filter_horizontal = ["tools"]
     autocomplete_fields = ["training_charge_tool"]
@@ -644,6 +647,7 @@ class AreaAdminForm(MPTTAdminForm):
 
 @register(Area)
 class AreaAdmin(DraggableMPTTAdmin):
+    list_select_related = ("parent_area", "core_facility")
     list_display = (
         "tree_actions",
         "indented_title",
@@ -743,6 +747,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 
 @register(TrainingSession)
 class TrainingSessionAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
+    list_select_related = ("trainer", "trainee", "tool", "project", "usage_event")
     list_display = (
         "id",
         "trainer",
@@ -784,6 +789,7 @@ class TrainingSessionAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, adm
 
 @register(StaffCharge)
 class StaffChargeAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
+    list_select_related = ("staff_member", "customer", "project", "core_facility")
     list_display = (
         "id",
         "staff_member",
@@ -825,6 +831,7 @@ class StaffChargeAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.M
 
 @register(AreaAccessRecord)
 class AreaAccessRecordAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
+    list_select_related = ("customer", "area", "project")
     list_display = ("id", "customer", "area", "project", "start", "end", "waived", "has_staff_charge")
     list_filter = (
         ("area", TreeRelatedFieldListFilter),
@@ -848,6 +855,7 @@ class AreaAccessRecordAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, ad
 
 @register(Configuration)
 class ConfigurationAdmin(admin.ModelAdmin):
+    list_select_related = ("tool",)
     list_display = (
         "id",
         "tool",
@@ -870,6 +878,7 @@ class ConfigurationAdmin(admin.ModelAdmin):
 
 @register(ConfigurationHistory)
 class ConfigurationHistoryAdmin(admin.ModelAdmin):
+    list_select_related = ("configuration__tool", "user")
     list_display = ("id", "configuration", "user", "modification_time", "slot")
     date_hierarchy = "modification_time"
     autocomplete_fields = ["user"]
@@ -893,6 +902,7 @@ class AccountAdminForm(forms.ModelForm):
 
 @register(Account)
 class AccountAdmin(admin.ModelAdmin):
+    list_select_related = ("type",)
     list_display = ("name", "id", "active", "type", "start_date", "get_managers")
     search_fields = ("name",)
     list_filter = ("active", ("type", admin.RelatedOnlyFieldListFilter), "start_date")
@@ -958,6 +968,7 @@ class ProjectDocumentsInline(DocumentModelAdmin):
 
 @register(Project)
 class ProjectAdmin(admin.ModelAdmin):
+    list_select_related = ("account",)
     list_display = (
         "name",
         "id",
@@ -1139,6 +1150,7 @@ class ReservationQuestionsAdmin(admin.ModelAdmin):
 
 @register(UsageEvent)
 class UsageEventAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
+    list_select_related = ("tool", "user", "operator", "project")
     list_display = (
         "id",
         "tool",
@@ -1188,6 +1200,7 @@ class UsageEventAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.Mo
 
 @register(Consumable)
 class ConsumableAdmin(admin.ModelAdmin):
+    list_select_related = ("category", "core_facility")
     list_display = (
         "name",
         "quantity",
@@ -1220,6 +1233,7 @@ class ConsumableCategoryAdmin(admin.ModelAdmin):
 @register(ConsumableWithdraw)
 class ConsumableWithdrawAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
     list_display = ("id", "customer", "merchant", "consumable", "quantity", "project", "date", "waived")
+    list_select_related = ("customer", "merchant", "consumable", "project")
     list_filter = (
         "date",
         "waived",
@@ -1237,6 +1251,7 @@ class ConsumableWithdrawAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, 
 
 @register(RecurringConsumableCharge)
 class RecurringConsumableChargeAdmin(admin.ModelAdmin):
+    list_select_related = ("customer", "project")
     form = RecurringConsumableChargeForm
     list_display = ("name", "customer", "project", "get_recurrence_display", "last_charge", "next_charge")
     list_filter = (("customer", admin.RelatedOnlyFieldListFilter),)
@@ -1309,6 +1324,7 @@ class InterlockAdminForm(forms.ModelForm):
 
 @register(Interlock)
 class InterlockAdmin(admin.ModelAdmin):
+    list_select_related = ("card", "tool", "door")
     search_fields = ["name", "card__name", "card__server"]
     form = InterlockAdminForm
     list_display = (
@@ -1352,6 +1368,7 @@ class InterlockCardCategoryAdmin(admin.ModelAdmin):
 
 @register(Task)
 class TaskAdmin(admin.ModelAdmin):
+    list_select_related = ("tool", "creator", "problem_category", "resolution_category")
     list_display = (
         "id",
         "title",
@@ -1398,6 +1415,7 @@ class TaskStatusAdmin(admin.ModelAdmin):
 
 @register(TaskHistory)
 class TaskHistoryAdmin(admin.ModelAdmin):
+    list_select_related = ("task", "user")
     list_display = ("id", "task", "status", "time", "user")
     readonly_fields = ("time",)
     date_hierarchy = "time"
@@ -1406,6 +1424,7 @@ class TaskHistoryAdmin(admin.ModelAdmin):
 
 @register(TaskImages)
 class TaskImagesAdmin(admin.ModelAdmin):
+    list_select_related = ("task__tool",)
     list_display = ("id", "get_tool", "task", "uploaded_at")
     readonly_fields = ["uploaded_at"]
 
@@ -1416,6 +1435,7 @@ class TaskImagesAdmin(admin.ModelAdmin):
 
 @register(Comment)
 class CommentAdmin(admin.ModelAdmin):
+    list_select_related = ("tool", "author", "hidden_by")
     list_display = (
         "id",
         "tool",
@@ -1436,6 +1456,7 @@ class CommentAdmin(admin.ModelAdmin):
 
 @register(Resource)
 class ResourceAdmin(admin.ModelAdmin):
+    list_select_related = ("category",)
     list_display = ("name", "category", "available")
     list_filter = ("available", "category")
     filter_horizontal = ("fully_dependent_tools", "partially_dependent_tools", "dependent_areas")
@@ -1444,6 +1465,7 @@ class ResourceAdmin(admin.ModelAdmin):
 
 @register(ActivityHistory)
 class ActivityHistoryAdmin(admin.ModelAdmin):
+    list_select_related = ("content_type", "authorizer")
     list_display = ("__str__", "get_item", "action", "date", "authorizer")
     list_filter = (
         "action",
@@ -1458,6 +1480,7 @@ class ActivityHistoryAdmin(admin.ModelAdmin):
 
 @register(MembershipHistory)
 class MembershipHistoryAdmin(admin.ModelAdmin):
+    list_select_related = ("parent_content_type", "child_content_type", "authorizer")
     list_display = (
         "__str__",
         "get_parent",
@@ -1484,6 +1507,7 @@ class MembershipHistoryAdmin(admin.ModelAdmin):
 
 @register(UserPreferences)
 class UserPreferencesAdmin(admin.ModelAdmin):
+    list_select_related = ("user",)
     list_display = ("user",)
     search_fields = [
         "user__first_name",
@@ -1672,6 +1696,7 @@ class UserAdmin(admin.ModelAdmin):
 
 @register(PhysicalAccessLog)
 class PhysicalAccessLogAdmin(admin.ModelAdmin):
+    list_select_related = ("user", "door")
     list_display = ("user", "door", "time", "result")
     list_filter = (("door", admin.RelatedOnlyFieldListFilter), "result")
     search_fields = ("user__first_name", "user__last_name", "user__username", "door__name")
@@ -1689,6 +1714,7 @@ class PhysicalAccessLogAdmin(admin.ModelAdmin):
 
 @register(SafetyIssue)
 class SafetyIssueAdmin(admin.ModelAdmin):
+    list_select_related = ("reporter", "resolver")
     list_display = ("id", "reporter", "creation_time", "visible", "resolved", "resolution_time", "resolver")
     list_filter = (
         "resolved",
@@ -1774,6 +1800,7 @@ class DoorAdminForm(forms.ModelForm):
 
 @register(Door)
 class DoorAdmin(admin.ModelAdmin):
+    list_select_related = ("interlock",)
     list_display = ("name", "get_areas", "interlock", "get_absolute_url", "id")
     form = DoorAdminForm
     filter_horizontal = ["areas"]
@@ -1798,6 +1825,7 @@ class AlertAdminForm(forms.ModelForm):
 
 @register(Alert)
 class AlertAdmin(admin.ModelAdmin):
+    list_select_related = ("creator", "user")
     list_display = (
         "title",
         "category",
@@ -1858,6 +1886,7 @@ class PhysicalAccessLevelForm(forms.ModelForm):
 
 @register(PhysicalAccessLevel)
 class PhysicalAccessLevelAdmin(admin.ModelAdmin):
+    list_select_related = ("area",)
     search_fields = ["name", "area__name"]
     form = PhysicalAccessLevelForm
     list_display = ("name", "area", "get_schedule_display_with_times", "allow_staff_access", "allow_user_request")
@@ -1985,6 +2014,7 @@ class TemporaryPhysicalAccessAdminForm(forms.ModelForm):
 
 @register(TemporaryPhysicalAccess)
 class TemporaryPhysicalAccessAdmin(admin.ModelAdmin):
+    list_select_related = ("user", "physical_access_level__area")
     list_display = ("id", "user", "start_time", "end_time", "get_area_name", "get_schedule_display_with_times")
     list_filter = (
         ("physical_access_level", admin.RelatedOnlyFieldListFilter),
@@ -2007,6 +2037,7 @@ class TemporaryPhysicalAccessAdmin(admin.ModelAdmin):
 
 @register(TemporaryPhysicalAccessRequest)
 class TemporaryPhysicalAccessRequestAdmin(admin.ModelAdmin):
+    list_select_related = ("creator", "physical_access_level", "reviewer")
     list_display = (
         "creator",
         "creation_time",
@@ -2044,6 +2075,7 @@ class ContactInformationCategoryAdmin(admin.ModelAdmin):
 
 @register(ContactInformation)
 class ContactInformationAdmin(admin.ModelAdmin):
+    list_select_related = ("category", "user")
     list_display = ("name", "category", "user", "image_thumbnail")
     autocomplete_fields = ["user"]
 
@@ -2098,6 +2130,7 @@ class ScheduledOutageCategoryAdmin(admin.ModelAdmin):
 
 @register(ScheduledOutage)
 class ScheduledOutageAdmin(admin.ModelAdmin):
+    list_select_related = ("tool", "area", "resource", "creator")
     list_display = ("id", "tool", "area", "resource", "creator", "title", "start", "end")
     list_filter = (
         ("tool", admin.RelatedOnlyFieldListFilter),
@@ -2111,6 +2144,7 @@ class ScheduledOutageAdmin(admin.ModelAdmin):
 
 @register(UnplannedOutage)
 class UnplannedOutageAdmin(admin.ModelAdmin):
+    list_select_related = ("tool", "resource")
     list_display = ("id", "tool", "resource", "start", "end")
     list_filter = (("tool", admin.RelatedOnlyFieldListFilter), ("resource", admin.RelatedOnlyFieldListFilter))
     autocomplete_fields = ["tool", "resource"]
@@ -2134,6 +2168,7 @@ class NewsAdmin(admin.ModelAdmin):
 
 @register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
+    list_select_related = ("user", "content_type")
     list_display = ("id", "user", "get_item", "notification_type", "expiration")
     list_filter = (
         ("content_type", admin.RelatedOnlyFieldListFilter),
@@ -2153,6 +2188,7 @@ class BadgeReaderAdmin(admin.ModelAdmin):
 
 @register(ToolUsageCounter)
 class ToolUsageCounterAdmin(admin.ModelAdmin):
+    list_select_related = ("tool", "last_reset_by")
     list_display = (
         "name",
         "tool",
@@ -2189,6 +2225,7 @@ class RequestMessageInlines(GenericStackedInline):
 
 @register(BuddyRequest)
 class BuddyRequestAdmin(admin.ModelAdmin):
+    list_select_related = ("user", "area")
     inlines = [RequestMessageInlines]
     form = BuddyRequestForm
     list_display = ("user", "start", "end", "area", "reply_count", "expired", "deleted")
@@ -2207,6 +2244,7 @@ class BuddyRequestAdmin(admin.ModelAdmin):
 
 @register(AdjustmentRequest)
 class AdjustmentRequestAdmin(admin.ModelAdmin):
+    list_select_related = ("creator", "item_type")
     inlines = [RequestMessageInlines]
     list_display = (
         "id",
@@ -2257,6 +2295,7 @@ class StaffAvailabilityCategoryAdmin(admin.ModelAdmin):
 
 @register(StaffAvailability)
 class StaffAvailabilityAdmin(admin.ModelAdmin):
+    list_select_related = ("staff_member", "category")
     search_fields = (
         "staff_member__first_name",
         "staff_member__last_name",
@@ -2276,6 +2315,7 @@ class StaffAvailabilityAdmin(admin.ModelAdmin):
 
 @register(StaffAbsence)
 class StaffAbsenceAdmin(admin.ModelAdmin):
+    list_select_related = ("staff_member__staff_member", "absence_type")
     list_display = ("creation_time", "staff_member", "absence_type", "full_day", "start_date", "end_date")
     list_filter = (
         ("staff_member", admin.RelatedOnlyFieldListFilter),
@@ -2357,6 +2397,7 @@ class ToolCredentialsAdminForm(forms.ModelForm):
 
 @register(ToolCredentials)
 class ToolCredentialsAdmin(ModelAdminRedirectMixin, admin.ModelAdmin):
+    list_select_related = ("tool",)
     list_display = ["get_tool_category", "tool", "is_tool_visible", "username", "password", "comments"]
     list_filter = [("tool", admin.RelatedOnlyFieldListFilter), "tool__visible"]
     autocomplete_fields = ["tool"]
@@ -2374,6 +2415,7 @@ class ToolCredentialsAdmin(ModelAdminRedirectMixin, admin.ModelAdmin):
 
 @register(StaffAssistanceRequest)
 class StaffAssistanceRequestAdmin(admin.ModelAdmin):
+    list_select_related = ("user",)
     list_display = (
         "user",
         "creation_time",
@@ -2478,6 +2520,7 @@ class PermissionAdmin(admin.ModelAdmin):
 
 @admin.register(LogEntry)
 class LogEntryAdmin(admin.ModelAdmin):
+    list_select_related = ("user", "content_type")
     list_display = ("id", "user", "action_time", "content_type", "object_id", "object_repr", "action_flag")
     list_filter = [("user", admin.RelatedOnlyFieldListFilter), "action_flag"]
 
