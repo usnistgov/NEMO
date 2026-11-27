@@ -1,4 +1,4 @@
-from _ssl import CERT_REQUIRED, PROTOCOL_TLSv1_2
+from ssl import CERT_REQUIRED, PROTOCOL_TLS_CLIENT
 from base64 import b64decode
 from logging import getLogger
 from urllib.parse import urljoin, urlparse
@@ -189,7 +189,7 @@ class LDAPAuthenticationBackend(ModelBackend):
                 bind_as_authentication = server.get("bind_as_authentication", True)
                 domain = server.get("domain")
                 username_format = domain + "\\{}" if domain else server.get("username_format", "{}")
-                t = Tls(validate=CERT_REQUIRED, version=PROTOCOL_TLSv1_2, ca_certs_file=server.get("certificate"))
+                t = Tls(validate=CERT_REQUIRED, version=PROTOCOL_TLS_CLIENT, ca_certs_file=server.get("certificate"))
                 s = Server(server["url"], port=port, use_ssl=use_ssl, tls=t)
                 # We are securing the connection to the server with use_ssl, so no need for TLS
                 auto_bind = AUTO_BIND_NO_TLS

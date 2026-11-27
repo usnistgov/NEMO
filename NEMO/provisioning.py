@@ -1,6 +1,6 @@
 from socket import gethostbyname_ex, gaierror
 from socket import error as socket_error
-from _ssl import CERT_REQUIRED, PROTOCOL_TLSv1_2
+from ssl import CERT_REQUIRED, PROTOCOL_TLS_CLIENT
 from getpass import getpass
 from os import remove
 from ssl import get_server_certificate
@@ -146,7 +146,7 @@ def test_ldap_authentication():
     password = getpass("Password = ")
     certificate = input("Path to public key certificate = ")
     try:
-        t = Tls(validate=CERT_REQUIRED, version=PROTOCOL_TLSv1_2, ca_certs_file=certificate)
+        t = Tls(validate=CERT_REQUIRED, version=PROTOCOL_TLS_CLIENT, ca_certs_file=certificate)
         s = Server(name, port=636, use_ssl=True, tls=t)
         c = Connection(
             s,
