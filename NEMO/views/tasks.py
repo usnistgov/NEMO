@@ -4,6 +4,7 @@ from typing import List, Set, Tuple
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
+from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
@@ -308,6 +309,7 @@ Visit {url} to view the tool control page for the task.<br/>
 
 @staff_member_or_tool_staff_required
 @require_POST
+@transaction.atomic
 def update(request, task_id):
     task = get_object_or_404(Task, id=task_id)
     user: User = request.user
@@ -325,6 +327,17 @@ def update(request, task_id):
             "content": errors.as_ul(),
         }
         return render(request, "acknowledgement.html", dictionary)
+    if form.cleaned_data["action"] == "duplicate":
+        try:
+            duplicate_of = Task.objects.get(
+                pk=form.cleaned_data["duplicate_of"].pk,
+                tool_id=task.tool_id,
+                cancelled=False,
+                resolved=False,
+            )
+        except Task.DoesNotExist:
+            return HttpResponseBadRequest("The selected duplicate task is no longer active for this tool.")
+        form.cleaned_data["duplicate_of"] = duplicate_of
     form.save()
     set_task_status(request, task, request.POST.get("status"), request.user)
     determine_tool_status(task.tool)

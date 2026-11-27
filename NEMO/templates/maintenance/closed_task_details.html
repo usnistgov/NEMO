@@ -1,10 +1,21 @@
 {% load humanize %}
 {% load custom_tags_and_filters %}
-<h2>{{ task.tool.name }} task</h2>
+<h2>{{ task.tool.name }} task #{{ task.id }}</h2>
 {% if task.title and customizations|get_item:"tool_problem_title_enabled" == "enabled" %}
     <h4>{{ task.title }}</h4>
 {% endif %}
 Created by {{ task.creator }} on {{ task.creation_time }} ({{ task.creation_time|naturaltime }}).
+{% if task.duplicate_of %}
+    <p>
+        Closed as duplicate of <a href="{% url 'maintenance' %}?tab=pending&amp;task_id={{ task.duplicate_of.id }}">
+        {% if task.duplicate_of.title %}
+            {{ task.duplicate_of.title }} (#{{ task.duplicate_of.id }})
+        {% else %}
+            Task #{{ task.duplicate_of.id }}
+        {% endif %}
+    </a>
+</p>
+{% endif %}
 {% if user|is_staff_on_tool:task.tool %}
     <p>
         You can <a href="{% url 'task_update_form' task.id %}?next_page=maintenance">reopen</a> this task if it was mistakenly resolved.

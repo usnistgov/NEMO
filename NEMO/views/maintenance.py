@@ -37,6 +37,7 @@ def maintenance(request, sort_by=""):
         "problem_category",
         "last_updated",
         "creation_time",
+        "id",
     ]:
         if sort_by == "last_updated":
             pending_tasks = pending_tasks.exclude(last_updated=None).order_by("-last_updated")
@@ -83,6 +84,9 @@ def task_details(request, task_id):
 
     dictionary = {
         "task": task,
+        "duplicate_candidates": Task.objects.filter(tool_id=task.tool_id, cancelled=False, resolved=False).exclude(
+            pk=task.pk
+        ),
         "estimated_resolution_time": (
             as_timezone(task.estimated_resolution_time) if task.estimated_resolution_time else None
         ),

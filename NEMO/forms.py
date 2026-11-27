@@ -148,8 +148,12 @@ class TaskForm(ModelForm):
         required=False,
         label="Resolution category",
     )
-    action = ChoiceField(choices=[("create", "create"), ("update", "update"), ("resolve", "resolve")], label="Action")
+    action = ChoiceField(
+        choices=[("create", "create"), ("update", "update"), ("resolve", "resolve"), ("duplicate", "duplicate")],
+        label="Action",
+    )
     description = CharField(required=False, label="Description")
+    duplicate_of = ModelChoiceField(queryset=Task.objects.none(), required=False, label="Duplicate of")
     lock = BooleanField(required=False, initial=True)
 
     class Meta:
@@ -162,6 +166,10 @@ class TaskForm(ModelForm):
         self.fields["tool"].required = False
         self.fields["urgency"].required = False
         self.fields["title"].required = False
+        if self.instance.pk:
+            self.fields["duplicate_of"].queryset = Task.objects.filter(
+                tool_id=self.instance.tool_id, cancelled=False, resolved=False
+            ).exclude(pk=self.instance.pk)
 
     def clean_title(self):
         if not ToolCustomization.get_bool("tool_problem_title_enabled"):
@@ -181,11 +189,19 @@ class TaskForm(ModelForm):
         if action == "create":
             if not cleaned_data["description"]:
                 raise ValidationError("You must describe the problem.")
-        if action == "resolve":
+        if action in ["resolve", "duplicate"]:
             if self.instance.cancelled or self.instance.resolved:
                 raise ValidationError(
-                    "This task can't be resolved because it is marked as 'cancelled' or 'resolved' already."
+                    "This task can't be resolved or marked as a duplicate because it is marked as 'cancelled' or 'resolved' already."
                 )
+        if action == "duplicate":
+            duplicate_of = cleaned_data.get("duplicate_of")
+            if not duplicate_of:
+                self.add_error("duplicate_of", "Select an active task to mark this task as a duplicate of.")
+            elif duplicate_of.tool_id != self.instance.tool_id:
+                self.add_error("duplicate_of", "A task can only be marked as a duplicate of a task for the same tool.")
+            if cleaned_data.get("tool") and cleaned_data["tool"] != self.instance.tool:
+                self.add_error("tool", "A task's tool cannot be changed when it is marked as a duplicate.")
         tool: Tool | None = cleaned_data.get("tool")
         if tool and not tool.problem_shutdown_enabled and not is_staff_on_tool(self.user, tool):
             cleaned_data["force_shutdown"] = False
@@ -210,6 +226,7 @@ class TaskForm(ModelForm):
             instance.last_updated_by = self.user
             instance.cancelled = False
             instance.resolved = False
+            instance.duplicate_of = None
             if description:
                 preface = f"On {format_datetime(now)} {self.user.get_full_name()} updated this task:\n"
                 if instance.progress_description is None:
@@ -234,6 +251,15 @@ class TaskForm(ModelForm):
                     ).strip()
                 else:
                     instance.resolution_description = self.cleaned_data["description"]
+        if action == "duplicate":
+            duplicate_of = self.cleaned_data["duplicate_of"]
+            # applies transitivity to make sure we don't have duplicates of duplicates (removes intermediates)
+            Task.objects.filter(duplicate_of=instance).update(duplicate_of=duplicate_of)
+            instance.cancelled = False
+            instance.resolved = True
+            instance.resolution_time = now
+            instance.resolver = self.user
+            instance.duplicate_of = duplicate_of
         return super(TaskForm, self).save(commit=True)
 
 

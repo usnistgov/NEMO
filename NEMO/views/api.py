@@ -729,6 +729,8 @@ class TaskViewSet(ModelViewSet):
         "safety_hazard": boolean_filters,
         "creator_id": key_filters,
         "creator": key_filters,
+        "duplicate_of_id": key_filters,
+        "duplicate_of": key_filters,
         "creation_time": datetime_filters,
         "estimated_resolution_time": datetime_filters,
         "problem_category": key_filters,
