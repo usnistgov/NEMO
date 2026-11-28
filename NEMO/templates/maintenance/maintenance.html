@@ -37,6 +37,9 @@
                     <thead>
                         <tr>
                             <th>
+                                <a href="{% url 'maintenance' sort_by='id' %}">ID</a>
+                            </th>
+                            <th>
                                 <a href="{% url 'maintenance' sort_by='urgency' %}">Urgency</a>
                             </th>
                             <th>
@@ -69,6 +72,7 @@
                     {% for task in pending_tasks %}
                         <tr onclick="pending_task_details(this, '{% url 'task_details' task.id %}')"
                             data-task-id="{{ task.id }}">
+                            <td>{{ task.id }}</td>
                             <td>{{ task.get_urgency_display }}</td>
                             <td>
                                 {% if task.force_shutdown %}
@@ -111,6 +115,7 @@
                 <table id="closed_tasks" class="table table-hover">
                     <thead>
                         <tr>
+                            <th>ID</th>
                             <th>Urgency</th>
                             <th>Severity</th>
                             <th>Tool</th>
@@ -128,7 +133,9 @@
                         </tr>
                     </thead>
                     {% for task in closed_tasks %}
-                        <tr onclick="closed_task_details(this, '{% url 'task_details' task.id %}')">
+                        <tr onclick="closed_task_details(this, '{% url 'task_details' task.id %}')"
+                            data-task-id="{{ task.id }}">
+                            <td>{{ task.id }}</td>
                             <td>{{ task.get_urgency_display }}</td>
                             <td>
                                 {% if task.force_shutdown %}
@@ -156,15 +163,21 @@
 	function pending_task_details(row, url)
 	{
 		$("#pending_tasks tr").removeClass('active');
-		$(row).addClass('active');
+		if (row)
+		{
+			$(row).addClass('active');
+			save_active_task();
+		}
 		$("#pending_task_details").html("Loading task details...").load(url, undefined, on_pending_task_details_failure);
-		save_active_task();
 	}
 
 	function closed_task_details(row, url)
 	{
 		$("#closed_tasks tr").removeClass('active');
-		$(row).addClass('active');
+		if (row)
+        {
+            $(row).addClass('active');
+        }
 		$("#closed_task_details").html("Loading task details...").load(url, undefined, on_closed_task_details_failure);
 	}
 
@@ -227,11 +240,29 @@
 	function on_load()
 	{
 		$("#tabs a").click(switch_tab);
-		let active_row = localStorage['Maintenance page, active task'];
-		if(active_row)
+		let requested_task = new URLSearchParams(window.location.search).get("task_id");
+		let requested_tab = new URLSearchParams(window.location.search).get("tab");
+		if (requested_task && /^\d+$/.test(requested_task))
 		{
-			let row = $("#pending_tasks tr[data-task-id='" + active_row + "']");
-			row.click();
+			let row = $("#" + (requested_tab === "closed" ? "closed_tasks" : "pending_tasks") + " tr[data-task-id='" + requested_task + "']");
+            const task_details_url = build_django_url("{% url 'task_details' '999' %}", ['999'], [requested_task]);
+			if (requested_tab === "closed")
+            {
+                closed_task_details(row.length ? row[0] : null, task_details_url);
+            }
+			else
+            {
+                pending_task_details(row.length ? row[0] : null, task_details_url);
+            }
+		}
+		else
+		{
+			let active_row = localStorage['Maintenance page, active task'];
+			if(active_row)
+			{
+				let row = $("#pending_tasks tr[data-task-id='" + active_row + "']");
+				row.click();
+			}
 		}
         $(".tool-category-search")
         .autocomplete('tool_categories', filter_tool_category, {% json_search_base_with_extra_fields tool_categories %}, true)

@@ -426,6 +426,7 @@ class TaskSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "creator": "NEMO.serializers.UserSerializer",
             "last_updated_by": "NEMO.serializers.UserSerializer",
             "resolver": "NEMO.serializers.UserSerializer",
+            "duplicate_of": "NEMO.serializers.TaskSerializer",
         }
 
 

@@ -1392,8 +1392,8 @@ class TaskAdmin(admin.ModelAdmin):
         ("creator", admin.RelatedOnlyFieldListFilter),
     )
     date_hierarchy = "creation_time"
-    autocomplete_fields = ["tool", "creator", "last_updated_by", "resolver"]
-    search_fields = ["title", "tool__name", "creator__first_name", "creator__last_name", "creator__username"]
+    autocomplete_fields = ["tool", "creator", "last_updated_by", "resolver", "duplicate_of"]
+    search_fields = ["=id", "title", "tool__name", "creator__first_name", "creator__last_name", "creator__username"]
 
 
 @register(TaskCategory)

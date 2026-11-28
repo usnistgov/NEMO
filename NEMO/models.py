@@ -4262,6 +4262,9 @@ class Task(BaseModel):
         help_text="The staff member who resolved the task.",
         on_delete=models.SET_NULL,
     )
+    duplicate_of = models.ForeignKey(
+        "self", null=True, blank=True, related_name="duplicates", on_delete=models.SET_NULL
+    )
     resolution_description = models.TextField(blank=True, null=True)
     resolution_category = models.ForeignKey(
         "TaskCategory", null=True, blank=True, related_name="resolution_category", on_delete=models.SET_NULL

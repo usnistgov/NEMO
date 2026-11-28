@@ -1,6 +1,6 @@
 {% load humanize %}
 {% load custom_tags_and_filters %}
-<h2>{{ task.tool.name }} task</h2>
+<h2>{{ task.tool.name }} task #{{ task.id }}</h2>
 {% if task.title and customizations|get_item:"tool_problem_title_enabled" == "enabled" %}
     <h4>{{ task.title }}</h4>
 {% endif %}
@@ -56,6 +56,20 @@
 <p>
     {% if task.last_updated and task.last_updated_by %}
         <span style="color:grey">Last updated by {{ task.last_updated_by }} on {{ task.last_updated }} ({{ task.last_updated|naturaltime }}).</span>
+    {% endif %}
+    {% if task.duplicates.exists %}
+        <br>
+        Duplicate task:
+        {% for duplicate in task.duplicates.all %}
+            <a href="{% url 'maintenance' %}?tab=closed&amp;task_id={{ duplicate.id }}">
+                {% if duplicate.title %}
+                    {{ duplicate.title }} (#{{ duplicate.id }})
+                {% else %}
+                    Task #{{ duplicate.id }}
+                {% endif %}
+            </a>
+            {% if not forloop.last %},{% endif %}
+        {% endfor %}
     {% endif %}
     <p>
         <form class="form-horizontal"
@@ -159,17 +173,37 @@
                                    name="action"
                                    value="update"
                                    checked
-                                   {% if completion_categories %}onchange="$('#resolution_category').toggle()"{% endif %}>
+                                   onchange="$('#resolution_category').toggle(this.value === 'resolve'); $('#duplicate_task').toggle(this.value === 'duplicate'); $('#duplicate_of').prop('required', this.value === 'duplicate')">
                             Update
                         </label>
                         <label class="col-lg-2">
                             <input type="radio"
                                    name="action"
                                    value="resolve"
-                                   {% if completion_categories %}onchange="$('#resolution_category').toggle()"{% endif %}>
+                                   onchange="$('#resolution_category').toggle(this.value === 'resolve'); $('#duplicate_task').toggle(this.value === 'duplicate'); $('#duplicate_of').prop('required', this.value === 'duplicate')">
                             Resolve
                         </label>
+                        <label class="col-lg-2">
+                            <input type="radio"
+                                   name="action"
+                                   value="duplicate"
+                                   onchange="$('#resolution_category').toggle(this.value === 'resolve'); $('#duplicate_task').toggle(this.value === 'duplicate'); $('#duplicate_of').prop('required', this.value === 'duplicate')">
+                            Mark as duplicate
+                        </label>
                     </div>
+                </div>
+            </div>
+            <div id="duplicate_task" class="form-group" style="display: none;">
+                <div class="col-lg-8">
+                    <label for="duplicate_of">Duplicate of</label>
+                    <select id="duplicate_of" name="duplicate_of" class="form-control">
+                        <option value="">Select an active task</option>
+                        {% for candidate in duplicate_candidates %}
+                            <option value="{{ candidate.id }}">
+                                Task #{{ candidate.id }} — {{ candidate.title_or_description|truncatechars:30 }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 </div>
             </div>
             <div class="form-group">
