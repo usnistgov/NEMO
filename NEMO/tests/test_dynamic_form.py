@@ -5,6 +5,7 @@ from urllib.parse import parse_qs, urlsplit
 from django.http import QueryDict
 from django.test import TestCase
 
+from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.models import Tool
 from NEMO.tests.test_utilities import NEMOTestCaseMixin
 from NEMO.utilities import EmptyHttpRequest
@@ -71,6 +72,349 @@ class TestDynamicForm(NEMOTestCaseMixin, TestCase):
         ]
         self.assertNotIn("readonly", readonly_only_rendered[0])
         self.assertIn("readonly", readonly_only_rendered[1])
+
+    def test_temporary_readonly_is_saved_separately_and_cleared_on_reconstruction(self):
+        questions = [
+            {"name": "editable", "type": "textbox", "title": "Editable"},
+            {"name": "allow_listed_out", "type": "textbox", "title": "Allow listed out"},
+            {"name": "denied", "type": "textbox", "title": "Denied"},
+            {"name": "configured_readonly", "type": "textbox", "title": "Configured", "readonly": True},
+            {
+                "name": "group",
+                "type": "group",
+                "title": "Group",
+                "max_number": 2,
+                "questions": [
+                    {"name": "group_editable", "type": "textbox", "title": "Group editable"},
+                    {"name": "group_allow_listed_out", "type": "textbox", "title": "Group allow listed out"},
+                    {"name": "group_denied", "type": "textbox", "title": "Group denied"},
+                    {
+                        "name": "group_configured_readonly",
+                        "type": "textbox",
+                        "title": "Group configured",
+                        "readonly": True,
+                    },
+                ],
+            },
+        ]
+        form = DynamicForm(
+            json.dumps(questions),
+            editable_fields=["editable", "configured_readonly", "group_editable"],
+            readonly_fields=["denied", "configured_readonly", "group_denied", "group_configured_readonly"],
+        )
+
+        request = EmptyHttpRequest()
+        request.POST = QueryDict("")
+        result = json.loads(form.extract(request))
+
+        self.assertNotIn("temporarily_readonly", result["editable"])
+        self.assertTrue(result["allow_listed_out"]["temporarily_readonly"])
+        self.assertNotIn("readonly", result["allow_listed_out"])
+        self.assertTrue(result["denied"]["temporarily_readonly"])
+        self.assertNotIn("readonly", result["denied"])
+        self.assertTrue(result["configured_readonly"]["readonly"])
+        self.assertNotIn("temporarily_readonly", result["configured_readonly"])
+
+        group_questions = {question["name"]: question for question in result["group"]["questions"]}
+        self.assertNotIn("temporarily_readonly", group_questions["group_editable"])
+        self.assertTrue(group_questions["group_allow_listed_out"]["temporarily_readonly"])
+        self.assertTrue(group_questions["group_denied"]["temporarily_readonly"])
+        self.assertTrue(group_questions["group_configured_readonly"]["readonly"])
+        self.assertNotIn("temporarily_readonly", group_questions["group_configured_readonly"])
+
+        reconstructed_form = DynamicForm(json.dumps([result["allow_listed_out"], result["group"]]))
+        self.assertFalse(reconstructed_form.questions[0].readonly)
+        self.assertNotIn("temporarily_readonly", reconstructed_form.untreated_questions[0])
+        reconstructed_sub_questions = {
+            question.name: question for question in reconstructed_form.questions[1].sub_questions
+        }
+        self.assertFalse(reconstructed_sub_questions["group_allow_listed_out"].readonly)
+        self.assertTrue(reconstructed_sub_questions["group_configured_readonly"].readonly)
+
+    def test_readonly_choice_questions_remain_submittable(self):
+        questions = [
+            {
+                "name": "checkbox",
+                "type": "checkbox",
+                "title": "Checkbox",
+                "choices": ["first", "second", "third"],
+                "default_value": ["first", "third"],
+                "required": True,
+            },
+            {
+                "name": "radio",
+                "type": "radio",
+                "title": "Radio",
+                "choices": ["first", "second"],
+                "default_value": "second",
+                "required": True,
+            },
+            {
+                "name": "select",
+                "type": "dropdown",
+                "title": "Select",
+                "choices": ["first", "second"],
+                "default_value": "second",
+                "required": True,
+            },
+        ]
+        form = DynamicForm(json.dumps(questions), readonly_fields=["checkbox", "radio", "select"])
+        rendered = {
+            question.name: question.render(False, self.tool, "pre_usage_question") for question in form.questions
+        }
+
+        self.assertNotIn('id="required_df_checkbox"', rendered["checkbox"])
+        for choice, should_be_checked in [("first", True), ("second", False), ("third", True)]:
+            checkbox = re.search(
+                rf'<input type="checkbox" name="df_checkbox" value="{choice}"[^>]*>', rendered["checkbox"]
+            ).group(0)
+            self.assertIn("disabled", checkbox)
+            self.assertEqual("checked" in checkbox, should_be_checked)
+        hidden_values = re.findall(
+            r'<input type="hidden" name="df_checkbox" value="([^"]*)"[^>]*>', rendered["checkbox"]
+        )
+        self.assertEqual(hidden_values, ["first", "third"])
+
+        radio = re.search(r'<input type="radio" name="df_radio" value="second"[^>]*>', rendered["radio"]).group(0)
+        self.assertIn("disabled", radio)
+        self.assertNotIn("aria-readonly", radio)
+        self.assertNotIn("onclick", radio)
+        self.assertIn("checked", radio)
+        self.assertNotIn("required", radio)
+        self.assertIn('<input type="hidden" name="df_radio" value="second">', rendered["radio"])
+
+        select = re.search(r"<select[^>]*>", rendered["select"]).group(0)
+        selected_option = re.search(r'<option value="second"[^>]*>', rendered["select"]).group(0)
+        self.assertIn("disabled", select)
+        self.assertNotIn("aria-readonly", select)
+        self.assertNotIn("onclick", select)
+        self.assertNotIn("required", select)
+        self.assertIn("selected", selected_option)
+        self.assertIn('<input type="hidden" name="df_select" value="second">', rendered["select"])
+
+        editable_form = DynamicForm(json.dumps(questions))
+        editable = {
+            question.name: question.render(False, self.tool, "pre_usage_question")
+            for question in editable_form.questions
+        }
+        checkbox = re.search(r'<input type="checkbox" name="df_checkbox"[^>]*>', editable["checkbox"]).group(0)
+        checkbox_helper = re.search(r'<input[^>]*id="required_df_checkbox"[^>]*>', editable["checkbox"]).group(0)
+        radio = re.search(r'<input type="radio" name="df_radio"[^>]*>', editable["radio"]).group(0)
+        self.assertNotIn("disabled", checkbox)
+        self.assertNotIn("aria-readonly", checkbox)
+        self.assertRegex(checkbox_helper, r"\srequired(?:\s|/|>)")
+        self.assertNotIn("disabled", radio)
+        self.assertNotIn("aria-readonly", radio)
+        self.assertRegex(radio, r"\srequired(?:\s|/|>)")
+        select = re.search(r"<select[^>]*>", editable["select"]).group(0)
+        self.assertNotIn("disabled", select)
+        self.assertRegex(select, r"\srequired(?:\s|/|>)")
+        self.assertNotIn('type="hidden" name="df_radio"', editable["radio"])
+        self.assertNotIn('type="hidden" name="df_select"', editable["select"])
+
+        request = EmptyHttpRequest()
+        request.POST = QueryDict("df_checkbox=first&df_checkbox=third&df_radio=second&df_select=second")
+        result = json.loads(form.extract(request))
+        self.assertEqual(result["checkbox"]["user_input"], ["first", "third"])
+        self.assertEqual(result["radio"]["user_input"], "second")
+        self.assertEqual(result["select"]["user_input"], "second")
+
+        empty_request = EmptyHttpRequest()
+        empty_request.POST = QueryDict("")
+        self.assertIn("checkbox", json.loads(form.extract(empty_request)))
+
+        editable_checkbox_form = DynamicForm(json.dumps([questions[0]]))
+        with self.assertRaises(RequiredUnansweredQuestionsException):
+            editable_checkbox_form.extract(empty_request)
+
+    def test_readonly_required_questions_are_optional_but_editable_required_questions_are_not(self):
+        questions = [{"name": "text", "type": "textbox", "title": "Text", "required": True}]
+        readonly_form = DynamicForm(json.dumps(questions), readonly_fields=["text"])
+        self.assertTrue(readonly_form.questions[0].required)
+        self.assertFalse(readonly_form.questions[0].is_required)
+
+        request = EmptyHttpRequest()
+        request.POST = QueryDict("")
+        self.assertIn("text", json.loads(readonly_form.extract(request)))
+
+        editable_form = DynamicForm(json.dumps(questions))
+        with self.assertRaises(RequiredUnansweredQuestionsException):
+            editable_form.extract(request)
+
+    def test_readonly_radio_and_dropdown_without_valid_selections_have_no_hidden_values(self):
+        questions = [
+            {"name": "radio", "type": "radio", "title": "Radio", "choices": ["first", "second"]},
+            {
+                "name": "select",
+                "type": "dropdown",
+                "title": "Select",
+                "choices": ["first", "second"],
+                "default_value": "not-a-choice",
+            },
+        ]
+        form = DynamicForm(json.dumps(questions), readonly_fields=["radio", "select"])
+        rendered = {
+            question.name: question.render(False, self.tool, "pre_usage_question") for question in form.questions
+        }
+
+        for field_name in ("radio", "select"):
+            self.assertNotIn(f'type="hidden" name="df_{field_name}"', rendered[field_name])
+        self.assertNotIn("checked", rendered["radio"])
+        self.assertNotIn('selected" value="first"', rendered["select"])
+
+        request = EmptyHttpRequest()
+        request.POST = QueryDict("")
+        result = json.loads(form.extract(request))
+        self.assertNotIn("user_input", result["radio"])
+        self.assertNotIn("user_input", result["select"])
+
+    def test_readonly_required_rating_is_optional_but_editable_rating_is_not(self):
+        questions = [{"name": "rating", "type": "rating", "title": "Rating", "required": True}]
+        initial_data = {"rating": {"type": "rating", "user_input": "3"}}
+        readonly_form = DynamicForm(json.dumps(questions), initial_data, readonly_fields=["rating"])
+        rendered = readonly_form.questions[0].render(False, self.tool, "pre_usage_question")
+        rating_input = re.search(r'<input aria-label="rating value"[^>]*>', rendered).group(0)
+        self.assertNotIn("required", rating_input)
+        self.assertIn("readonly", rating_input)
+        self.assertIn('value="3"', rating_input)
+        self.assertNotIn("required-question-star", rendered)
+        self.assertNotIn("stars.on('click'", rendered)
+        self.assertNotIn("stars.on('mouseenter'", rendered)
+        self.assertNotIn("cursor:pointer", rendered)
+
+        request = EmptyHttpRequest()
+        request.POST = QueryDict("")
+        self.assertIn("rating", json.loads(readonly_form.extract(request)))
+        request.POST = QueryDict("df_rating=3")
+        self.assertEqual(json.loads(readonly_form.extract(request))["rating"]["user_input"], "3")
+
+        editable_form = DynamicForm(json.dumps(questions))
+        editable_rendered = editable_form.questions[0].render(False, self.tool, "pre_usage_question")
+        editable_input = re.search(r'<input aria-label="rating value"[^>]*>', editable_rendered).group(0)
+        self.assertIn("required", editable_input)
+        self.assertNotIn("readonly", editable_input)
+        self.assertIn("stars.on('click'", editable_rendered)
+        self.assertIn("stars.on('mouseenter'", editable_rendered)
+        request.POST = QueryDict("")
+        with self.assertRaises(RequiredUnansweredQuestionsException):
+            editable_form.extract(request)
+
+    def test_readonly_rating_submits_initial_values_for_indexed_group_rows(self):
+        questions = [
+            {
+                "name": "group",
+                "type": "group",
+                "title": "Group",
+                "max_number": 2,
+                "questions": [{"name": "rating", "type": "rating", "title": "Rating"}],
+            }
+        ]
+        initial_data = {
+            "group": {
+                "type": "group",
+                "user_input": {"0": {"rating": "2"}, "1": {"rating": "4"}},
+            }
+        }
+        form = DynamicForm(json.dumps(questions), initial_data, readonly_fields=["rating"])
+        rendered = form.render(self.tool, "pre_usage_question")
+
+        for index, value in enumerate(("2", "4")):
+            name = f"df_rating_{index}" if index else "df_rating"
+            self.assertRegex(
+                rendered,
+                rf'<input aria-label="rating value"[^>]*name="{name}"[^>]*readonly[^>]*value="{value}">',
+            )
+        self.assertNotIn("stars.on('click'", rendered)
+        self.assertNotIn("stars.on('mouseenter'", rendered)
+
+        request = EmptyHttpRequest()
+        request.POST = QueryDict("df_rating=2&df_rating_1=4")
+        extraction_form = DynamicForm(json.dumps(questions), initial_data, readonly_fields=["rating"])
+        result = json.loads(extraction_form.extract(request))["group"]["user_input"]
+        self.assertEqual(result["0"]["rating"], "2")
+        self.assertEqual(result["1"]["rating"], "4")
+
+    def test_readonly_required_group_checkbox_is_optional_and_submits_checked_value(self):
+        questions = [
+            {
+                "name": "group",
+                "type": "group",
+                "title": "Group",
+                "max_number": 1,
+                "questions": [
+                    {
+                        "name": "checkbox",
+                        "type": "checkbox",
+                        "title": "Checkbox",
+                        "choices": ["saved", "other"],
+                        "default_value": ["saved"],
+                        "required": True,
+                    }
+                ],
+            }
+        ]
+        readonly_form = DynamicForm(json.dumps(questions), readonly_fields=["checkbox"])
+        rendered = readonly_form.render(self.tool, "pre_usage_question")
+        checkbox = re.search(r'<input type="checkbox" name="df_checkbox" value="saved"[^>]*>', rendered).group(0)
+        self.assertIn("disabled", checkbox)
+        self.assertIn('<input type="hidden" name="df_checkbox" value="saved">', rendered)
+
+        request = EmptyHttpRequest()
+        request.POST = QueryDict("")
+        self.assertIn("group", json.loads(readonly_form.extract(request)))
+
+        request.POST = QueryDict("df_checkbox=saved")
+        result = json.loads(readonly_form.extract(request))
+        self.assertEqual(result["group"]["user_input"]["0"]["checkbox"], ["saved"])
+
+        editable_form = DynamicForm(json.dumps(questions))
+        request.POST = QueryDict("")
+        with self.assertRaises(RequiredUnansweredQuestionsException):
+            editable_form.extract(request)
+
+    def test_readonly_radio_and_dropdown_submit_initial_values_for_indexed_group_rows(self):
+        questions = [
+            {
+                "name": "group",
+                "type": "group",
+                "title": "Group",
+                "max_number": 2,
+                "questions": [
+                    {"name": "radio", "type": "radio", "title": "Radio", "choices": ["first", "second"]},
+                    {
+                        "name": "select",
+                        "type": "dropdown",
+                        "title": "Select",
+                        "choices": ["first", "second"],
+                    },
+                ],
+            }
+        ]
+        initial_data = {
+            "group": {
+                "type": "group",
+                "user_input": {
+                    "0": {"radio": "first", "select": "second"},
+                    "1": {"radio": "second", "select": "first"},
+                },
+            }
+        }
+        form = DynamicForm(json.dumps(questions), initial_data, readonly_fields=["radio", "select"])
+        rendered = form.render(self.tool, "pre_usage_question")
+
+        for field_name, values in (("radio", ("first", "second")), ("select", ("second", "first"))):
+            for index, value in enumerate(values):
+                input_name = f"df_{field_name}_{index}" if index else f"df_{field_name}"
+                self.assertIn(f'<input type="hidden" name="{input_name}" value="{value}">', rendered)
+
+        request = EmptyHttpRequest()
+        request.POST = QueryDict("df_radio=first&df_select=second&df_radio_1=second&df_select_1=first")
+        extraction_form = DynamicForm(json.dumps(questions), initial_data, readonly_fields=["radio", "select"])
+        result = json.loads(extraction_form.extract(request))["group"]["user_input"]
+        self.assertEqual(result["0"]["radio"], "first")
+        self.assertEqual(result["0"]["select"], "second")
+        self.assertEqual(result["1"]["radio"], "second")
+        self.assertEqual(result["1"]["select"], "first")
 
     def test_editable_fields_group_applies_to_group_and_existing_rows(self):
         questions = [
@@ -282,20 +626,38 @@ class TestDynamicForm(NEMOTestCaseMixin, TestCase):
         self.assertEqual(result["total"]["user_input"], "5")
 
     def test_multi_dynamic_forms_passes_editable_fields_to_rendered_forms(self):
-        self.tool.pre_usage_question = json.dumps([{"name": "text", "type": "textbox", "title": "Text"}])
+        self.tool.pre_usage_question = json.dumps(
+            [{"name": "text", "type": "textbox", "title": "Text", "required": True}]
+        )
         forms = MultiDynamicForms([self.tool], "pre_usage_question", editable_fields=[])
 
         rendered = forms.render()
         self.assertIn("readonly", rendered)
-        self.assertFalse(forms.merged_dynamic_forms.questions[0].readonly)
+        self.assertTrue(forms.merged_dynamic_forms.questions[0].readonly)
+        self.assertTrue(forms.merged_dynamic_forms.questions[0].required)
+        self.assertFalse(forms.merged_dynamic_forms.questions[0].is_required)
+
+        request = EmptyHttpRequest()
+        request.POST = QueryDict("")
+        result = json.loads(forms.extract(request))
+        self.assertIn("text", result)
+        self.assertTrue(result["text"]["temporarily_readonly"])
+        self.assertNotIn("readonly", result["text"])
 
     def test_multi_dynamic_forms_passes_readonly_fields_to_rendered_forms(self):
-        self.tool.pre_usage_question = json.dumps([{"name": "text", "type": "textbox", "title": "Text"}])
+        self.tool.pre_usage_question = json.dumps(
+            [{"name": "text", "type": "textbox", "title": "Text", "required": True}]
+        )
         forms = MultiDynamicForms([self.tool], "pre_usage_question", readonly_fields=["text"])
 
         rendered = forms.render()
         self.assertIn("readonly", rendered)
-        self.assertFalse(forms.merged_dynamic_forms.questions[0].readonly)
+        self.assertTrue(forms.merged_dynamic_forms.questions[0].readonly)
+        request = EmptyHttpRequest()
+        request.POST = QueryDict("")
+        result = json.loads(forms.extract(request))
+        self.assertTrue(result["text"]["temporarily_readonly"])
+        self.assertNotIn("readonly", result["text"])
 
     def test_question_with_initial_data(self):
         # question and initial data

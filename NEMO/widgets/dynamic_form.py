@@ -23,8 +23,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.evaluators import evaluate_expression, get_expression_variables
 from NEMO.exceptions import RequiredUnansweredQuestionsException
-from NEMO.models import Consumable, Task, ToolUsageCounter, ToolUsageQuestions, UsageEvent
-from NEMO.typing import QuerySetType
+from NEMO.models import Consumable, Task, ToolUsageCounter, UsageEvent
 from NEMO.utilities import EmptyHttpRequest, quiet_int, slugify_underscore, strtobool
 from NEMO.views.consumables import make_withdrawal
 
@@ -40,16 +39,18 @@ def apply_editable_fields(
     editable_field_names = set(editable_fields) if editable_fields is not None else None
     readonly_field_names = set(readonly_fields or [])
     for question in questions:
+        question.pop("temporarily_readonly", None)
         question_name = question["name"]
 
         # regular questions: readonly if:
         # - the question is in the readonly_fields list or
         # - if we have editable_fields and the question is not in editable_fields
         if question.get("type") != GROUP_TYPE_FIELD_KEY:
-            if question_name in readonly_field_names or (
+            temporarily_readonly = question_name in readonly_field_names or (
                 editable_field_names is not None and question_name not in editable_field_names
-            ):
-                question["readonly"] = True
+            )
+            if temporarily_readonly and question.get("readonly") is not True:
+                question["temporarily_readonly"] = True
             continue
 
         # group sub questions: readonly if:
@@ -63,15 +64,18 @@ def apply_editable_fields(
             sub_question["name"] in editable_field_names for sub_question in sub_questions
         )
         for sub_question in sub_questions:
+            sub_question.pop("temporarily_readonly", None)
             sub_question_name = sub_question["name"]
+            temporarily_readonly = False
             if group_is_readonly or sub_question_name in readonly_field_names:
-                sub_question["readonly"] = True
+                temporarily_readonly = True
             elif editable_field_names is not None:
                 editable_by_allow_list = sub_question_name in editable_field_names or (
                     group_is_editable and not has_editable_sub_questions
                 )
-                if not editable_by_allow_list:
-                    sub_question["readonly"] = True
+                temporarily_readonly = not editable_by_allow_list
+            if temporarily_readonly and sub_question.get("readonly") is not True:
+                sub_question["temporarily_readonly"] = True
 
 
 class PostUsageQuestion:
@@ -103,7 +107,9 @@ class PostUsageQuestion:
         self.consumable_id = self._init_property("consumable_id")
         self.required = self._init_property("required", boolean=True)
         self.inline = self._init_property("inline", boolean=True)
-        self.readonly = self._init_property("readonly", boolean=True)
+        self.readonly = self._init_property("readonly", boolean=True) or self._init_property(
+            "temporarily_readonly", boolean=True
+        )
         self.show_formula_preview = self._init_property("show_formula_preview", boolean=True)
         # For backwards compatibility keep default choice
         self.default_value = (
@@ -130,6 +136,10 @@ class PostUsageQuestion:
     def get_default_value(self):
         # Initial data always has precedence over the default value from the question definition
         return self.initial_data if self.initial_data is not None else self.default_value
+
+    @property
+    def is_required(self):
+        return self.required and not self.readonly
 
     def _init_property(self, prop: str, boolean: bool = False) -> Any:
         if boolean:
@@ -228,17 +238,20 @@ class PostUsageRadioQuestion(PostUsageQuestion):
         title = self.title_html or self.title
         max_width = f"max-width:{self.max_width}px" if self.max_width else ""
         result = f'<div class="form-group {extra_class}" style="{max_width}">'
-        result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
+        result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.is_required else ""}</label>'
+        disabled = "disabled" if self.readonly else ""
+        required = "required" if self.is_required else ""
         result += f"<div class='{'form-control-static' if self.inline else ''}'>"
         for index, choice in enumerate(self.choices):
             label = self.labels[index] if self.labels else choice
             result += f'<div class="radio{"-inline" if self.inline else ""}">'
-            required = "required" if self.required else ""
             is_default_choice = (
                 "checked" if self.get_default_value() is not None and self.get_default_value() == choice else ""
             )
-            result += f'<label><input type="radio" name="{self.form_name}" value="{choice}" {required} {is_default_choice}>{label}</label>'
+            result += f'<label><input type="radio" name="{self.form_name}" value="{choice}" {required} {disabled} {is_default_choice}>{label}</label>'
             result += "</div>"
+            if self.readonly and is_default_choice:
+                result += f'<input type="hidden" name="{self.form_name}" value="{choice}">'
         result += "</div>"
         result += "</div>"
         return result
@@ -255,13 +268,19 @@ class PostUsageCheckboxQuestion(PostUsageQuestion):
         title = self.title_html or self.title
         max_width = f"max-width:{self.max_width}px" if self.max_width else ""
         result = f'<div class="form-group {extra_class}" style="{max_width}">'
-        result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
-        result += f'<input aria-label="hidden field used for required answer" id="required_{self.form_name}" type="checkbox" value="" style="opacity: 0;height: 1px;width: 1px;" {"required" if self.required else ""} {"checked" if self.get_default_value() else ""}/>'
+        result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.is_required else ""}</label>'
+        if self.is_required:
+            result += (
+                f'<input aria-label="hidden field used for required answer" id="required_{self.form_name}" '
+                f'type="checkbox" value="" style="opacity: 0;height: 1px;width: 1px;" required '
+                f'{"checked" if self.get_default_value() else ""}/>'
+            )
         result += f"<div class='{'form-control-static' if self.inline else ''}'>"
         for index, choice in enumerate(self.choices):
             label = self.labels[index] if self.labels else choice
             result += f'<div class="checkbox{"-inline" if self.inline else ""}">'
-            required = f"""onclick="checkbox_required('{self.form_name}')" """ if self.required else ""
+            onclick = f"""onclick="checkbox_required('{self.form_name}')" """ if self.is_required else ""
+            disabled = "disabled" if self.readonly else ""
             is_default_choice = (
                 "checked"
                 if self.get_default_value() is not None
@@ -272,8 +291,10 @@ class PostUsageCheckboxQuestion(PostUsageQuestion):
                 )
                 else ""
             )
-            result += f'<label><input type="checkbox" name="{self.form_name}" value="{choice}" {required} {is_default_choice}>{label}</label>'
+            result += f'<label><input type="checkbox" name="{self.form_name}" value="{choice}" {onclick} {disabled} {is_default_choice}>{label}</label>'
             result += "</div>"
+            if self.readonly and is_default_choice:
+                result += f'<input type="hidden" name="{self.form_name}" value="{choice}">'
         result += "</div>"
         result += "</div>"
         return result
@@ -308,9 +329,10 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
         title = self.title_html or self.title
         max_width = f"max-width:{self.max_width}px" if self.max_width else ""
         result = f'<div class="form-group {extra_class}" style="{max_width}">'
-        result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
-        required = "required" if self.required else ""
-        result += f'<select name="{self.form_name}" {required} class="form-control">'
+        result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.is_required else ""}</label>'
+        required = "required" if self.is_required else ""
+        disabled = "disabled" if self.readonly else ""
+        result += f'<select name="{self.form_name}" {required} {disabled} class="form-control">'
         blank_disabled = 'disabled="disabled"' if required else ""
         placeholder = self.placeholder if self.placeholder else "Select an option"
         result += f'<option {blank_disabled} selected="selected" value="">{placeholder}</option>'
@@ -334,6 +356,8 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
                 result += self._render_choice_option(choice, label)
                 index += 1
         result += "</select>"
+        if self.readonly and self.get_default_value() in self.choices:
+            result += f'<input type="hidden" name="{self.form_name}" value="{self.get_default_value()}">'
         if self.help:
             result += f'<div style="font-size:smaller;color:#999;">{self.help}</div>'
         result += "</div>"
@@ -353,14 +377,14 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
         title = self.title_html or self.title
         max_width = f"max-width:{self.max_width}px" if self.max_width else ""
         result = f'<div class="form-group {extra_class}" style="{max_width}">'
-        result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
+        result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.is_required else ""}</label>'
         input_group_required = True if self.prefix or self.suffix else False
         if input_group_required:
             result += '<div class="input-group">'
         if self.prefix:
             result += f'<span class="input-group-addon">{self.prefix}</span>'
         readonly = "readonly" if self.readonly else ""
-        required = "required" if self.required and not self.readonly else ""
+        required = "required" if self.is_required else ""
         pattern = f'pattern="{self.pattern}"' if self.pattern else ""
         placeholder = f'placeholder="{self.placeholder}"' if self.placeholder else ""
         default_value = f'value="{self.get_default_value()}"' if self.get_default_value() is not None else ""
@@ -876,13 +900,13 @@ class DynamicForm:
         required_unanswered_questions = []
         user_input = results[question.name].get("user_input")
         user_input = user_input.strip() if user_input and isinstance(user_input, str) else user_input
-        if not isinstance(question, PostUsageGroupQuestion) and question.required and not user_input:
+        if not isinstance(question, PostUsageGroupQuestion) and question.is_required and not user_input:
             results[question.name]["user_input"] = ""
             required_unanswered_questions.append(question)
         elif isinstance(question, PostUsageGroupQuestion):
             blank_user_input = {"0": {}}
             for sub_question in question.sub_questions:
-                if sub_question.required and (not user_input or not user_input.get("0", {}).get(sub_question.name)):
+                if sub_question.is_required and (not user_input or not user_input.get("0", {}).get(sub_question.name)):
                     blank_user_input["0"][sub_question.name] = ""
                     required_unanswered_questions.append(sub_question)
             if required_unanswered_questions:
@@ -994,7 +1018,16 @@ class MultiDynamicForms:
         for item in self.items:
             forms_json.extend(loads(getattr(item, self.dynamic_field_name)))
         self.merged_json_questions = dumps(forms_json) if len(forms_json) else ""
-        self.merged_dynamic_forms = DynamicForm(self.merged_json_questions) if len(forms_json) else None
+        self.merged_dynamic_forms = (
+            DynamicForm(
+                self.merged_json_questions,
+                self.initial_data,
+                self.editable_fields,
+                self.readonly_fields,
+            )
+            if len(forms_json)
+            else None
+        )
 
     def render(self, virtual_inputs: bool = False) -> str:
         rendered_forms = ""
@@ -1290,17 +1323,21 @@ class PostUsageRatingQuestion(PostUsageQuestion):
         title = self.title_html or self.title
         max_width = f"max-width:{self.max_width}px" if self.max_width else ""
         default_value = self.get_default_value()
-        required = "required" if self.required else ""
+        required = "required" if self.is_required else ""
+        readonly = "readonly" if self.readonly else ""
         initial_value = int(default_value) if default_value is not None else 0
+        cursor = "default" if self.readonly else "pointer"
         result = f'<div class="form-group {extra_class}" style="{max_width}">'
-        result += f'<label style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
+        result += (
+            f'<label style="white-space: pre-wrap">{title}{self.required_span if self.is_required else ""}</label>'
+        )
         # Invisible number input for form submission and HTML5 required validation
         result += (
             f'<input aria-label="rating value" type="number" id="{self.form_name}" name="{self.form_name}" '
-            f'min="1" max="{self.max_rating}" style="opacity:0;height:1px;width:1px;" {required} '
+            f'min="1" max="{self.max_rating}" style="opacity:0;height:1px;width:1px;" {required} {readonly} '
             f'tabindex="-1" value="{default_value or ""}">'
         )
-        result += f'<div class="dynamic-form-rating" id="{self.form_name}_stars" style="font-size:1.5em;line-height:1.5;cursor:pointer;">'
+        result += f'<div class="dynamic-form-rating" id="{self.form_name}_stars" style="font-size:1.5em;line-height:1.5;cursor:{cursor};">'
         for i in range(1, self.max_rating + 1):
             color = self.color if i <= initial_value else self.empty_color
             result += f'<span class="dynamic-form-rating-star" data-value="{i}" style="color:{color};padding:2px;">{self.symbol}</span>'
@@ -1311,6 +1348,8 @@ class PostUsageRatingQuestion(PostUsageQuestion):
         return result
 
     def render_script(self, virtual_inputs: bool, item, dynamic_field_name: str) -> str:
+        if self.readonly:
+            return ""
         default_value = self.get_default_value()
         initial_value = int(default_value) if default_value is not None else 0
         return f"""<script>(function() {{
